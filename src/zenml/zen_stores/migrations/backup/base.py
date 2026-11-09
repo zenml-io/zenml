@@ -202,6 +202,14 @@ class BaseDatabaseBackupEngine(ABC):
         """
 
     @abstractmethod
+    def is_valid_backup(self) -> bool:
+        """Check if a valid, completed backup exists.
+
+        Returns:
+            Whether a valid completed backup exists.
+        """
+
+    @abstractmethod
     def restore_database(
         self,
         cleanup: bool = False,
@@ -263,6 +271,11 @@ class BaseDatabaseBackupEngine(ABC):
                 f"Failed to backup the database: {str(e)}."
             ) from e
 
+        if not self.is_valid_backup():
+            raise RuntimeError(
+                f"Database backup verification failed for `{self.backup_location}`."
+            )
+
         logger.info(
             f"Database successfully backed up to `{self.backup_location}`. If "
             "something goes wrong with the upgrade, ZenML will attempt to "
@@ -317,6 +330,14 @@ class DisabledDatabaseBackupEngine(BaseDatabaseBackupEngine):
             NotImplementedError: Database backup is not implemented.
         """
         raise NotImplementedError("Database backup is disabled.")
+
+    def is_valid_backup(self) -> bool:
+        """Check if a valid, completed backup exists.
+
+        Returns:
+            False as database backup is disabled.
+        """
+        return False
 
     def restore_database(
         self,
