@@ -28,6 +28,7 @@ import pytest
 from sqlalchemy import event, update
 from sqlmodel import Session, col, select
 
+from tests.harness import harness
 from tests.harness.deployment.base import (
     MARIADB_ROOT_PASSWORD,
     MYSQL_DEFAULT_PASSWORD,
@@ -43,7 +44,6 @@ from tests.harness.deployment.server_docker_mariadb import (
 from tests.harness.deployment.server_docker_mysql import (
     ServerDockerComposeMySQLTestDeployment,
 )
-from tests.harness.harness import TestHarness
 from zenml import pipeline, step
 from zenml.client import Client
 from zenml.constants import (
@@ -118,7 +118,7 @@ def dynamic_pipeline() -> None:
 
 def _deployment_database_url() -> Optional[str]:
     """The MySQL or MariaDB server of the test deployment, if it has one."""
-    deployment = TestHarness().active_deployment
+    deployment = harness.TestHarness().active_deployment
     if isinstance(deployment, ClientMySQLTestDeployment):
         container, password = deployment.container, MYSQL_DEFAULT_PASSWORD
     elif isinstance(deployment, ServerDockerComposeMySQLTestDeployment):
