@@ -1104,7 +1104,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
         if not job_list.items:
             logger.warning("No jobs found for step run `%s`", step_run.id)
-            return ExecutionStatus.FAILED
+            return kube_utils.get_step_run_status_for_missing_job(step_run.id)
 
         job = job_list.items[0]
         job_name = job.metadata.name
@@ -1118,6 +1118,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         )
         if status == kube_utils.JobStatus.SUCCEEDED:
             return ExecutionStatus.COMPLETED
+        if status == kube_utils.JobStatus.NOT_FOUND:
+            return kube_utils.get_step_run_status_for_missing_job(step_run.id)
         if status == kube_utils.JobStatus.FAILED:
             logger.error(
                 "Kubernetes job `%s:%s` for step run `%s` failed: %s",

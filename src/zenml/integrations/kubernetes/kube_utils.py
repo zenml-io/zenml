@@ -52,6 +52,7 @@ from typing import (
     Union,
     cast,
 )
+from uuid import UUID
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -59,7 +60,9 @@ from kubernetes.client.rest import ApiException
 from pydantic import ValidationError
 from urllib3.exceptions import ReadTimeoutError
 
+from zenml.client import Client
 from zenml.config.resource_settings import ByteUnit
+from zenml.enums import ExecutionStatus
 from zenml.integrations.kubernetes.constants import (
     ENV_ZENML_KUBERNETES_MAIN_ADDRESS,
     ENV_ZENML_KUBERNETES_MAIN_PORT,
@@ -140,6 +143,7 @@ class JobStatus(enum.Enum):
     RUNNING = "Running"
     SUCCEEDED = "Succeeded"
     FAILED = "Failed"
+    NOT_FOUND = "NotFound"
 
 
 def is_inside_kubernetes() -> bool:
@@ -1381,13 +1385,24 @@ def check_job_status(
     Returns:
         The status of the job and an optional status message. For failed jobs,
         this is the error message; for running jobs, this can contain pending
-        pod diagnostics.
+        pod diagnostics. `JobStatus.NOT_FOUND` says nothing about the outcome
+        of the job: Kubernetes also deletes jobs that finished successfully
+        once their `ttlSecondsAfterFinished` expires.
+
+    Raises:
+        ApiException: If reading the job fails for any reason other than the
+            job not existing.
     """
-    job: k8s_client.V1Job = retry_on_api_exception(
-        batch_api.read_namespaced_job,
-        api_request_timeout=api_request_timeout,
-        max_retries=max_retries,
-    )(name=job_name, namespace=namespace)
+    try:
+        job: k8s_client.V1Job = retry_on_api_exception(
+            batch_api.read_namespaced_job,
+            api_request_timeout=api_request_timeout,
+            max_retries=max_retries,
+        )(name=job_name, namespace=namespace)
+    except ApiException as e:
+        if e.status == 404:
+            return JobStatus.NOT_FOUND, None
+        raise
 
     if job.status.conditions:
         for condition in job.status.conditions:
@@ -1464,6 +1479,26 @@ def check_job_status(
                 return JobStatus.FAILED, error_message
 
     return JobStatus.RUNNING, pending_message
+
+
+def get_step_run_status_for_missing_job(
+    step_run_id: UUID,
+) -> ExecutionStatus:
+    """Get the status of a step run whose job no longer exists.
+
+    A missing job says nothing about the outcome of the step, as Kubernetes
+    also deletes successful jobs once their `ttlSecondsAfterFinished` expires.
+    If the step run isn't finished, nothing is left that could ever finish it,
+    so it counts as failed.
+
+    Args:
+        step_run_id: The ID of the step run.
+
+    Returns:
+        The status of the step run if it is finished, a failed status otherwise.
+    """
+    status = Client().get_run_step(step_run_id, hydrate=False).status
+    return status if status.is_finished else ExecutionStatus.FAILED
 
 
 def create_config_map(
