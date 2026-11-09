@@ -21,13 +21,29 @@ load payloads at all.
 """
 
 import os
-from typing import Any, Dict, Iterator, List, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 from uuid import uuid4
 
 import pytest
 from sqlalchemy import event, update
 from sqlmodel import Session, col, select
 
+from tests.harness.deployment.base import (
+    MARIADB_ROOT_PASSWORD,
+    MYSQL_DEFAULT_PASSWORD,
+    MYSQL_DEFAULT_PORT,
+)
+from tests.harness.deployment.client_mariadb import (
+    ClientMariaDBTestDeployment,
+)
+from tests.harness.deployment.client_mysql import ClientMySQLTestDeployment
+from tests.harness.deployment.server_docker_mariadb import (
+    ServerDockerComposeMariaDBTestDeployment,
+)
+from tests.harness.deployment.server_docker_mysql import (
+    ServerDockerComposeMySQLTestDeployment,
+)
+from tests.harness.harness import TestHarness
 from zenml import pipeline, step
 from zenml.client import Client
 from zenml.constants import (
@@ -100,17 +116,46 @@ def dynamic_pipeline() -> None:
     child_pipeline(value.load())
 
 
+def _deployment_database_url() -> Optional[str]:
+    """The MySQL or MariaDB server of the test deployment, if it has one."""
+    deployment = TestHarness().active_deployment
+    if isinstance(deployment, ClientMySQLTestDeployment):
+        container, password = deployment.container, MYSQL_DEFAULT_PASSWORD
+    elif isinstance(deployment, ServerDockerComposeMySQLTestDeployment):
+        container, password = (
+            deployment.mysql_container,
+            MYSQL_DEFAULT_PASSWORD,
+        )
+    elif isinstance(deployment, ClientMariaDBTestDeployment):
+        container, password = deployment.container, MARIADB_ROOT_PASSWORD
+    elif isinstance(deployment, ServerDockerComposeMariaDBTestDeployment):
+        container, password = (
+            deployment.mariadb_container,
+            MARIADB_ROOT_PASSWORD,
+        )
+    else:
+        return None
+    assert container is not None
+    port = container.ports[f"{MYSQL_DEFAULT_PORT}/tcp"][0]["HostPort"]
+    return f"mysql://root:{password}@127.0.0.1:{port}"
+
+
 @pytest.fixture
 def store(
     monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest
 ) -> SqlZenStore:
     """The store of a clean client.
 
-    With `ZENML_TEST_PAYLOAD_MYSQL_URL` set to a MySQL or MariaDB server
-    (`mysql://user:password@host:port`), each test gets a new database there
-    instead of the clean client's SQLite one.
+    If the test deployment runs a MySQL or MariaDB server, each test gets a
+    new database there instead of the clean client's SQLite one, so that the
+    database environments of CI cover these tests. Setting
+    `ZENML_TEST_PAYLOAD_MYSQL_URL` (`mysql://user:password@host:port`) picks
+    another server.
     """
-    mysql_url = os.environ.get("ZENML_TEST_PAYLOAD_MYSQL_URL")
+    mysql_url = (
+        os.environ.get("ZENML_TEST_PAYLOAD_MYSQL_URL")
+        or _deployment_database_url()
+    )
     if mysql_url:
         monkeypatch.setenv(
             f"{ENV_ZENML_STORE_PREFIX}URL",
