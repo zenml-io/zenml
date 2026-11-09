@@ -702,6 +702,9 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         if self.enable_heartbeat is not None:
             return self.enable_heartbeat
 
+        # Only a snapshot without control columns gets here, and it holds its
+        # configuration inline: whatever references the configuration fills
+        # the control columns in the same write.
         return self._resolve_enable_heartbeat(
             json.loads(self.resolved_pipeline_configuration).get(
                 "enable_heartbeat"
@@ -717,6 +720,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         if self.execution_mode is not None:
             return ExecutionMode(self.execution_mode)
 
+        # Inline for the same reason as in `get_enable_heartbeat`.
         return self.get_pipeline_configuration().execution_mode
 
     def get_pipeline_configuration(self) -> PipelineConfiguration:
