@@ -48,13 +48,14 @@ class GcpIntegration(Integration):
     # Adding the gcsfs<=2024.12.0 for now to solve the issue with the
     # increased number of list calls. This is a temporary fix and should be
     # removed once the issue is resolved.
+    # Keep the gcsfs range aligned with the gcsfs extra in pyproject.toml.
     # grpcio 1.68.0-1.70.x has a known bug causing shutdown warnings
     # (grpc/grpc#38490), fixed in 1.71.0.
     REQUIREMENTS = [
         "kfp>=2.6.0",
         "urllib3<2.6.0",
         "grpcio!=1.68.*,!=1.69.*,!=1.70.*",
-        "gcsfs!=2025.5.0,!=2025.5.0.post1,<=2024.12.0",
+        "gcsfs>=2022.11.0,<=2024.12.0",
         # Versions >=2.36 require OpenTelemetry API >=1.44, conflicting with
         # ZenML's pinned OpenTelemetry SDK (1.43.0).
         "google-api-core<2.36.0",

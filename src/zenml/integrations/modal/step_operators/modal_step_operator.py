@@ -220,7 +220,7 @@ class ModalStepOperator(BaseStepOperator):
         modal_client = self._get_modal_client()
 
         app = sandbox_utils.lookup_modal_app(
-            f"zenml-{info.step_run_id}-{info.pipeline_step_name}"[:64],
+            self.config.app_name,
             modal_environment=modal_environment,
             modal_client=modal_client,
         )
@@ -232,6 +232,10 @@ class ModalStepOperator(BaseStepOperator):
             resource_settings=resource_settings,
             environment=environment,
             modal_client=modal_client,
+            tags={
+                sandbox_utils.STEP_RUN_ID_SANDBOX_TAG: str(info.step_run_id),
+                sandbox_utils.STEP_NAME_SANDBOX_TAG: info.pipeline_step_name,
+            },
         )
         metadata: Dict[str, Any] = {
             STEP_SANDBOX_ID_METADATA_KEY: sandbox.object_id

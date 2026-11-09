@@ -374,3 +374,19 @@ def test_prepared_execution_skips_stale_or_missing_state(monkeypatch) -> None:
     assert executed is False
     store.update_run.assert_not_called()
     build_and_run.assert_not_called()
+
+
+def test_generate_dockerfile_pins_zenml_in_image():
+    """Tests that the runner image install pins the image's ZenML version."""
+    from zenml.utils import requirements_utils
+
+    dockerfile = utils.generate_dockerfile(
+        pypi_requirements=["sagemaker"],
+        apt_packages=[],
+        zenml_version="0.98.1",
+        python_version="3.12",
+    )
+
+    assert dockerfile.endswith(
+        f"'sagemaker' {requirements_utils.INSTALLED_ZENML_SHELL_REQUIREMENT}"
+    )
