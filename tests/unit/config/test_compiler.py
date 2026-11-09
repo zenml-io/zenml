@@ -117,6 +117,28 @@ def test_pipeline_and_steps_dont_get_modified_during_compilation(
     assert pipeline_instance.enable_cache is True
 
 
+@pytest.mark.parametrize("enable_cache", [True, False])
+def test_run_level_enable_cache_overrides_step_values(
+    enable_cache, one_step_pipeline, empty_step, local_stack
+):
+    """Tests that `enable_cache` set in the run configuration overrides the
+    value configured on each step, whether it enables or disables caching."""
+    step_instance = empty_step.configure(enable_cache=not enable_cache)
+    pipeline_instance = one_step_pipeline(step_instance)
+    run_config = PipelineRunConfiguration(enable_cache=enable_cache)
+
+    pipeline_instance.prepare()
+    snapshot = Compiler().compile(
+        pipeline=pipeline_instance,
+        stack=local_stack,
+        run_configuration=run_config,
+    )
+
+    assert snapshot.pipeline_configuration.enable_cache is enable_cache
+    step_config = snapshot.step_configurations["_empty_step"].config
+    assert step_config.enable_cache is enable_cache
+
+
 def test_compiling_pipeline_with_extra_step_config_does_not_fail(
     empty_pipeline,  # noqa: F811
 ):
