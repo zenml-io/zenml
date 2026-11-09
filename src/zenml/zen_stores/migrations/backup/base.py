@@ -139,19 +139,17 @@ class BaseDatabaseBackupEngine(ABC):
         """
         database = database or self.url.database
 
-        engine = self.create_engine(database=database)
-        try:
-            engine.connect()
-        except OperationalError as e:
-            if self.is_mysql_missing_database_error(e):
-                return False
-            else:
-                logger.exception(
-                    f"Failed to connect to mysql database `{database}`.",
-                )
-                raise
-        else:
-            return True
+        with self.master_engine.connect() as conn:
+            return (
+                conn.execute(
+                    text(
+                        "SELECT 1 FROM INFORMATION_SCHEMA.SCHEMATA "
+                        "WHERE SCHEMA_NAME = :database"
+                    ),
+                    {"database": database},
+                ).scalar()
+                is not None
+            )
 
     def drop_database(
         self,
