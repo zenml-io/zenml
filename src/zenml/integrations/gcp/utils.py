@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Vertex utilities."""
 
+import copy
 import time
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
@@ -98,7 +99,12 @@ def monitor_job(
                     f"retries: {err}"
                 )
         if response.state in VERTEX_JOB_STATES_FAILED:
-            err_msg = f"Job `{job_id}` failed: {response}."
+            # Don't include the whole job in the message: its spec echoes the
+            # container environment, which contains the ZenML API token.
+            err_msg = (
+                f"Job `{job_id}` failed with state `{response.state.name}`: "
+                f"{response.error.message or 'no error message returned'}."
+            )
             logger.error(err_msg)
             raise RuntimeError(err_msg)
         if response.state in VERTEX_JOB_STATES_COMPLETED:
@@ -186,6 +192,30 @@ def build_job_request(
         if encryption_spec_key_name
         else {},
     }
+
+
+def redact_job_request(job_request: Dict[str, Any]) -> Dict[str, Any]:
+    """Copy a job request with its environment variable values masked.
+
+    The environment contains secrets such as the ZenML API token, so a job
+    request must only be logged in this redacted form.
+
+    Args:
+        job_request: A job request as returned by `build_job_request`.
+
+    Returns:
+        A copy of the job request that keeps the environment variable names
+        but replaces their values.
+    """
+    redacted = copy.deepcopy(job_request)
+    for worker_pool_spec in redacted.get("job_spec", {}).get(
+        "worker_pool_specs", []
+    ):
+        for env_var in worker_pool_spec.get("container_spec", {}).get(
+            "env", []
+        ):
+            env_var["value"] = "<redacted>"
+    return redacted
 
 
 def convert_job_state(state: JobState) -> ExecutionStatus:
