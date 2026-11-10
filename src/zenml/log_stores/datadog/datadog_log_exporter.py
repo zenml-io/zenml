@@ -55,6 +55,12 @@ class DatadogLogExporter(OTLPLogExporter):
         if instrumentation and instrumentation.attributes:
             attributes.update(dict(instrumentation.attributes))
 
+        if lr.event_name is not None:
+            # Preserve searches using either attribute name after the logging
+            # handler promotes event names into the dedicated SDK field.
+            attributes["otel.event.name"] = lr.event_name
+            attributes["event.name"] = lr.event_name
+
         log_record = dict(
             **attributes,
             service=attributes.get("service.name"),

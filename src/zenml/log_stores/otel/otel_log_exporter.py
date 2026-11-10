@@ -190,7 +190,9 @@ class OTLPLogExporter(LogRecordExporter):
     @classmethod
     def _encode_value(cls, value: Any, allow_null: bool = False) -> Any:
         if allow_null is True and value is None:
-            return None
+            # An empty AnyValue preserves null array slots; JSON null is not
+            # valid as an element of the repeated AnyValue field.
+            return {}
         if isinstance(value, bool):
             return dict(bool_value=value)
         if isinstance(value, str):
@@ -241,8 +243,10 @@ class OTLPLogExporter(LogRecordExporter):
             A dictionary representing the log data.
         """
         lr = readable.log_record
-        span_id = None if lr.span_id == 0 else lr.span_id
-        trace_id = None if lr.trace_id == 0 else lr.trace_id
+        # OTLP JSON requires fixed-width hexadecimal strings for trace IDs.
+        # https://opentelemetry.io/docs/specs/otlp/#json-protobuf-encoding
+        span_id = None if lr.span_id == 0 else f"{lr.span_id:016x}"
+        trace_id = None if lr.trace_id == 0 else f"{lr.trace_id:032x}"
         body = lr.body
         log_record = dict(
             time_unix_nano=lr.timestamp,
@@ -359,6 +363,20 @@ class OTLPLogExporter(LogRecordExporter):
         except Exception as e:
             logger.error(f"Error exporting logs: {e}")
             return LogRecordExportResult.FAILURE
+
+    def force_flush(self, timeout_millis: int = 30000) -> bool:
+        """Confirm that no logs remain buffered in the exporter.
+
+        Exports are synchronous; buffering is handled by the log processor.
+
+        Args:
+            timeout_millis: Maximum time to wait in milliseconds. Unused because
+                this exporter does not buffer records.
+
+        Returns:
+            True because exports complete synchronously.
+        """
+        return True
 
     def shutdown(self) -> None:
         """Shutdown the exporter."""
