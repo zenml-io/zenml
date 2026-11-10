@@ -1142,9 +1142,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                         create_verified_ssl_context,
                     )
 
-                    sqlalchemy_connect_args[
-                        "ssl"
-                    ] = create_verified_ssl_context()
+                    sqlalchemy_connect_args["ssl"] = (
+                        create_verified_ssl_context()
+                    )
                 else:
                     sqlalchemy_ssl_args: Dict[str, Any] = {"ssl": True}
                     for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
@@ -1155,12 +1155,12 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                             logger.warning(
                                 f"Database SSL setting `{key}` is not a file. "
                             )
-                        sqlalchemy_ssl_args[
-                            key.removeprefix("ssl_")
-                        ] = ssl_setting.get_secret_value()
-                    sqlalchemy_ssl_args[
-                        "check_hostname"
-                    ] = self.ssl_verify_server_cert
+                        sqlalchemy_ssl_args[key.removeprefix("ssl_")] = (
+                            ssl_setting.get_secret_value()
+                        )
+                    sqlalchemy_ssl_args["check_hostname"] = (
+                        self.ssl_verify_server_cert
+                    )
                     sqlalchemy_connect_args["ssl"] = sqlalchemy_ssl_args
         else:
             raise NotImplementedError(
@@ -3911,14 +3911,14 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(StackComponentSchema)
-            paged_components: Page[
-                ComponentResponse
-            ] = self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=StackComponentSchema,
-                filter_model=component_filter_model,
-                hydrate=hydrate,
+            paged_components: Page[ComponentResponse] = (
+                self.filter_and_paginate(
+                    session=session,
+                    query=query,
+                    table=StackComponentSchema,
+                    filter_model=component_filter_model,
+                    hydrate=hydrate,
+                )
             )
             return paged_components
 
@@ -5413,7 +5413,11 @@ class SqlZenStore(BaseZenStore):
         # Serialize before opening the session so that a serialization failure
         # never reaches the database and the transaction only holds DB work.
         serialized_step_configurations = [
-            (step_name, step_configuration.model_dump_json(exclude={"config"}))
+            (
+                step_name,
+                step_configuration.model_dump_json(exclude={"config"}),
+                json.dumps(step_configuration.spec.upstream_steps),
+            )
             for step_name, step_configuration in snapshot.step_configurations.items()
         ]
 
@@ -5493,6 +5497,7 @@ class SqlZenStore(BaseZenStore):
             for index, (
                 step_name,
                 serialized_configuration,
+                upstream_steps,
             ) in enumerate(serialized_step_configurations):
                 session.add(
                     StepConfigurationSchema(
@@ -5502,6 +5507,7 @@ class SqlZenStore(BaseZenStore):
                         # configurations, we reconstruct it in the `to_model`
                         # method using the pipeline configuration.
                         config=serialized_configuration,
+                        upstream_steps=upstream_steps,
                         snapshot_id=new_snapshot.id,
                     )
                 )
@@ -5564,6 +5570,9 @@ class SqlZenStore(BaseZenStore):
                 resource_id=snapshot_id,
                 schema_class=PipelineSnapshotSchema,
                 session=session,
+                query_options=PipelineSnapshotSchema.get_query_options(
+                    include_metadata=hydrate, include_resources=True
+                ),
             )
 
             return snapshot.to_model(
@@ -6457,6 +6466,7 @@ class SqlZenStore(BaseZenStore):
                 query_options=[
                     load_only(
                         jl_arg(PipelineRunSchema.status),
+                        jl_arg(PipelineRunSchema.created),
                         jl_arg(PipelineRunSchema.start_time),
                     ),
                     selectinload(jl_arg(PipelineRunSchema.snapshot)).load_only(
@@ -6514,9 +6524,9 @@ class SqlZenStore(BaseZenStore):
                 if condition.question:
                     node_metadata["question"] = condition.question
                 if condition.resolved_at:
-                    node_metadata[
-                        "resolved_at"
-                    ] = condition.resolved_at.isoformat()
+                    node_metadata["resolved_at"] = (
+                        condition.resolved_at.isoformat()
+                    )
 
                 helper.add_wait_condition_node(
                     node_id=helper.get_wait_condition_node_id(condition.name),
@@ -6535,7 +6545,7 @@ class SqlZenStore(BaseZenStore):
                 snapshot.pipeline_configuration
             )
             pipeline_configuration.finalize_substitutions(
-                start_time=run.start_time, inplace=True
+                start_time=run.substitution_time, inplace=True
             )
 
             if snapshot.is_dynamic:
@@ -6609,9 +6619,9 @@ class SqlZenStore(BaseZenStore):
                     metadata["status"] = step_run.status
 
                     if step_run.start_time:
-                        metadata[
-                            "start_time"
-                        ] = step_run.start_time.isoformat()
+                        metadata["start_time"] = (
+                            step_run.start_time.isoformat()
+                        )
 
                         if step_run.end_time:
                             metadata["duration"] = (
@@ -6791,9 +6801,9 @@ class SqlZenStore(BaseZenStore):
                         }
 
                         if triggered_run.start_time:
-                            triggered_run_metadata[
-                                "start_time"
-                            ] = triggered_run.start_time.isoformat()
+                            triggered_run_metadata["start_time"] = (
+                                triggered_run.start_time.isoformat()
+                            )
 
                             if triggered_run.end_time:
                                 triggered_run_metadata["duration"] = (
@@ -6936,13 +6946,13 @@ class SqlZenStore(BaseZenStore):
                     "status": child_run.status,
                 }
                 if child_run.start_time:
-                    child_run_metadata[
-                        "start_time"
-                    ] = child_run.start_time.isoformat()
+                    child_run_metadata["start_time"] = (
+                        child_run.start_time.isoformat()
+                    )
                     if child_run.end_time:
-                        child_run_metadata[
-                            "end_time"
-                        ] = child_run.end_time.isoformat()
+                        child_run_metadata["end_time"] = (
+                            child_run.end_time.isoformat()
+                        )
                         child_run_metadata["duration"] = (
                             child_run.end_time - child_run.start_time
                         ).total_seconds()
@@ -7005,17 +7015,6 @@ class SqlZenStore(BaseZenStore):
         session.commit()
         return index
 
-    @staticmethod
-    def _get_enable_run_heartbeat(snapshot: PipelineSnapshotSchema) -> bool:
-        value = json.loads(snapshot.pipeline_configuration).get(
-            "enable_heartbeat"
-        )
-
-        if value is None:
-            return True
-        else:
-            return bool(value)
-
     def _create_run(
         self, pipeline_run: PipelineRunRequest, session: Session
     ) -> PipelineRunResponse:
@@ -7072,7 +7071,7 @@ class SqlZenStore(BaseZenStore):
             pipeline_run,
             pipeline_id=snapshot.pipeline_id,
             index=index,
-            enable_heartbeat=self._get_enable_run_heartbeat(snapshot),
+            enable_heartbeat=snapshot.get_enable_heartbeat(),
             root_run_id=root_run_id,
         )
 
@@ -7138,7 +7137,7 @@ class SqlZenStore(BaseZenStore):
 
         try:
             model_version_id = self._get_or_create_model_version_for_run(
-                new_run
+                new_run, config=new_run.get_pipeline_configuration()
             )
         except KeyError as e:
             session.delete(new_run)
@@ -10596,19 +10595,19 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(UserSchema)
-            paged_service_accounts: Page[
-                ServiceAccountResponse
-            ] = self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=UserSchema,
-                filter_model=filter_model,
-                custom_schema_to_model_conversion=lambda user: (
-                    user.to_service_account_model(
-                        include_metadata=hydrate, include_resources=True
-                    )
-                ),
-                hydrate=hydrate,
+            paged_service_accounts: Page[ServiceAccountResponse] = (
+                self.filter_and_paginate(
+                    session=session,
+                    query=query,
+                    table=UserSchema,
+                    filter_model=filter_model,
+                    custom_schema_to_model_conversion=lambda user: (
+                        user.to_service_account_model(
+                            include_metadata=hydrate, include_resources=True
+                        )
+                    ),
+                    hydrate=hydrate,
+                )
             )
             return paged_service_accounts
 
@@ -10897,16 +10896,16 @@ class SqlZenStore(BaseZenStore):
 
         with Session(self.engine) as session:
             query = select(ServiceConnectorSchema)
-            paged_connectors: Page[
-                ServiceConnectorResponse
-            ] = self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=ServiceConnectorSchema,
-                filter_model=filter_model,
-                custom_fetch=fetch_connectors,
-                custom_schema_to_model_conversion=to_model_and_expand_secrets,
-                hydrate=hydrate,
+            paged_connectors: Page[ServiceConnectorResponse] = (
+                self.filter_and_paginate(
+                    session=session,
+                    query=query,
+                    table=ServiceConnectorSchema,
+                    filter_model=filter_model,
+                    custom_fetch=fetch_connectors,
+                    custom_schema_to_model_conversion=to_model_and_expand_secrets,
+                    hydrate=hydrate,
+                )
             )
 
             self._populate_connector_type(*paged_connectors.items)
@@ -11614,9 +11613,9 @@ class SqlZenStore(BaseZenStore):
                                 continue
 
                 # Stack Components
-                components_mapping: Dict[
-                    StackComponentType, List[UUID]
-                ] = defaultdict(list)
+                components_mapping: Dict[StackComponentType, List[UUID]] = (
+                    defaultdict(list)
+                )
                 for (
                     component_type,
                     components,
@@ -11935,9 +11934,9 @@ class SqlZenStore(BaseZenStore):
             existing_stack.update(stack_update=stack_update)
 
             if stack_update.components is not None:
-                component_ids_by_type: Dict[
-                    StackComponentType, List[UUID]
-                ] = defaultdict(list)
+                component_ids_by_type: Dict[StackComponentType, List[UUID]] = (
+                    defaultdict(list)
+                )
 
                 for (
                     component_type,
@@ -12335,7 +12334,7 @@ class SqlZenStore(BaseZenStore):
                     f"the run is being stopped ({run.status})"
                     if run.stop_requested
                     else "the run is in a FAILED state and the execution mode "
-                    f"is {run.get_pipeline_configuration().execution_mode}"
+                    f"is {run.get_execution_mode()}"
                 )
                 raise IllegalOperationError(
                     f"Cannot create step '{step_run.name}' for the run "
@@ -12349,9 +12348,13 @@ class SqlZenStore(BaseZenStore):
                 session=session,
                 reference_type="original step run",
             )
+            pipeline_configuration = run.get_pipeline_configuration()
             step_config = (
                 step_run.dynamic_config
-                or run.get_step_configuration(step_name=step_run.name)
+                or run.get_step_configuration(
+                    step_name=step_run.name,
+                    pipeline_configuration=pipeline_configuration,
+                )
             )
             resource_runtime: Optional[StepRuntime] = None
             resource_request_heartbeat_enabled: Optional[bool] = None
@@ -12480,6 +12483,7 @@ class SqlZenStore(BaseZenStore):
 
             session.add(step_schema)
 
+            resolved_step_config = step_config
             if step_run.dynamic_config:
                 if not run.snapshot or not run.snapshot.is_dynamic:
                     raise IllegalOperationError(
@@ -12499,6 +12503,18 @@ class SqlZenStore(BaseZenStore):
                     step_run_id=step_schema.id,
                 )
                 session.add(step_configuration_schema)
+                # Resolved like reads resolve it, so that the values copied
+                # below match what reads would compute.
+                resolved_step_config = step_configuration_schema.to_step(
+                    pipeline_configuration,
+                    exclude_hook_sources=run.snapshot.is_dynamic,
+                )
+
+            step_type = resolved_step_config.config.step_type
+            step_schema.step_type = step_type.value if step_type else None
+            step_schema.substitutions = json.dumps(
+                resolved_step_config.config.substitutions
+            )
 
             try:
                 session.commit()
@@ -12595,7 +12611,7 @@ class SqlZenStore(BaseZenStore):
 
                 cascading_tags = [
                     tag
-                    for tag in run.get_pipeline_configuration().tags or []
+                    for tag in pipeline_configuration.tags or []
                     if isinstance(tag, Tag) and tag.cascade
                 ]
 
@@ -12657,7 +12673,7 @@ class SqlZenStore(BaseZenStore):
                         # artifacts we receive at creation time are inputs that
                         # are defined in the step config.
                         input_overrides = set(
-                            run.get_pipeline_configuration().get_invocation_input_overrides(
+                            pipeline_configuration.get_invocation_input_overrides(
                                 invocation_id=step_run.name,
                                 step_name=step_config.config.name,
                             )
@@ -12714,7 +12730,7 @@ class SqlZenStore(BaseZenStore):
                 model_version_id = existing_step_runs[-1].model_version_id
             else:
                 model_version_id = self._get_or_create_model_version_for_run(
-                    step_schema
+                    step_schema, config=resolved_step_config.config
                 )
 
             if model_version_id:
@@ -12795,7 +12811,9 @@ class SqlZenStore(BaseZenStore):
                 session.refresh(step_schema)
 
             step_run_response = step_schema.to_model(
-                include_metadata=True, include_resources=True
+                include_metadata=True,
+                include_resources=True,
+                pipeline_configuration=pipeline_configuration,
             )
             if (
                 created_resource_request is not None
@@ -13561,15 +13579,13 @@ class SqlZenStore(BaseZenStore):
         # Make sure we start with a fresh transaction before locking the
         # pipeline run
         session.commit()
-        (
-            did_update,
-            pipeline_run,
-            previous_status,
-        ) = self._update_pipeline_run_status_no_commit(
-            pipeline_run_id=pipeline_run_id,
-            session=session,
-            requested_status=requested_status,
-            status_reason=status_reason,
+        did_update, pipeline_run, previous_status = (
+            self._update_pipeline_run_status_no_commit(
+                pipeline_run_id=pipeline_run_id,
+                session=session,
+                requested_status=requested_status,
+                status_reason=status_reason,
+            )
         )
 
         # Commit to release the lock on the pipeline run.
@@ -13585,7 +13601,9 @@ class SqlZenStore(BaseZenStore):
                 # Only convert to model if there are handlers to notify
                 dispatcher.dispatch_event(
                     PipelineRunStatusUpdate(
-                        run=pipeline_run.to_model(include_metadata=True),
+                        run=pipeline_run.to_model(
+                            include_metadata=False, include_resources=False
+                        ),
                         previous_status=previous_status,
                     )
                 )
@@ -14702,8 +14720,7 @@ class SqlZenStore(BaseZenStore):
         reference_schema: Type[AnySchema],
         reference_id: UUID,
         reference_type: Optional[str] = None,
-    ) -> AnySchema:
-        ...
+    ) -> AnySchema: ...
 
     @overload
     def _get_reference_schema_by_id(
@@ -14713,8 +14730,7 @@ class SqlZenStore(BaseZenStore):
         reference_schema: Type[AnySchema],
         reference_id: None,
         reference_type: Optional[str] = None,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     def _get_reference_schema_by_id(
         self,
@@ -15476,28 +15492,27 @@ class SqlZenStore(BaseZenStore):
             )
 
     def _get_or_create_model_version_for_run(
-        self, pipeline_or_step_run: Union[PipelineRunSchema, StepRunSchema]
+        self,
+        pipeline_or_step_run: Union[PipelineRunSchema, StepRunSchema],
+        config: Union[PipelineConfiguration, StepConfiguration],
     ) -> Optional[UUID]:
         """Get or create a model version for a pipeline or step run.
 
         Args:
             pipeline_or_step_run: The pipeline or step run for which to create
                 the model version.
+            config: The resolved configuration of the pipeline or step run.
 
         Returns:
             The model version.
         """
         if isinstance(pipeline_or_step_run, PipelineRunSchema):
             producer_run_id = pipeline_or_step_run.id
-            pipeline_run = pipeline_or_step_run.to_model(include_metadata=True)
-            configured_model = pipeline_run.config.model
-            substitutions = pipeline_run.config.substitutions
         else:
             producer_run_id = pipeline_or_step_run.pipeline_run_id
-            step_run = pipeline_or_step_run.to_model(include_metadata=True)
-            configured_model = step_run.config.model
-            substitutions = step_run.config.substitutions
 
+        configured_model = config.model
+        substitutions = config.substitutions
         if not configured_model:
             return None
 
@@ -16259,9 +16274,9 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: If a referenced resource does not exist.
         """
-        resource_ids_by_type: Dict[
-            TaggableResourceTypes, Set[UUID]
-        ] = defaultdict(set)
+        resource_ids_by_type: Dict[TaggableResourceTypes, Set[UUID]] = (
+            defaultdict(set)
+        )
         for tag_resource in tag_resources:
             resource_ids_by_type[tag_resource.resource_type].add(
                 tag_resource.resource_id

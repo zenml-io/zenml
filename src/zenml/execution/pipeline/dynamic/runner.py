@@ -1219,8 +1219,7 @@ class DynamicPipelineRunner:
         group: Optional["GroupInfo"] = None,
         concurrent: Literal[False] = False,
         implicit_upstream_steps: Optional[Set[str]] = None,
-    ) -> StepRunOutputs:
-        ...
+    ) -> StepRunOutputs: ...
 
     @overload
     def launch_step(
@@ -1238,8 +1237,7 @@ class DynamicPipelineRunner:
         group: Optional["GroupInfo"] = None,
         concurrent: Literal[True] = True,
         implicit_upstream_steps: Optional[Set[str]] = None,
-    ) -> "StepFuture":
-        ...
+    ) -> "StepFuture": ...
 
     def launch_step(
         self,
@@ -1688,8 +1686,7 @@ class DynamicPipelineRunner:
         after: Union[
             "AnyOutputFuture", Sequence["AnyOutputFuture"], None
         ] = None,
-    ) -> T:
-        ...
+    ) -> T: ...
 
     @overload
     def wait(
@@ -1704,8 +1701,7 @@ class DynamicPipelineRunner:
         after: Union[
             "AnyOutputFuture", Sequence["AnyOutputFuture"], None
         ] = None,
-    ) -> Any:
-        ...
+    ) -> Any: ...
 
     def wait(
         self,
@@ -2636,8 +2632,7 @@ class DynamicPipelineRunner:
         ] = None,
         *,
         concurrent: Literal[True],
-    ) -> PipelineFuture:
-        ...
+    ) -> PipelineFuture: ...
 
     @overload
     def submit_child_pipeline(
@@ -2653,8 +2648,7 @@ class DynamicPipelineRunner:
         ] = None,
         *,
         concurrent: Literal[False] = False,
-    ) -> PipelineRunOutputs:
-        ...
+    ) -> PipelineRunOutputs: ...
 
     def submit_child_pipeline(
         self,
@@ -2796,16 +2790,15 @@ class DynamicPipelineRunner:
                 node_id=node_id,
                 future=future,
             )
-            (
-                node,
-                nodes_ready,
-            ) = self._dependency_graph.register_child_pipeline_node(
-                node_id=node_id,
-                pipeline=pipeline,
-                args=args,
-                kwargs=kwargs,
-                upstream_ids=upstream_node_ids,
-                start_upstream_ids=start_upstream_node_ids,
+            node, nodes_ready = (
+                self._dependency_graph.register_child_pipeline_node(
+                    node_id=node_id,
+                    pipeline=pipeline,
+                    args=args,
+                    kwargs=kwargs,
+                    upstream_ids=upstream_node_ids,
+                    start_upstream_ids=start_upstream_node_ids,
+                )
             )
             self._maybe_settle_startup_future(node=node)
         self.notify_graph_changed(nodes_ready=nodes_ready)

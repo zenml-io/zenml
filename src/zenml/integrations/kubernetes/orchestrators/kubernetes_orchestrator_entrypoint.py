@@ -801,9 +801,9 @@ def main() -> None:
                             step_name,
                             status_message,
                         )
-                        node.metadata[
-                            "last_pending_status_message"
-                        ] = status_message
+                        node.metadata["last_pending_status_message"] = (
+                            status_message
+                        )
                 return NodeStatus.RUNNING
 
         def should_interrupt_execution() -> Optional[InterruptMode]:

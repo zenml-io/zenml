@@ -1,7 +1,7 @@
 """Add stop mode to pipeline runs [a8d3e1c47f02].
 
 Revision ID: a8d3e1c47f02
-Revises: 0.98.1
+Revises: 8d638fcb4bd5
 Create Date: 2026-11-03 12:00:00.000000
 
 """
@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "a8d3e1c47f02"
-down_revision = "0.98.1"
+down_revision = "8d638fcb4bd5"
 branch_labels = None
 depends_on = None
 
