@@ -4,7 +4,7 @@ icon: plug
 
 # Python client
 
-[Kitaru](https://docs.zenml.io/kitaru) is ZenML's sibling project for recording, replaying, and improving AI agents. The runs that happen in production become sessions you can replay against your real code. `KitaruAPIClient` is the async Python interface to a Kitaru server.
+[Kitaru](https://docs.zenml.io/kitaru) is ZenML's sibling project for insights, checks, and tested fixes from your AI agent's traces. Recorded or imported runs become sessions, and everything else in Kitaru, from evaluators to replays, works from them. `KitaruAPIClient` is the async Python interface to a Kitaru server.
 
 This page groups the client into thematic areas. For the complete, auto-generated API (every method and signature), see the [full Kitaru SDK reference](https://sdkdocs.kitaru.ai/reference/python/client/).
 
