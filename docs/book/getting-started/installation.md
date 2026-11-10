@@ -24,7 +24,7 @@ The script installs [`uv`](https://docs.astral.sh/uv/) if it is missing, then in
 * **Inside a Python project** (a directory with a `pyproject.toml` or `uv.lock`), ZenML is added to that project with `uv add`, so your pipelines run next to their own dependencies.
 * **Anywhere else**, ZenML is installed as an isolated `uv` tool with `zenml` on your `PATH`. This is enough for logging in, managing stacks, and browsing runs. To run pipelines, install ZenML into your project.
 
-It also installs the [ZenML agent skills](../reference/llms-txt.md) for coding agents such as Claude Code and Codex. The script does not log you in or start a server; it finishes by printing the next steps. Re-running it upgrades ZenML within your project's version constraints.
+It also installs the [ZenML agent skills](../reference/llms-txt.md#zenml-agent-skills) for coding agents such as Claude Code and Codex. The script does not log you in or start a server; it finishes by printing the next steps. Re-running it upgrades ZenML within your project's version constraints.
 
 Pass options after `bash -s --`:
 
