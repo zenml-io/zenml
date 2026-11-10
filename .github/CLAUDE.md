@@ -13,7 +13,7 @@ This document provides guidance for AI assistants working with ZenML's GitHub Ac
 | **Release/Nightly** | release.yml, release_prepare.yml, release_finalize.yml, publish_*.yml, nightly_build.yml | PyPI, Docker, Helm, stack template, and nightly publishing |
 | **Security** | codeql.yml, trivy-*.yml, zizmor.yml | Static analysis and vulnerability/supply-chain scanning |
 | **Maintenance** | stale-prs.yml, pr_labeler.yml, require-release-label.yml, snack-it.yml, notify-*.yml, dependabot.yml | Repo automation and project notifications |
-| **Special/Examples** | templates-test.yml, update-templates-to-examples.yml, vscode-tutorial-pipelines-test.yml, weekly-agent-pipelines-test.yml, performance-profiling.yml | Template syncing, tutorial/example regression tests, and profiling |
+| **Special/Examples** | templates-test.yml, update-templates-to-examples.yml, vscode-tutorial-pipelines-test.yml, weekly-agent-pipelines-test.yml, performance-profiling.yml, installer.yml | Template syncing, tutorial/example regression tests, profiling, and the one-line installer smoke test |
 
 ### Entry Points vs Reusable Workflows
 
@@ -217,6 +217,10 @@ Documentation link safety net. Use these as the source of truth when changing do
 ### weekly-agent-pipelines-test.yml / vscode-tutorial-pipelines-test.yml
 
 Regression tests for example/tutorial/agent pipelines. If a code change affects pipeline authoring, dynamic pipelines, or example behavior, mention these workflows in the PR so maintainers know whether to rerun them.
+
+### installer.yml
+
+Smoke-tests `install-zenml.sh` on Linux x64/arm, macOS arm/Intel, and Windows Git Bash, and the `install.sh` product menu on Linux. The scripts run directly from GitHub; no website or Cloudflare configuration is required. Runs only on PRs that touch the installers, their regression scripts, or the workflow, and installs the PR's wheel through `UV_CONSTRAINT` (honored by both `uv tool install` and `uv add`) so PR runs never pull ZenML from PyPI. The wheel is built once in a separate job: keeping `setup-uv` out of the install jobs is what makes them exercise the installer's own uv bootstrap. The separate regression job uses uv and local fixture wheels to check project environments, bootstrap options, menu failure behavior, and preservation of existing skills without accessing PyPI. The `workflow_call` input `source: url` fetches the scripts directly from GitHub after they are available on `main`. Kept parallel to `zenml-io/kitaru`'s installer workflow, so fixes to one usually apply to the other.
 
 ## Important Gotchas
 
