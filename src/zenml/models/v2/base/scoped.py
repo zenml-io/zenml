@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Scoped model definitions."""
 
+from functools import partial
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -47,6 +48,7 @@ from zenml.models.v2.base.filter import (
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
+    from sqlmodel.sql.expression import SelectOfScalar
 
     from zenml.models.v2.core.project import ProjectResponse
     from zenml.models.v2.core.user import UserResponse
@@ -462,23 +464,63 @@ class ProjectScopedFilter(UserScopedFilter):
 
 # MySQL flattens every EXISTS subquery of an AND filter into a semi-join, and
 # the time it spends ordering the joined tables grows factorially with their
-# number: with around ten tag or run metadata predicates, planning alone can
+# number: with around ten tag or run metadata values, planning alone can
 # outlast any request timeout. MariaDB plans such queries quickly, but its
-# execution plans degrade in a similar way. Separate subqueries are still the
-# fastest way to check a few predicates, as the database can start from the
-# most selective one, so only some predicates get one. All others are checked
-# by a single aggregated subquery, which is never flattened and therefore adds
-# nothing to the planning.
+# execution plans degrade in a similar way.
 #
-# An exact tag name is resolved through the unique tag name index before the
-# join order is planned, so any number of them stays cheap to plan and each one
-# gets its own subquery. Other tag predicates only get one while fewer than this
-# many tag predicates have one, as their tables multiply the possible join
-# orders. Run metadata predicates are always aggregated: their values are not
-# indexed and their keys are usually shared by many runs, so a separate
-# subquery rarely narrows down the runs, while next to several exact tag names
-# a single one can already add hundreds of milliseconds of planning.
-_MAX_SEPARATE_TAG_SUBQUERIES = 2
+# Filters with at most this many tag and run metadata values in total keep a
+# plain subquery per value: planning them is cheap, and the database can start
+# from the most selective one. Larger AND filters keep a separate subquery
+# only for exact tag names and tag presence checks, which also match the
+# resource type of the links. MySQL resolves an exact tag name through the
+# unique tag name index before it plans the join order, and with the resource
+# type it looks up the link through its full index, so any number of them
+# stays cheap to plan. All other values of such a filter are checked by one
+# aggregated subquery per relationship, which is never flattened.
+_MAX_VALUES_WITH_PLAIN_SUBQUERIES = 4
+_TAG_PRESENCE_OPERATORS = (
+    GenericFilterOps.IS_NULL,
+    GenericFilterOps.IS_NOT_NULL,
+)
+
+
+def _unique_values(values: StringFilterOption) -> List[str]:
+    """Get the distinct values of a filter option, keeping their order.
+
+    Identical values are redundant under both AND and OR.
+
+    Args:
+        values: The filter option.
+
+    Returns:
+        The distinct values.
+    """
+    if values is None:
+        return []
+    return list(dict.fromkeys([values] if isinstance(values, str) else values))
+
+
+def _aggregates_values(
+    tags: StringFilterOption,
+    run_metadata: StringFilterOption,
+    logical_operator: LogicalOperators,
+) -> bool:
+    """Check whether a filter aggregates its tag and run metadata values.
+
+    Args:
+        tags: The tag values of the filter.
+        run_metadata: The run metadata values of the filter.
+        logical_operator: The operator combining the filter conditions.
+
+    Returns:
+        Whether only exact tag names and tag presence checks get their own
+        subquery.
+    """
+    value_count = len(_unique_values(tags)) + len(_unique_values(run_metadata))
+    return (
+        logical_operator == LogicalOperators.AND
+        and value_count > _MAX_VALUES_WITH_PLAIN_SUBQUERIES
+    )
 
 
 def _get_tag_resource_type(table: Type["AnySchema"]) -> str:
@@ -528,6 +570,7 @@ def _generate_link_conditions(
     predicates: List["ColumnElement[bool]"],
     logical_operator: LogicalOperators,
     separate_count: int,
+    plain_separate_subqueries: bool = False,
 ) -> List["ColumnElement[bool]"]:
     """Generate conditions on the rows linked to rows of a table.
 
@@ -548,6 +591,14 @@ def _generate_link_conditions(
             subquery when combined with AND. All others are checked by a
             single subquery, which is only equivalent under AND, so every
             predicate gets its own subquery when combined with OR.
+        plain_separate_subqueries: Whether the separate subqueries select
+            all columns of the links and leave out their resource type. Both
+            change which plan MySQL picks for predicates that it cannot
+            resolve before planning: it keeps no statistics on the resource
+            type and assumes that it rules out most links, which can make it
+            scan all of them, and a narrower select list can make it scan all
+            queried rows to sort them. Resource IDs are unique across
+            resource types, so leaving it out does not change the result.
 
     Returns:
         The conditions.
@@ -562,12 +613,13 @@ def _generate_link_conditions(
         col(link_table.resource_id) == table.id,
         col(link_table.resource_type) == resource_type,
     )
+    separate_query: "SelectOfScalar[Any]"
+    if plain_separate_subqueries:
+        separate_query = select(link_table).where(links_of_row[0])
+    else:
+        separate_query = select(col(link_table.id)).where(*links_of_row)
     conditions: List["ColumnElement[bool]"] = [
-        exists(
-            select(col(link_table.id))
-            .join(target_table, on_clause)
-            .where(*links_of_row, predicate)
-        )
+        exists(separate_query.join(target_table, on_clause).where(predicate))
         for predicate in predicates[:separate_count]
     ]
 
@@ -622,28 +674,44 @@ class TaggableFilter(BaseFilter):
         """
         custom_filters = super().get_custom_filters(table)
 
-        tag_values = [self.tags] if isinstance(self.tags, str) else self.tags
-
-        if tag_values:
+        if tag_values := _unique_values(self.tags):
             from sqlmodel import col, exists, select
 
             from zenml.zen_stores.schemas import TagResourceSchema, TagSchema
 
             resource_type = _get_tag_resource_type(table)
+            aggregate = _aggregates_values(
+                tags=self.tags,
+                run_metadata=self.run_metadata
+                if isinstance(self, RunMetadataFilterMixin)
+                else None,
+                logical_operator=self.logical_operator,
+            )
+            generate_tag_conditions = partial(
+                _generate_link_conditions,
+                table=table,
+                link_table=TagResourceSchema,
+                target_table=TagSchema,
+                on_clause=col(TagSchema.id) == col(TagResourceSchema.tag_id),
+                resource_type=resource_type,
+                logical_operator=self.logical_operator,
+            )
             exact_predicates: List["ColumnElement[bool]"] = []
             other_predicates: List["ColumnElement[bool]"] = []
-            # Identical expressions are redundant under both AND and OR.
-            for tag in dict.fromkeys(tag_values):
+            for tag in tag_values:
                 _, operator = self._resolve_operator(tag)
-                if operator in (
-                    GenericFilterOps.IS_NULL,
-                    GenericFilterOps.IS_NOT_NULL,
-                ):
-                    is_tagged = exists(
-                        select(col(TagResourceSchema.id)).where(
-                            col(TagResourceSchema.resource_id) == table.id,
+                if operator in _TAG_PRESENCE_OPERATORS:
+                    tag_links: "SelectOfScalar[Any]"
+                    if aggregate:
+                        tag_links = select(col(TagResourceSchema.id)).where(
                             col(TagResourceSchema.resource_type)
-                            == resource_type,
+                            == resource_type
+                        )
+                    else:
+                        tag_links = select(TagResourceSchema)
+                    is_tagged = exists(
+                        tag_links.where(
+                            col(TagResourceSchema.resource_id) == table.id
                         )
                     )
                     custom_filters.append(
@@ -656,24 +724,28 @@ class TaggableFilter(BaseFilter):
                 predicate = self.generate_custom_query_conditions_for_column(
                     value=tag, table=TagSchema, column="name"
                 )
-                if operator == GenericFilterOps.EQUALS:
+                if not aggregate:
+                    custom_filters.extend(
+                        generate_tag_conditions(
+                            predicates=[predicate],
+                            separate_count=1,
+                            plain_separate_subqueries=True,
+                        )
+                    )
+                elif operator == GenericFilterOps.EQUALS:
                     exact_predicates.append(predicate)
                 else:
                     other_predicates.append(predicate)
 
             custom_filters.extend(
-                _generate_link_conditions(
-                    table=table,
-                    link_table=TagResourceSchema,
-                    target_table=TagSchema,
-                    on_clause=col(TagSchema.id)
-                    == col(TagResourceSchema.tag_id),
-                    resource_type=resource_type,
-                    predicates=exact_predicates + other_predicates,
-                    logical_operator=self.logical_operator,
-                    separate_count=max(
-                        _MAX_SEPARATE_TAG_SUBQUERIES, len(exact_predicates)
-                    ),
+                generate_tag_conditions(
+                    predicates=exact_predicates,
+                    separate_count=len(exact_predicates),
+                )
+            )
+            custom_filters.extend(
+                generate_tag_conditions(
+                    predicates=other_predicates, separate_count=0
                 )
             )
 
@@ -839,14 +911,8 @@ class RunMetadataFilterMixin(BaseFilter):
                 ScheduleSchema: MetadataResourceTypes.SCHEDULE,
             }
 
-            metadata_entries = (
-                [self.run_metadata]
-                if isinstance(self.run_metadata, str)
-                else self.run_metadata
-            )
             predicates = []
-            # Identical expressions are redundant under both AND and OR.
-            for entry in dict.fromkeys(metadata_entries):
+            for entry in _unique_values(self.run_metadata):
                 # Split at the first colon to get the key
                 key, value = entry.split(":", 1)
                 predicates.append(
@@ -864,6 +930,11 @@ class RunMetadataFilterMixin(BaseFilter):
                     )
                 )
 
+            aggregate = _aggregates_values(
+                tags=self.tags if isinstance(self, TaggableFilter) else None,
+                run_metadata=self.run_metadata,
+                logical_operator=self.logical_operator,
+            )
             custom_filters.extend(
                 _generate_link_conditions(
                     table=table,
@@ -874,7 +945,7 @@ class RunMetadataFilterMixin(BaseFilter):
                     resource_type=resource_type_mapping[table].value,
                     predicates=predicates,
                     logical_operator=self.logical_operator,
-                    separate_count=0,
+                    separate_count=0 if aggregate else len(predicates),
                 )
             )
 

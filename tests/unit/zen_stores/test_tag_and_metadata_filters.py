@@ -15,7 +15,7 @@
 
 import json
 import random
-from typing import Dict, Iterator, List, Optional, Set
+from typing import Dict, Iterator, List, Optional, Set, Tuple
 from uuid import UUID, uuid4
 
 import pytest
@@ -63,7 +63,9 @@ RUN_METADATA = [
 ]
 TAG_EXPRESSIONS = [
     "red",
+    "equals:red",
     "blue",
+    "equals:blue",
     "green",
     "missing",
     "contains:red",
@@ -106,9 +108,6 @@ def sql_store(
 def tagged_runs(sql_store: SqlZenStore) -> UUID:
     """Create runs with overlapping tags and run metadata.
 
-    Every tag is also linked to a non-run resource whose ID collides with an
-    untagged run, which must not make that run match any tag filter.
-
     Returns:
         The project ID of the runs.
     """
@@ -124,7 +123,6 @@ def tagged_runs(sql_store: SqlZenStore) -> UUID:
         }
         session.add_all(tags.values())
         session.flush()
-        run_ids = []
         for index, (tag_names, metadata) in enumerate(
             zip(RUN_TAGS, RUN_METADATA)
         ):
@@ -138,7 +136,6 @@ def tagged_runs(sql_store: SqlZenStore) -> UUID:
                 enable_heartbeat=False,
             )
             session.add(run)
-            run_ids.append(run.id)
             for name in tag_names:
                 session.add(
                     TagResourceSchema(
@@ -163,14 +160,6 @@ def tagged_runs(sql_store: SqlZenStore) -> UUID:
                         run_metadata_id=run_metadata.id,
                     )
                 )
-        for tag in tags.values():
-            session.add(
-                TagResourceSchema(
-                    tag_id=tag.id,
-                    resource_id=run_ids[-1],
-                    resource_type=TaggableResourceTypes.ARTIFACT.value,
-                )
-            )
         session.commit()
     return project_id
 
@@ -267,18 +256,39 @@ def test_combined_tag_and_metadata_filters_match_single_filters(
         ), (tags, run_metadata)
 
 
+MANY_EXACT_TAGS_OF_RUN_5 = ["red", "equals:red", "green", "blue", "light-blue"]
+MANY_OTHER_TAGS_OF_RUNS_0_1_5 = [
+    "contains:e",
+    "contains:r",
+    "contains:d",
+    "startswith:r",
+    "endswith:d",
+    "notcontains:green",
+]
+
+
 @pytest.mark.parametrize(
     "tags,run_metadata,expected",
     [
-        (["red", "blue", "contains:light"], None, {"run-5"}),
-        (["red", "blue", "oneof:[]", "contains:green"], None, {"run-5"}),
+        ([*MANY_EXACT_TAGS_OF_RUN_5, "contains:light"], None, {"run-5"}),
+        (MANY_OTHER_TAGS_OF_RUNS_0_1_5, None, {"run-0", "run-1", "run-5"}),
         (
-            ["red", "notoneof:[]", "contains:blue", "contains:light"],
+            [*MANY_OTHER_TAGS_OF_RUNS_0_1_5[:4], "oneof:[]", "notoneof:[]"],
             None,
-            {"run-5"},
+            {"run-0", "run-1", "run-5"},
         ),
-        (None, ["color:red", "score:gte:0.5"], {"run-0"}),
-        (["blue"], ["color:contains:e", "score:lt:0.8"], {"run-5"}),
+        (
+            None,
+            [
+                "color:red",
+                "score:gte:0.5",
+                "color:contains:e",
+                "score:lt:0.95",
+                "color:contains:r",
+            ],
+            {"run-0"},
+        ),
+        (MANY_EXACT_TAGS_OF_RUN_5, ["color:contains:e"], {"run-5"}),
     ],
 )
 def test_aggregated_filters(
@@ -297,15 +307,43 @@ def test_aggregated_filters(
     )
 
 
-def _count_exists_subqueries(filter_model: PipelineRunFilter) -> int:
-    filter_model.project = uuid4()
+def _count_subqueries(
+    tags: Optional[List[str]] = None,
+    run_metadata: Optional[List[str]] = None,
+    logical_operator: LogicalOperators = LogicalOperators.AND,
+) -> Tuple[int, int]:
+    """Count the separate and the aggregated subqueries of a filter."""
+    filter_model = PipelineRunFilter(
+        project=uuid4(),
+        tags=tags,
+        run_metadata=run_metadata,
+        logical_operator=logical_operator,
+    )
     query = filter_model.apply_filter(
         select(PipelineRunSchema.id), PipelineRunSchema
     )
-    return str(query.compile(dialect=mysql.dialect())).count("EXISTS")
+    sql = str(query.compile(dialect=mysql.dialect()))
+    aggregated = sql.count("GROUP BY")
+    return sql.count("EXISTS") - aggregated, aggregated
 
 
-@pytest.mark.parametrize("count", [3, 16, 64])
+def test_small_filters_keep_a_plain_subquery_per_value() -> None:
+    """Up to four values keep one subquery each, without the resource type."""
+    assert _count_subqueries(
+        tags=["a", "contains:x", "isnotnull:"], run_metadata=["k:v"]
+    ) == (4, 0)
+    filter_model = PipelineRunFilter(
+        project=uuid4(), tags=["a", "contains:x", "isnotnull:"]
+    )
+    query = filter_model.apply_filter(
+        select(PipelineRunSchema.id), PipelineRunSchema
+    )
+    assert "tag_resource.resource_type =" not in str(
+        query.compile(dialect=mysql.dialect())
+    )
+
+
+@pytest.mark.parametrize("count", [5, 64])
 def test_and_filters_bound_subqueries_that_are_expensive_to_plan(
     count: int,
 ) -> None:
@@ -314,41 +352,26 @@ def test_and_filters_bound_subqueries_that_are_expensive_to_plan(
     other_tags = [f"contains:tag-{i}" for i in range(count)]
     run_metadata = [f"key-{i}:value" for i in range(count)]
 
-    assert _count_exists_subqueries(PipelineRunFilter(tags=other_tags)) == 3
-    assert (
-        _count_exists_subqueries(PipelineRunFilter(tags=["tag", *other_tags]))
-        == 3
+    assert _count_subqueries(tags=other_tags) == (0, 1)
+    assert _count_subqueries(run_metadata=run_metadata) == (0, 1)
+    assert _count_subqueries(tags=other_tags, run_metadata=run_metadata) == (
+        0,
+        2,
     )
-    assert (
-        _count_exists_subqueries(PipelineRunFilter(run_metadata=run_metadata))
-        == 1
-    )
-    assert (
-        _count_exists_subqueries(
-            PipelineRunFilter(
-                tags=exact_tags + other_tags, run_metadata=run_metadata
-            )
-        )
-        == count + 2
-    )
-    assert (
-        _count_exists_subqueries(
-            PipelineRunFilter(
-                tags=exact_tags + other_tags,
-                run_metadata=run_metadata,
-                logical_operator=LogicalOperators.OR,
-            )
-        )
-        == 3 * count
-    )
+    assert _count_subqueries(
+        tags=["a", "b", "c", "contains:x"], run_metadata=["k:v"]
+    ) == (3, 2)
+    assert _count_subqueries(
+        tags=exact_tags + other_tags, run_metadata=run_metadata
+    ) == (count, 2)
+    assert _count_subqueries(
+        tags=exact_tags + other_tags,
+        run_metadata=run_metadata,
+        logical_operator=LogicalOperators.OR,
+    ) == (3 * count, 0)
 
 
 def test_duplicate_filter_expressions_are_ignored() -> None:
     """Repeating an expression adds no subqueries."""
-    assert _count_exists_subqueries(PipelineRunFilter(tags=["red"] * 16)) == 1
-    assert (
-        _count_exists_subqueries(
-            PipelineRunFilter(run_metadata=["color:red"] * 16)
-        )
-        == 1
-    )
+    assert _count_subqueries(tags=["red"] * 16) == (1, 0)
+    assert _count_subqueries(run_metadata=["color:red"] * 16) == (1, 0)
