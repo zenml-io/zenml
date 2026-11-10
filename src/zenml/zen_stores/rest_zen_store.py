@@ -3285,6 +3285,10 @@ class RestZenStore(BaseZenStore):
         Args:
             connector_models: The service connector or resource models to
                 populate.
+
+        Raises:
+            TypeError: If a model is neither a `ServiceConnectorResponse` nor
+                a `ServiceConnectorResourcesModel`.
         """
         for service_connector in connector_models:
             # Mark the remote connector type as being only remotely available
