@@ -31,7 +31,7 @@ on:
       os:
         description: OS
         type: choice
-        options: [ubuntu-latest, macos-13, windows-latest]
+        options: [ubuntu-latest, macos-latest, windows-latest]
         required: false
         default: ubuntu-latest
       python-version:
@@ -69,6 +69,50 @@ jobs:
       run:
         shell: bash
     steps:
+      - name: Safeguard macOS certificate trust
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Temporary mitigation for actions/runner-images#15228, before any checkout/download.
+          blocked_roots='emSign ECC Root CA - G3|emSign ECC Root CA - C3|emSign Root CA - C1|AAA Certificate Services'
+          filtered=$(mktemp)
+          trap 'rm -f "$filtered"' EXIT
+          test -f /etc/ssl/cert.pem
+          for bundle in /etc/ssl/cert.pem /opt/homebrew/etc/ca-certificates/cert.pem /usr/local/etc/ca-certificates/cert.pem; do
+            [ -f "$bundle" ] || continue
+            openssl crl2pkcs7 -nocrl -certfile "$bundle" |
+              openssl pkcs7 -print_certs |
+              awk -v blocked="$blocked_roots" '/^subject=/{skip=($0 ~ blocked)} !skip' > "$filtered"
+            grep -q -- '-----BEGIN CERTIFICATE-----' "$filtered"
+            subjects=$(openssl crl2pkcs7 -nocrl -certfile "$filtered" | openssl pkcs7 -print_certs -noout)
+            if grep -Eq "$blocked_roots" <<< "$subjects"; then
+              echo "::error::Affected certificate roots remain in $bundle"
+              exit 1
+            fi
+            sudo cp "$filtered" "$bundle"
+          done
+          # pip/uv/Requests/Git may otherwise use their own, older CA bundles.
+          for variable in SSL_CERT_FILE CURL_CA_BUNDLE GIT_SSL_CAINFO PIP_CERT REQUESTS_CA_BUNDLE; do
+            export "$variable=/etc/ssl/cert.pem"
+            echo "$variable=/etc/ssl/cert.pem" >> "$GITHUB_ENV"
+          done
+          # Older Intel images can fall back to Apple's trust database even after filtering.
+          for client in /usr/bin/curl "$(command -v curl)"; do
+            "$client" --fail --silent --show-error --connect-timeout 10 --max-time 30 --output /dev/null https://github.com/
+            for host in dv-g3b-noct-emudhra.we-have-a-problem.com dv-g3b-aaa-noct-emudhra.we-have-a-problem.com; do
+              if "$client" --silent --connect-timeout 10 --max-time 30 --output /dev/null "https://$host/"; then
+                echo "::error::$client still trusts a compromised certificate chain ($host)"
+                exit 1
+              else
+                curl_status=$?
+                if [ "$curl_status" -ne 60 ]; then
+                  echo "::error::Certificate probe failed for a reason other than certificate rejection (curl $curl_status)"
+                  exit 1
+                fi
+              fi
+            done
+          done
       - name: Set uv cache + temp dirs (/opt)
         if: inputs.os == 'ubuntu-latest'
         run: |
