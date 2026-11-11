@@ -244,21 +244,26 @@ def get_managed_model_source_credentials(
         raise HTTPException(
             403, "Source is not part of the assigned revision."
         )
-    artifact = zen_store().get_artifact_version(reference.artifact_version_id)
-    if (
-        artifact.project_id != lease.service.project_id
-        or artifact.artifact_store_id is None
-    ):
-        raise HTTPException(403, "Source is not available in this project.")
-    component = zen_store().get_stack_component(artifact.artifact_store_id)
-    uri = urlsplit(artifact.uri)
-    if component.connector is None or uri.scheme != "s3" or not uri.netloc:
+    source = next(
+        (
+            item
+            for item in lease.sources
+            if item.artifact_version_id == reference.artifact_version_id
+        ),
+        None,
+    )
+    if source is None:
+        raise HTTPException(
+            403, "Source binding is not retained by this operation."
+        )
+    uri = urlsplit(source.uri)
+    if uri.scheme != "s3" or not uri.netloc:
         raise HTTPException(422, "Source requires an existing S3 connector.")
     # This uses the existing connector delegation. It does not narrow the AWS
     # credential itself; the POC intentionally preserves that connector scope.
     try:
         connector = zen_store().get_service_connector_client(
-            component.connector.id,
+            source.connector_id,
             resource_type="s3-bucket",
             resource_id=uri.netloc,
         )
@@ -266,7 +271,7 @@ def get_managed_model_source_credentials(
         raise HTTPException(
             503, "Assigned source credentials are unavailable."
         ) from None
-    return ManagedModelSource(uri=artifact.uri, connector=connector)
+    return ManagedModelSource(uri=source.uri, connector=connector)
 
 
 @router.get("/inference/{service_id}")

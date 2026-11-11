@@ -3,10 +3,10 @@
 import hashlib
 import json
 from datetime import timedelta
-from typing import Any, Optional, cast
+from typing import Any, List, Optional, cast
 from uuid import UUID, uuid4
 
-from sqlalchemy import CursorResult, Engine, func, or_, update
+from sqlalchemy import CursorResult, Engine, delete, func, or_, update
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, col, select
 
@@ -14,6 +14,7 @@ from zenml.exceptions import EntityExistsError, IllegalOperationError
 from zenml.managed_models.provider import ManagedModelProviderResource
 from zenml.managed_models.state import (
     ManagedModelCheckpoint,
+    ManagedModelDependency,
     ManagedModelInferenceTarget,
     ManagedModelLease,
 )
@@ -26,6 +27,9 @@ from zenml.models.managed_model import (
     ManagedModelServiceRequest,
 )
 from zenml.utils.time_utils import utc_now
+from zenml.zen_stores.schemas.managed_model_schemas import (
+    ManagedModelDependencySchema as Dependency,
+)
 from zenml.zen_stores.schemas.managed_model_schemas import (
     ManagedModelOperationSchema as Operation,
 )
@@ -102,12 +106,16 @@ class ManagedModelStore:
             )
 
     def create(
-        self, request: ManagedModelServiceRequest, request_key: str
+        self,
+        request: ManagedModelServiceRequest,
+        request_key: str,
+        sources: Optional[List[ManagedModelDependency]] = None,
     ) -> ManagedModelService:
         """Accept one idempotent creation intent in a single transaction.
 
         Args:
             request: Authorized create payload.
+            sources: Authorized immutable source bindings.
             request_key: Caller-stable request identity.
 
         Returns:
@@ -157,6 +165,9 @@ class ManagedModelStore:
                     )
                 )
                 session.flush()
+                self._retain_sources(
+                    session, service.id, revision.id, sources or []
+                )
                 session.add(
                     Operation(
                         id=operation.id,
@@ -181,13 +192,18 @@ class ManagedModelStore:
             raise
 
     def mutate(
-        self, service_id: UUID, request: ManagedModelMutation, request_key: str
+        self,
+        service_id: UUID,
+        request: ManagedModelMutation,
+        request_key: str,
+        sources: Optional[List[ManagedModelDependency]] = None,
     ) -> ManagedModelService:
         """Accept or recover one lifecycle intent across concurrent retries.
 
         Args:
             service_id: Authorized service identity.
             request: Lifecycle intent and observed generation.
+            sources: Authorized source bindings for an update.
             request_key: Caller-stable retry identity.
 
         Returns:
@@ -198,7 +214,7 @@ class ManagedModelStore:
             IntegrityError: If a different database constraint is violated.
         """
         try:
-            return self._mutate(service_id, request, request_key)
+            return self._mutate(service_id, request, request_key, sources)
         except (EntityExistsError, IntegrityError):
             # Start a new transaction so MySQL repeatable-read snapshots can
             # observe the winning operation after the failed compare-and-swap.
@@ -220,13 +236,18 @@ class ManagedModelStore:
             raise
 
     def _mutate(
-        self, service_id: UUID, request: ManagedModelMutation, request_key: str
+        self,
+        service_id: UUID,
+        request: ManagedModelMutation,
+        request_key: str,
+        sources: Optional[List[ManagedModelDependency]] = None,
     ) -> ManagedModelService:
         """Accept a serialized lifecycle mutation with optimistic concurrency.
 
         Args:
             service_id: Authorized service.
             request: Lifecycle intent and expected generation.
+            sources: Authorized source bindings for an update.
             request_key: Caller-stable request identity.
 
         Returns:
@@ -317,6 +338,10 @@ class ManagedModelStore:
                 raise EntityExistsError(
                     "Service changed; inspect it before retrying."
                 )
+            if request.action == "update" and target is not None:
+                self._retain_sources(
+                    session, service.id, target, sources or []
+                )
             session.add(
                 Operation(
                     id=operation.id,
@@ -389,11 +414,61 @@ class ManagedModelStore:
                 expires_at=expires,
                 service=service,
                 target_revision_id=operation.target_revision_id,
+                sources=self._read_sources(
+                    session, service.id, operation.target_revision_id
+                ),
                 checkpoint=ManagedModelCheckpoint.model_validate_json(
                     operation.checkpoint
                 ),
                 resources=json.loads(row.resources),
             )
+
+    def get_revision_sources(
+        self, service_id: UUID, revision_id: UUID
+    ) -> List[ManagedModelDependency]:
+        """Read retained source bindings for authorization and recovery.
+
+        Args:
+            service_id: Owning service.
+            revision_id: Retained revision.
+
+        Returns:
+            Credential-free source bindings.
+        """
+        with Session(self.engine) as session:
+            return self._read_sources(session, service_id, revision_id)
+
+    @staticmethod
+    def _retain_sources(
+        session: Session,
+        service_id: UUID,
+        revision_id: UUID,
+        sources: List[ManagedModelDependency],
+    ) -> None:
+        for source in {
+            source.artifact_version_id: source for source in sources
+        }.values():
+            session.add(
+                Dependency(
+                    service_id=service_id,
+                    revision_id=revision_id,
+                    **source.model_dump(),
+                )
+            )
+
+    @staticmethod
+    def _read_sources(
+        session: Session, service_id: UUID, revision_id: Optional[UUID]
+    ) -> List[ManagedModelDependency]:
+        return [
+            row.to_model()
+            for row in session.exec(
+                select(Dependency).where(
+                    Dependency.service_id == service_id,
+                    Dependency.revision_id == revision_id,
+                )
+            ).all()
+        ]
 
     def get_inference_target(
         self, service_id: UUID
@@ -471,6 +546,9 @@ class ManagedModelStore:
                 expires_at=operation.lease_expires_at,
                 service=service,
                 target_revision_id=operation.target_revision_id,
+                sources=self._read_sources(
+                    session, service.id, operation.target_revision_id
+                ),
                 checkpoint=ManagedModelCheckpoint.model_validate_json(
                     operation.checkpoint
                 ),
@@ -543,6 +621,35 @@ class ManagedModelStore:
             )
             if cast(CursorResult[Any], result).rowcount != 1:
                 raise IllegalOperationError("Service generation changed.")
+            if service.state == "deleted" and not resources:
+                session.execute(
+                    delete(Dependency).where(
+                        col(Dependency.service_id) == service.id
+                    )
+                )
+            session.commit()
+
+    def purge(self, service_id: UUID) -> None:
+        """Remove a completed tombstone and release project/component references.
+
+        Args:
+            service_id: Fully cleaned service.
+
+        Raises:
+            IllegalOperationError: If cleanup is incomplete or resources remain.
+        """
+        with Session(self.engine) as session:
+            row = self._get_row(session, service_id)
+            service = row.to_model()
+            if (
+                service.state != "deleted"
+                or service.operation.status != "succeeded"
+                or json.loads(row.resources)
+            ):
+                raise IllegalOperationError(
+                    "Complete provider cleanup before purging this service."
+                )
+            session.delete(row)
             session.commit()
 
     def _fence(

@@ -6,6 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Header, HTTPException, Query, Security
 
 from zenml.enums import StackComponentType
+from zenml.managed_models.state import ManagedModelDependency
 from zenml.models.managed_model import (
     ManagedModelAdmission,
     ManagedModelMutation,
@@ -54,7 +55,8 @@ def _get_authorized(service_id: UUID, action: Action) -> ManagedModelService:
 
 def _authorize_revision(
     revision: ManagedModelRevisionRequest, project_id: UUID
-) -> None:
+) -> list[ManagedModelDependency]:
+    sources = []
     if (
         revision.serving_profile
         not in server_config().managed_model_serving_profiles
@@ -95,6 +97,15 @@ def _authorize_revision(
             Action.CLIENT,
             resource_id=store.connector.id,
         )
+        sources.append(
+            ManagedModelDependency(
+                artifact_version_id=artifact.id,
+                artifact_store_id=store.id,
+                connector_id=store.connector.id,
+                uri=artifact.uri,
+            )
+        )
+    return sources
 
 
 @router.post("", status_code=202)
@@ -134,8 +145,8 @@ def create_managed_model_service(
         or component.flavor != "managed"
     ):
         raise HTTPException(422, "Select a managed model-deployer component.")
-    _authorize_revision(request, request.project_id)
-    return zen_store().managed_models.create(request, request_key)
+    sources = _authorize_revision(request, request.project_id)
+    return zen_store().managed_models.create(request, request_key, sources)
 
 
 @router.get("")
@@ -221,9 +232,28 @@ def mutate_managed_model_service(
         )
         if revision is None:
             raise HTTPException(422, "Requested revision is not retained.")
-    if revision is not None:
+    sources = (
         _authorize_revision(revision, service.project_id)
-    return zen_store().managed_models.mutate(service_id, request, request_key)
+        if revision is not None
+        else []
+    )
+    if request.action in ("rollback", "resume") and target is not None:
+        for source in zen_store().managed_models.get_revision_sources(
+            service.id, target
+        ):
+            verify_permission(
+                ResourceType.SERVICE_CONNECTOR,
+                Action.CLIENT,
+                resource_id=source.connector_id,
+            )
+            verify_permission(
+                ResourceType.STACK_COMPONENT,
+                Action.READ,
+                resource_id=source.artifact_store_id,
+            )
+    return zen_store().managed_models.mutate(
+        service_id, request, request_key, sources
+    )
 
 
 @router.delete("/{service_id}", status_code=202)
@@ -293,3 +323,18 @@ def authorize_managed_model_inference(
         generation=generation,
         revision_id=service.active_revision_id,
     )
+
+
+@router.delete("/{service_id}/record")
+@async_fastapi_endpoint_wrapper
+def purge_managed_model_service(
+    service_id: UUID,
+    _: AuthContext = Security(authorize),
+) -> None:
+    """Purge a completed tombstone after provider cleanup has succeeded.
+
+    Args:
+        service_id: Stable identity of a fully deleted service.
+    """
+    _get_authorized(service_id, Action.DELETE)
+    zen_store().managed_models.purge(service_id)

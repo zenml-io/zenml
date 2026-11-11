@@ -5,17 +5,30 @@ from datetime import timedelta
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import Column, MetaData, Table, Uuid, create_engine, event
+from sqlalchemy import (
+    Column,
+    MetaData,
+    Table,
+    Uuid,
+    create_engine,
+    delete,
+    event,
+)
+from sqlalchemy.exc import IntegrityError
 
 from zenml.exceptions import EntityExistsError, IllegalOperationError
 from zenml.managed_models.provider import ManagedModelProviderResource
-from zenml.managed_models.state import ManagedModelCheckpoint
+from zenml.managed_models.state import (
+    ManagedModelCheckpoint,
+    ManagedModelDependency,
+)
 from zenml.models.managed_model import (
     ManagedModelMutation,
     ManagedModelServiceRequest,
 )
 from zenml.zen_stores.managed_model_store import ManagedModelStore
 from zenml.zen_stores.schemas.managed_model_schemas import (
+    ManagedModelDependencySchema,
     ManagedModelOperationSchema,
     ManagedModelServiceSchema,
 )
@@ -37,6 +50,9 @@ def serving_store(tmp_path):
     )
     ManagedModelServiceSchema.__table__.to_metadata(metadata)
     ManagedModelOperationSchema.__table__.to_metadata(metadata)
+    Table("artifact_version", metadata, Column("id", Uuid, primary_key=True))
+    Table("service_connector", metadata, Column("id", Uuid, primary_key=True))
+    ManagedModelDependencySchema.__table__.to_metadata(metadata)
     metadata.create_all(engine)
     project_id, component_id = uuid4(), uuid4()
     with engine.begin() as connection:
@@ -216,3 +232,70 @@ def test_inference_selects_active_revision_and_denies_pause_immediately(
     )
     with pytest.raises(IllegalOperationError, match="admission is closed"):
         store.get_inference_target(service.id)
+
+
+def test_retained_dependencies_block_deletion_until_cleanup(serving_store):
+    """Real foreign keys protect dependencies and release them after owned cleanup."""
+    store, request = serving_store
+    source = ManagedModelDependency(
+        artifact_version_id=request.package.model.artifact_version_id,
+        artifact_store_id=request.model_deployer_id,
+        connector_id=uuid4(),
+        uri="s3://customer/model/revision/",
+    )
+    metadata = MetaData()
+    metadata.reflect(store.engine)
+    with store.engine.begin() as connection:
+        connection.execute(
+            metadata.tables["artifact_version"]
+            .insert()
+            .values(id=source.artifact_version_id.hex)
+        )
+        connection.execute(
+            metadata.tables["service_connector"]
+            .insert()
+            .values(id=source.connector_id.hex)
+        )
+    service = store.create(request, "retained", [source])
+    for table, identity in [
+        ("artifact_version", source.artifact_version_id),
+        ("service_connector", source.connector_id),
+        ("stack_component", source.artifact_store_id),
+    ]:
+        with pytest.raises(IntegrityError), store.engine.begin() as connection:
+            connection.execute(
+                delete(metadata.tables[table]).where(
+                    metadata.tables[table].c.id == identity
+                )
+            )
+    lease = store.claim()
+    assert lease.sources == [source]
+    with pytest.raises(IllegalOperationError):
+        store.purge(service.id)
+    lease.service.operation.status = "failed"
+    store.finish(lease, lease.service, {})
+    store.mutate(
+        service.id,
+        ManagedModelMutation(action="delete", expected_generation=1),
+        "cleanup-retained",
+    )
+    lease = store.claim()
+    lease.service.state = "deleted"
+    lease.service.operation.status = "succeeded"
+    store.finish(lease, lease.service, {})
+    with store.engine.begin() as connection:
+        connection.execute(
+            delete(metadata.tables["artifact_version"]).where(
+                metadata.tables["artifact_version"].c.id
+                == source.artifact_version_id
+            )
+        )
+        connection.execute(
+            delete(metadata.tables["service_connector"]).where(
+                metadata.tables["service_connector"].c.id
+                == source.connector_id
+            )
+        )
+    store.purge(service.id)
+    with pytest.raises(KeyError):
+        store.get(service.id)

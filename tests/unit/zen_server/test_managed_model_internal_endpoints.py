@@ -14,6 +14,7 @@ from pydantic import SecretStr
 from zenml.exceptions import IllegalOperationError
 from zenml.managed_models.state import (
     ManagedModelCheckpoint,
+    ManagedModelDependency,
     ManagedModelLease,
 )
 from zenml.models.managed_model import (
@@ -221,3 +222,33 @@ def test_inference_target_requires_proxy_identity_and_caller_permission(
         project_id=service.project_id,
     )
     store.managed_models.get_inference_target.assert_not_called()
+
+
+def test_worker_uses_retained_connector_binding(worker_api):
+    """Editing a stack connector cannot redirect a previously accepted operation."""
+    client, store, _, lease, base, headers = worker_api
+    reference = lease.service.revisions[0].package.model
+    source = ManagedModelDependency(
+        artifact_version_id=reference.artifact_version_id,
+        artifact_store_id=uuid4(),
+        connector_id=uuid4(),
+        uri="s3://approved-bucket/model/",
+    )
+    lease.sources = [source]
+    store.get_service_connector_client.side_effect = RuntimeError(
+        "sensitive provider failure"
+    )
+    response = client.post(
+        base + "/" + str(lease.operation_id) + "/source",
+        headers=headers,
+        json=reference.model_dump(mode="json"),
+    )
+    assert response.status_code == 503
+    assert "sensitive" not in response.text
+    store.get_service_connector_client.assert_called_once_with(
+        source.connector_id,
+        resource_type="s3-bucket",
+        resource_id="approved-bucket",
+    )
+    store.get_artifact_version.assert_not_called()
+    store.get_stack_component.assert_not_called()

@@ -19,6 +19,15 @@ class ManagedModelCheckpoint(BaseModel):
     error: Optional[str] = None
 
 
+class ManagedModelDependency(BaseModel):
+    """Immutable source binding retained for one model revision."""
+
+    artifact_version_id: UUID
+    artifact_store_id: UUID
+    connector_id: UUID
+    uri: str
+
+
 class ManagedModelLease(BaseModel):
     """Claim on one operation with an expiring, fenced execution identity."""
 
@@ -27,6 +36,7 @@ class ManagedModelLease(BaseModel):
     expires_at: datetime
     service: ManagedModelService
     target_revision_id: Optional[UUID]
+    sources: list[ManagedModelDependency] = Field(default_factory=list)
     checkpoint: ManagedModelCheckpoint
     resources: dict[str, ManagedModelProviderResource] = Field(
         default_factory=dict

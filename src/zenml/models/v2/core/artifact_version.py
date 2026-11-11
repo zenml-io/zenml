@@ -199,6 +199,8 @@ class ArtifactVersionUpdate(BaseUpdate):
 class ArtifactVersionResponseBody(ProjectScopedResponseBody):
     """Response body for artifact versions."""
 
+    managed_model_retained: bool = False
+
     artifact: ArtifactResponse = Field(
         title="Artifact to which this version belongs."
     )
@@ -371,6 +373,15 @@ class ArtifactVersionResponse(
             the value of the property.
         """
         return self.get_body().save_type
+
+    @property
+    def managed_model_retained(self) -> bool:
+        """Whether managed serving still depends on this artifact's files.
+
+        Returns:
+            Whether deletion must wait for managed service cleanup.
+        """
+        return self.get_body().managed_model_retained
 
     @property
     def artifact_store_id(self) -> Optional[UUID]:
@@ -817,7 +828,14 @@ class ArtifactVersionFilter(
                 )
 
         if self.only_unused:
+            from sqlmodel import col
+
+            from zenml.zen_stores.schemas import ManagedModelDependencySchema
+
             unused_filter = and_(
+                col(ArtifactVersionSchema.id).notin_(
+                    select(ManagedModelDependencySchema.artifact_version_id)
+                ),
                 ArtifactVersionSchema.id.notin_(  # type: ignore[attr-defined]
                     select(StepRunOutputArtifactSchema.artifact_id)
                 ),
