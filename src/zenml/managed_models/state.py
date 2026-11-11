@@ -15,6 +15,8 @@ class ManagedModelCheckpoint(BaseModel):
     """Recovery state containing identifiers rather than credential values."""
 
     phase: str = "pending"
+    attempts: int = 0
+    resolved_at: Optional[datetime] = None
     resource: Optional[ManagedModelProviderResource] = None
     error: Optional[str] = None
 
@@ -81,3 +83,19 @@ class ManagedModelInferenceTarget(BaseModel):
     generation: int
     revision_id: UUID
     resource: ManagedModelProviderResource
+
+
+class ManagedModelCleanupStatus(BaseModel):
+    """Non-sensitive teardown status for the registered workspace origin."""
+
+    workspace_id: UUID
+    ready: bool
+
+
+class ManagedModelAbsenceConfirmation(BaseModel):
+    """Explicit operator evidence for resolving an unknown submission outcome."""
+
+    model_config = ConfigDict(extra="forbid")
+    expected_generation: int = Field(ge=1)
+    confirmed_absent: Literal[True]
+    evidence: str = Field(min_length=20, max_length=1000)

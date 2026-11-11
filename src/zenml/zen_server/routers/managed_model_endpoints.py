@@ -167,7 +167,6 @@ def list_managed_model_services(
     Returns:
         A page filtered before counting and pagination.
     """
-    _check_enabled()
     allowed_ids = get_allowed_resource_ids(
         ResourceType.MANAGED_MODEL_SERVICE, project_id=project_id
     )
@@ -190,7 +189,6 @@ def get_managed_model_service(
     Returns:
         Public service state.
     """
-    _check_enabled()
     return _get_authorized(service_id, Action.READ)
 
 
@@ -217,9 +215,25 @@ def mutate_managed_model_service(
     Raises:
         HTTPException: If a rollback revision is not retained by this service.
     """
-    _check_enabled()
+    if request.action not in ("delete", "pause", "retry"):
+        _check_enabled()
     action = Action.DELETE if request.action == "delete" else Action.UPDATE
     service = _get_authorized(service_id, action)
+    if request.action == "retry":
+        if service.operation.action == "delete":
+            _get_authorized(service_id, Action.DELETE)
+        else:
+            _check_enabled()
+            for retained in service.revisions:
+                _authorize_revision(retained, service.project_id)
+                for source in zen_store().managed_models.get_revision_sources(
+                    service.id, retained.id
+                ):
+                    verify_permission(
+                        ResourceType.SERVICE_CONNECTOR,
+                        Action.CLIENT,
+                        resource_id=source.connector_id,
+                    )
     revision: Optional[ManagedModelRevisionRequest] = request.revision
     if request.action in ("rollback", "resume"):
         target = (
@@ -276,7 +290,6 @@ def delete_managed_model_service(
     Returns:
         Accepted deletion operation.
     """
-    _check_enabled()
     _get_authorized(service_id, Action.DELETE)
     return zen_store().managed_models.mutate(
         service_id,

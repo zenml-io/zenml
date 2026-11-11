@@ -36,18 +36,23 @@ from zenml.zen_stores.schemas.managed_model_schemas import (
 from zenml.zen_stores.schemas.managed_model_schemas import (
     ManagedModelServiceSchema as Service,
 )
+from zenml.zen_stores.schemas.managed_model_schemas import (
+    ManagedModelWorkspaceSchema as Workspace,
+)
 
 
 class ManagedModelStore:
     """Workspace-owned storage for model services and operation claims."""
 
-    def __init__(self, engine: Engine) -> None:
+    def __init__(self, engine: Engine, retry_base_seconds: int = 10) -> None:
         """Bind to the workspace database.
 
         Args:
             engine: Workspace SQL engine.
+            retry_base_seconds: Minimum delay between observations.
         """
         self.engine = engine
+        self.retry_base_seconds = retry_base_seconds
 
     def get(self, service_id: UUID) -> ManagedModelService:
         """Read a service including its retained revisions.
@@ -124,6 +129,7 @@ class ManagedModelStore:
         Raises:
             IntegrityError: If persistence fails beyond a duplicate request.
         """
+        self._ensure_workspace()
         fingerprint = self._fingerprint(request.model_dump(mode="json"))
         self._validate_key(request_key)
         try:
@@ -133,6 +139,7 @@ class ManagedModelStore:
                 )
                 if existing:
                     return existing
+                self._lock_admission(session)
                 now = utc_now()
                 revision = ManagedModelRevision(
                     id=uuid4(),
@@ -268,16 +275,40 @@ class ManagedModelStore:
             if replay:
                 return replay
             service = row.to_model()
-            if (
-                service.generation != request.expected_generation
-                or service.operation.status
-                in ("pending", "running", "uncertain")
+            previous = session.exec(
+                select(Operation)
+                .where(Operation.id == service.operation.id)
+                .with_for_update()
+                .execution_options(populate_existing=True)
+            ).one()
+            busy = service.operation.status in (
+                "pending",
+                "running",
+                "uncertain",
+            )
+            if service.generation != request.expected_generation or (
+                busy and request.action not in ("delete", "retry")
             ):
                 raise EntityExistsError(
                     "Service changed or has unfinished work; inspect it before retrying."
                 )
-            if service.desired_state == "deleted":
+            if request.action == "retry" and service.operation.status not in (
+                "failed",
+                "uncertain",
+            ):
+                raise EntityExistsError(
+                    "Only failed or uncertain work can be retried."
+                )
+            if (
+                service.desired_state == "deleted"
+                and request.action != "retry"
+            ):
                 raise EntityExistsError("Deleted services cannot be mutated.")
+            if (
+                request.action not in ("delete", "pause")
+                and service.desired_state != "deleted"
+            ):
+                self._lock_admission(session)
             if (
                 request.action in ("update", "rollback")
                 and service.desired_state != "running"
@@ -306,8 +337,23 @@ class ManagedModelStore:
                 raise EntityExistsError(
                     "Service has no successfully deployed revision."
                 )
-            operation = ManagedModelOperation(
-                id=uuid4(), action=request.action, status="pending"
+            checkpoint = "{}"
+            available_at = None
+            action: str = request.action
+            if action == "retry":
+                action = previous.action
+            if request.action == "retry" or request.action == "delete":
+                checkpoint = previous.checkpoint
+                target = previous.target_revision_id
+                if previous.status == "running":
+                    # Fence callbacks now, but wait for the bounded old worker
+                    # before inspecting potentially in-flight provider effects.
+                    available_at = previous.lease_expires_at
+                if busy:
+                    previous.status = "failed"
+                    session.add(previous)
+            operation = ManagedModelOperation.model_validate(
+                {"id": uuid4(), "action": action, "status": "pending"}
             )
             service.operation = operation
             service.generation += 1
@@ -350,8 +396,10 @@ class ManagedModelStore:
                     request_key=request_key,
                     request_hash=fingerprint,
                     generation=service.generation,
-                    action=request.action,
+                    action=action,
                     target_revision_id=target,
+                    checkpoint=checkpoint,
+                    available_at=available_at,
                 )
             )
             session.commit()
@@ -371,9 +419,14 @@ class ManagedModelStore:
         """
         if lease_seconds < 1:
             raise ValueError("Lease lifetime must be positive.")
+        self._schedule_drain()
         now = utc_now()
         eligible = or_(
-            col(Operation.status) == "pending",
+            (col(Operation.status) == "pending")
+            & (
+                col(Operation.available_at).is_(None)
+                | (col(Operation.available_at) <= now)
+            ),
             (col(Operation.status) == "running")
             & (col(Operation.lease_expires_at) < now),
         )
@@ -401,6 +454,12 @@ class ManagedModelStore:
             if cast(CursorResult[Any], result).rowcount != 1:
                 session.rollback()
                 return None
+            checkpoint = ManagedModelCheckpoint.model_validate_json(
+                operation.checkpoint
+            )
+            checkpoint.attempts += 1
+            operation.checkpoint = checkpoint.model_dump_json()
+            session.add(operation)
             row = self._get_row(session, operation.service_id)
             service = row.to_model()
             service.operation.status = "running"
@@ -422,6 +481,169 @@ class ManagedModelStore:
                 ),
                 resources=json.loads(row.resources),
             )
+
+    def confirm_submission_absent(
+        self, service_id: UUID, expected_generation: int, evidence: str
+    ) -> None:
+        """Resume uncertain work only after explicit operator absence verification.
+
+        Args:
+            service_id: Service whose unknown provider submission was investigated.
+            expected_generation: Exact investigated generation.
+            evidence: Credential-free operator/account reconciliation reference.
+
+        Raises:
+            IllegalOperationError: If the current operation cannot accept this resolution.
+        """
+        with Session(self.engine) as session:
+            row = self._get_row(session, service_id)
+            service = row.to_model()
+            operation = session.exec(
+                select(Operation)
+                .where(Operation.id == service.operation.id)
+                .with_for_update()
+            ).one()
+            checkpoint = ManagedModelCheckpoint.model_validate_json(
+                operation.checkpoint
+            )
+            if (
+                service.generation != expected_generation
+                or operation.status != "uncertain"
+                or checkpoint.phase != "submitting"
+                or checkpoint.resource is not None
+            ):
+                raise IllegalOperationError(
+                    "Only the exact unresolved submission can be confirmed absent."
+                )
+            checkpoint.phase = "verified-absent"
+            checkpoint.resolved_at = utc_now()
+            checkpoint.error = evidence
+            checkpoint.attempts = 0
+            operation.status = "pending"
+            operation.available_at = None
+            operation.checkpoint = checkpoint.model_dump_json()
+            service.operation.status = "pending"
+            service.operation.error = (
+                "Operator verified submission absence; reconciliation resumed."
+            )
+            session.add(operation)
+            result = session.execute(
+                update(Service)
+                .where(
+                    col(Service.id) == service_id,
+                    col(Service.generation) == expected_generation,
+                )
+                .values(document=service.model_dump_json(), updated=utc_now())
+            )
+            if cast(CursorResult[Any], result).rowcount != 1:
+                raise IllegalOperationError(
+                    "Service changed during reconciliation."
+                )
+            session.commit()
+
+    def begin_drain(self) -> None:
+        """Close workspace admission durably before scheduling provider cleanup."""
+        self._ensure_workspace()
+        with Session(self.engine) as session:
+            session.execute(
+                update(Workspace)
+                .where(col(Workspace.id) == UUID(int=0))
+                .values(admission_open=False, updated=utc_now())
+            )
+            session.commit()
+
+    def reopen_admission(self) -> None:
+        """Reopen a fully drained workspace after its teardown has been canceled.
+
+        Raises:
+            IllegalOperationError: If any service still has a cleanup obligation.
+        """
+        self._ensure_workspace()
+        with Session(self.engine) as session:
+            session.execute(
+                update(Workspace)
+                .where(col(Workspace.id) == UUID(int=0))
+                .values(updated=utc_now())
+            )
+            for row in session.exec(select(Service)).all():
+                service = row.to_model()
+                if (
+                    service.state != "deleted"
+                    or service.operation.status != "succeeded"
+                    or json.loads(row.resources)
+                ):
+                    raise IllegalOperationError(
+                        "Complete managed service cleanup before reopening admission."
+                    )
+            session.execute(
+                update(Workspace)
+                .where(col(Workspace.id) == UUID(int=0))
+                .values(admission_open=True)
+            )
+            session.commit()
+
+    def cleanup_ready(self) -> bool:
+        """Check that admission is closed and every service finished cleanup.
+
+        Returns:
+            Whether workspace infrastructure can safely be removed.
+        """
+        with Session(self.engine) as session:
+            gate = session.get(Workspace, UUID(int=0))
+            if gate is None or gate.admission_open:
+                return False
+            return all(
+                row.to_model().state == "deleted"
+                and row.to_model().operation.status == "succeeded"
+                and not json.loads(row.resources)
+                for row in session.exec(select(Service)).all()
+            )
+
+    def _ensure_workspace(self) -> None:
+        with Session(self.engine) as session:
+            if session.get(Workspace, UUID(int=0)) is None:
+                session.add(Workspace(id=UUID(int=0), admission_open=True))
+                try:
+                    session.commit()
+                except IntegrityError:
+                    session.rollback()
+
+    @staticmethod
+    def _lock_admission(session: Session) -> None:
+        result = session.execute(
+            update(Workspace)
+            .where(
+                col(Workspace.id) == UUID(int=0),
+                col(Workspace.admission_open).is_(True),
+            )
+            .values(updated=utc_now())
+        )
+        if cast(CursorResult[Any], result).rowcount != 1:
+            raise IllegalOperationError(
+                "Managed serving is draining; new deployments and revisions are closed."
+            )
+
+    def _schedule_drain(self) -> None:
+        with Session(self.engine) as session:
+            gate = session.get(Workspace, UUID(int=0))
+            if gate is None or gate.admission_open:
+                return
+            services = [
+                row.to_model() for row in session.exec(select(Service)).all()
+            ]
+        for service in services:
+            if service.desired_state != "deleted":
+                try:
+                    self.mutate(
+                        service.id,
+                        ManagedModelMutation(
+                            action="delete",
+                            expected_generation=service.generation,
+                        ),
+                        f"drain-{service.id}-{service.generation}",
+                    )
+                except EntityExistsError:
+                    continue
 
     def get_revision_sources(
         self, service_id: UUID, revision_id: UUID
@@ -600,6 +822,16 @@ class ManagedModelStore:
                 lease,
                 status=service.operation.status,
                 lease_expires_at=None,
+                available_at=utc_now()
+                + timedelta(
+                    seconds=min(
+                        300,
+                        self.retry_base_seconds
+                        * (2 ** min(lease.checkpoint.attempts, 5)),
+                    )
+                )
+                if service.operation.status == "pending"
+                else None,
             )
             service.updated = utc_now()
             result = session.execute(

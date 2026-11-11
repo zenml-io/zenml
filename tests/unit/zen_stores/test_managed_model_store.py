@@ -31,6 +31,7 @@ from zenml.zen_stores.schemas.managed_model_schemas import (
     ManagedModelDependencySchema,
     ManagedModelOperationSchema,
     ManagedModelServiceSchema,
+    ManagedModelWorkspaceSchema,
 )
 
 
@@ -53,6 +54,7 @@ def serving_store(tmp_path):
     Table("artifact_version", metadata, Column("id", Uuid, primary_key=True))
     Table("service_connector", metadata, Column("id", Uuid, primary_key=True))
     ManagedModelDependencySchema.__table__.to_metadata(metadata)
+    ManagedModelWorkspaceSchema.__table__.to_metadata(metadata)
     metadata.create_all(engine)
     project_id, component_id = uuid4(), uuid4()
     with engine.begin() as connection:
@@ -70,7 +72,7 @@ def serving_store(tmp_path):
             "tokenizer": artifact,
         },
     )
-    yield ManagedModelStore(engine), request
+    yield ManagedModelStore(engine, retry_base_seconds=0), request
     engine.dispose()
 
 
@@ -121,8 +123,8 @@ def test_update_preserves_active_revision_and_rejects_conflicts(serving_store):
     with pytest.raises(EntityExistsError):
         store.mutate(
             service.id,
-            ManagedModelMutation(action="delete", expected_generation=1),
-            "early-delete",
+            ManagedModelMutation(action="pause", expected_generation=1),
+            "early-pause",
         )
     lease = store.claim()
     assert lease is not None
@@ -299,3 +301,104 @@ def test_retained_dependencies_block_deletion_until_cleanup(serving_store):
     store.purge(service.id)
     with pytest.raises(KeyError):
         store.get(service.id)
+
+
+def test_delete_fences_worker_and_waits_before_recovering_submission(
+    serving_store, monkeypatch
+):
+    """Cancellation retains evidence and cannot race the old bounded worker."""
+    store, request = serving_store
+    service = store.create(request, "cancel-create")
+    old = store.claim()
+    store.checkpoint(old, ManagedModelCheckpoint(phase="submitting"))
+    deletion = store.mutate(
+        service.id,
+        ManagedModelMutation(action="delete", expected_generation=1),
+        "cancel-delete",
+    )
+    assert deletion.desired_state == "deleted"
+    with pytest.raises(IllegalOperationError):
+        store.get_claim(old.operation_id, old.lease_id)
+    assert store.claim() is None
+    monkeypatch.setattr(
+        "zenml.zen_stores.managed_model_store.utc_now",
+        lambda: old.expires_at + timedelta(seconds=1),
+    )
+    cleanup = store.claim()
+    assert cleanup.service.operation.action == "delete"
+    assert cleanup.checkpoint.phase == "submitting"
+    assert cleanup.target_revision_id == old.target_revision_id
+
+
+def test_drain_closes_admission_before_cleanup_can_be_reported(serving_store):
+    """A ready teardown response cannot race a newly accepted deployment."""
+    store, request = serving_store
+    service = store.create(request, "drain-create")
+    store.begin_drain()
+    with pytest.raises(IllegalOperationError, match="draining"):
+        store.create(
+            request.model_copy(update={"name": "late"}), "late-create"
+        )
+    assert not store.cleanup_ready()
+    with pytest.raises(IllegalOperationError):
+        store.reopen_admission()
+    lease = store.claim()
+    assert (
+        lease.service.id == service.id
+        and lease.service.operation.action == "delete"
+    )
+    lease.service.state = "deleted"
+    lease.service.operation.status = "succeeded"
+    store.finish(lease, lease.service, {})
+    assert store.cleanup_ready()
+    store.reopen_admission()
+    assert not store.cleanup_ready()
+    store.create(request.model_copy(update={"name": "reopened"}), "reopened")
+
+
+def test_retry_preserves_unknown_submission_instead_of_resubmitting(
+    serving_store,
+):
+    """Explicit retries observe the original phase instead of allocating blindly."""
+    store, request = serving_store
+    service = store.create(request, "unknown-create")
+    lease = store.claim()
+    store.checkpoint(lease, ManagedModelCheckpoint(phase="submitting"))
+    lease.service.operation.status = "uncertain"
+    store.finish(lease, lease.service, {})
+    store.mutate(
+        service.id,
+        ManagedModelMutation(action="retry", expected_generation=1),
+        "retry-unknown",
+    )
+    retry = store.claim()
+    assert retry.checkpoint.phase == "submitting"
+    assert retry.service.operation.action == "create"
+    assert retry.target_revision_id == lease.target_revision_id
+
+
+def test_absence_confirmation_requires_exact_uncertain_submission(
+    serving_store,
+):
+    """Only an explicit investigated generation can clear the no-resubmit fence."""
+    store, request = serving_store
+    service = store.create(request, "manual-recovery")
+    lease = store.claim()
+    with pytest.raises(IllegalOperationError):
+        store.confirm_submission_absent(
+            service.id, 1, "Fixture evidence of absence"
+        )
+    store.checkpoint(lease, ManagedModelCheckpoint(phase="submitting"))
+    lease.service.operation.status = "uncertain"
+    store.finish(lease, lease.service, {})
+    with pytest.raises(IllegalOperationError):
+        store.confirm_submission_absent(
+            service.id, 2, "Fixture evidence of absence"
+        )
+    store.confirm_submission_absent(
+        service.id, 1, "Fixture evidence of absence"
+    )
+    resumed = store.claim()
+    assert resumed.checkpoint.phase == "verified-absent"
+    assert resumed.checkpoint.error == "Fixture evidence of absence"
+    assert "Fixture evidence" not in store.get(service.id).model_dump_json()

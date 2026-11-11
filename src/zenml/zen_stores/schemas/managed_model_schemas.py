@@ -94,6 +94,7 @@ class ManagedModelOperationSchema(BaseSchema, table=True):
     target_revision_id: Optional[UUID] = None
     lease_id: Optional[UUID] = None
     lease_expires_at: Optional[datetime] = None
+    available_at: Optional[datetime] = None
     # Checkpoints contain resource identifiers, never source credential values.
     checkpoint: str = Field(
         default="{}",
@@ -172,3 +173,10 @@ class ManagedModelDependencySchema(BaseSchema, table=True):
             connector_id=self.connector_id,
             uri=self.uri,
         )
+
+
+class ManagedModelWorkspaceSchema(BaseSchema, table=True):
+    """Durable admission gate preventing create-versus-teardown races."""
+
+    __tablename__ = "managed_model_workspace"
+    admission_open: bool = True

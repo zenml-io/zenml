@@ -18,8 +18,10 @@ from fastapi import (
 
 from zenml.exceptions import IllegalOperationError
 from zenml.managed_models.state import (
+    ManagedModelAbsenceConfirmation,
     ManagedModelAssignment,
     ManagedModelCheckpoint,
+    ManagedModelCleanupStatus,
     ManagedModelInferenceTarget,
     ManagedModelLease,
     ManagedModelResult,
@@ -180,7 +182,12 @@ def finish_managed_model_operation(
         )
         or (
             result.state == "deleted"
-            and (service.desired_state != "deleted" or result.resources)
+            and (
+                service.desired_state != "deleted"
+                or result.resources
+                or result.active_revision_id is not None
+                or result.prediction_url is not None
+            )
         )
         or (
             result.state == "ready"
@@ -311,3 +318,58 @@ def resolve_managed_inference(
         project_id=service.project_id,
     )
     return zen_store().managed_models.get_inference_target(service_id)
+
+
+@router.post("/workspace/drain", dependencies=[Depends(_authorize_controller)])
+@async_fastapi_endpoint_wrapper(deduplicate=False)
+def drain_managed_model_workspace() -> None:
+    """Close new admission durably; the controller then schedules owned cleanup."""
+    zen_store().managed_models.begin_drain()
+
+
+@router.get("/workspace/cleanup-status")
+@async_fastapi_endpoint_wrapper
+def get_managed_model_cleanup_status(
+    response: Response,
+) -> ManagedModelCleanupStatus:
+    """Expose only a workspace identity and teardown-ready boolean over its trusted origin.
+
+    Args:
+        response: HTTP response carrying private cache controls.
+
+    Returns:
+        True only after admission closes and all owned service cleanup succeeds.
+    """
+    response.headers["Cache-Control"] = "no-store"
+    return ManagedModelCleanupStatus(
+        workspace_id=server_config().get_external_server_id(),
+        ready=zen_store().managed_models.cleanup_ready(),
+    )
+
+
+@router.post(
+    "/workspace/resolve/{service_id}",
+    dependencies=[Depends(_authorize_controller)],
+)
+@async_fastapi_endpoint_wrapper(deduplicate=False)
+def confirm_managed_submission_absent(
+    service_id: UUID, confirmation: ManagedModelAbsenceConfirmation
+) -> None:
+    """Record an operator's verified-absence decision for one uncertain submission.
+
+    Args:
+        service_id: Investigated service identity.
+        confirmation: Exact generation and credential-free reconciliation evidence.
+    """
+    zen_store().managed_models.confirm_submission_absent(
+        service_id, confirmation.expected_generation, confirmation.evidence
+    )
+
+
+@router.post(
+    "/workspace/reopen", dependencies=[Depends(_authorize_controller)]
+)
+@async_fastapi_endpoint_wrapper(deduplicate=False)
+def reopen_managed_model_workspace() -> None:
+    """Reopen a fully drained workspace after an operator cancels parent teardown."""
+    zen_store().managed_models.reopen_admission()

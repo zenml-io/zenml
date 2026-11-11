@@ -106,6 +106,7 @@ __all__ = [
     "ManagedModelDependencySchema",
     "ManagedModelOperationSchema",
     "ManagedModelServiceSchema",
+    "ManagedModelWorkspaceSchema",
     "APIKeySchema",
     "ArtifactSchema",
     "ArtifactVersionSchema",
@@ -167,4 +168,5 @@ from zenml.zen_stores.schemas.managed_model_schemas import (
     ManagedModelDependencySchema,
     ManagedModelOperationSchema,
     ManagedModelServiceSchema,
+    ManagedModelWorkspaceSchema,
 )

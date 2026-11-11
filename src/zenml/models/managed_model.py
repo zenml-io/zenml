@@ -108,7 +108,7 @@ class ManagedModelServiceRequest(ManagedModelRevisionRequest):
 class ManagedModelMutation(ManagedModelContract):
     """Serialized lifecycle intent against an observed service generation."""
 
-    action: Literal["update", "rollback", "pause", "resume", "delete"]
+    action: Literal["update", "rollback", "pause", "resume", "delete", "retry"]
     expected_generation: int = Field(ge=1)
     revision: Optional[ManagedModelRevisionRequest] = None
     revision_id: Optional[UUID] = None
