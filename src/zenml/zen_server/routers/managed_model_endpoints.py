@@ -142,7 +142,7 @@ def create_managed_model_service(
     )
     if (
         component.type != StackComponentType.MODEL_DEPLOYER
-        or component.flavor != "managed"
+        or component.flavor_name != "managed"
     ):
         raise HTTPException(422, "Select a managed model-deployer component.")
     sources = _authorize_revision(request, request.project_id)

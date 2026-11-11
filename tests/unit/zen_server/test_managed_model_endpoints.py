@@ -10,7 +10,12 @@ from fastapi.testclient import TestClient
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import IllegalOperationError
-from zenml.models.managed_model import ManagedModelServiceRequest
+from zenml.models import ComponentResponse, FlavorResponse
+from zenml.models.managed_model import (
+    ManagedModelService,
+    ManagedModelServiceRequest,
+)
+from zenml.utils.time_utils import utc_now
 from zenml.zen_server import utils
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.rbac.models import Action, ResourceType
@@ -49,12 +54,28 @@ def api(monkeypatch):
             "tokenizer": {"artifact_version_id": artifact_id},
         },
     )
-    component = MagicMock(
-        type=StackComponentType.MODEL_DEPLOYER, flavor="managed"
+    component = ComponentResponse(
+        id=request.model_deployer_id,
+        name="managed-deployer",
+        body={
+            "created": utc_now(),
+            "updated": utc_now(),
+            "type": StackComponentType.MODEL_DEPLOYER,
+            "flavor_name": "managed",
+        },
+        resources={"flavor": FlavorResponse(id=uuid4(), name="managed")},
     )
-    store.get_stack_component.return_value = component
+    artifact_store = SimpleNamespace(
+        id=uuid4(), connector=SimpleNamespace(id=uuid4())
+    )
+    store.get_stack_component.side_effect = lambda identity: (
+        component if identity == component.id else artifact_store
+    )
     store.get_artifact_version.return_value = SimpleNamespace(
-        id=artifact_id, project_id=project_id, artifact_store_id=uuid4()
+        id=artifact_id,
+        project_id=project_id,
+        artifact_store_id=artifact_store.id,
+        uri="s3://test-bucket/model",
     )
     return TestClient(app), store, permission, config, request
 
@@ -149,3 +170,30 @@ def test_inference_requires_invoke_and_closes_on_pause_intent(api):
     )
     service.desired_state = "paused"
     assert client.get(path).status_code == 403
+
+
+def test_intake_accepts_registered_managed_flavor(api):
+    """A real component response carries a flavor object, not a string."""
+    client, store, _, _, request = api
+    service = ManagedModelService(
+        id=uuid4(),
+        project_id=request.project_id,
+        model_deployer_id=request.model_deployer_id,
+        name=request.name,
+        generation=1,
+        desired_state="running",
+        state="pending",
+        operation={"id": uuid4(), "action": "create", "status": "pending"},
+        revisions=[],
+        created=utc_now(),
+        updated=utc_now(),
+    )
+    store.managed_models.create.return_value = service
+    response = client.post(
+        "/api/v1/managed-model-services",
+        headers={"Idempotency-Key": str(uuid4())},
+        json=request.model_dump(mode="json"),
+    )
+    assert response.status_code == 202
+    assert response.json()["id"] == str(service.id)
+    store.managed_models.create.assert_called_once()
