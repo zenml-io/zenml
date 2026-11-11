@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Scoped model definitions."""
 
-from functools import partial
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -470,18 +469,21 @@ class ProjectScopedFilter(UserScopedFilter):
 #
 # Filters with at most this many tag and run metadata values in total keep a
 # plain subquery per value: planning them is cheap, and the database can start
-# from the most selective one. Larger AND filters keep a separate subquery
-# only for exact tag names and tag presence checks, which also match the
-# resource type of the links. MySQL resolves an exact tag name through the
-# unique tag name index before it plans the join order, and with the resource
-# type it looks up the link through its full index, so any number of them
-# stays cheap to plan. All other values of such a filter are checked by one
-# aggregated subquery per relationship, which is never flattened.
+# from the most selective one. Their tag subqueries select all link columns
+# and leave out the resource type of the links, as both change which plan
+# MySQL picks: it keeps no statistics on the resource type and assumes that it
+# rules out most links, which can make it scan all of them, and a narrower
+# select list can make it scan all queried rows to sort them. Resource IDs are
+# unique across resource types, so leaving it out does not change the result.
+#
+# Larger AND filters keep a separate subquery only for exact tag names and tag
+# presence checks, which also match the resource type. MySQL resolves an exact
+# tag name through the unique tag name index before it plans the join order,
+# and with the resource type it looks up the link through its full index, so
+# any number of them stays cheap to plan. All other values of such a filter
+# are checked by one aggregated subquery per relationship, which is never
+# flattened.
 _MAX_VALUES_WITH_PLAIN_SUBQUERIES = 4
-_TAG_PRESENCE_OPERATORS = (
-    GenericFilterOps.IS_NULL,
-    GenericFilterOps.IS_NOT_NULL,
-)
 
 
 def _unique_values(values: StringFilterOption) -> List[str]:
@@ -568,14 +570,14 @@ def _generate_link_conditions(
     on_clause: "ColumnElement[bool]",
     resource_type: str,
     predicates: List["ColumnElement[bool]"],
-    logical_operator: LogicalOperators,
     separate_count: int,
-    plain_separate_subqueries: bool = False,
 ) -> List["ColumnElement[bool]"]:
     """Generate conditions on the rows linked to rows of a table.
 
     A row of the queried table satisfies a predicate if at least one of the
-    rows linked to it matches the predicate.
+    rows linked to it matches the predicate. The leading predicates get their
+    own subquery, and all others are checked by a single aggregated subquery,
+    which is only equivalent when the conditions are combined with AND.
 
     Args:
         table: The queried table.
@@ -586,19 +588,8 @@ def _generate_link_conditions(
         resource_type: The resource type of the queried table in the link
             table.
         predicates: The predicates on rows of the target table.
-        logical_operator: The operator combining the conditions.
         separate_count: How many of the leading predicates get their own
-            subquery when combined with AND. All others are checked by a
-            single subquery, which is only equivalent under AND, so every
-            predicate gets its own subquery when combined with OR.
-        plain_separate_subqueries: Whether the separate subqueries select
-            all columns of the links and leave out their resource type. Both
-            change which plan MySQL picks for predicates that it cannot
-            resolve before planning: it keeps no statistics on the resource
-            type and assumes that it rules out most links, which can make it
-            scan all of them, and a narrower select list can make it scan all
-            queried rows to sort them. Resource IDs are unique across
-            resource types, so leaving it out does not change the result.
+            subquery.
 
     Returns:
         The conditions.
@@ -606,20 +597,19 @@ def _generate_link_conditions(
     from sqlalchemy import case, func
     from sqlmodel import col, exists, select
 
-    if logical_operator == LogicalOperators.OR:
-        separate_count = len(predicates)
+    if not predicates:
+        return []
 
     links_of_row = (
         col(link_table.resource_id) == table.id,
         col(link_table.resource_type) == resource_type,
     )
-    separate_query: "SelectOfScalar[Any]"
-    if plain_separate_subqueries:
-        separate_query = select(link_table).where(links_of_row[0])
-    else:
-        separate_query = select(col(link_table.id)).where(*links_of_row)
     conditions: List["ColumnElement[bool]"] = [
-        exists(separate_query.join(target_table, on_clause).where(predicate))
+        exists(
+            select(col(link_table.id))
+            .join(target_table, on_clause)
+            .where(*links_of_row, predicate)
+        )
         for predicate in predicates[:separate_count]
     ]
 
@@ -687,49 +677,39 @@ class TaggableFilter(BaseFilter):
                 else None,
                 logical_operator=self.logical_operator,
             )
-            generate_tag_conditions = partial(
-                _generate_link_conditions,
-                table=table,
-                link_table=TagResourceSchema,
-                target_table=TagSchema,
-                on_clause=col(TagSchema.id) == col(TagResourceSchema.tag_id),
-                resource_type=resource_type,
-                logical_operator=self.logical_operator,
+            tag_links: "SelectOfScalar[Any]"
+            if aggregate:
+                tag_links = select(col(TagResourceSchema.id)).where(
+                    col(TagResourceSchema.resource_type) == resource_type
+                )
+            else:
+                tag_links = select(TagResourceSchema)
+            tag_links = tag_links.where(
+                col(TagResourceSchema.resource_id) == table.id
             )
+            is_tagged = exists(tag_links)
             exact_predicates: List["ColumnElement[bool]"] = []
             other_predicates: List["ColumnElement[bool]"] = []
             for tag in tag_values:
                 _, operator = self._resolve_operator(tag)
-                if operator in _TAG_PRESENCE_OPERATORS:
-                    tag_links: "SelectOfScalar[Any]"
-                    if aggregate:
-                        tag_links = select(col(TagResourceSchema.id)).where(
-                            col(TagResourceSchema.resource_type)
-                            == resource_type
-                        )
-                    else:
-                        tag_links = select(TagResourceSchema)
-                    is_tagged = exists(
-                        tag_links.where(
-                            col(TagResourceSchema.resource_id) == table.id
-                        )
-                    )
-                    custom_filters.append(
-                        ~is_tagged
-                        if operator == GenericFilterOps.IS_NULL
-                        else is_tagged
-                    )
+                if operator == GenericFilterOps.IS_NULL:
+                    custom_filters.append(~is_tagged)
+                    continue
+                if operator == GenericFilterOps.IS_NOT_NULL:
+                    custom_filters.append(is_tagged)
                     continue
 
                 predicate = self.generate_custom_query_conditions_for_column(
                     value=tag, table=TagSchema, column="name"
                 )
                 if not aggregate:
-                    custom_filters.extend(
-                        generate_tag_conditions(
-                            predicates=[predicate],
-                            separate_count=1,
-                            plain_separate_subqueries=True,
+                    custom_filters.append(
+                        exists(
+                            tag_links.join(
+                                TagSchema,
+                                col(TagSchema.id)
+                                == col(TagResourceSchema.tag_id),
+                            ).where(predicate)
                         )
                     )
                 elif operator == GenericFilterOps.EQUALS:
@@ -738,14 +718,15 @@ class TaggableFilter(BaseFilter):
                     other_predicates.append(predicate)
 
             custom_filters.extend(
-                generate_tag_conditions(
-                    predicates=exact_predicates,
+                _generate_link_conditions(
+                    table=table,
+                    link_table=TagResourceSchema,
+                    target_table=TagSchema,
+                    on_clause=col(TagSchema.id)
+                    == col(TagResourceSchema.tag_id),
+                    resource_type=resource_type,
+                    predicates=exact_predicates + other_predicates,
                     separate_count=len(exact_predicates),
-                )
-            )
-            custom_filters.extend(
-                generate_tag_conditions(
-                    predicates=other_predicates, separate_count=0
                 )
             )
 
@@ -887,7 +868,7 @@ class RunMetadataFilterMixin(BaseFilter):
         """
         custom_filters = super().get_custom_filters(table)
 
-        if self.run_metadata is not None:
+        if run_metadata_values := _unique_values(self.run_metadata):
             from sqlmodel import and_, col
 
             from zenml.enums import MetadataResourceTypes
@@ -912,7 +893,7 @@ class RunMetadataFilterMixin(BaseFilter):
             }
 
             predicates = []
-            for entry in _unique_values(self.run_metadata):
+            for entry in run_metadata_values:
                 # Split at the first colon to get the key
                 key, value = entry.split(":", 1)
                 predicates.append(
@@ -944,7 +925,6 @@ class RunMetadataFilterMixin(BaseFilter):
                     == col(RunMetadataResourceSchema.run_metadata_id),
                     resource_type=resource_type_mapping[table].value,
                     predicates=predicates,
-                    logical_operator=self.logical_operator,
                     separate_count=0 if aggregate else len(predicates),
                 )
             )

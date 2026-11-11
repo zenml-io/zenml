@@ -191,15 +191,29 @@ def _list_run_names(
     return names
 
 
-def _expected_run_names(
-    single_results: Dict[str, Set[str]],
-    expressions: List[str],
-    logical_operator: LogicalOperators,
-) -> Set[str]:
-    results = [single_results[expression] for expression in expressions]
-    if logical_operator == LogicalOperators.AND:
-        return set.intersection(*results)
-    return set.union(*results)
+@pytest.fixture(scope="module")
+def single_results(
+    sql_store: SqlZenStore, tagged_runs: UUID
+) -> Dict[str, Set[str]]:
+    """Get the runs matching each tag and run metadata expression alone.
+
+    Returns:
+        The names of the matching runs by expression.
+    """
+    results = {
+        expression: _list_run_names(sql_store, tagged_runs, tags=[expression])
+        for expression in TAG_EXPRESSIONS
+    } | {
+        expression: _list_run_names(
+            sql_store, tagged_runs, run_metadata=[expression]
+        )
+        for expression in METADATA_EXPRESSIONS
+    }
+    assert results["red"] == {"run-0", "run-1", "run-5"}
+    assert results["isnull:"] == {"run-6", "run-7"}
+    assert results["color:red"] == {"run-0", "run-6"}
+    assert results["score:gte:0.5"] == {"run-0", "run-3", "run-5"}
+    return results
 
 
 @pytest.mark.parametrize(
@@ -208,6 +222,7 @@ def _expected_run_names(
 def test_combined_tag_and_metadata_filters_match_single_filters(
     sql_store: SqlZenStore,
     tagged_runs: UUID,
+    single_results: Dict[str, Set[str]],
     logical_operator: LogicalOperators,
 ) -> None:
     """Combining filters is equivalent to combining their results.
@@ -216,34 +231,16 @@ def test_combined_tag_and_metadata_filters_match_single_filters(
     generated for tags and run metadata, including empty `oneof` lists and
     duplicated expressions.
     """
-    single_tag_results = {
-        expression: _list_run_names(sql_store, tagged_runs, tags=[expression])
-        for expression in TAG_EXPRESSIONS
-    }
-    single_metadata_results = {
-        expression: _list_run_names(
-            sql_store, tagged_runs, run_metadata=[expression]
-        )
-        for expression in METADATA_EXPRESSIONS
-    }
-    assert single_tag_results["red"] == {"run-0", "run-1", "run-5"}
-    assert single_tag_results["isnull:"] == {"run-6", "run-7"}
-    assert single_metadata_results["color:red"] == {"run-0", "run-6"}
-    assert single_metadata_results["score:gte:0.5"] == {
-        "run-0",
-        "run-3",
-        "run-5",
-    }
-
+    combine = (
+        set.intersection
+        if logical_operator == LogicalOperators.AND
+        else set.union
+    )
     rng = random.Random(0)
     for _ in range(40):
         tags = rng.choices(TAG_EXPRESSIONS, k=rng.randint(1, 8))
         run_metadata = rng.choices(METADATA_EXPRESSIONS, k=rng.randint(0, 5))
-        expected = _expected_run_names(
-            {**single_tag_results, **single_metadata_results},
-            tags + run_metadata,
-            logical_operator,
-        )
+        expected = combine(*(single_results[e] for e in tags + run_metadata))
         assert (
             _list_run_names(
                 sql_store,
@@ -307,12 +304,12 @@ def test_aggregated_filters(
     )
 
 
-def _count_subqueries(
+def _compile_filter(
     tags: Optional[List[str]] = None,
     run_metadata: Optional[List[str]] = None,
     logical_operator: LogicalOperators = LogicalOperators.AND,
-) -> Tuple[int, int]:
-    """Count the separate and the aggregated subqueries of a filter."""
+) -> str:
+    """Compile the query of a run filter for MySQL."""
     filter_model = PipelineRunFilter(
         project=uuid4(),
         tags=tags,
@@ -322,7 +319,16 @@ def _count_subqueries(
     query = filter_model.apply_filter(
         select(PipelineRunSchema.id), PipelineRunSchema
     )
-    sql = str(query.compile(dialect=mysql.dialect()))
+    return str(query.compile(dialect=mysql.dialect()))
+
+
+def _count_subqueries(
+    tags: Optional[List[str]] = None,
+    run_metadata: Optional[List[str]] = None,
+    logical_operator: LogicalOperators = LogicalOperators.AND,
+) -> Tuple[int, int]:
+    """Count the separate and the aggregated subqueries of a filter."""
+    sql = _compile_filter(tags, run_metadata, logical_operator)
     aggregated = sql.count("GROUP BY")
     return sql.count("EXISTS") - aggregated, aggregated
 
@@ -332,14 +338,8 @@ def test_small_filters_keep_a_plain_subquery_per_value() -> None:
     assert _count_subqueries(
         tags=["a", "contains:x", "isnotnull:"], run_metadata=["k:v"]
     ) == (4, 0)
-    filter_model = PipelineRunFilter(
-        project=uuid4(), tags=["a", "contains:x", "isnotnull:"]
-    )
-    query = filter_model.apply_filter(
-        select(PipelineRunSchema.id), PipelineRunSchema
-    )
-    assert "tag_resource.resource_type =" not in str(
-        query.compile(dialect=mysql.dialect())
+    assert "tag_resource.resource_type =" not in _compile_filter(
+        tags=["a", "contains:x", "isnotnull:"]
     )
 
 
