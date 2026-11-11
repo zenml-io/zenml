@@ -202,6 +202,8 @@ def finish_managed_model_operation(
     service.prediction_url = result.prediction_url
     service.operation.status = result.status
     service.operation.error = result.error
+    if service.state == "deleted" and service.operation.status == "succeeded":
+        zen_store().managed_inference_keys.cleanup(service.id)
     zen_store().managed_models.finish(lease, service, result.resources)
 
 

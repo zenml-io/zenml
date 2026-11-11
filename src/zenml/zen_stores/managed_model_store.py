@@ -3,7 +3,7 @@
 import hashlib
 import json
 import secrets
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any, List, Optional, cast
 from uuid import UUID, uuid4
 
@@ -116,6 +116,7 @@ class ManagedModelStore:
         request: ManagedModelServiceRequest,
         request_key: str,
         sources: Optional[List[ManagedModelDependency]] = None,
+        wait_for_inference_key: bool = False,
     ) -> ManagedModelService:
         """Accept one idempotent creation intent in a single transaction.
 
@@ -123,6 +124,7 @@ class ManagedModelStore:
             request: Authorized create payload.
             sources: Authorized immutable source bindings.
             request_key: Caller-stable request identity.
+            wait_for_inference_key: Hold provider work until the initial key is stored.
 
         Returns:
             Persisted service and accepted operation.
@@ -178,6 +180,9 @@ class ManagedModelStore:
                 )
                 session.add(
                     Operation(
+                        available_at=datetime(9999, 1, 1)
+                        if wait_for_inference_key
+                        else None,
                         id=operation.id,
                         project_id=service.project_id,
                         service_id=service.id,
@@ -697,55 +702,6 @@ class ManagedModelStore:
                 )
             ).all()
         ]
-
-    def rotate_inference_key(self, service_id: UUID) -> str:
-        """Replace a service credential and return its plaintext once.
-
-        Args:
-            service_id: Service whose invocation credential is replaced.
-
-        Returns:
-            New high-entropy bearer key; only its hash is persisted.
-
-        Raises:
-            IllegalOperationError: If the service is being deleted.
-            KeyError: If the service does not exist.
-        """
-        key = "zmm_" + secrets.token_urlsafe(32)
-        with Session(self.engine) as session:
-            row = session.exec(
-                select(Service)
-                .where(col(Service.id) == service_id)
-                .with_for_update()
-            ).one_or_none()
-            if row is None:
-                raise KeyError(
-                    f"Managed model service {service_id} not found."
-                )
-            if row.to_model().desired_state == "deleted":
-                raise IllegalOperationError(
-                    "Cannot issue a key for a deleted service."
-                )
-            row.inference_key_hash = hashlib.sha256(key.encode()).hexdigest()
-            row.updated = utc_now()
-            session.add(row)
-            session.commit()
-        return key
-
-    def revoke_inference_key(self, service_id: UUID) -> None:
-        """Disable new inference requests without deleting the deployment.
-
-        Args:
-            service_id: Service whose credential is revoked.
-        """
-        with Session(self.engine) as session:
-            self._get_row(session, service_id)
-            session.exec(
-                update(Service)
-                .where(col(Service.id) == service_id)
-                .values(inference_key_hash=None, updated=utc_now())
-            )
-            session.commit()
 
     def get_inference_target(
         self, service_id: UUID, inference_key: str

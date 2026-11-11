@@ -1,5 +1,6 @@
 """Durable managed serving intents and private recovery checkpoints."""
 
+import json
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
@@ -10,7 +11,10 @@ from sqlmodel import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.managed_models.state import ManagedModelDependency
-from zenml.models.managed_model import ManagedModelService
+from zenml.models.managed_model import (
+    ManagedModelInferenceSecret,
+    ManagedModelService,
+)
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
@@ -34,6 +38,12 @@ class ManagedModelServiceSchema(BaseSchema, table=True):
         target_column="id",
         ondelete="RESTRICT",
         nullable=False,
+    )
+    inference_credentials: str = Field(
+        default="{}",
+        sa_column=Column(
+            Text().with_variant(MEDIUMTEXT(), "mysql"), nullable=False
+        ),
     )
     inference_key_hash: Optional[str] = Field(default=None, max_length=64)
     generation: int = Field(default=1)
@@ -66,7 +76,15 @@ class ManagedModelServiceSchema(BaseSchema, table=True):
         Returns:
             Public service representation.
         """
-        return ManagedModelService.model_validate_json(self.document)
+        service = ManagedModelService.model_validate_json(self.document)
+        # Credential references are independent of worker lifecycle documents.
+        reference = json.loads(self.inference_credentials).get("active")
+        service.inference_secret = (
+            ManagedModelInferenceSecret.model_validate(reference)
+            if reference
+            else None
+        )
+        return service
 
 
 class ManagedModelOperationSchema(BaseSchema, table=True):

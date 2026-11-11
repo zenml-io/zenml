@@ -97,10 +97,12 @@ class ManagedModelRevisionRequest(ManagedModelContract):
     serving_profile: str = Field(min_length=1, max_length=128)
 
 
-class ManagedModelInferenceKey(ManagedModelContract):
-    """Inference credential returned only when issued or rotated."""
+class ManagedModelInferenceSecret(ManagedModelContract):
+    """Reference to an inference key in the configured ZenML secrets store."""
 
-    key: str = Field(repr=False)
+    id: UUID
+    name: str
+    key: Literal["api_key"] = "api_key"
 
 
 class ManagedModelServiceRequest(ManagedModelRevisionRequest):
@@ -170,6 +172,7 @@ class ManagedModelService(BaseModel):
     active_revision_id: Optional[UUID] = None
     serving_generation: Optional[int] = None
     prediction_url: Optional[str] = None
+    inference_secret: Optional[ManagedModelInferenceSecret] = None
     operation: ManagedModelOperation
     revisions: list[ManagedModelRevision]
     created: datetime

@@ -257,3 +257,19 @@ def test_worker_uses_retained_connector_binding(worker_api):
     )
     store.get_artifact_version.assert_not_called()
     store.get_stack_component.assert_not_called()
+
+
+def test_deletion_waits_for_secret_cleanup(worker_api):
+    """Failed key cleanup cannot be reported as completed service deletion."""
+    client, store, _, lease, base, headers = worker_api
+    lease.service.desired_state = "deleted"
+    store.managed_inference_keys.cleanup.side_effect = IllegalOperationError(
+        "Cleanup unavailable"
+    )
+    url = base + "/" + str(lease.operation_id) + "/result"
+    result = {"state": "deleted", "status": "succeeded"}
+    assert client.put(url, headers=headers, json=result).status_code == 403
+    store.managed_models.finish.assert_not_called()
+    store.managed_inference_keys.cleanup.side_effect = None
+    assert client.put(url, headers=headers, json=result).status_code == 200
+    store.managed_models.finish.assert_called_once()

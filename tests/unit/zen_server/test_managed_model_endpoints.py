@@ -41,7 +41,9 @@ def api(monkeypatch):
     monkeypatch.setattr(utils, "request_manager", RequestManager)
     app = FastAPI()
     app.include_router(endpoints.router)
-    app.dependency_overrides[authorize] = lambda: MagicMock()
+    app.dependency_overrides[authorize] = lambda: SimpleNamespace(
+        user=SimpleNamespace(id=uuid4())
+    )
     project_id, artifact_id = uuid4(), uuid4()
     request = ManagedModelServiceRequest(
         project_id=project_id,
@@ -144,7 +146,12 @@ def test_inference_key_requires_management_permissions(api):
     store.managed_models.get.return_value = SimpleNamespace(
         id=service_id, project_id=uuid4()
     )
-    store.managed_models.rotate_inference_key.return_value = "zmm_fixture"
+    reference = {
+        "id": str(uuid4()),
+        "name": "managed-model-test",
+        "key": "api_key",
+    }
+    store.managed_inference_keys.rotate.return_value = reference
     path = f"/api/v1/managed-model-services/{service_id}/inference-key"
     for denied in (Action.UPDATE, Action.INVOKE):
 
@@ -154,17 +161,15 @@ def test_inference_key_requires_management_permissions(api):
 
         permission.side_effect = deny
         assert client.post(path).status_code == 403
-    store.managed_models.rotate_inference_key.assert_not_called()
+    store.managed_inference_keys.rotate.assert_not_called()
     permission.side_effect = None
     response = client.post(path)
     assert response.status_code == 200
-    assert response.json() == {"key": "zmm_fixture"}
+    assert response.json() == reference
     assert response.headers["cache-control"] == "no-store"
     assert client.get(path).status_code == 405
     assert client.delete(path).status_code == 200
-    store.managed_models.revoke_inference_key.assert_called_once_with(
-        service_id
-    )
+    store.managed_inference_keys.revoke.assert_called_once_with(service_id)
     assert (
         client.get(
             f"/api/v1/managed-model-services/{service_id}/authorize"
@@ -190,6 +195,7 @@ def test_intake_accepts_registered_managed_flavor(api):
         updated=utc_now(),
     )
     store.managed_models.create.return_value = service
+    store.managed_models.get.return_value = service
     response = client.post(
         "/api/v1/managed-model-services",
         headers={"Idempotency-Key": str(uuid4())},
@@ -198,3 +204,23 @@ def test_intake_accepts_registered_managed_flavor(api):
     assert response.status_code == 202
     assert response.json()["id"] == str(service.id)
     store.managed_models.create.assert_called_once()
+    store.managed_inference_keys.ensure.assert_called_once()
+
+
+def test_creation_requires_secret_creation_permission_before_intake(api):
+    """Automatic credentials cannot bypass the caller's secret permissions."""
+    client, store, permission, _, request = api
+
+    def deny_secret(resource_type, action, **kwargs):
+        if resource_type == ResourceType.SECRET:
+            raise IllegalOperationError("Secret creation denied")
+
+    permission.side_effect = deny_secret
+    response = client.post(
+        "/api/v1/managed-model-services",
+        headers={"Idempotency-Key": "denied"},
+        json=request.model_dump(mode="json"),
+    )
+    assert response.status_code == 403
+    store.managed_models.create.assert_not_called()
+    store.managed_inference_keys.ensure.assert_not_called()

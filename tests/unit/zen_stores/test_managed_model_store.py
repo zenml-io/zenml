@@ -2,6 +2,7 @@
 
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
+from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
@@ -26,6 +27,9 @@ from zenml.models.managed_model import (
     ManagedModelMutation,
     ManagedModelServiceRequest,
 )
+from zenml.zen_stores.managed_inference_keys_store import (
+    ManagedInferenceKeysStore,
+)
 from zenml.zen_stores.managed_model_store import ManagedModelStore
 from zenml.zen_stores.schemas.managed_model_schemas import (
     ManagedModelDependencySchema,
@@ -33,6 +37,7 @@ from zenml.zen_stores.schemas.managed_model_schemas import (
     ManagedModelServiceSchema,
     ManagedModelWorkspaceSchema,
 )
+from zenml.zen_stores.schemas.secret_schemas import SecretSchema
 
 
 @pytest.fixture
@@ -55,10 +60,13 @@ def serving_store(tmp_path):
     Table("service_connector", metadata, Column("id", Uuid, primary_key=True))
     ManagedModelDependencySchema.__table__.to_metadata(metadata)
     ManagedModelWorkspaceSchema.__table__.to_metadata(metadata)
+    user = Table("user", metadata, Column("id", Uuid, primary_key=True))
+    SecretSchema.__table__.to_metadata(metadata)
     metadata.create_all(engine)
     project_id, component_id = uuid4(), uuid4()
     with engine.begin() as connection:
         connection.execute(project.insert().values(id=project_id))
+        connection.execute(user.insert().values(id=project_id))
         connection.execute(component.insert().values(id=component_id))
     artifact = {"artifact_version_id": uuid4()}
     request = ManagedModelServiceRequest(
@@ -221,7 +229,9 @@ def test_inference_selects_active_revision_and_denies_pause_immediately(
     resource = ManagedModelProviderResource(
         model_id="model", deployment_id="revision", environment="production"
     )
-    key = store.rotate_inference_key(service.id)
+    keys, values = _credential_store(store)
+    reference = keys.rotate(service.id, request.project_id)
+    key = values[reference.id]["api_key"]
     store.finish(lease, service, {str(lease.target_revision_id): resource})
     target = store.get_inference_target(service.id, key)
     assert (
@@ -408,7 +418,7 @@ def test_absence_confirmation_requires_exact_uncertain_submission(
 def test_inference_keys_are_private_scoped_rotatable_and_revocable(
     serving_store,
 ):
-    """Keys grant only inference for one service and are never recoverable."""
+    """Keys grant inference for one service and are recoverable only from secrets."""
     import hashlib
 
     from sqlmodel import Session
@@ -420,7 +430,9 @@ def test_inference_keys_are_private_scoped_rotatable_and_revocable(
     )
     with pytest.raises(PermissionError):
         store.get_inference_target(service.id, "zenml-access-token")
-    key = store.rotate_inference_key(service.id)
+    keys, values = _credential_store(store)
+    reference = keys.rotate(service.id, request.project_id)
+    key = values[reference.id]["api_key"]
     with Session(store.engine) as session:
         row = session.get(ManagedModelServiceSchema, service.id)
         assert (
@@ -433,13 +445,14 @@ def test_inference_keys_are_private_scoped_rotatable_and_revocable(
     # A correct key passes authentication but cannot invoke an unready service.
     with pytest.raises(IllegalOperationError, match="admission is closed"):
         store.get_inference_target(service.id, key)
-    replacement = store.rotate_inference_key(service.id)
+    reference = keys.rotate(service.id, request.project_id)
+    replacement = values[reference.id]["api_key"]
     assert replacement != key
     with pytest.raises(PermissionError):
         store.get_inference_target(service.id, key)
     with pytest.raises(IllegalOperationError, match="admission is closed"):
         store.get_inference_target(service.id, replacement)
-    store.revoke_inference_key(service.id)
+    keys.revoke(service.id)
     with pytest.raises(PermissionError):
         store.get_inference_target(service.id, replacement)
     store.mutate(
@@ -448,4 +461,147 @@ def test_inference_keys_are_private_scoped_rotatable_and_revocable(
         "delete-key-test",
     )
     with pytest.raises(IllegalOperationError, match="deleted service"):
-        store.rotate_inference_key(service.id)
+        keys.rotate(service.id, request.project_id)
+
+
+def _credential_store(store):
+    values = {}
+    backend = SimpleNamespace(
+        engine=store.engine,
+        _set_secret_values=lambda identity, data: values.update(
+            {identity: data}
+        ),
+        _delete_secret_values=lambda identity: values.pop(identity, None),
+    )
+    return ManagedInferenceKeysStore(backend), values
+
+
+def test_initial_secret_replay_failure_and_revocation(serving_store):
+    """A failed write is recoverable and creation retries never resurrect revoked keys."""
+    store, request = serving_store
+    service = store.create(request, "initial-key", wait_for_inference_key=True)
+    assert store.claim() is None
+    keys, values = _credential_store(store)
+    original_write = keys.store._set_secret_values
+    keys.store._set_secret_values = lambda *args: (_ for _ in ()).throw(
+        OSError("storage unavailable")
+    )
+    with pytest.raises(RuntimeError, match="Unable to store"):
+        keys.ensure(service.id, request.project_id)
+    assert store.get(service.id).inference_secret is None
+    assert store.claim() is None
+    keys.store._set_secret_values = original_write
+    keys.ensure(service.id, request.project_id)
+    reference = store.get(service.id).inference_secret
+    assert reference is not None
+    assert values[reference.id]["api_key"].startswith("zmm_")
+    keys.ensure(service.id, request.project_id)
+    assert store.get(service.id).inference_secret == reference
+    assert len(values) == 1
+    assert store.claim() is not None
+    keys.revoke(service.id)
+    keys.ensure(service.id, request.project_id)
+    assert store.get(service.id).inference_secret is None
+
+
+def test_failed_rotation_preserves_key_and_late_write_cannot_undo_revocation(
+    serving_store,
+):
+    """External storage completion never overrides newer credential intent."""
+    store, request = serving_store
+    service = store.create(request, "rotation")
+    keys, values = _credential_store(store)
+    active = keys.rotate(service.id, request.project_id)
+    original_write = keys.store._set_secret_values
+
+    def fail(identity, data):
+        original_write(identity, data)
+        raise OSError("response lost after storage")
+
+    keys.store._set_secret_values = fail
+    with pytest.raises(RuntimeError, match="Unable to store"):
+        keys.rotate(service.id, request.project_id)
+    assert store.get(service.id).inference_secret == active
+    with pytest.raises(IllegalOperationError, match="admission is closed"):
+        store.get_inference_target(service.id, values[active.id]["api_key"])
+
+    def revoke_during_write(identity, data):
+        keys.revoke(service.id)
+        original_write(identity, data)
+
+    keys.store._set_secret_values = revoke_during_write
+    with pytest.raises(IllegalOperationError, match="credentials changed"):
+        keys.rotate(service.id, request.project_id)
+    assert store.get(service.id).inference_secret is None
+    for data in values.values():
+        with pytest.raises(PermissionError):
+            store.get_inference_target(service.id, data["api_key"])
+
+
+def test_secret_cleanup_includes_failed_attempts_and_can_retry(serving_store):
+    """Cleanup uses owned IDs, keeps its journal on failure, and removes secret metadata."""
+    from sqlmodel import Session, select
+
+    store, request = serving_store
+    service = store.create(request, "cleanup")
+    keys, values = _credential_store(store)
+    keys.rotate(service.id, request.project_id)
+    keys.rotate(service.id, request.project_id)
+    with pytest.raises(IllegalOperationError):
+        keys.cleanup(service.id)
+    store.mutate(
+        service.id,
+        ManagedModelMutation(action="delete", expected_generation=1),
+        "delete",
+    )
+    lease = store.claim()
+    lease.service.state = "deleted"
+    lease.service.operation.status = "succeeded"
+    store.finish(lease, lease.service, {})
+    original_delete = keys.store._delete_secret_values
+    keys.store._delete_secret_values = lambda identity: (_ for _ in ()).throw(
+        OSError("unavailable")
+    )
+    with pytest.raises(OSError):
+        keys.cleanup(service.id)
+    keys.store._delete_secret_values = original_delete
+    keys.cleanup(service.id)
+    keys.cleanup(service.id)
+    assert not values
+    with Session(store.engine) as session:
+        assert not session.exec(select(SecretSchema)).all()
+
+
+def test_newer_rotation_wins_and_late_deleted_key_is_cleaned(serving_store):
+    """Late writes cannot replace newer keys or leak a credential after deletion."""
+    store, request = serving_store
+    service = store.create(request, "concurrent-keys")
+    keys, values = _credential_store(store)
+    original_write = keys.store._set_secret_values
+    winner = []
+
+    def concurrent_rotation(identity, data):
+        keys.store._set_secret_values = original_write
+        winner.append(keys.rotate(service.id, request.project_id))
+        original_write(identity, data)
+
+    keys.store._set_secret_values = concurrent_rotation
+    with pytest.raises(IllegalOperationError, match="credentials changed"):
+        keys.rotate(service.id, request.project_id)
+    assert store.get(service.id).inference_secret == winner[0]
+    assert set(values) == {winner[0].id}
+
+    def deletion_during_write(identity, data):
+        store.mutate(
+            service.id,
+            ManagedModelMutation(action="delete", expected_generation=1),
+            "delete-race",
+        )
+        keys.cleanup(service.id)
+        original_write(identity, data)
+
+    keys.store._set_secret_values = deletion_during_write
+    with pytest.raises(IllegalOperationError, match="credentials changed"):
+        keys.rotate(service.id, request.project_id)
+    assert not values
+    assert store.get(service.id).inference_secret is None

@@ -11,7 +11,7 @@ import requests
 
 from zenml.models.managed_model import (
     ManagedModelContract,
-    ManagedModelInferenceKey,
+    ManagedModelInferenceSecret,
     ManagedModelMutation,
     ManagedModelService,
     ManagedModelServicePage,
@@ -176,16 +176,16 @@ class ManagedModelClient:
 
     def rotate_inference_key(
         self, service_id: UUID
-    ) -> ManagedModelInferenceKey:
-        """Issue a key once and invalidate any previously issued key.
+    ) -> ManagedModelInferenceSecret:
+        """Store a fresh key in a private ZenML secret and invalidate the old key.
 
         Args:
             service_id: Service to authorize independently of a ZenML login.
 
         Returns:
-            Plaintext credential to store securely outside pipeline artifacts.
+            Secret reference; retrieve its api_key value with authorized secret access.
         """
-        return ManagedModelInferenceKey.model_validate(
+        return ManagedModelInferenceSecret.model_validate(
             self.store.post(
                 f"/managed-model-services/{service_id}/inference-key",
                 body=ManagedModelContract(),

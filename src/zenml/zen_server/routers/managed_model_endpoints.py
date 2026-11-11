@@ -8,7 +8,7 @@ from fastapi import APIRouter, Header, HTTPException, Query, Response, Security
 from zenml.enums import StackComponentType
 from zenml.managed_models.state import ManagedModelDependency
 from zenml.models.managed_model import (
-    ManagedModelInferenceKey,
+    ManagedModelInferenceSecret,
     ManagedModelMutation,
     ManagedModelRevisionRequest,
     ManagedModelService,
@@ -145,8 +145,24 @@ def create_managed_model_service(
         or component.flavor_name != "managed"
     ):
         raise HTTPException(422, "Select a managed model-deployer component.")
+    verify_permission(ResourceType.SECRET, Action.CREATE)
+    verify_permission(
+        ResourceType.MANAGED_MODEL_SERVICE,
+        Action.INVOKE,
+        project_id=request.project_id,
+    )
     sources = _authorize_revision(request, request.project_id)
-    return zen_store().managed_models.create(request, request_key, sources)
+    service = zen_store().managed_models.create(
+        request, request_key, sources, wait_for_inference_key=True
+    )
+    try:
+        zen_store().managed_inference_keys.ensure(service.id, _.user.id)
+    except RuntimeError:
+        raise HTTPException(
+            503,
+            f"Service {service.id} awaits secret storage; retry with the same Idempotency-Key.",
+        ) from None
+    return zen_store().managed_models.get(service.id)
 
 
 @router.get("")
@@ -306,7 +322,7 @@ def rotate_managed_model_inference_key(
     service_id: UUID,
     response: Response,
     _: AuthContext = Security(authorize),
-) -> ManagedModelInferenceKey:
+) -> ManagedModelInferenceSecret:
     """Issue a new inference key, immediately replacing any previous key.
 
     Args:
@@ -314,15 +330,14 @@ def rotate_managed_model_inference_key(
         response: Response carrying private cache controls.
 
     Returns:
-        Plaintext key, which cannot be retrieved again.
+        Private ZenML secret reference containing the new key.
     """
     _check_enabled()
     _get_authorized(service_id, Action.UPDATE)
     _get_authorized(service_id, Action.INVOKE)
     response.headers["Cache-Control"] = "no-store"
-    return ManagedModelInferenceKey(
-        key=zen_store().managed_models.rotate_inference_key(service_id)
-    )
+    verify_permission(ResourceType.SECRET, Action.CREATE)
+    return zen_store().managed_inference_keys.rotate(service_id, _.user.id)
 
 
 @router.delete("/{service_id}/inference-key")
@@ -337,7 +352,7 @@ def revoke_managed_model_inference_key(
         service_id: Target service.
     """
     _get_authorized(service_id, Action.UPDATE)
-    zen_store().managed_models.revoke_inference_key(service_id)
+    zen_store().managed_inference_keys.revoke(service_id)
 
 
 @router.delete("/{service_id}/record")
@@ -352,4 +367,5 @@ def purge_managed_model_service(
         service_id: Stable identity of a fully deleted service.
     """
     _get_authorized(service_id, Action.DELETE)
+    zen_store().managed_inference_keys.cleanup(service_id)
     zen_store().managed_models.purge(service_id)

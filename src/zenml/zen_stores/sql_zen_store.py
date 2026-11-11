@@ -421,6 +421,9 @@ from zenml.zen_stores.dag.utils import (
     load_step_run_metadata,
     sort_dag_steps,
 )
+from zenml.zen_stores.managed_inference_keys_store import (
+    ManagedInferenceKeysStore,
+)
 from zenml.zen_stores.managed_model_store import ManagedModelStore
 from zenml.zen_stores.migrations.alembic import (
     Alembic,
@@ -1283,6 +1286,15 @@ class SqlZenStore(BaseZenStore):
             resource_pools: The resource pools store to set.
         """
         self._resource_pools = resource_pools
+
+    @property
+    def managed_inference_keys(self) -> "ManagedInferenceKeysStore":
+        """Get recoverable inference-key storage.
+
+        Returns:
+            Coordinator for service hashes and configured secret storage.
+        """
+        return ManagedInferenceKeysStore(self)
 
     @property
     def managed_models(self) -> ManagedModelStore:
