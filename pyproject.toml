@@ -18,7 +18,7 @@ module-name = ["zenml", "zenml_cli"]
 
 [project]
 name = "zenml"
-version = "0.98.0"
+version = "0.98.1"
 description = "ZenML: MLOps for Reliable AI: from Classical AI to Agents."
 authors = [{name = "ZenML GmbH", email = "info@zenml.io"}]
 readme = "README.md"
@@ -50,8 +50,8 @@ dependencies = [
     "docker~=7.1.0",
     "gitpython>=3.1.18,<4.0.0",
     "jsonref",
-    "opentelemetry-instrumentation-logging==0.64b0",
-    "opentelemetry-sdk==1.43.0",
+    "opentelemetry-instrumentation-logging==0.66b1",
+    "opentelemetry-sdk==1.45.1",
     "packaging>=24.1",
     "psutil>=5.0.0",
     "pydantic>=2.0,<=2.12.5",
@@ -88,7 +88,7 @@ server = [
     "fastapi>=0.138.0,<0.139.0",
     "uvicorn[standard]>=0.17.5",
     "python-multipart~=0.0.9",
-    "pyjwt[crypto]>=2.15.1,<2.16.0",
+    "pyjwt[crypto]==2.15.1",
     "Jinja2",
     "ipinfo>=4.4.3",
     "secure~=1.0.1",
@@ -99,10 +99,10 @@ server = [
 ]
 otel = [
     # Install otel dependencies to enable OpenTelemetry instrumentation in server processes
-    "opentelemetry-exporter-otlp-proto-http>=1.43.0,<1.44.0",
-    "opentelemetry-instrumentation-fastapi>=0.64b0,<0.65b0",
-    "opentelemetry-instrumentation-requests>=0.64b0,<0.65b0",
-    "opentelemetry-instrumentation-sqlalchemy>=0.64b0,<0.65b0",
+    "opentelemetry-exporter-otlp-proto-http>=1.45.1,<1.46.0",
+    "opentelemetry-instrumentation-fastapi>=0.66b1,<0.67b0",
+    "opentelemetry-instrumentation-requests>=0.66b1,<0.67b0",
+    "opentelemetry-instrumentation-sqlalchemy>=0.66b1,<0.67b0",
 ]
 server-streaming = ["redis>=7.1.0,<8.0.0"]
 jupyter = ["rich[jupyter]>=12.0.0"]
@@ -114,7 +114,7 @@ secrets-gcp = ["google-cloud-secret-manager>=2.12.5"]
 secrets-azure = ["azure-identity>=1.4.0", "azure-keyvault-secrets>=4.0.0"]
 secrets-hashicorp = ["hvac>=0.11.2"]
 s3fs = ["s3fs>=2022.11.0,!=2025.3.1"]
-gcsfs = ["gcsfs>=2022.11.0"]
+gcsfs = ["gcsfs>=2022.11.0,<=2024.12.0"]
 adlfs = ["adlfs>=2021.10.0"]
 connectors-kubernetes = ["kubernetes>=18.20.0"]
 connectors-aws = ["boto3>=1.16.0", "kubernetes>=18.20.0", "aws-profile-manager>=0.5.0"]
@@ -165,7 +165,7 @@ dev = [
     "tox>=3.24.3",
     "hypothesis>=6.43.1",
     "typing-extensions>=3.7.4",
-    "pydoclint>=0.8.3",
+    "pydoclint==0.10.1",
     "pytest-randomly>=3.10.1,<4.0.0",
     "pytest-mock>=3.6.1,<4.0.0",
     "pytest-clarity>=1.0.1,<2.0.0",
@@ -177,6 +177,7 @@ dev = [
     "mkdocs-awesome-pages-plugin>=2.10.1,<3.0.0",
     "mkdocstrings[python]>=0.28.1,<1.0.0",
     "mkdocstrings-python",
+    "pymdown-extensions<12.2",
     "mkdocs-autorefs>=1.4.0,<2.0.0",
     "mike>=1.1.2,<2.0.0",
     "maison<2.0",

@@ -13,7 +13,7 @@ This document provides guidance for AI assistants working with ZenML's GitHub Ac
 | **Release/Nightly** | release.yml, release_prepare.yml, release_finalize.yml, publish_*.yml, nightly_build.yml | PyPI, Docker, Helm, stack template, and nightly publishing |
 | **Security** | codeql.yml, trivy-*.yml, zizmor.yml | Static analysis and vulnerability/supply-chain scanning |
 | **Maintenance** | stale-prs.yml, pr_labeler.yml, require-release-label.yml, snack-it.yml, notify-*.yml, dependabot.yml | Repo automation and project notifications |
-| **Special/Examples** | templates-test.yml, update-templates-to-examples.yml, vscode-tutorial-pipelines-test.yml, weekly-agent-pipelines-test.yml, performance-profiling.yml | Template syncing, tutorial/example regression tests, and profiling |
+| **Special/Examples** | templates-test.yml, update-templates-to-examples.yml, vscode-tutorial-pipelines-test.yml, weekly-agent-pipelines-test.yml, performance-profiling.yml, installer.yml | Template syncing, tutorial/example regression tests, profiling, and the one-line installer smoke test |
 
 ### Entry Points vs Reusable Workflows
 
@@ -32,7 +32,9 @@ Runs automatically on all PRs and pushes to main:
 - SQLite migration testing
 - Linting (ubuntu, Python 3.11) — includes Ruff, pydoclint, yamlfix, zizmor, and mypy
 - Unit tests (ubuntu, Python 3.11)
-- Integration tests (2 environments, 6 shards each)
+- Integration tests (default and docker/MySQL environments, sharded, with test lanes).
+  The docker/MySQL environment is the only place the example projects run against a
+  real MySQL-backed server, so every PR runs all of it.
 - API docs buildability test
 - Template example updates (PRs only, same-repo only)
 
@@ -40,7 +42,14 @@ Runs automatically on all PRs and pushes to main:
 
 Gated by `run-slow-ci` label (checked dynamically):
 - Multi-OS: Ubuntu, Windows, macOS
-- Multi-Python: 3.10, 3.11, 3.12, 3.13, 3.14
+- Multi-Python: Ubuntu runs the most versions, macOS and Windows only the oldest and
+  newest they support (see the matrices)
+- Tests run in shards and test lanes (see below). Tests start independently of lint in
+  both CI workflows; slow CI still requires the label. Lint failures still fail the
+  workflow, but tests can use runner time even when lint fails. There is no Windows or
+  macOS lint job: ruff and
+  pydoclint do not depend on the OS, and `mypy-platforms` type-checks the Windows and macOS
+  `sys.platform` branches from Ubuntu with `mypy --platform`.
 - Full database migration tests (MySQL, MariaDB, SQLite)
 - VSCode tutorial pipeline tests
 - Base package functionality tests
@@ -155,20 +164,63 @@ ci-fast and ci-slow ignore:
 
 But explicitly include `pyproject.toml` changes.
 
+### Test sharding
+
+Sharded jobs pass `--splits`/`--group` to pytest-split, which balances the shards by
+per-test time from `.test_durations` at the repo root. Without that file the shards are
+split by test count and finish minutes apart. Every shard and lane is its own pytest
+process, so the script gives them all one `--randomly-seed` per workflow run: with
+pytest-randomly's per-process seeds, pytest-split breaks ties between equally long tests
+differently in each process and some tests run twice while others never run. `generate-test-duration.yml` refreshes it
+weekly by opening a pull request (a direct push to `develop` is rejected). The generator
+uses the workflow token to publish a pending `check-label` on the exact generated commit
+after verifying that the PR changes only `.test_durations`. It then verifies that the PR
+is still open at that commit with exactly one release label before completing the check.
+If verification or completion fails, the check cannot pass.
+Concurrent refreshes wait for the previous run. The repository must enable
+"Allow GitHub Actions to create and approve pull requests". Scheduled Monday runs use
+the workflow on the default branch, `main`, so this automation must reach `main` before
+the schedule uses it. The reusable
+`unit-test.yml`, `integration-test-fast.yml` and `integration-test-slow.yml` take a
+`shards` input, a JSON list such as `'[1, 2, 3]'`; the shard count is the length of that
+list.
+
+### Test lanes
+
+The org can run only a limited number of jobs at once (20 Linux/Windows, 5 macOS), and a
+hosted runner has more CPU cores than one pytest process keeps busy. So a shard runs
+several pytest processes ("lanes") side by side: `scripts/test-coverage-xml.sh` reads
+`TEST_LANES`, which the reusable workflows pass from their `lanes` input, and splits the
+shard's tests between the lanes with pytest-split. Each lane has a private deployment
+root, and lanes without a server provision their own database, so they never share state.
+
+Against a docker server only tests that work in their own project are safe side by side.
+The script puts the paths in `SHARED_STATE_PATHS` (the example and integration tests,
+which use the default project and prune docker resources daemon-wide, and the `zen_stores`
+tests, which work on the server's own store) in one lane of their own whenever a run
+includes them; nothing has to be passed for that. New functional tests must isolate
+themselves (see `tests/integration/functional/conftest.py`).
+`--cleanup-docker` is not passed when lanes are used, and other server types run one
+lane. Raise the lane count only after checking that a contended runner still finishes each
+shard sooner.
+
 ### Caching
 
-uv cache key pattern:
-```yaml
-key: uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
-```
+There is deliberately no uv cache. It was branch-scoped, so almost every run missed, and
+restoring a multi-GB cache was no faster than installing from PyPI while saving it added a
+minute to every job. Measure before adding one back.
 
-Cache invalidates when integrations change.
+### Disk space
+
+`actions/free_disk_space` only deletes preinstalled toolchains when a Linux runner is short
+of space, so it costs nothing on the current large images.
 
 ## Key Supporting Files
 
 | File | Purpose |
 |------|---------|
 | `actions/setup_environment/action.yml` | Composite action for Python + ZenML dev setup |
+| `actions/free_disk_space/action.yml` | Composite action that frees Ubuntu disk space only when it is short |
 | `zizmor.yml` | Security linter configuration used by `scripts/lint.sh` and `.github/workflows/zizmor.yml` |
 | `codecov.yml` | Coverage reporting (lenient thresholds) |
 | `dependabot.yml` | Weekly GitHub Actions updates on Tuesdays 07:00 Europe/Amsterdam, grouped by minor/patch updates with cooldowns |
@@ -217,6 +269,10 @@ Documentation link safety net. Use these as the source of truth when changing do
 ### weekly-agent-pipelines-test.yml / vscode-tutorial-pipelines-test.yml
 
 Regression tests for example/tutorial/agent pipelines. If a code change affects pipeline authoring, dynamic pipelines, or example behavior, mention these workflows in the PR so maintainers know whether to rerun them.
+
+### installer.yml
+
+Smoke-tests `install-zenml.sh` on Linux x64/arm, macOS arm/Intel, and Windows Git Bash, and the `install.sh` product menu on Linux. The scripts run directly from GitHub; no website or Cloudflare configuration is required. Runs only on PRs that touch the installers, their regression scripts, or the workflow, and installs the PR's wheel through `UV_CONSTRAINT` (honored by both `uv tool install` and `uv add`) so PR runs never pull ZenML from PyPI. The wheel is built once in a separate job: keeping `setup-uv` out of the install jobs is what makes them exercise the installer's own uv bootstrap. The separate regression job uses uv and local fixture wheels to check project environments, bootstrap options, menu failure behavior, and preservation of existing skills without accessing PyPI. The `workflow_call` input `source: url` fetches the scripts directly from GitHub after they are available on `main`. Kept parallel to `zenml-io/kitaru`'s installer workflow, so fixes to one usually apply to the other.
 
 ## Important Gotchas
 
