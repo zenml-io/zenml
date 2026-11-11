@@ -5158,9 +5158,14 @@ class RestZenStore(BaseZenStore):
             CredentialsNotValid: if the request fails due to invalid
                 client credentials.
         """
-        request_headers = {
-            source_context.name: source_context.get().value,
-        }
+        request_headers = requests.structures.CaseInsensitiveDict(
+            {
+                source_context.name: source_context.get().value,
+            }
+        )
+        request_headers.update(kwargs.pop("headers", None) or {})
+        # Keep a caller's durable intent key across authentication retries.
+        request_headers.setdefault("Idempotency-Key", str(uuid4()))
 
         # If the server replies with a credentials validation (401 Unauthorized)
         # error, we (re-)authenticate and retry the request here in the
@@ -5182,9 +5187,6 @@ class RestZenStore(BaseZenStore):
             # Add a request ID to the request headers
             request_id = str(uuid4())[:8]
             request_headers["X-Request-ID"] = request_id
-            # Add an idempotency key to the request headers to ensure that
-            # requests are idempotent.
-            request_headers["Idempotency-Key"] = str(uuid4())
 
             start_time = time.time()
             logger.debug(f"[{request_id}] {method} {path} started...")

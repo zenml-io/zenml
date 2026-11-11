@@ -148,3 +148,30 @@ def test_get_raw_webhook_event_uses_delivery_query_parameter(
         f"{WEBHOOKS}/{webhook_id}/events/raw",
         params={"delivery_id": "provider/id:with,characters"},
     )
+
+
+def test_explicit_request_key_survives_public_rest_transport(mocker):
+    """Durable intent headers coexist with normal SDK request headers."""
+    from types import MethodType
+
+    from pydantic import BaseModel
+
+    class Payload(BaseModel):
+        name: str = "managed-model"
+
+    store = mocker.Mock()
+    store.url = SERVER_URL
+    store.config.verify_ssl = True
+    store.config.http_timeout = 30
+    store._last_authenticated = None
+    store._request = MethodType(RestZenStore._request, store)
+    store.session.request.return_value.status_code = 202
+    RestZenStore.post(
+        store,
+        "/managed-model-services",
+        Payload(),
+        headers={"idempotency-key": "stable-pipeline-intent"},
+    )
+    headers = store.session.request.call_args.kwargs["headers"]
+    assert headers["Idempotency-Key"] == "stable-pipeline-intent"
+    assert "X-Request-ID" in headers
