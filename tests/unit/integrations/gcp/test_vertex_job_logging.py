@@ -16,10 +16,10 @@
 import enum
 import logging
 import sys
-from contextlib import ExitStack
+from contextlib import nullcontext
 from datetime import datetime
 from types import ModuleType, SimpleNamespace
-from typing import Any, Dict, Iterator
+from typing import Any, ContextManager, Dict, Iterator
 from unittest import mock
 from uuid import uuid4
 
@@ -37,6 +37,7 @@ ENVIRONMENT = {
     "ZENML_STORE_URL": "https://zenml.example.com",
     "ZENML_STORE_API_TOKEN": API_TOKEN,
 }
+JOB_NAME = "projects/my-project/locations/europe-west4/customJobs/1"
 
 
 def _google_cloud_stubs() -> Dict[str, ModuleType]:
@@ -88,16 +89,17 @@ def vertex_modules() -> Iterator[SimpleNamespace]:
     Yields:
         The Vertex step operator, constants and utils modules.
     """
-    with ExitStack() as stack:
-        try:
-            import google.cloud.aiplatform  # noqa: F401
-        except ImportError:
-            # `patch.dict` also unloads the ZenML modules imported against
-            # the stubs, so later tests can't pick them up.
-            stack.enter_context(
-                mock.patch.dict(sys.modules, _google_cloud_stubs())
-            )
+    google_cloud: ContextManager[Any]
+    try:
+        import google.cloud.aiplatform  # noqa: F401
 
+        google_cloud = nullcontext()
+    except ImportError:
+        # `patch.dict` also unloads the ZenML modules imported against the
+        # stubs, so later tests can't pick them up.
+        google_cloud = mock.patch.dict(sys.modules, _google_cloud_stubs())
+
+    with google_cloud:
         from zenml.integrations.gcp import constants, utils
         from zenml.integrations.gcp.step_operators import (
             vertex_step_operator,
@@ -108,32 +110,6 @@ def vertex_modules() -> Iterator[SimpleNamespace]:
             utils=utils,
             vertex_step_operator=vertex_step_operator,
         )
-
-
-class _CustomJobEchoingEnvironment:
-    """Fake `CustomJob` whose repr includes the job spec it was built from."""
-
-    def __init__(self, job_request: Dict[str, Any], **attributes: Any):
-        """Create the fake job.
-
-        Args:
-            job_request: The job request to echo in the repr.
-            **attributes: Extra attributes such as `state` and `error`.
-        """
-        self._job_request = job_request
-        self.name = "projects/my-project/locations/europe-west4/customJobs/1"
-        for key, value in attributes.items():
-            setattr(self, key, value)
-
-    def __repr__(self) -> str:
-        return f"CustomJob({self._job_request!r})"
-
-
-def _assert_token_not_logged(caplog: pytest.LogCaptureFixture) -> None:
-    assert caplog.records
-    assert API_TOKEN not in caplog.text
-    for record in caplog.records:
-        assert API_TOKEN not in record.getMessage()
 
 
 def test_vertex_step_operator_submit_does_not_log_environment_values(
@@ -147,7 +123,8 @@ def test_vertex_step_operator_submit_does_not_log_environment_values(
         caplog: The log capture fixture.
     """
     vertex_step_operator = vertex_modules.vertex_step_operator
-    step_operator = vertex_step_operator.VertexStepOperator(
+    operator_class = vertex_step_operator.VertexStepOperator
+    step_operator = operator_class(
         name="vertex",
         id=uuid4(),
         config=VertexStepOperatorConfig(region="europe-west4"),
@@ -158,15 +135,14 @@ def test_vertex_step_operator_submit_does_not_log_environment_values(
         updated=datetime.now(),
     )
     client = mock.MagicMock()
+    # The returned job's repr includes the spec it was created from.
     client.create_custom_job.side_effect = lambda parent, custom_job: (
-        _CustomJobEchoingEnvironment(custom_job)
+        SimpleNamespace(name=JOB_NAME, job_spec=custom_job)
     )
     info = mock.MagicMock()
     info.config.resource_settings = ResourceSettings()
     info.get_image.return_value = "gcr.io/my-project/zenml:latest"
-    info.step_run.run_metadata = {}
 
-    operator_class = type(step_operator)
     with (
         mock.patch.object(
             operator_class, "get_job_service_client", return_value=client
@@ -188,10 +164,10 @@ def test_vertex_step_operator_submit_does_not_log_environment_values(
         step_operator.submit(
             info=info,
             entrypoint_command=["python", "-m", "zenml.entrypoints"],
-            environment=dict(ENVIRONMENT),
+            environment=ENVIRONMENT,
         )
 
-    _assert_token_not_logged(caplog)
+    assert API_TOKEN not in caplog.text
     assert "ZENML_STORE_API_TOKEN" in caplog.text
 
     submitted_job = client.create_custom_job.call_args.kwargs["custom_job"]
@@ -215,8 +191,9 @@ def test_monitor_job_failure_does_not_expose_environment_values(
         caplog: The log capture fixture.
     """
     utils = vertex_modules.utils
-    failed_job = _CustomJobEchoingEnvironment(
-        {"job_spec": {"env": ENVIRONMENT}},
+    failed_job = SimpleNamespace(
+        name=JOB_NAME,
+        job_spec={"env": ENVIRONMENT},
         state=vertex_modules.constants.VERTEX_JOB_STATES_FAILED[0],
         error=SimpleNamespace(
             message="The replica workerpool0-0 exited with status 1."
@@ -230,9 +207,12 @@ def test_monitor_job_failure_does_not_expose_environment_values(
         caplog.at_level(logging.DEBUG, logger=utils.__name__),
         pytest.raises(RuntimeError) as exc_info,
     ):
-        utils.monitor_job(job_id=failed_job.name, get_client=lambda: client)
+        utils.monitor_job(job_id=JOB_NAME, get_client=lambda: client)
 
-    _assert_token_not_logged(caplog)
-    assert API_TOKEN not in str(exc_info.value)
-    assert "exited with status 1" in str(exc_info.value)
-    assert "JOB_STATE_FAILED" in str(exc_info.value)
+    assert API_TOKEN not in caplog.text
+    assert "exited with status 1" in caplog.text
+
+    error_message = str(exc_info.value)
+    assert API_TOKEN not in error_message
+    assert "exited with status 1" in error_message
+    assert "JOB_STATE_FAILED" in error_message

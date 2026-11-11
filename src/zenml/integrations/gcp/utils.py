@@ -208,12 +208,10 @@ def redact_job_request(job_request: Dict[str, Any]) -> Dict[str, Any]:
         but replaces their values.
     """
     redacted = copy.deepcopy(job_request)
-    for worker_pool_spec in redacted.get("job_spec", {}).get(
-        "worker_pool_specs", []
-    ):
-        for env_var in worker_pool_spec.get("container_spec", {}).get(
-            "env", []
-        ):
+    # Index directly so that a change to the request shape fails loudly
+    # instead of silently logging the values unredacted.
+    for worker_pool_spec in redacted["job_spec"]["worker_pool_specs"]:
+        for env_var in worker_pool_spec["container_spec"]["env"]:
             env_var["value"] = "<redacted>"
     return redacted
 
