@@ -25,6 +25,7 @@ from pydantic import (
     Field,
     PositiveFloat,
     PositiveInt,
+    SecretStr,
     field_validator,
     model_validator,
 )
@@ -340,6 +341,10 @@ class ServerConfiguration(BaseModel):
     external_user_info_url: Optional[str] = None
     external_server_id: Optional[UUID] = None
 
+    managed_model_controller_key: Optional[SecretStr] = Field(
+        default=None, repr=False
+    )
+    managed_model_inference_url: Optional[str] = None
     managed_model_services_enabled: bool = False
     managed_model_serving_profiles: List[str] = []
 

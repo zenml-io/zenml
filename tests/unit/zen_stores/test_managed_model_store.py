@@ -167,3 +167,21 @@ def test_concurrent_identical_mutations_return_one_operation(serving_store):
         )
     assert outcomes[0].operation.id == outcomes[1].operation.id
     assert outcomes[0].generation == outcomes[1].generation == 2
+
+
+def test_worker_assignment_is_invalid_after_completion(serving_store):
+    """A valid token cannot keep accessing dependencies after its claim ends."""
+    store, request = serving_store
+    store.create(request, "worker-assignment")
+    lease = store.claim()
+    assert lease is not None
+    assert (
+        store.get_claim(lease.operation_id, lease.lease_id).service.id
+        == lease.service.id
+    )
+    with pytest.raises(IllegalOperationError):
+        store.get_claim(lease.operation_id, uuid4())
+    lease.service.operation.status = "failed"
+    store.finish(lease, lease.service, {})
+    with pytest.raises(IllegalOperationError):
+        store.get_claim(lease.operation_id, lease.lease_id)

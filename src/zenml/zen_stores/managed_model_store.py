@@ -394,6 +394,52 @@ class ManagedModelStore:
                 resources=json.loads(row.resources),
             )
 
+    def get_claim(
+        self, operation_id: UUID, lease_id: UUID
+    ) -> ManagedModelLease:
+        """Read the current assignment for a narrowly scoped worker identity.
+
+        Args:
+            operation_id: Claimed operation.
+            lease_id: Attempt identity carried by the worker token.
+
+        Returns:
+            Current durable assignment.
+
+        Raises:
+            IllegalOperationError: If the attempt expired or was superseded.
+        """
+        with Session(self.engine) as session:
+            operation = session.get(Operation, operation_id)
+            if (
+                operation is None
+                or operation.lease_id != lease_id
+                or operation.status != "running"
+                or operation.lease_expires_at is None
+                or operation.lease_expires_at <= utc_now()
+            ):
+                raise IllegalOperationError(
+                    "Execution lease expired or was superseded."
+                )
+            row = self._get_row(session, operation.service_id)
+            service = row.to_model()
+            if (
+                service.generation != operation.generation
+                or service.operation.id != operation.id
+            ):
+                raise IllegalOperationError("Service generation changed.")
+            return ManagedModelLease(
+                operation_id=operation.id,
+                lease_id=lease_id,
+                expires_at=operation.lease_expires_at,
+                service=service,
+                target_revision_id=operation.target_revision_id,
+                checkpoint=ManagedModelCheckpoint.model_validate_json(
+                    operation.checkpoint
+                ),
+                resources=json.loads(row.resources),
+            )
+
     def checkpoint(
         self, lease: ManagedModelLease, checkpoint: ManagedModelCheckpoint
     ) -> None:
@@ -507,7 +553,11 @@ class ManagedModelStore:
             raise EntityExistsError(
                 "Request key already belongs to a different intent."
             )
-        service = self._get_row(session, operation.service_id).to_model()
+        row = self._get_row(session, operation.service_id)
+        # A concurrent commit may become visible after the initial service read.
+        # Refresh the identity map before pairing its state with that operation.
+        session.refresh(row)
+        service = row.to_model()
         service.operation = ManagedModelOperation(
             id=operation.id, action=operation.action, status=operation.status
         )
