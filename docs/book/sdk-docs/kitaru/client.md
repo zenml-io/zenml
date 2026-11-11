@@ -48,6 +48,7 @@ The client exposes its functionality through resource namespaces accessed as att
 
 ## Review
 
+* `client.insights` - list and inspect insights from analyzed sessions
 * `client.investigations` / `client.annotations` - structure human review as questions, evidence-linked answers, and session verdicts
 
 ## Execution and operations
