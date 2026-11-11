@@ -344,6 +344,9 @@ class ServerConfiguration(BaseModel):
     managed_model_controller_key: Optional[SecretStr] = Field(
         default=None, repr=False
     )
+    managed_model_proxy_key: Optional[SecretStr] = Field(
+        default=None, repr=False
+    )
     managed_model_inference_url: Optional[str] = None
     managed_model_services_enabled: bool = False
     managed_model_serving_profiles: List[str] = []

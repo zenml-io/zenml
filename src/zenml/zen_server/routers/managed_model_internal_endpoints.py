@@ -7,17 +7,28 @@ from urllib.parse import urlsplit
 from uuid import UUID
 
 import jwt
-from fastapi import APIRouter, Depends, Header, HTTPException, Response
+from fastapi import (
+    APIRouter,
+    Depends,
+    Header,
+    HTTPException,
+    Response,
+    Security,
+)
 
 from zenml.exceptions import IllegalOperationError
 from zenml.managed_models.state import (
     ManagedModelAssignment,
     ManagedModelCheckpoint,
+    ManagedModelInferenceTarget,
     ManagedModelLease,
     ManagedModelResult,
     ManagedModelSource,
 )
 from zenml.models.managed_model import ModelArtifactReference
+from zenml.zen_server.auth import AuthContext, authorize
+from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.utils import verify_permission
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     server_config,
@@ -256,3 +267,42 @@ def get_managed_model_source_credentials(
             503, "Assigned source credentials are unavailable."
         ) from None
     return ManagedModelSource(uri=artifact.uri, connector=connector)
+
+
+@router.get("/inference/{service_id}")
+@async_fastapi_endpoint_wrapper
+def resolve_managed_inference(
+    service_id: UUID,
+    proxy_key: Annotated[str, Header(alias="X-ZenML-Managed-Proxy-Key")],
+    response: Response,
+    _: AuthContext = Security(authorize),
+) -> ManagedModelInferenceTarget:
+    """Authorize the original caller before releasing a private routing target.
+
+    Args:
+        service_id: Stable service selected by the public path.
+        proxy_key: Separate identity held only by the internal inference proxy.
+        response: HTTP response carrying private cache controls.
+
+    Returns:
+        Exact active deployment with admission checked in the same store read.
+
+    Raises:
+        HTTPException: If the proxy identity or feature is unavailable.
+    """
+    key = server_config().managed_model_proxy_key
+    if key is None or not secrets.compare_digest(
+        proxy_key, key.get_secret_value()
+    ):
+        raise HTTPException(401, "Invalid inference proxy identity.")
+    if not server_config().managed_model_services_enabled:
+        raise HTTPException(403, "Managed inference is not enabled.")
+    response.headers["Cache-Control"] = "no-store"
+    service = zen_store().managed_models.get(service_id)
+    verify_permission(
+        ResourceType.MANAGED_MODEL_SERVICE,
+        Action.INVOKE,
+        resource_id=service.id,
+        project_id=service.project_id,
+    )
+    return zen_store().managed_models.get_inference_target(service_id)

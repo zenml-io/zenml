@@ -14,6 +14,7 @@ from zenml.exceptions import EntityExistsError, IllegalOperationError
 from zenml.managed_models.provider import ManagedModelProviderResource
 from zenml.managed_models.state import (
     ManagedModelCheckpoint,
+    ManagedModelInferenceTarget,
     ManagedModelLease,
 )
 from zenml.models.managed_model import (
@@ -394,6 +395,42 @@ class ManagedModelStore:
                 resources=json.loads(row.resources),
             )
 
+    def get_inference_target(
+        self, service_id: UUID
+    ) -> ManagedModelInferenceTarget:
+        """Read admission and the exact active resource from one durable record.
+
+        Args:
+            service_id: Previously authorized service identity.
+
+        Returns:
+            Private active deployment with its serving generation.
+
+        Raises:
+            IllegalOperationError: If inference admission is closed.
+        """
+        with Session(self.engine) as session:
+            row = self._get_row(session, service_id)
+            service = row.to_model()
+            resources = json.loads(row.resources)
+            resource = resources.get(str(service.active_revision_id))
+            if (
+                service.desired_state != "running"
+                or service.state != "ready"
+                or service.active_revision_id is None
+                or service.serving_generation is None
+                or resource is None
+            ):
+                raise IllegalOperationError(
+                    "Inference admission is closed for this service."
+                )
+            return ManagedModelInferenceTarget(
+                service_id=service.id,
+                generation=service.serving_generation,
+                revision_id=service.active_revision_id,
+                resource=resource,
+            )
+
     def get_claim(
         self, operation_id: UUID, lease_id: UUID
     ) -> ManagedModelLease:
@@ -559,7 +596,10 @@ class ManagedModelStore:
         session.refresh(row)
         service = row.to_model()
         service.operation = ManagedModelOperation(
-            id=operation.id, action=operation.action, status=operation.status
+            id=operation.id,
+            action=operation.action,
+            status=operation.status,
+            created=operation.created,
         )
         return service
 

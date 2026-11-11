@@ -23,6 +23,8 @@ from zenml.models.managed_model import (
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_server import utils
+from zenml.zen_server.auth import authorize
+from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.routers import (
     managed_model_internal_endpoints as endpoints,
 )
@@ -184,3 +186,38 @@ def test_callback_preserves_intent_and_rejects_unknown_fields(worker_api):
     _, service, _ = store.managed_models.finish.call_args.args
     assert service.project_id == lease.service.project_id
     assert service.revisions == lease.service.revisions
+
+
+def test_inference_target_requires_proxy_identity_and_caller_permission(
+    worker_api, monkeypatch
+):
+    """Private routing metadata is unavailable to ordinary callers or unauthorized users."""
+    client, store, config, lease, base, _ = worker_api
+    config.managed_model_proxy_key = SecretStr("fixture-proxy-key")
+    config.managed_model_services_enabled = True
+    client.app.dependency_overrides[authorize] = lambda: MagicMock()
+    permission = MagicMock(side_effect=IllegalOperationError("Invoke denied"))
+    monkeypatch.setattr(endpoints, "verify_permission", permission)
+    service = lease.service
+    store.managed_models.get.return_value = service
+    url = base + "/inference/" + str(service.id)
+    assert (
+        client.get(
+            url, headers={"X-ZenML-Managed-Proxy-Key": "wrong"}
+        ).status_code
+        == 401
+    )
+    permission.assert_not_called()
+    assert (
+        client.get(
+            url, headers={"X-ZenML-Managed-Proxy-Key": "fixture-proxy-key"}
+        ).status_code
+        == 403
+    )
+    permission.assert_called_once_with(
+        ResourceType.MANAGED_MODEL_SERVICE,
+        Action.INVOKE,
+        resource_id=service.id,
+        project_id=service.project_id,
+    )
+    store.managed_models.get_inference_target.assert_not_called()

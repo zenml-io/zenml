@@ -8,6 +8,7 @@ import pytest
 from sqlalchemy import Column, MetaData, Table, Uuid, create_engine, event
 
 from zenml.exceptions import EntityExistsError, IllegalOperationError
+from zenml.managed_models.provider import ManagedModelProviderResource
 from zenml.managed_models.state import ManagedModelCheckpoint
 from zenml.models.managed_model import (
     ManagedModelMutation,
@@ -185,3 +186,33 @@ def test_worker_assignment_is_invalid_after_completion(serving_store):
     store.finish(lease, lease.service, {})
     with pytest.raises(IllegalOperationError):
         store.get_claim(lease.operation_id, lease.lease_id)
+
+
+def test_inference_selects_active_revision_and_denies_pause_immediately(
+    serving_store,
+):
+    """Admission and target come from one record, independently of provider readiness."""
+    store, request = serving_store
+    service = store.create(request, "inference-create")
+    lease = store.claim()
+    service = lease.service
+    service.state = "ready"
+    service.active_revision_id = lease.target_revision_id
+    service.serving_generation = 1
+    service.operation.status = "succeeded"
+    resource = ManagedModelProviderResource(
+        model_id="model", deployment_id="revision", environment="production"
+    )
+    store.finish(lease, service, {str(lease.target_revision_id): resource})
+    target = store.get_inference_target(service.id)
+    assert (
+        target.revision_id == lease.target_revision_id
+        and target.resource == resource
+    )
+    store.mutate(
+        service.id,
+        ManagedModelMutation(action="pause", expected_generation=1),
+        "inference-pause",
+    )
+    with pytest.raises(IllegalOperationError, match="admission is closed"):
+        store.get_inference_target(service.id)

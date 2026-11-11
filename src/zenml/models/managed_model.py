@@ -16,6 +16,8 @@ from pydantic import (
     model_validator,
 )
 
+from zenml.utils.time_utils import utc_now
+
 
 class ManagedModelContract(BaseModel):
     """Strict, versioned input to managed serving operations."""
@@ -144,6 +146,7 @@ class ManagedModelOperation(BaseModel):
     ]
     status: Literal["pending", "running", "succeeded", "failed", "uncertain"]
     error: Optional[str] = None
+    created: datetime = Field(default_factory=utc_now)
 
 
 class ManagedModelService(BaseModel):

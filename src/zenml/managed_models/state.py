@@ -62,3 +62,12 @@ class ManagedModelSource(BaseModel):
 
     uri: str
     connector: ServiceConnectorResponse = Field(repr=False)
+
+
+class ManagedModelInferenceTarget(BaseModel):
+    """Private routing decision released only after caller authorization."""
+
+    service_id: UUID
+    generation: int
+    revision_id: UUID
+    resource: ManagedModelProviderResource
