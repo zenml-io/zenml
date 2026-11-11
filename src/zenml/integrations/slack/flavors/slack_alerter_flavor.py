@@ -89,7 +89,7 @@ class SlackAlerterConfig(BaseAlerterConfig, SlackAlerterSettings):
             return valid
 
         except SlackApiError as e:
-            logger.error("Slack API Error:", e.response["error"])
+            logger.error("Slack API Error: %s", e.response["error"])
             return False
 
 
