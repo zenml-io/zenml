@@ -13,6 +13,7 @@ class ManagedModelProviderResource(BaseModel):
     """Private provider resource identity persisted for recovery and cleanup."""
 
     model_config = ConfigDict(extra="forbid")
+    owner: Optional[str] = None
     model_id: str
     deployment_id: str
     environment: str
