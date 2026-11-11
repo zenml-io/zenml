@@ -103,6 +103,8 @@ from zenml.zen_stores.schemas.webhook_schemas import (
 )
 
 __all__ = [
+    "ManagedModelOperationSchema",
+    "ManagedModelServiceSchema",
     "APIKeySchema",
     "ArtifactSchema",
     "ArtifactVersionSchema",
@@ -159,3 +161,8 @@ __all__ = [
     "WebhookSchema",
     "WebhookStatsSchema",
 ]
+
+from zenml.zen_stores.schemas.managed_model_schemas import (
+    ManagedModelOperationSchema,
+    ManagedModelServiceSchema,
+)
