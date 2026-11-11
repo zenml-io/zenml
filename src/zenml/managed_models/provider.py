@@ -31,6 +31,35 @@ class ManagedModelObservation(BaseModel):
 class ManagedModelProvider(ABC):
     """Internal provider operations, independent of workspace HTTP handlers."""
 
+    def prepare(self, revision: ManagedModelRevisionRequest) -> None:
+        """Validate dependencies before recording an external submission attempt.
+
+        Args:
+            revision: Assigned package and runtime configuration.
+        """
+
+    def refresh_access(
+        self,
+        resource: ManagedModelProviderResource,
+        revision: ManagedModelRevisionRequest,
+    ) -> None:
+        """Renew source access before activating a retained deployment.
+
+        Args:
+            resource: Owned deployment whose credentials may have expired.
+            revision: Immutable package to resolve through the assigned connector.
+        """
+
+    def cleanup_revision_secrets(
+        self, service_id: UUID, revision_id: UUID
+    ) -> None:
+        """Remove owned revision secrets, including those created before resource IDs.
+
+        Args:
+            service_id: Owning managed service.
+            revision_id: Immutable revision whose submission is being removed.
+        """
+
     @abstractmethod
     def submit(
         self,
