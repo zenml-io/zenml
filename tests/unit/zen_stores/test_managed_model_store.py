@@ -146,3 +146,24 @@ def test_permission_filter_applies_before_count_and_pagination(serving_store):
     assert [item.id for item in page.items] == [visible.id]
     assert hidden.id != visible.id
     assert store.list(request.project_id, allowed_ids=set()).total == 0
+
+
+def test_concurrent_identical_mutations_return_one_operation(serving_store):
+    """Concurrent retries recover the winning intent instead of reporting conflict."""
+    store, request = serving_store
+    service = store.create(request, "create")
+    lease = store.claim()
+    service = lease.service
+    service.active_revision_id = lease.target_revision_id
+    service.state = "ready"
+    service.operation.status = "succeeded"
+    store.finish(lease, service, {})
+    mutation = ManagedModelMutation(action="pause", expected_generation=1)
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        outcomes = list(
+            executor.map(
+                lambda _: store.mutate(service.id, mutation, "pause"), range(2)
+            )
+        )
+    assert outcomes[0].operation.id == outcomes[1].operation.id
+    assert outcomes[0].generation == outcomes[1].generation == 2

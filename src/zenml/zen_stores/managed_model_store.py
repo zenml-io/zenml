@@ -182,6 +182,45 @@ class ManagedModelStore:
     def mutate(
         self, service_id: UUID, request: ManagedModelMutation, request_key: str
     ) -> ManagedModelService:
+        """Accept or recover one lifecycle intent across concurrent retries.
+
+        Args:
+            service_id: Authorized service identity.
+            request: Lifecycle intent and observed generation.
+            request_key: Caller-stable retry identity.
+
+        Returns:
+            The accepted operation, including a concurrent identical request.
+
+        Raises:
+            EntityExistsError: If the generation, key or operation conflicts.
+            IntegrityError: If a different database constraint is violated.
+        """
+        try:
+            return self._mutate(service_id, request, request_key)
+        except (EntityExistsError, IntegrityError):
+            # Start a new transaction so MySQL repeatable-read snapshots can
+            # observe the winning operation after the failed compare-and-swap.
+            with Session(self.engine) as session:
+                row = self._get_row(session, service_id)
+                replay = self._replay(
+                    session,
+                    row.project_id,
+                    request_key,
+                    self._fingerprint(
+                        {
+                            "service_id": str(service_id),
+                            **request.model_dump(mode="json"),
+                        }
+                    ),
+                )
+                if replay:
+                    return replay
+            raise
+
+    def _mutate(
+        self, service_id: UUID, request: ManagedModelMutation, request_key: str
+    ) -> ManagedModelService:
         """Accept a serialized lifecycle mutation with optimistic concurrency.
 
         Args:
