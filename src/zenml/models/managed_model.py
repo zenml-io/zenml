@@ -159,6 +159,7 @@ class ManagedModelService(BaseModel):
         "pending", "ready", "paused", "failed", "deleting", "deleted"
     ]
     active_revision_id: Optional[UUID] = None
+    serving_generation: Optional[int] = None
     prediction_url: Optional[str] = None
     operation: ManagedModelOperation
     revisions: list[ManagedModelRevision]

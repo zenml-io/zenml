@@ -286,10 +286,10 @@ def authorize_managed_model_inference(
         raise HTTPException(
             403, "Inference admission is closed for this service."
         )
-    if service.generation != generation:
+    if service.serving_generation != generation:
         raise HTTPException(409, "Inference route generation is stale.")
     return ManagedModelAdmission(
         service_id=service.id,
-        generation=service.generation,
+        generation=generation,
         revision_id=service.active_revision_id,
     )

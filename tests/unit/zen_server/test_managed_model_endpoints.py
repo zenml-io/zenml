@@ -123,7 +123,8 @@ def test_inference_requires_invoke_and_closes_on_pause_intent(api):
     service = SimpleNamespace(
         id=service_id,
         project_id=uuid4(),
-        generation=3,
+        generation=4,
+        serving_generation=3,
         desired_state="running",
         state="ready",
         active_revision_id=revision_id,
@@ -141,6 +142,7 @@ def test_inference_requires_invoke_and_closes_on_pause_intent(api):
     assert client.get(path).status_code == 403
     permission.side_effect = None
     assert client.get(path).status_code == 200
+    assert client.get(path).json()["generation"] == 3
     assert (
         client.get(path.replace("generation=3", "generation=2")).status_code
         == 409
