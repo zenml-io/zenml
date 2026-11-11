@@ -343,7 +343,12 @@ class ManagedModelStore:
             if action == "retry":
                 action = previous.action
             if request.action == "retry" or request.action == "delete":
-                checkpoint = previous.checkpoint
+                recovery = ManagedModelCheckpoint.model_validate_json(
+                    previous.checkpoint
+                )
+                recovery.resolved_at = None
+                recovery.attempts = 0
+                checkpoint = recovery.model_dump_json()
                 target = previous.target_revision_id
                 if previous.status == "running":
                     # Fence callbacks now, but wait for the bounded old worker
