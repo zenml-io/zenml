@@ -114,3 +114,36 @@ def test_missing_request_key_is_rejected_before_intake(api):
     )
     assert response.status_code == 422
     store.managed_models.create.assert_not_called()
+
+
+def test_inference_requires_invoke_and_closes_on_pause_intent(api):
+    """Read access never implies invocation, and desired pause denies immediately."""
+    client, store, permission, _, _ = api
+    service_id, revision_id = uuid4(), uuid4()
+    service = SimpleNamespace(
+        id=service_id,
+        project_id=uuid4(),
+        generation=3,
+        desired_state="running",
+        state="ready",
+        active_revision_id=revision_id,
+    )
+    store.managed_models.get.return_value = service
+    path = (
+        f"/api/v1/managed-model-services/{service_id}/authorize?generation=3"
+    )
+
+    def deny_invoke(resource_type, action, **kwargs):
+        if action == Action.INVOKE:
+            raise IllegalOperationError("Invoke denied.")
+
+    permission.side_effect = deny_invoke
+    assert client.get(path).status_code == 403
+    permission.side_effect = None
+    assert client.get(path).status_code == 200
+    assert (
+        client.get(path.replace("generation=3", "generation=2")).status_code
+        == 409
+    )
+    service.desired_state = "paused"
+    assert client.get(path).status_code == 403

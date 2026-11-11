@@ -173,3 +173,11 @@ class ManagedModelServicePage(BaseModel):
     total: int
     offset: int
     limit: int
+
+
+class ManagedModelAdmission(BaseModel):
+    """Authorized inference target without storage or provider information."""
+
+    service_id: UUID
+    generation: int
+    revision_id: UUID

@@ -7,6 +7,7 @@ from fastapi import APIRouter, Header, HTTPException, Query, Security
 
 from zenml.enums import StackComponentType
 from zenml.models.managed_model import (
+    ManagedModelAdmission,
     ManagedModelMutation,
     ManagedModelRevisionRequest,
     ManagedModelService,
@@ -97,7 +98,7 @@ def _authorize_revision(
 
 
 @router.post("", status_code=202)
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=False)
 def create_managed_model_service(
     request: ManagedModelServiceRequest,
     request_key: Annotated[
@@ -183,7 +184,7 @@ def get_managed_model_service(
 
 
 @router.post("/{service_id}/operations", status_code=202)
-@async_fastapi_endpoint_wrapper
+@async_fastapi_endpoint_wrapper(deduplicate=False)
 def mutate_managed_model_service(
     service_id: UUID,
     request: ManagedModelMutation,
@@ -253,4 +254,42 @@ def delete_managed_model_service(
             action="delete", expected_generation=expected_generation
         ),
         request_key,
+    )
+
+
+@router.get("/{service_id}/authorize")
+@async_fastapi_endpoint_wrapper
+def authorize_managed_model_inference(
+    service_id: UUID,
+    generation: Annotated[int, Query(ge=1)],
+    _: AuthContext = Security(authorize),
+) -> ManagedModelAdmission:
+    """Authorize an exact serving generation through existing workspace identity.
+
+    Args:
+        service_id: Inference service selected by the trusted route.
+        generation: Generation observed by the route reconciler.
+
+    Returns:
+        Authorized service and active revision identifiers.
+
+    Raises:
+        HTTPException: If admission is closed or the route generation is stale.
+    """
+    _check_enabled()
+    service = _get_authorized(service_id, Action.INVOKE)
+    if (
+        service.desired_state != "running"
+        or service.state != "ready"
+        or service.active_revision_id is None
+    ):
+        raise HTTPException(
+            403, "Inference admission is closed for this service."
+        )
+    if service.generation != generation:
+        raise HTTPException(409, "Inference route generation is stale.")
+    return ManagedModelAdmission(
+        service_id=service.id,
+        generation=service.generation,
+        revision_id=service.active_revision_id,
     )
