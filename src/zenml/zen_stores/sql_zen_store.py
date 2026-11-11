@@ -421,6 +421,7 @@ from zenml.zen_stores.dag.utils import (
     load_step_run_metadata,
     sort_dag_steps,
 )
+from zenml.zen_stores.managed_model_store import ManagedModelStore
 from zenml.zen_stores.migrations.alembic import (
     Alembic,
 )
@@ -1281,6 +1282,15 @@ class SqlZenStore(BaseZenStore):
             resource_pools: The resource pools store to set.
         """
         self._resource_pools = resource_pools
+
+    @property
+    def managed_models(self) -> ManagedModelStore:
+        """Get the workspace managed model operation store.
+
+        Returns:
+            Store bound to the workspace database.
+        """
+        return ManagedModelStore(self.engine)
 
     @property
     def engine(self) -> Engine:

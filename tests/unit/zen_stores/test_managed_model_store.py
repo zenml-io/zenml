@@ -101,7 +101,7 @@ def test_update_preserves_active_revision_and_rejects_conflicts(serving_store):
     """Candidate acceptance keeps the serving revision and serializes mutations."""
     store, request = serving_store
     service = store.create(request, "create")
-    with pytest.raises(IllegalOperationError):
+    with pytest.raises(EntityExistsError):
         store.mutate(
             service.id,
             ManagedModelMutation(action="delete", expected_generation=1),
@@ -128,9 +128,21 @@ def test_update_preserves_active_revision_and_rejects_conflicts(serving_store):
         store.mutate(service.id, update, "update").operation.id
         == updated.operation.id
     )
-    with pytest.raises(IllegalOperationError):
+    with pytest.raises(EntityExistsError):
         store.mutate(
             service.id,
             ManagedModelMutation(action="pause", expected_generation=1),
             "stale",
         )
+
+
+def test_permission_filter_applies_before_count_and_pagination(serving_store):
+    """Restricted callers cannot infer hidden service counts or page offsets."""
+    store, request = serving_store
+    hidden = store.create(request, "hidden")
+    visible = store.create(request, "visible")
+    page = store.list(request.project_id, limit=1, allowed_ids={visible.id})
+    assert page.total == 1
+    assert [item.id for item in page.items] == [visible.id]
+    assert hidden.id != visible.id
+    assert store.list(request.project_id, allowed_ids=set()).total == 0

@@ -34,6 +34,7 @@ class Action(StrEnum):
     DELETE = "delete"
     READ_SECRET_VALUE = "read_secret_value"
     PRUNE = "prune"
+    INVOKE = "invoke"
 
     # Service connectors
     CLIENT = "client"
@@ -68,6 +69,7 @@ class ResourceType(StrEnum):
     SCHEDULE = "schedule"
     RUN_TEMPLATE = "run_template"
     SERVICE = "service"
+    MANAGED_MODEL_SERVICE = "managed_model_service"
     RUN_METADATA = "run_metadata"
     SECRET = "secret"
     SERVICE_ACCOUNT = "service_account"

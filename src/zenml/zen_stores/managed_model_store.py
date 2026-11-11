@@ -57,7 +57,11 @@ class ManagedModelStore:
             return self._get_row(session, service_id).to_model()
 
     def list(
-        self, project_id: UUID, offset: int = 0, limit: int = 50
+        self,
+        project_id: UUID,
+        offset: int = 0,
+        limit: int = 50,
+        allowed_ids: Optional[set[UUID]] = None,
     ) -> ManagedModelServicePage:
         """List a bounded page within exactly one project.
 
@@ -65,6 +69,7 @@ class ManagedModelStore:
             project_id: Authorized project.
             offset: Page offset.
             limit: Maximum page size.
+            allowed_ids: Authorized IDs, or None for project-wide access.
 
         Returns:
             Project-scoped services.
@@ -74,18 +79,19 @@ class ManagedModelStore:
         """
         if offset < 0 or not 1 <= limit <= 100:
             raise ValueError("Use offset >= 0 and a limit between 1 and 100.")
+        conditions = [col(Service.project_id) == project_id]
+        if allowed_ids is not None:
+            conditions.append(col(Service.id).in_(allowed_ids))
         with Session(self.engine) as session:
             rows = session.exec(
                 select(Service)
-                .where(Service.project_id == project_id)
+                .where(*conditions)
                 .order_by(col(Service.created), col(Service.id))
                 .offset(offset)
                 .limit(limit)
             ).all()
             total = session.exec(
-                select(func.count())
-                .select_from(Service)
-                .where(Service.project_id == project_id)
+                select(func.count()).select_from(Service).where(*conditions)
             ).one()
             return ManagedModelServicePage(
                 items=[row.to_model() for row in rows],
@@ -187,7 +193,7 @@ class ManagedModelStore:
             Updated service and accepted operation.
 
         Raises:
-            IllegalOperationError: If a conflicting operation is unfinished.
+            EntityExistsError: If a conflicting operation is unfinished.
         """
         self._validate_key(request_key)
         fingerprint = self._fingerprint(
@@ -206,18 +212,16 @@ class ManagedModelStore:
                 or service.operation.status
                 in ("pending", "running", "uncertain")
             ):
-                raise IllegalOperationError(
+                raise EntityExistsError(
                     "Service changed or has unfinished work; inspect it before retrying."
                 )
             if service.desired_state == "deleted":
-                raise IllegalOperationError(
-                    "Deleted services cannot be mutated."
-                )
+                raise EntityExistsError("Deleted services cannot be mutated.")
             if (
                 request.action in ("update", "rollback")
                 and service.desired_state != "running"
             ):
-                raise IllegalOperationError(
+                raise EntityExistsError(
                     "Resume the service before changing its revision."
                 )
             target = service.active_revision_id
@@ -233,12 +237,12 @@ class ManagedModelStore:
                 if request.revision_id not in {
                     revision.id for revision in service.revisions
                 }:
-                    raise IllegalOperationError(
+                    raise EntityExistsError(
                         "Rollback revision does not belong to this service."
                     )
                 target = request.revision_id
             if request.action in ("resume", "pause") and target is None:
-                raise IllegalOperationError(
+                raise EntityExistsError(
                     "Service has no successfully deployed revision."
                 )
             operation = ManagedModelOperation(
@@ -270,7 +274,7 @@ class ManagedModelStore:
                 )
             )
             if cast(CursorResult[Any], result).rowcount != 1:
-                raise IllegalOperationError(
+                raise EntityExistsError(
                     "Service changed; inspect it before retrying."
                 )
             session.add(

@@ -340,6 +340,9 @@ class ServerConfiguration(BaseModel):
     external_user_info_url: Optional[str] = None
     external_server_id: Optional[UUID] = None
 
+    managed_model_services_enabled: bool = False
+    managed_model_serving_profiles: List[str] = []
+
     rbac_implementation_source: Optional[str] = None
     feature_gate_implementation_source: Optional[str] = None
     reportable_resources: List[str] = []
