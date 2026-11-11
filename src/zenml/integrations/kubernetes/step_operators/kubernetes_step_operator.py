@@ -415,8 +415,14 @@ class KubernetesStepOperator(BaseStepOperator):
             return ExecutionStatus.FAILED
 
         if not job_list.items:
+            # Kubernetes also deletes successful jobs once their TTL expires,
+            # so the step run is the only remaining record of the outcome. An
+            # unfinished step run can't finish without its job.
             logger.warning("No jobs found for step run `%s`", step_run.id)
-            return kube_utils.get_step_run_status_for_missing_job(step_run.id)
+            status = Client().get_run_step(step_run.id, hydrate=False).status
+            if status.is_finished:
+                return status
+            return ExecutionStatus.FAILED
 
         job = job_list.items[0]
         if job.status.conditions:

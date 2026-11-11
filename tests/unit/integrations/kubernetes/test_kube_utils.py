@@ -2,14 +2,11 @@
 
 from datetime import datetime, timezone
 from typing import Any
-from unittest.mock import MagicMock
-from uuid import uuid4
 
 import pytest
 from kubernetes import client as k8s_client
 from kubernetes.client.rest import ApiException
 
-from zenml.enums import ExecutionStatus
 from zenml.integrations.kubernetes import kube_utils
 
 
@@ -274,33 +271,6 @@ def test_check_job_status_raises_other_api_errors() -> None:
     """Test that only a missing job is reported as `NOT_FOUND`."""
     with pytest.raises(ApiException):
         _check_job_status_with_read_error(403)
-
-
-@pytest.mark.parametrize(
-    "db_status,expected_status",
-    [
-        (ExecutionStatus.COMPLETED, ExecutionStatus.COMPLETED),
-        (ExecutionStatus.CACHED, ExecutionStatus.CACHED),
-        (ExecutionStatus.FAILED, ExecutionStatus.FAILED),
-        (ExecutionStatus.RUNNING, ExecutionStatus.FAILED),
-        (ExecutionStatus.INITIALIZING, ExecutionStatus.FAILED),
-        (ExecutionStatus.RETRYING, ExecutionStatus.FAILED),
-    ],
-)
-def test_get_step_run_status_for_missing_job(
-    db_status: ExecutionStatus,
-    expected_status: ExecutionStatus,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Test that only a finished step run keeps its status without a job."""
-    client = MagicMock()
-    client.get_run_step.return_value.status = db_status
-    monkeypatch.setattr(kube_utils, "Client", lambda: client)
-
-    assert (
-        kube_utils.get_step_run_status_for_missing_job(uuid4())
-        == expected_status
-    )
 
 
 @pytest.mark.parametrize("max_retries", [0, 1, 3])

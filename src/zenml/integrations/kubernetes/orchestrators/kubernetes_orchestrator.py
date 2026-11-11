@@ -1102,24 +1102,32 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             )
             return ExecutionStatus.FAILED
 
-        if not job_list.items:
-            logger.warning("No jobs found for step run `%s`", step_run.id)
-            return kube_utils.get_step_run_status_for_missing_job(step_run.id)
+        if job_list.items:
+            job_name = job_list.items[0].metadata.name
+            status, error_message = kube_utils.check_job_status(
+                batch_api=self._k8s_batch_api,
+                core_api=self._k8s_core_api,
+                namespace=self.config.kubernetes_namespace,
+                job_name=job_name,
+                api_request_timeout=self.config.api_request_timeout,
+                max_retries=self.config.max_api_retries,
+            )
+        else:
+            status, error_message = kube_utils.JobStatus.NOT_FOUND, None
 
-        job = job_list.items[0]
-        job_name = job.metadata.name
-        status, error_message = kube_utils.check_job_status(
-            batch_api=self._k8s_batch_api,
-            core_api=self._k8s_core_api,
-            namespace=self.config.kubernetes_namespace,
-            job_name=job_name,
-            api_request_timeout=self.config.api_request_timeout,
-            max_retries=self.config.max_api_retries,
-        )
+        if status == kube_utils.JobStatus.NOT_FOUND:
+            # Kubernetes also deletes successful jobs once their TTL expires,
+            # so the step run is the only remaining record of the outcome. An
+            # unfinished step run can't finish without its job.
+            logger.warning("No job found for step run `%s`", step_run.id)
+            step_run_status = (
+                Client().get_run_step(step_run.id, hydrate=False).status
+            )
+            if step_run_status.is_finished:
+                return step_run_status
+            return ExecutionStatus.FAILED
         if status == kube_utils.JobStatus.SUCCEEDED:
             return ExecutionStatus.COMPLETED
-        if status == kube_utils.JobStatus.NOT_FOUND:
-            return kube_utils.get_step_run_status_for_missing_job(step_run.id)
         if status == kube_utils.JobStatus.FAILED:
             logger.error(
                 "Kubernetes job `%s:%s` for step run `%s` failed: %s",

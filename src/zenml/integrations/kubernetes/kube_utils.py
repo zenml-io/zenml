@@ -52,7 +52,6 @@ from typing import (
     Union,
     cast,
 )
-from uuid import UUID
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -60,9 +59,7 @@ from kubernetes.client.rest import ApiException
 from pydantic import ValidationError
 from urllib3.exceptions import ReadTimeoutError
 
-from zenml.client import Client
 from zenml.config.resource_settings import ByteUnit
-from zenml.enums import ExecutionStatus
 from zenml.integrations.kubernetes.constants import (
     ENV_ZENML_KUBERNETES_MAIN_ADDRESS,
     ENV_ZENML_KUBERNETES_MAIN_PORT,
@@ -1479,26 +1476,6 @@ def check_job_status(
                 return JobStatus.FAILED, error_message
 
     return JobStatus.RUNNING, pending_message
-
-
-def get_step_run_status_for_missing_job(
-    step_run_id: UUID,
-) -> ExecutionStatus:
-    """Get the status of a step run whose job no longer exists.
-
-    A missing job says nothing about the outcome of the step, as Kubernetes
-    also deletes successful jobs once their `ttlSecondsAfterFinished` expires.
-    If the step run isn't finished, nothing is left that could ever finish it,
-    so it counts as failed.
-
-    Args:
-        step_run_id: The ID of the step run.
-
-    Returns:
-        The status of the step run if it is finished, a failed status otherwise.
-    """
-    status = Client().get_run_step(step_run_id, hydrate=False).status
-    return status if status.is_finished else ExecutionStatus.FAILED
 
 
 def create_config_map(

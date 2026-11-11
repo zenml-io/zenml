@@ -323,15 +323,18 @@ def _orchestrator() -> KubernetesOrchestrator:
     )
 
 
-def _get_status_of_completed_step_run(
+def _get_status_without_job(
     component: Union[KubernetesStepOperator, KubernetesOrchestrator],
     jobs: List[k8s_client.V1Job],
+    db_status: ExecutionStatus,
 ) -> ExecutionStatus:
-    """Get the status the component reports for a step run completed in the DB.
+    """Get the status the component reports when it can't read the job.
 
     Args:
         component: The component that ran the step.
-        jobs: The jobs that exist for the step run.
+        jobs: The jobs listed for the step run. Reading any of them fails with
+            a 404.
+        db_status: The status of the step run in the DB.
 
     Returns:
         The status reported by the component.
@@ -356,30 +359,44 @@ def _get_status_of_completed_step_run(
             new_callable=PropertyMock,
             return_value=MagicMock(),
         ),
-        patch.object(kube_utils, "Client") as client,
+        patch(f"{type(component).__module__}.Client") as client,
     ):
-        client.return_value.get_run_step.return_value.status = (
-            ExecutionStatus.COMPLETED
-        )
+        client.return_value.get_run_step.return_value.status = db_status
         if isinstance(component, KubernetesStepOperator):
             return component.get_status(step_run)
         return component.get_isolated_step_status(step_run)
 
 
 @pytest.mark.parametrize(
+    "db_status,expected_status",
+    [
+        (ExecutionStatus.COMPLETED, ExecutionStatus.COMPLETED),
+        (ExecutionStatus.FAILED, ExecutionStatus.FAILED),
+        (ExecutionStatus.RUNNING, ExecutionStatus.FAILED),
+    ],
+)
+@pytest.mark.parametrize(
     "make_component",
     [_step_operator, _orchestrator],
     ids=["step_operator", "isolated_step"],
 )
-def test_missing_job_uses_step_run_status(
+def test_missing_job_uses_finished_step_run_status(
     make_component: Callable[
         [], Union[KubernetesStepOperator, KubernetesOrchestrator]
     ],
+    db_status: ExecutionStatus,
+    expected_status: ExecutionStatus,
 ) -> None:
-    """Test step operators and isolated steps when no job exists."""
-    status = _get_status_of_completed_step_run(make_component(), jobs=[])
+    """Test that only a finished step run keeps its status without a job.
 
-    assert status == ExecutionStatus.COMPLETED
+    An unfinished step run can't finish without its job, so waiting for it
+    would never end.
+    """
+    status = _get_status_without_job(
+        make_component(), jobs=[], db_status=db_status
+    )
+
+    assert status == expected_status
 
 
 def test_isolated_step_uses_step_run_status_if_job_is_deleted_after_listing() -> (
@@ -389,8 +406,8 @@ def test_isolated_step_uses_step_run_status_if_job_is_deleted_after_listing() ->
     listed_job = k8s_client.V1Job(
         metadata=k8s_client.V1ObjectMeta(name="job-a")
     )
-    status = _get_status_of_completed_step_run(
-        _orchestrator(), jobs=[listed_job]
+    status = _get_status_without_job(
+        _orchestrator(), jobs=[listed_job], db_status=ExecutionStatus.COMPLETED
     )
 
     assert status == ExecutionStatus.COMPLETED
