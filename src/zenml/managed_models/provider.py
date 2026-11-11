@@ -52,6 +52,20 @@ class ManagedModelProvider(ABC):
         """
 
     @abstractmethod
+    def recover(
+        self, service_id: UUID, revision_id: UUID
+    ) -> Optional[ManagedModelProviderResource]:
+        """Find exactly one owned resource after an interrupted submission.
+
+        Args:
+            service_id: Owning managed service.
+            revision_id: Immutable revision identity.
+
+        Returns:
+            Matching resource, or None if no resource can be verified.
+        """
+
+    @abstractmethod
     def inspect(
         self, resource: ManagedModelProviderResource
     ) -> ManagedModelObservation:
