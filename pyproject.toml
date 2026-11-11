@@ -44,6 +44,10 @@ requires-python = ">=3.10,<3.15"
 
 dependencies = [
     "asgiref~=3.10.0",
+    # Not imported by ZenML; it arrives through docker -> requests. The floor
+    # makes upgrading ZenML also upgrade certifi, because older bundles trust
+    # the compromised emSign ECC Root CA - G3 (GHSA-6q48-6c7w-9gw2).
+    "certifi>=2026.10.19",
     "click>=8.3.3,<=8.5.0",
     "cloudpickle>=2.0.0",
     "distro>=1.6.0,<2.0.0",
