@@ -35,6 +35,7 @@ class ManagedModelServiceSchema(BaseSchema, table=True):
         ondelete="RESTRICT",
         nullable=False,
     )
+    inference_key_hash: Optional[str] = Field(default=None, max_length=64)
     generation: int = Field(default=1)
     document: str = Field(
         sa_column=Column(

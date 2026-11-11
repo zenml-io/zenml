@@ -13,7 +13,6 @@ from fastapi import (
     Header,
     HTTPException,
     Response,
-    Security,
 )
 
 from zenml.exceptions import IllegalOperationError
@@ -28,9 +27,6 @@ from zenml.managed_models.state import (
     ManagedModelSource,
 )
 from zenml.models.managed_model import ModelArtifactReference
-from zenml.zen_server.auth import AuthContext, authorize
-from zenml.zen_server.rbac.models import Action, ResourceType
-from zenml.zen_server.rbac.utils import verify_permission
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     server_config,
@@ -287,7 +283,7 @@ def resolve_managed_inference(
     service_id: UUID,
     proxy_key: Annotated[str, Header(alias="X-ZenML-Managed-Proxy-Key")],
     response: Response,
-    _: AuthContext = Security(authorize),
+    authorization: Annotated[Optional[str], Header()] = None,
 ) -> ManagedModelInferenceTarget:
     """Authorize the original caller before releasing a private routing target.
 
@@ -295,6 +291,7 @@ def resolve_managed_inference(
         service_id: Stable service selected by the public path.
         proxy_key: Separate identity held only by the internal inference proxy.
         response: HTTP response carrying private cache controls.
+        authorization: Service-specific inference bearer key.
 
     Returns:
         Exact active deployment with admission checked in the same store read.
@@ -310,14 +307,15 @@ def resolve_managed_inference(
     if not server_config().managed_model_services_enabled:
         raise HTTPException(403, "Managed inference is not enabled.")
     response.headers["Cache-Control"] = "no-store"
-    service = zen_store().managed_models.get(service_id)
-    verify_permission(
-        ResourceType.MANAGED_MODEL_SERVICE,
-        Action.INVOKE,
-        resource_id=service.id,
-        project_id=service.project_id,
-    )
-    return zen_store().managed_models.get_inference_target(service_id)
+    scheme, _, credential = (authorization or "").partition(" ")
+    if scheme.lower() != "bearer" or not credential:
+        raise HTTPException(401, "A service inference key is required.")
+    try:
+        return zen_store().managed_models.get_inference_target(
+            service_id, credential
+        )
+    except PermissionError:
+        raise HTTPException(401, "Invalid inference key.") from None
 
 
 @router.post("/workspace/drain", dependencies=[Depends(_authorize_controller)])

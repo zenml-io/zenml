@@ -24,8 +24,6 @@ from zenml.models.managed_model import (
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_server import utils
-from zenml.zen_server.auth import authorize
-from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.routers import (
     managed_model_internal_endpoints as endpoints,
 )
@@ -189,39 +187,46 @@ def test_callback_preserves_intent_and_rejects_unknown_fields(worker_api):
     assert service.revisions == lease.service.revisions
 
 
-def test_inference_target_requires_proxy_identity_and_caller_permission(
-    worker_api, monkeypatch
+def test_inference_requires_proxy_and_service_key_without_zenml_login(
+    worker_api,
 ):
-    """Private routing metadata is unavailable to ordinary callers or unauthorized users."""
+    """The private resolver accepts only a service key and the proxy identity."""
     client, store, config, lease, base, _ = worker_api
     config.managed_model_proxy_key = SecretStr("fixture-proxy-key")
     config.managed_model_services_enabled = True
-    client.app.dependency_overrides[authorize] = lambda: MagicMock()
-    permission = MagicMock(side_effect=IllegalOperationError("Invoke denied"))
-    monkeypatch.setattr(endpoints, "verify_permission", permission)
-    service = lease.service
-    store.managed_models.get.return_value = service
-    url = base + "/inference/" + str(service.id)
-    assert (
-        client.get(
-            url, headers={"X-ZenML-Managed-Proxy-Key": "wrong"}
-        ).status_code
-        == 401
-    )
-    permission.assert_not_called()
-    assert (
-        client.get(
-            url, headers={"X-ZenML-Managed-Proxy-Key": "fixture-proxy-key"}
-        ).status_code
-        == 403
-    )
-    permission.assert_called_once_with(
-        ResourceType.MANAGED_MODEL_SERVICE,
-        Action.INVOKE,
-        resource_id=service.id,
-        project_id=service.project_id,
-    )
+    service_id = lease.service.id
+    url = base + "/inference/" + str(service_id)
+    headers = {
+        "X-ZenML-Managed-Proxy-Key": "wrong",
+        "Authorization": "Bearer zmm_fixture",
+    }
+    assert client.get(url, headers=headers).status_code == 401
     store.managed_models.get_inference_target.assert_not_called()
+    headers["X-ZenML-Managed-Proxy-Key"] = "fixture-proxy-key"
+    store.managed_models.get_inference_target.side_effect = PermissionError(
+        "Invalid key"
+    )
+    assert client.get(url, headers=headers).status_code == 401
+    headers["Authorization"] = "Bearer zenml-access-token"
+    assert client.get(url, headers=headers).status_code == 401
+    store.managed_models.get_inference_target.side_effect = None
+    store.managed_models.get_inference_target.return_value = {
+        "service_id": str(service_id),
+        "generation": 1,
+        "revision_id": str(uuid4()),
+        "resource": {
+            "model_id": "m",
+            "deployment_id": "d",
+            "environment": "production",
+        },
+    }
+    headers["Authorization"] = "Bearer zmm_fixture"
+    assert client.get(url, headers=headers).status_code == 200
+    store.managed_models.get_inference_target.assert_called_with(
+        service_id, "zmm_fixture"
+    )
+    del headers["Authorization"]
+    assert client.get(url, headers=headers).status_code == 401
 
 
 def test_worker_uses_retained_connector_binding(worker_api):

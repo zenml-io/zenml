@@ -137,39 +137,40 @@ def test_missing_request_key_is_rejected_before_intake(api):
     store.managed_models.create.assert_not_called()
 
 
-def test_inference_requires_invoke_and_closes_on_pause_intent(api):
-    """Read access never implies invocation, and desired pause denies immediately."""
+def test_inference_key_requires_management_permissions(api):
+    """Only managers with invoke access can issue a key; readers cannot."""
     client, store, permission, _, _ = api
-    service_id, revision_id = uuid4(), uuid4()
-    service = SimpleNamespace(
-        id=service_id,
-        project_id=uuid4(),
-        generation=4,
-        serving_generation=3,
-        desired_state="running",
-        state="ready",
-        active_revision_id=revision_id,
+    service_id = uuid4()
+    store.managed_models.get.return_value = SimpleNamespace(
+        id=service_id, project_id=uuid4()
     )
-    store.managed_models.get.return_value = service
-    path = (
-        f"/api/v1/managed-model-services/{service_id}/authorize?generation=3"
-    )
+    store.managed_models.rotate_inference_key.return_value = "zmm_fixture"
+    path = f"/api/v1/managed-model-services/{service_id}/inference-key"
+    for denied in (Action.UPDATE, Action.INVOKE):
 
-    def deny_invoke(resource_type, action, **kwargs):
-        if action == Action.INVOKE:
-            raise IllegalOperationError("Invoke denied.")
+        def deny(resource_type, action, **kwargs):
+            if action == denied:
+                raise IllegalOperationError("Denied")
 
-    permission.side_effect = deny_invoke
-    assert client.get(path).status_code == 403
+        permission.side_effect = deny
+        assert client.post(path).status_code == 403
+    store.managed_models.rotate_inference_key.assert_not_called()
     permission.side_effect = None
-    assert client.get(path).status_code == 200
-    assert client.get(path).json()["generation"] == 3
-    assert (
-        client.get(path.replace("generation=3", "generation=2")).status_code
-        == 409
+    response = client.post(path)
+    assert response.status_code == 200
+    assert response.json() == {"key": "zmm_fixture"}
+    assert response.headers["cache-control"] == "no-store"
+    assert client.get(path).status_code == 405
+    assert client.delete(path).status_code == 200
+    store.managed_models.revoke_inference_key.assert_called_once_with(
+        service_id
     )
-    service.desired_state = "paused"
-    assert client.get(path).status_code == 403
+    assert (
+        client.get(
+            f"/api/v1/managed-model-services/{service_id}/authorize"
+        ).status_code
+        == 404
+    )
 
 
 def test_intake_accepts_registered_managed_flavor(api):

@@ -3,12 +3,12 @@
 from typing import Annotated, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Header, HTTPException, Query, Security
+from fastapi import APIRouter, Header, HTTPException, Query, Response, Security
 
 from zenml.enums import StackComponentType
 from zenml.managed_models.state import ManagedModelDependency
 from zenml.models.managed_model import (
-    ManagedModelAdmission,
+    ManagedModelInferenceKey,
     ManagedModelMutation,
     ManagedModelRevisionRequest,
     ManagedModelService,
@@ -300,42 +300,44 @@ def delete_managed_model_service(
     )
 
 
-@router.get("/{service_id}/authorize")
-@async_fastapi_endpoint_wrapper
-def authorize_managed_model_inference(
+@router.post("/{service_id}/inference-key")
+@async_fastapi_endpoint_wrapper(deduplicate=False)
+def rotate_managed_model_inference_key(
     service_id: UUID,
-    generation: Annotated[int, Query(ge=1)],
+    response: Response,
     _: AuthContext = Security(authorize),
-) -> ManagedModelAdmission:
-    """Authorize an exact serving generation through existing workspace identity.
+) -> ManagedModelInferenceKey:
+    """Issue a new inference key, immediately replacing any previous key.
 
     Args:
-        service_id: Inference service selected by the trusted route.
-        generation: Generation observed by the route reconciler.
+        service_id: Target service.
+        response: Response carrying private cache controls.
 
     Returns:
-        Authorized service and active revision identifiers.
-
-    Raises:
-        HTTPException: If admission is closed or the route generation is stale.
+        Plaintext key, which cannot be retrieved again.
     """
     _check_enabled()
-    service = _get_authorized(service_id, Action.INVOKE)
-    if (
-        service.desired_state != "running"
-        or service.state != "ready"
-        or service.active_revision_id is None
-    ):
-        raise HTTPException(
-            403, "Inference admission is closed for this service."
-        )
-    if service.serving_generation != generation:
-        raise HTTPException(409, "Inference route generation is stale.")
-    return ManagedModelAdmission(
-        service_id=service.id,
-        generation=generation,
-        revision_id=service.active_revision_id,
+    _get_authorized(service_id, Action.UPDATE)
+    _get_authorized(service_id, Action.INVOKE)
+    response.headers["Cache-Control"] = "no-store"
+    return ManagedModelInferenceKey(
+        key=zen_store().managed_models.rotate_inference_key(service_id)
     )
+
+
+@router.delete("/{service_id}/inference-key")
+@async_fastapi_endpoint_wrapper(deduplicate=False)
+def revoke_managed_model_inference_key(
+    service_id: UUID,
+    _: AuthContext = Security(authorize),
+) -> None:
+    """Revoke inference access while preserving the deployment.
+
+    Args:
+        service_id: Target service.
+    """
+    _get_authorized(service_id, Action.UPDATE)
+    zen_store().managed_models.revoke_inference_key(service_id)
 
 
 @router.delete("/{service_id}/record")

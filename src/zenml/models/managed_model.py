@@ -97,6 +97,12 @@ class ManagedModelRevisionRequest(ManagedModelContract):
     serving_profile: str = Field(min_length=1, max_length=128)
 
 
+class ManagedModelInferenceKey(ManagedModelContract):
+    """Inference credential returned only when issued or rotated."""
+
+    key: str = Field(repr=False)
+
+
 class ManagedModelServiceRequest(ManagedModelRevisionRequest):
     """Create intent scoped to a project and model-deployer component."""
 
@@ -177,11 +183,3 @@ class ManagedModelServicePage(BaseModel):
     total: int
     offset: int
     limit: int
-
-
-class ManagedModelAdmission(BaseModel):
-    """Authorized inference target without storage or provider information."""
-
-    service_id: UUID
-    generation: int
-    revision_id: UUID

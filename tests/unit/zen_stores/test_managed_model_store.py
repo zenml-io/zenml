@@ -221,8 +221,9 @@ def test_inference_selects_active_revision_and_denies_pause_immediately(
     resource = ManagedModelProviderResource(
         model_id="model", deployment_id="revision", environment="production"
     )
+    key = store.rotate_inference_key(service.id)
     store.finish(lease, service, {str(lease.target_revision_id): resource})
-    target = store.get_inference_target(service.id)
+    target = store.get_inference_target(service.id, key)
     assert (
         target.revision_id == lease.target_revision_id
         and target.resource == resource
@@ -233,7 +234,7 @@ def test_inference_selects_active_revision_and_denies_pause_immediately(
         "inference-pause",
     )
     with pytest.raises(IllegalOperationError, match="admission is closed"):
-        store.get_inference_target(service.id)
+        store.get_inference_target(service.id, key)
 
 
 def test_retained_dependencies_block_deletion_until_cleanup(serving_store):
@@ -402,3 +403,49 @@ def test_absence_confirmation_requires_exact_uncertain_submission(
     assert resumed.checkpoint.phase == "verified-absent"
     assert resumed.checkpoint.error == "Fixture evidence of absence"
     assert "Fixture evidence" not in store.get(service.id).model_dump_json()
+
+
+def test_inference_keys_are_private_scoped_rotatable_and_revocable(
+    serving_store,
+):
+    """Keys grant only inference for one service and are never recoverable."""
+    import hashlib
+
+    from sqlmodel import Session
+
+    store, request = serving_store
+    service = store.create(request, "key-test")
+    other = store.create(
+        request.model_copy(update={"name": "other"}), "other-key-test"
+    )
+    with pytest.raises(PermissionError):
+        store.get_inference_target(service.id, "zenml-access-token")
+    key = store.rotate_inference_key(service.id)
+    with Session(store.engine) as session:
+        row = session.get(ManagedModelServiceSchema, service.id)
+        assert (
+            row.inference_key_hash == hashlib.sha256(key.encode()).hexdigest()
+        )
+        assert key not in row.document
+        assert "inference_key" not in row.to_model().model_dump_json()
+    with pytest.raises(PermissionError):
+        store.get_inference_target(other.id, key)
+    # A correct key passes authentication but cannot invoke an unready service.
+    with pytest.raises(IllegalOperationError, match="admission is closed"):
+        store.get_inference_target(service.id, key)
+    replacement = store.rotate_inference_key(service.id)
+    assert replacement != key
+    with pytest.raises(PermissionError):
+        store.get_inference_target(service.id, key)
+    with pytest.raises(IllegalOperationError, match="admission is closed"):
+        store.get_inference_target(service.id, replacement)
+    store.revoke_inference_key(service.id)
+    with pytest.raises(PermissionError):
+        store.get_inference_target(service.id, replacement)
+    store.mutate(
+        service.id,
+        ManagedModelMutation(action="delete", expected_generation=1),
+        "delete-key-test",
+    )
+    with pytest.raises(IllegalOperationError, match="deleted service"):
+        store.rotate_inference_key(service.id)

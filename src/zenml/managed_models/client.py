@@ -1,14 +1,17 @@
-"""Credential-free SDK for the workspace managed serving API."""
+"""Management and service-key inference clients for managed model services."""
 
 import json
 import time
 from contextlib import contextmanager
 from typing import Any, Iterator, List, Optional
+from urllib.parse import urlsplit
 from uuid import UUID
 
 import requests
 
 from zenml.models.managed_model import (
+    ManagedModelContract,
+    ManagedModelInferenceKey,
     ManagedModelMutation,
     ManagedModelService,
     ManagedModelServicePage,
@@ -171,16 +174,75 @@ class ManagedModelClient:
         """
         self.store.delete(f"/managed-model-services/{service_id}/record")
 
+    def rotate_inference_key(
+        self, service_id: UUID
+    ) -> ManagedModelInferenceKey:
+        """Issue a key once and invalidate any previously issued key.
+
+        Args:
+            service_id: Service to authorize independently of a ZenML login.
+
+        Returns:
+            Plaintext credential to store securely outside pipeline artifacts.
+        """
+        return ManagedModelInferenceKey.model_validate(
+            self.store.post(
+                f"/managed-model-services/{service_id}/inference-key",
+                body=ManagedModelContract(),
+            )
+        )
+
+    def revoke_inference_key(self, service_id: UUID) -> None:
+        """Disable new inference requests for the service.
+
+        Args:
+            service_id: Service whose inference credential is revoked.
+        """
+        self.store.delete(
+            f"/managed-model-services/{service_id}/inference-key"
+        )
+
+
+class ManagedModelInferenceClient:
+    """Invoke one managed model using its URL and service-specific key."""
+
+    def __init__(self, prediction_url: str, api_key: str) -> None:
+        """Configure inference without a ZenML workspace login.
+
+        Args:
+            prediction_url: HTTPS prediction URL returned by the service.
+            api_key: Service-specific inference key, not a ZenML access token.
+
+        Raises:
+            ValueError: If the URL or key is invalid.
+        """
+        parsed = urlsplit(prediction_url)
+        parts = parsed.path.strip("/").split("/")
+        if (
+            parsed.scheme != "https"
+            or not parsed.hostname
+            or parsed.username
+            or parsed.password
+            or parsed.query
+            or parsed.fragment
+            or len(parts) != 2
+            or parts[0] != "models"
+        ):
+            raise ValueError("Use the service's HTTPS prediction URL.")
+        self.service_id = UUID(parts[1])
+        if not api_key or "\n" in api_key or "\r" in api_key:
+            raise ValueError("An inference key is required.")
+        self.prediction_url = prediction_url.rstrip("/")
+        self._api_key = api_key
+
     def predict(
         self,
-        service_id: UUID,
         messages: List[dict[str, Any]],
         **parameters: Any,
     ) -> dict[str, Any]:
         """Invoke the active revision through the authenticated workspace gateway.
 
         Args:
-            service_id: Ready service identity.
             messages: OpenAI-compatible chat messages.
             **parameters: Additional inference options such as max_tokens.
 
@@ -190,9 +252,7 @@ class ManagedModelClient:
         Raises:
             RuntimeError: If the gateway does not return a JSON object.
         """
-        with self._open_inference(
-            service_id, messages, False, parameters
-        ) as response:
+        with self._open_inference(messages, False, parameters) as response:
             value = response.json()
             if not isinstance(value, dict):
                 raise RuntimeError("Invalid inference response.")
@@ -200,14 +260,12 @@ class ManagedModelClient:
 
     def stream(
         self,
-        service_id: UUID,
         messages: List[dict[str, Any]],
         **parameters: Any,
     ) -> Iterator[dict[str, Any]]:
         """Yield incremental chat-completion events without retrying generated work.
 
         Args:
-            service_id: Ready service identity.
             messages: OpenAI-compatible chat messages.
             **parameters: Additional inference options such as max_tokens.
 
@@ -217,9 +275,7 @@ class ManagedModelClient:
         Raises:
             RuntimeError: If the stream reports an error or invalid data.
         """
-        with self._open_inference(
-            service_id, messages, True, parameters
-        ) as response:
+        with self._open_inference(messages, True, parameters) as response:
             for line in response.iter_lines(chunk_size=1, decode_unicode=True):
                 if not line or not line.startswith("data:"):
                     continue
@@ -240,7 +296,6 @@ class ManagedModelClient:
     @contextmanager
     def _open_inference(
         self,
-        service_id: UUID,
         messages: List[dict[str, Any]],
         stream: bool,
         parameters: dict[str, Any],
@@ -248,7 +303,6 @@ class ManagedModelClient:
         """Open one inference request against the exact workspace-owned URL.
 
         Args:
-            service_id: Stable service identity.
             messages: Chat messages.
             stream: Whether incremental events are requested.
             parameters: Additional provider-supported request options.
@@ -257,23 +311,11 @@ class ManagedModelClient:
             An open response that is closed on completion or consumer exit.
 
         Raises:
-            ValueError: If the service is not ready or its URL is not trusted.
             RuntimeError: If the request is rejected or interrupted.
         """
-        service = self.get(service_id)
-        expected = self.store.url.rstrip("/") + f"/models/{service_id}"
-        if (
-            service.state != "ready"
-            or service.desired_state != "running"
-            or service.prediction_url != expected
-            or not expected.startswith("https://")
-        ):
-            raise ValueError(
-                "Service must be ready at its trusted HTTPS workspace inference URL."
-            )
         body = {
             **parameters,
-            "model": str(service_id),
+            "model": str(self.service_id),
             "messages": messages,
             "stream": stream,
         }
@@ -281,12 +323,9 @@ class ManagedModelClient:
             with requests.Session() as session:
                 session.trust_env = False
                 with session.post(
-                    expected + "/v1/chat/completions",
+                    self.prediction_url + "/v1/chat/completions",
                     json=body,
-                    headers={
-                        "Authorization": "Bearer "
-                        + self.store.get_or_generate_api_token()
-                    },
+                    headers={"Authorization": "Bearer " + self._api_key},
                     stream=True,
                     timeout=(5, 180),
                     allow_redirects=False,

@@ -1,12 +1,14 @@
 """Managed serving waits preserve durable work when a client stops waiting."""
 
-from types import SimpleNamespace
 from unittest.mock import MagicMock
 from uuid import uuid4
 
 import pytest
 
-from zenml.managed_models.client import ManagedModelClient
+from zenml.managed_models.client import (
+    ManagedModelClient,
+    ManagedModelInferenceClient,
+)
 from zenml.models.managed_model import ManagedModelService
 from zenml.utils.time_utils import utc_now
 
@@ -39,43 +41,46 @@ def test_wait_timeout_does_not_cancel_or_submit_again():
     assert client.wait(service, timeout=0).state == "ready"
 
 
-def test_inference_rejects_untrusted_url_and_closes_stream(monkeypatch):
-    """Workspace credentials are sent only to the fixed same-origin inference route."""
-    store = MagicMock(url="https://workspace.test")
-    store.get_or_generate_api_token.return_value = "fixture-workspace-token"
-    client = ManagedModelClient(store)
+def test_inference_needs_only_url_and_key_and_closes_stream(monkeypatch):
+    """An application invokes with a service key and never initializes ZenML login."""
     service_id = uuid4()
-    service = SimpleNamespace(
-        state="ready",
-        desired_state="running",
-        prediction_url="https://attacker.test",
-    )
-    monkeypatch.setattr(client, "get", lambda identity: service)
     session_factory = MagicMock()
     monkeypatch.setattr(
         "zenml.managed_models.client.requests.Session", session_factory
     )
-    with pytest.raises(ValueError):
-        client.predict(service_id, [])
-    store.get_or_generate_api_token.assert_not_called()
+    zenml_client = MagicMock(
+        side_effect=AssertionError("No ZenML login for inference")
+    )
+    monkeypatch.setattr("zenml.client.Client", zenml_client)
+    for url in (
+        "http://workspace.test",
+        "https://workspace.test",
+        f"https://user@workspace.test/models/{service_id}",
+    ):
+        with pytest.raises(ValueError):
+            ManagedModelInferenceClient(url, "zmm_fixture")
     session_factory.assert_not_called()
-    service.prediction_url = f"https://workspace.test/models/{service_id}"
+    client = ManagedModelInferenceClient(
+        f"https://workspace.test/models/{service_id}", "zmm_fixture"
+    )
     session = session_factory.return_value.__enter__.return_value
     response = session.post.return_value.__enter__.return_value
     response.status_code = 200
     response.iter_lines.return_value = iter(
         ['data: {"choices": []}', "data: [DONE]"]
     )
-    assert list(client.stream(service_id, [])) == [{"choices": []}]
+    assert list(client.stream([])) == [{"choices": []}]
     response.iter_lines.assert_called_once_with(
         chunk_size=1, decode_unicode=True
     )
     assert session.post.call_args.kwargs["headers"] == {
-        "Authorization": "Bearer fixture-workspace-token"
+        "Authorization": "Bearer zmm_fixture"
     }
     assert session.post.call_args.kwargs["allow_redirects"] is False
     session.post.return_value.__exit__.assert_called_once()
-
     response.iter_lines.return_value = iter(['data: {"choices": []}'])
     with pytest.raises(RuntimeError, match="before completion"):
-        list(client.stream(service_id, []))
+        list(client.stream([]))
+    response.json.return_value = {"choices": []}
+    assert client.predict([]) == {"choices": []}
+    zenml_client.assert_not_called()
