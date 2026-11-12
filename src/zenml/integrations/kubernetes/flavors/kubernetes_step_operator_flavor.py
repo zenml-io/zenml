@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Kubernetes step operator flavor."""
 
-from typing import TYPE_CHECKING, Any, List, Optional, Type
+from typing import TYPE_CHECKING, Any, List, Literal, Optional, Type
 
 from pydantic import Field, NonNegativeInt, PositiveInt, field_validator
 
@@ -54,9 +54,11 @@ class KubernetesStepOperatorSettings(BaseSettings):
         default=False,
         description="Whether to run step containers in privileged mode with extended permissions.",
     )
-    image_pull_policy: str = Field(
-        default="IfNotPresent",
-        description="Kubernetes image pull policy: Always, IfNotPresent, or Never.",
+    image_pull_policy: Optional[Literal["Always", "IfNotPresent", "Never"]] = (
+        Field(
+            default=None,
+            description="Kubernetes image pull policy: Always, IfNotPresent, or Never.",
+        )
     )
     job_name_prefix: Optional[str] = Field(
         default=None,

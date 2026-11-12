@@ -60,9 +60,9 @@ def test_build_pod_manifest_metadata():
     assert container.security_context.privileged is True
 
 
-def test_build_pod_manifest_image_pull_policy():
-    """Test that the image pull policy is correctly set in the manifest."""
-    manifest: V1Pod = build_pod_manifest(
+def test_build_pod_manifest_explicit_image_pull_policy():
+    """Test that an explicitly passed image pull policy is correctly set."""
+    manifest = build_pod_manifest(
         pod_name="test_name",
         image_name="test_image",
         command=["test", "command"],
@@ -72,8 +72,21 @@ def test_build_pod_manifest_image_pull_policy():
     )
 
     assert isinstance(manifest, V1Pod)
-    container = manifest.spec.containers[0]
-    assert container.image_pull_policy == "Always"
+    assert manifest.spec.containers[0].image_pull_policy == "Always"
+
+
+def test_build_pod_manifest_default_image_pull_policy():
+    """Test that the image pull policy defaults to None when omitted."""
+    manifest = build_pod_manifest(
+        pod_name="test_name",
+        image_name="test_image",
+        command=["test", "command"],
+        args=["test", "args"],
+        privileged=False,
+    )
+
+    assert isinstance(manifest, V1Pod)
+    assert manifest.spec.containers[0].image_pull_policy is None
 
 
 @pytest.fixture

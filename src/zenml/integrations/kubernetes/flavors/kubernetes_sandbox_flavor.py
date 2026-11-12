@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Kubernetes sandbox flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Literal, Optional, Type
 
 from pydantic import Field, NonNegativeInt, PositiveInt
 
@@ -69,9 +69,11 @@ class KubernetesSandboxSettings(ContainerizedSandboxSettings):
         default=False,
         description="Whether sandbox session containers run in privileged mode.",
     )
-    image_pull_policy: str = Field(
-        default="IfNotPresent",
-        description="Kubernetes image pull policy: Always, IfNotPresent, or Never.",
+    image_pull_policy: Optional[Literal["Always", "IfNotPresent", "Never"]] = (
+        Field(
+            default=None,
+            description="Kubernetes image pull policy: Always, IfNotPresent, or Never.",
+        )
     )
     owner: KubernetesSandboxOwner = Field(
         default=KubernetesSandboxOwner.NONE,

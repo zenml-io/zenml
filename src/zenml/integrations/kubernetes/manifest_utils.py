@@ -16,7 +16,7 @@
 import base64
 import os
 import sys
-from typing import Any, Dict, List, Mapping, Optional
+from typing import Any, Dict, List, Literal, Mapping, Optional
 
 from kubernetes import client as k8s_client
 
@@ -102,7 +102,9 @@ def build_pod_manifest(
     command: List[str],
     args: List[str],
     privileged: bool,
-    image_pull_policy: Optional[str] = None,
+    image_pull_policy: Optional[
+        Literal["Always", "IfNotPresent", "Never"]
+    ] = None,
     pod_settings: Optional[KubernetesPodSettings] = None,
     service_account_name: Optional[str] = None,
     env: Optional[Dict[str, str]] = None,
