@@ -19,6 +19,7 @@ from typing import List
 import pytest
 from pydantic import BaseModel
 
+from zenml.constants import ENV_ZENML_USE_GLOBAL_RANDOM_SEED
 from zenml.utils import string_utils
 
 
@@ -157,3 +158,37 @@ def test_format_name_template_does_not_mutate_substitutions() -> None:
     )
 
     assert substitutions == {"env": "prod"}
+
+
+def test_random_str_uses_given_alphabet() -> None:
+    """Check that random strings only use characters from their alphabet."""
+    assert set(string_utils.random_str(64, alphabet="ab")) <= {"a", "b"}
+    assert set(string_utils.random_hex_str(64)) <= set("0123456789abcdef")
+
+
+def test_random_str_ignores_global_seed_by_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Check that a global seed doesn't make random strings repeat."""
+    monkeypatch.delenv(ENV_ZENML_USE_GLOBAL_RANDOM_SEED, raising=False)
+
+    random.seed(42)
+    first = string_utils.random_str(16)
+    random.seed(42)
+    assert string_utils.random_str(16) != first
+
+
+def test_random_str_follows_global_seed_when_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Check that random_str is reproducible when users opt in."""
+    monkeypatch.setenv(ENV_ZENML_USE_GLOBAL_RANDOM_SEED, "true")
+
+    random.seed(42)
+    first = string_utils.random_str(16)
+    second = string_utils.random_str(16)
+
+    random.seed(42)
+    assert string_utils.random_str(16) == first
+    assert string_utils.random_str(16) == second
+    assert first != second

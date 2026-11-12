@@ -32,7 +32,6 @@
 
 import json
 import os
-import random
 import socket
 from contextlib import contextmanager
 from typing import (
@@ -105,6 +104,7 @@ from zenml.stack import StackValidator
 from zenml.step_operators.step_operator_entrypoint_configuration import (
     StepOperatorEntrypointConfiguration,
 )
+from zenml.utils.string_utils import random_hex_str
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
@@ -682,7 +682,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             The job name.
         """
         job_name = settings.job_name_prefix or ""
-        random_prefix = "".join(random.choices("0123456789abcdef", k=8))
+        random_prefix = random_hex_str(8)
         job_name += f"-{random_prefix}-{pipeline_name}"
         if step_name:
             job_name += f"-{step_name}"

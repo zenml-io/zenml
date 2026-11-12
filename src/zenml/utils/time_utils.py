@@ -188,15 +188,16 @@ def exponential_backoff_delays(
     if jitter not in {"none", "full", "equal"}:
         raise ValueError("`jitter` must be one of 'none', 'full', or 'equal'.")
 
+    rng = random.SystemRandom()
     attempt = 0
     capped_delay = min(initial_delay, max_delay)
     while attempts is None or attempt < attempts:
         delay = capped_delay
         if jitter == "full":
-            delay = random.uniform(0, delay)
+            delay = rng.uniform(0, delay)
         elif jitter == "equal":
             half_delay = delay / 2
-            delay = half_delay + random.uniform(0, half_delay)
+            delay = half_delay + rng.uniform(0, half_delay)
         yield delay
         attempt += 1
         if capped_delay < max_delay:
