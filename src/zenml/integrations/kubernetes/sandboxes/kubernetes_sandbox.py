@@ -28,6 +28,7 @@ from typing import Dict, Iterator, List, Optional, Tuple, Type, Union, cast
 
 from kubernetes import client as k8s_client
 from kubernetes.stream import stream as k8s_stream
+from websocket import WebSocketBadStatusException
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.kubernetes import kube_utils
@@ -42,6 +43,7 @@ from zenml.sandboxes.base import BaseSandbox, BaseSandboxSettings
 from zenml.sandboxes.process import SandboxExecError, SandboxProcess
 from zenml.sandboxes.session import SandboxSession
 from zenml.steps.step_context import StepContext
+from zenml.utils.time_utils import exponential_backoff_delays
 
 logger = get_logger(__name__)
 
@@ -58,6 +60,39 @@ _STREAM_BUFFER_MAX_LINES = 100_000
 _FILE_TRANSFER_CHUNK_CHARS = 1024 * 1024
 
 _FILE_UPLOAD_MAX_BYTES = 256 * 1024 * 1024
+
+# Handshake statuses with which the API server, or a proxy in front of it,
+# refuses the websocket upgrade because of a transient condition. 504 is
+# left out: a proxy only sends it after giving up on a slow upstream, which
+# might have started the command anyway.
+_RETRYABLE_HANDSHAKE_STATUS_CODES = frozenset({429, 500, 502, 503})
+
+
+def _get_retryable_handshake_failure(error: BaseException) -> Optional[str]:
+    """Describe an exec handshake failure that is transient and safe to retry.
+
+    The Kubernetes client wraps every websocket failure in an `ApiException`
+    with status 0, so the original error is looked up in the exception chain.
+    Only failures that guarantee the command was never started qualify:
+    refused upgrades with a transient status, and refused TCP connections.
+
+    Args:
+        error: The error raised while opening the exec stream.
+
+    Returns:
+        A short description of the failure if the handshake can be retried,
+        `None` otherwise.
+    """
+    current: Optional[BaseException] = error
+    while current is not None:
+        if isinstance(current, WebSocketBadStatusException):
+            if current.status_code in _RETRYABLE_HANDSHAKE_STATUS_CODES:
+                return f"status {current.status_code}"
+            return None
+        if isinstance(current, ConnectionRefusedError):
+            return "connection refused"
+        current = current.__cause__ or current.__context__
+    return None
 
 
 def _split_lines_with_buffer(chunk: str, buffer: str) -> Tuple[List[str], str]:
@@ -412,6 +447,10 @@ class KubernetesSandboxSession(SandboxSession):
     ) -> "k8s_stream.ws_client.WSClient":
         """Open a websocket exec stream in the sandbox pod.
 
+        Transient handshake failures, such as a proxy in front of the
+        Kubernetes API answering with 503 under load, are retried up to
+        `max_api_retries` times with jittered exponential backoff.
+
         Args:
             command: Command to execute.
             stdin: Whether to open a stdin channel.
@@ -422,23 +461,48 @@ class KubernetesSandboxSession(SandboxSession):
         Returns:
             The websocket client.
         """
-        try:
-            with self._client_lock:
-                return k8s_stream(
-                    self._get_core_api().connect_get_namespaced_pod_exec,
-                    self._pod_name,
-                    self._namespace,
-                    command=command,
-                    stderr=True,
-                    stdin=stdin,
-                    stdout=True,
-                    tty=False,
-                    _preload_content=False,
+        sandbox = cast(KubernetesSandbox, self._parent)
+        max_retries = sandbox.config.max_api_retries
+        # Jitter keeps concurrent sessions from retrying against an
+        # overloaded API server in lockstep.
+        delays = exponential_backoff_delays(
+            attempts=max_retries, jitter="equal"
+        )
+        retry = 0
+        while True:
+            try:
+                with self._client_lock:
+                    return k8s_stream(
+                        self._get_core_api().connect_get_namespaced_pod_exec,
+                        self._pod_name,
+                        self._namespace,
+                        command=command,
+                        stderr=True,
+                        stdin=stdin,
+                        stdout=True,
+                        tty=False,
+                        _preload_content=False,
+                    )
+            except Exception as e:
+                failure = _get_retryable_handshake_failure(e)
+                delay = next(delays, None)
+                if failure is None or delay is None:
+                    raise SandboxExecError(
+                        f"Kubernetes sandbox execution failed to launch: {e}"
+                    ) from e
+
+                retry += 1
+                logger.warning(
+                    "Kubernetes sandbox exec handshake failed (%s), retry %d "
+                    "of %d in %.1f seconds.",
+                    failure,
+                    retry,
+                    max_retries,
+                    delay,
                 )
-        except Exception as e:
-            raise SandboxExecError(
-                f"Kubernetes sandbox execution failed to launch: {e}"
-            ) from e
+                # Sleeping outside the client lock keeps the backoff from
+                # blocking other commands of this session.
+                time.sleep(delay)
 
     @staticmethod
     def _collect_exec_output(
