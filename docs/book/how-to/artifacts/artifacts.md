@@ -409,6 +409,8 @@ This deletes artifacts that are no longer referenced by any pipeline run. You ca
 * `--only-metadata`: Only delete database entries, keep files
 * `--ignore-errors`: Continue pruning even if some artifacts can't be deleted
 
+ZenML never deletes files that other data depends on. If an artifact's URI is the root of its artifact store, or a folder that holds another artifact version's files, pruning keeps that artifact's files and database entry and logs why.
+
 ZenML preserves output files when a step fails or is interrupted to avoid deleting artifacts after a communication error with the server. Failed attempts can therefore leave partial or unused files in the artifact store. Artifact pruning only covers artifacts registered with ZenML; files that were never registered must be managed directly in the underlying storage after confirming that they are no longer needed or being written by a running step.
 
 ### Registering Existing Data as Artifacts
