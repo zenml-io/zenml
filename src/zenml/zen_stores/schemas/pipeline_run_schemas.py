@@ -998,6 +998,17 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             # before the client environment can update the status to provisioning.
             return False
 
+        if (
+            current_status == ExecutionStatus.STOPPING
+            and requested_status is not None
+            and not requested_status.is_finished
+        ):
+            # Orchestrators usually keep reporting a stopping run as running
+            # until its job is gone, which must not undo the stop request. Only
+            # the requested status is dropped, so that the step statuses can
+            # still settle the run at stopped.
+            requested_status = None
+
         # Snapshot always exists for pipeline runs of newer versions
         assert self.snapshot
         is_dynamic_pipeline = self.snapshot.is_dynamic
@@ -1017,6 +1028,12 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 and new_status == ExecutionStatus.FAILED
             ):
                 new_status = ExecutionStatus.STOPPED
+        elif current_status.is_finished and requested_status is None:
+            # Steps of a finished run can still be updated, for example to
+            # expire their cache. Deriving the status from them again ignores
+            # how the run ended (a run stopped while a step failed would become
+            # failed), so only an explicitly requested status is considered.
+            new_status = current_status
         else:
             # For static pipelines we compute the run status based on the step
             # statuses.
@@ -1330,7 +1347,12 @@ def _compute_static_pipeline_run_status(
     Returns:
         The status of the pipeline run.
     """
-    if run_status == ExecutionStatus.STOPPING:
+    if run_status == ExecutionStatus.STOPPED:
+        # A stopped status is requested, for example by a status refresh when
+        # the job of the run is gone. Its steps might never report a final
+        # status then, so they can't keep the run from being stopped.
+        return ExecutionStatus.STOPPED
+    elif run_status == ExecutionStatus.STOPPING:
         if all(status.is_finished for status in step_statuses):
             return ExecutionStatus.STOPPED
         else:
