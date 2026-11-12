@@ -50,9 +50,9 @@ def _get_resource_model(
     if resource_type == VisualizationResourceTypes.PIPELINE:
         return store.get_pipeline(resource_id)
     if resource_type == VisualizationResourceTypes.PIPELINE_RUN:
-        return store.get_run(resource_id)
+        return store.get_run(resource_id, hydrate=False)
     if resource_type == VisualizationResourceTypes.PIPELINE_SNAPSHOT:
-        return store.get_snapshot(resource_id)
+        return store.get_snapshot(resource_id, hydrate=False)
     if resource_type == VisualizationResourceTypes.PROJECT:
         return store.get_project(resource_id)
 

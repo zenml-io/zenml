@@ -15,7 +15,16 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+)
 from uuid import UUID
 
 from pydantic import ConfigDict
@@ -64,6 +73,12 @@ from zenml.utils.run_utils import (
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
+from zenml.zen_stores.schemas.execution_payload_schemas import (
+    ExecutionPayloadSchema,
+    PayloadColumn,
+    payload_relationship_kwargs,
+    resolve_payload,
+)
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.pipeline_snapshot_schemas import (
@@ -151,6 +166,13 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     status_reason: Optional[str] = Field(nullable=True)
     orchestrator_environment: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
+    )
+    orchestrator_environment_payload_id: Optional[str] = Field(
+        default=None, sa_column=Column(String(64), nullable=True)
+    )
+
+    PAYLOAD_COLUMNS: ClassVar[Tuple[PayloadColumn, ...]] = (
+        PayloadColumn(name="orchestrator_environment", nullable=True),
     )
     index: int = Field(nullable=False)
     enable_heartbeat: bool = Field(nullable=False)
@@ -380,7 +402,26 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         sa_relationship_kwargs={"cascade": "delete"},
     )
 
+    orchestrator_environment_payload: Optional[ExecutionPayloadSchema] = (
+        Relationship(
+            sa_relationship_kwargs=payload_relationship_kwargs(
+                "PipelineRunSchema", "orchestrator_environment"
+            )
+        )
+    )
+
     model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
+
+    @property
+    def resolved_orchestrator_environment(self) -> Optional[str]:
+        """The orchestrator environment JSON, inline or from its payload.
+
+        Returns:
+            The orchestrator environment JSON, if the run has one.
+        """
+        return resolve_payload(
+            self, "orchestrator_environment", self.orchestrator_environment
+        )
 
     @classmethod
     def defer_detail_columns(cls) -> List[Any]:
@@ -440,6 +481,14 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 [
                     single_loader(jl_arg(PipelineRunSchema.trigger_execution)),
                     selectinload(jl_arg(PipelineRunSchema.run_metadata)),
+                    selectinload(
+                        jl_arg(
+                            PipelineRunSchema.orchestrator_environment_payload
+                        )
+                    ),
+                    single_loader(jl_arg(PipelineRunSchema.snapshot)).options(
+                        *PipelineSnapshotSchema.load_run_payloads()
+                    ),
                 ]
             )
             if include_full_metadata:
@@ -504,10 +553,34 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         return options
 
+    @staticmethod
+    def serialize_orchestrator_environment(
+        request: "PipelineRunRequest",
+    ) -> str:
+        """Serialize the orchestrator environment of a run request.
+
+        Args:
+            request: The run request.
+
+        Returns:
+            The orchestrator environment as the run stores it.
+        """
+        orchestrator_environment = json.dumps(request.orchestrator_environment)
+        # The limit of the inline column also applies to stored payloads, so
+        # that turning payload references on never changes what is stored.
+        if len(orchestrator_environment) > TEXT_FIELD_MAX_LENGTH:
+            logger.warning(
+                "Orchestrator environment is too large to be stored in the "
+                "database. Skipping."
+            )
+            orchestrator_environment = "{}"
+        return orchestrator_environment
+
     @classmethod
     def from_request(
         cls,
         request: "PipelineRunRequest",
+        orchestrator_environment: str,
         pipeline_id: UUID,
         index: int,
         enable_heartbeat: bool,
@@ -517,6 +590,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         Args:
             request: The request to convert.
+            orchestrator_environment: The orchestrator environment of the
+                request, as `serialize_orchestrator_environment` returns it.
             pipeline_id: The ID of the pipeline.
             index: The index of the pipeline run.
             enable_heartbeat: Whether the heartbeat should be enabled.
@@ -526,14 +601,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Returns:
             The created `PipelineRunSchema`.
         """
-        orchestrator_environment = json.dumps(request.orchestrator_environment)
-        if len(orchestrator_environment) > TEXT_FIELD_MAX_LENGTH:
-            logger.warning(
-                "Orchestrator environment is too large to be stored in the "
-                "database. Skipping."
-            )
-            orchestrator_environment = "{}"
-
         triggered_by = None
         triggered_by_type = None
         if request.trigger_info:
@@ -581,9 +648,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             The pipeline configuration.
         """
         if self.snapshot:
-            pipeline_config = PipelineConfiguration.model_validate_json(
-                self.snapshot.pipeline_configuration
-            )
+            pipeline_config = self.snapshot.get_pipeline_configuration()
         elif self.pipeline_configuration:
             pipeline_config = PipelineConfiguration.model_validate_json(
                 self.pipeline_configuration
@@ -741,7 +806,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         if include_metadata:
             config = self.get_pipeline_configuration()
             raw_client_environment = (
-                self.snapshot.client_environment
+                self.snapshot.resolved_client_environment
                 if self.snapshot
                 else self.client_environment
             )
@@ -760,9 +825,12 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             ):
                 is_templatable = True
 
+            raw_orchestrator_environment = (
+                self.resolved_orchestrator_environment
+            )
             orchestrator_environment = (
-                json.loads(self.orchestrator_environment)
-                if self.orchestrator_environment
+                json.loads(raw_orchestrator_environment)
+                if raw_orchestrator_environment
                 else {}
             )
 
@@ -1067,13 +1135,15 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         return True
 
     def update_placeholder(
-        self, request: "PipelineRunRequest"
+        self, request: "PipelineRunRequest", orchestrator_environment: str
     ) -> "PipelineRunSchema":
         """Update a placeholder run.
 
         Args:
             request: The pipeline run request which should replace the
                 placeholder.
+            orchestrator_environment: The orchestrator environment of the
+                request, as `serialize_orchestrator_environment` returns it.
 
         Raises:
             RuntimeError: If the DB entry does not represent a placeholder run.
@@ -1117,10 +1187,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 "ID of the run request."
             )
 
-        orchestrator_environment = json.dumps(request.orchestrator_environment)
-
         self.orchestrator_run_id = request.orchestrator_run_id
         self.orchestrator_environment = orchestrator_environment
+        # The environment of the placeholder may be a stored payload.
+        self.orchestrator_environment_payload_id = None
         self.status = request.status.value
         self.in_progress = not request.status.is_finished
 
