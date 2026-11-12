@@ -732,7 +732,7 @@ def register_service_connector(
                     connector_model.connector_type = connector_type_spec
                 else:
                     raise TypeError(
-                        "The service connector must be an instance of either"
+                        "The service connector must be an instance of either "
                         "`ServiceConnectorResponse` or "
                         "`ServiceConnectorRequest`."
                     )

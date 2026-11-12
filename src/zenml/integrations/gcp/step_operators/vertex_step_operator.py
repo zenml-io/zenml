@@ -33,6 +33,7 @@ from zenml.integrations.gcp.google_credentials_mixin import (
 from zenml.integrations.gcp.utils import (
     build_job_request,
     convert_job_state,
+    redact_job_request,
 )
 from zenml.logger import get_logger
 from zenml.orchestrators.publish_utils import publish_step_run_metadata
@@ -212,7 +213,7 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
             service_account=self.config.service_account,
             network=self.config.network,
         )
-        logger.debug("Vertex AI Job=%s", job_request)
+        logger.debug("Vertex AI Job=%s", redact_job_request(job_request))
 
         client = self.get_job_service_client()
         parent = (
@@ -227,7 +228,9 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
         response = client.create_custom_job(
             parent=parent, custom_job=job_request
         )
-        logger.debug("Vertex AI response:", response)
+        # Only log the job name: the full response echoes the job spec,
+        # including the environment variables that hold secrets.
+        logger.debug("Vertex AI custom job created: %s", response.name)
         publish_step_run_metadata(
             info.step_run_id,
             {self.id: {STEP_JOB_NAME_METADATA_KEY: response.name}},

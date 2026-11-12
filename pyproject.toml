@@ -44,14 +44,18 @@ requires-python = ">=3.10,<3.15"
 
 dependencies = [
     "asgiref~=3.10.0",
+    # Not imported by ZenML; it arrives through docker -> requests. The floor
+    # makes upgrading ZenML also upgrade certifi, because older bundles trust
+    # the compromised emSign ECC Root CA - G3 (GHSA-6q48-6c7w-9gw2).
+    "certifi>=2026.10.19",
     "click>=8.3.3,<=8.5.0",
     "cloudpickle>=2.0.0",
     "distro>=1.6.0,<2.0.0",
     "docker~=7.1.0",
     "gitpython>=3.1.18,<4.0.0",
     "jsonref",
-    "opentelemetry-instrumentation-logging==0.64b0",
-    "opentelemetry-sdk==1.43.0",
+    "opentelemetry-instrumentation-logging==0.66b1",
+    "opentelemetry-sdk==1.45.1",
     "packaging>=24.1",
     "psutil>=5.0.0",
     "pydantic>=2.0,<=2.12.5",
@@ -88,7 +92,7 @@ server = [
     "fastapi>=0.138.0,<0.139.0",
     "uvicorn[standard]>=0.17.5",
     "python-multipart~=0.0.9",
-    "pyjwt[crypto]>=2.15.1,<2.16.0",
+    "pyjwt[crypto]==2.15.1",
     "Jinja2",
     "ipinfo>=4.4.3",
     "secure~=1.0.1",
@@ -99,10 +103,10 @@ server = [
 ]
 otel = [
     # Install otel dependencies to enable OpenTelemetry instrumentation in server processes
-    "opentelemetry-exporter-otlp-proto-http>=1.43.0,<1.44.0",
-    "opentelemetry-instrumentation-fastapi>=0.64b0,<0.65b0",
-    "opentelemetry-instrumentation-requests>=0.64b0,<0.65b0",
-    "opentelemetry-instrumentation-sqlalchemy>=0.64b0,<0.65b0",
+    "opentelemetry-exporter-otlp-proto-http>=1.45.1,<1.46.0",
+    "opentelemetry-instrumentation-fastapi>=0.66b1,<0.67b0",
+    "opentelemetry-instrumentation-requests>=0.66b1,<0.67b0",
+    "opentelemetry-instrumentation-sqlalchemy>=0.66b1,<0.67b0",
 ]
 server-streaming = ["redis>=7.1.0,<8.0.0"]
 jupyter = ["rich[jupyter]>=12.0.0"]
@@ -165,7 +169,7 @@ dev = [
     "tox>=3.24.3",
     "hypothesis>=6.43.1",
     "typing-extensions>=3.7.4",
-    "pydoclint>=0.8.3",
+    "pydoclint==0.10.1",
     "pytest-randomly>=3.10.1,<4.0.0",
     "pytest-mock>=3.6.1,<4.0.0",
     "pytest-clarity>=1.0.1,<2.0.0",
