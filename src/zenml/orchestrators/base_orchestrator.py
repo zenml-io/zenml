@@ -36,7 +36,12 @@ from zenml.constants import (
     ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING,
     handle_bool_env_var,
 )
-from zenml.enums import ExecutionMode, ExecutionStatus, StackComponentType
+from zenml.enums import (
+    ExecutionMode,
+    ExecutionStatus,
+    RunStopMode,
+    StackComponentType,
+)
 from zenml.exceptions import (
     HookExecutionException,
     IllegalOperationError,
@@ -49,6 +54,7 @@ from zenml.orchestrators.exceptions import PipelineSubmissionError
 from zenml.orchestrators.publish_utils import (
     publish_pipeline_run_metadata,
     publish_pipeline_run_status_update,
+    publish_pipeline_run_stop_request,
     publish_schedule_metadata,
 )
 from zenml.orchestrators.utils import get_config_environment_vars
@@ -932,12 +938,13 @@ class BaseOrchestrator(StackComponent, ABC):
                 "yet."
             )
 
-        # Update pipeline status to STOPPING before calling concrete implementation
-        # Initiates graceful termination.
-        publish_pipeline_run_status_update(
-            pipeline_run_id=run.id,
-            status=ExecutionStatus.STOPPING,
-            status_reason="Manual stop requested.",
+        # Record the stop request before calling the concrete implementation.
+        # This moves the run to STOPPING, which initiates graceful termination.
+        publish_pipeline_run_stop_request(
+            pipeline_run=run,
+            stop_mode=RunStopMode.GRACEFUL
+            if graceful
+            else RunStopMode.IMMEDIATE,
         )
 
         # Now call the concrete implementation

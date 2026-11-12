@@ -178,6 +178,13 @@ class ExecutionMode(StrEnum):
     CONTINUE_ON_FAILURE = "continue_on_failure"
 
 
+class RunStopMode(StrEnum):
+    """Enum that represents how a stop of a pipeline run was requested."""
+
+    GRACEFUL = "graceful"
+    IMMEDIATE = "immediate"
+
+
 class RunWaitConditionType(StrEnum):
     """Supported wait condition types."""
 

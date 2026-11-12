@@ -12,9 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import threading
 from contextlib import ExitStack as does_not_raise
-from typing import Dict, List
+from typing import Dict, List, Optional
 
+from zenml.orchestrators.dag_runner import (
+    DagRunner,
+    InterruptMode,
+    Node,
+    NodeStatus,
+)
 from zenml.orchestrators.legacy_dag_runner import (
     ThreadedDagRunner,
     reverse_dag,
@@ -77,3 +84,64 @@ def test_dag_runner_multi_path():  # 3->(2, 5)->1
 def test_dag_runner_cyclic():
     """Test that nothing happens for cyclic graphs, and no error is raised."""
     _test_runner({"1": ["2"], "2": ["1"]}, correct_results=[0])
+
+
+def _run_dag_interrupted_during_startup(
+    interrupt_mode: InterruptMode,
+) -> tuple[Dict[str, NodeStatus], List[str]]:
+    """Runs a single node DAG that gets interrupted while the node starts.
+
+    The node startup only finishes shortly after the interrupt, so the node is
+    still starting when the runner begins to shut down.
+
+    Args:
+        interrupt_mode: The interrupt mode to use.
+
+    Returns:
+        The final node statuses and the IDs of the stopped nodes.
+    """
+    startup_started = threading.Event()
+    release_startup = threading.Event()
+    stopped_node_ids: List[str] = []
+
+    def start_node(node: Node) -> NodeStatus:
+        startup_started.set()
+        release_startup.wait(timeout=5)
+        return NodeStatus.RUNNING
+
+    def interrupt() -> Optional[InterruptMode]:
+        if not startup_started.is_set():
+            return None
+        threading.Timer(0.2, release_startup.set).start()
+        return interrupt_mode
+
+    runner = DagRunner(
+        nodes=[Node(id="1")],
+        node_startup_function=start_node,
+        node_monitoring_function=lambda node: node.status,
+        node_stop_function=lambda node: stopped_node_ids.append(node.id),
+        interrupt_function=interrupt,
+        interrupt_check_interval=0,
+        monitoring_interval=0.05,
+    )
+    return runner.run(), stopped_node_ids
+
+
+def test_dag_runner_force_stop_cancels_starting_nodes():
+    """Tests that a force stop also stops nodes that are still starting."""
+    node_statuses, stopped_node_ids = _run_dag_interrupted_during_startup(
+        InterruptMode.FORCE
+    )
+
+    assert stopped_node_ids == ["1"]
+    assert node_statuses["1"] == NodeStatus.CANCELLED
+
+
+def test_dag_runner_waits_for_node_startups_after_interrupt():
+    """Tests that node startups don't outlive an interrupted DAG run."""
+    node_statuses, stopped_node_ids = _run_dag_interrupted_during_startup(
+        InterruptMode.GRACEFUL
+    )
+
+    assert stopped_node_ids == []
+    assert node_statuses["1"] == NodeStatus.RUNNING

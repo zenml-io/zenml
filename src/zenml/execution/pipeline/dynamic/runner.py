@@ -67,6 +67,7 @@ from zenml.enums import (
     RunWaitConditionType,
     StepRuntime,
 )
+from zenml.exceptions import RunStoppedException
 from zenml.execution.context import (
     record_step_run,
     setup_execution_context,
@@ -504,6 +505,9 @@ class DynamicPipelineRunner:
         while not self._shutdown_requested:
             start_time = time.time()
 
+            if not self._failure_detected:
+                self._check_for_stop_request()
+
             # Copy the steps to avoid the dictionary getting modified by
             # the main thread while we're iterating over it.
             for invocation_id, step_run in list(
@@ -673,12 +677,13 @@ class DynamicPipelineRunner:
                         )
 
                     with self._lifecycle_lock:
-                        if (
+                        # If there was a failure already, we do not want to
+                        # start any new work no matter the execution mode.
+                        retry_step = (
                             remaining_retries > 0
                             and not self._failure_detected
-                        ):
-                            # If there was a failure already, we do not want to
-                            # start any new work no matter the execution mode.
+                        )
+                        if retry_step:
                             step = Step(
                                 spec=step_run.spec,
                                 config=step_run.config,
@@ -696,12 +701,42 @@ class DynamicPipelineRunner:
                                 future=execution_future,
                             )
 
+                    if not retry_step:
+                        # Nothing will retry the step anymore. Its failure is
+                        # final, and leaving it in `RETRYING` status would
+                        # block everything waiting for the step forever.
+                        try:
+                            step_run = publish_failed_step_run(step_run.id)
+                        except Exception:
+                            # The step might have been finalized concurrently,
+                            # for example by a stop request.
+                            step_run = Client().get_run_step(step_run.id)
+                        self._on_step_finished(step_run=step_run)
+
                 time.sleep(monitoring_delay)
 
             duration = time.time() - start_time
             time_to_sleep = max(0, monitoring_interval - duration)
             self._monitoring_event.wait(timeout=time_to_sleep)
             self._monitoring_event.clear()
+
+    def _check_for_stop_request(self) -> None:
+        """Stop starting new work if a stop of the run was requested."""
+        try:
+            run = Client().zen_store.get_run(self._run.id, hydrate=False)
+        except Exception as e:
+            logger.debug("Failed to check for a stop request: %s", e)
+            return
+
+        if run.stop_requested:
+            logger.info(
+                "Stop of pipeline run `%s` requested, not starting any new "
+                "work.",
+                run.name,
+            )
+            self.request_shutdown(
+                reason=RunStoppedException("The pipeline run was stopped.")
+            )
 
     def _start_monitoring_loop(self) -> threading.Thread:
         """Start the monitoring loop.

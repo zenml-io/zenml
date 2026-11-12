@@ -101,10 +101,12 @@ from zenml.orchestrators import (
     SubmissionResult,
 )
 from zenml.orchestrators import utils as orchestrator_utils
+from zenml.orchestrators.publish_utils import publish_stopped_pipeline_run
 from zenml.stack import StackValidator
 from zenml.step_operators.step_operator_entrypoint_configuration import (
     StepOperatorEntrypointConfiguration,
 )
+from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
@@ -1237,17 +1239,29 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
     def _stop_run(
         self, run: "PipelineRunResponse", graceful: bool = True
     ) -> None:
-        """Stops a specific pipeline run by terminating step pods.
+        """Stops a specific pipeline run.
+
+        A graceful stop is handled by the orchestrator pod, which stops
+        starting new steps once it notices the stop request.
+
+        An immediate stop deletes the unfinished step jobs of the run and its
+        child runs. For dynamic pipelines, the orchestrator job is deleted
+        first, as steps run inline in the orchestrator pod by default and it
+        can't start any new step jobs once it's gone. With nothing left to
+        report the final statuses, the runs and their unfinished steps then
+        get marked as stopped, and step jobs that got created in the meantime
+        are deleted in a second pass. Static pipelines keep their
+        orchestrator pod, as it doesn't run any steps, stops by itself and
+        cleans up after itself.
 
         Args:
             run: The run that was executed by this orchestrator.
-            graceful: If True, does nothing (lets the orchestrator and steps finish naturally).
-                If False, stops all running step jobs.
+            graceful: If True, lets the orchestrator pod handle the stop.
+                If False, stops the run immediately.
 
         Raises:
             RuntimeError: If we fail to stop the run.
         """
-        # If graceful, do nothing and let the orchestrator handle the stop naturally
         if graceful:
             logger.info(
                 "Graceful stop requested - the orchestrator pod will handle "
@@ -1255,86 +1269,196 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             )
             return
 
-        jobs_stopped = []
-        errors = []
+        runs = self._get_runs_to_stop(run)
+        is_dynamic = run.snapshot is not None and run.snapshot.is_dynamic
+        # Child runs share the orchestrator pod of their root run, so
+        # deleting it would stop more than the requested run.
+        stops_orchestrator = is_dynamic and run.root_run_id is None
 
-        # Find all jobs running steps of the pipeline
-        label_selector = (
-            f"run_id={kube_utils.sanitize_label_value(str(run.id))}"
-        )
         try:
-            job_list = kube_utils.list_jobs(
-                batch_api=self._k8s_batch_api,
-                namespace=self.config.kubernetes_namespace,
-                label_selector=label_selector,
-                api_request_timeout=self.config.api_request_timeout,
-                max_retries=self.config.max_api_retries,
+            jobs = self._list_run_jobs(
+                [run_to_stop.id for run_to_stop in runs]
             )
+            if stops_orchestrator:
+                self._delete_orchestrator_job(run=run, run_jobs=jobs)
         except Exception as e:
-            raise RuntimeError(
-                f"Failed to list step jobs with run ID {run.id}: {e}"
-            )
+            raise RuntimeError(f"Failed to stop pipeline run: {e}") from e
 
-        for job in job_list.items:
-            if not kube_utils.is_step_job(job):
-                # This is the orchestrator job which stops by itself
-                continue
+        jobs_stopped, errors = self._delete_step_jobs(jobs)
 
-            if job.status and job.status.conditions:
-                # Don't delete completed/failed jobs
-                for condition in job.status.conditions:
-                    if (
-                        condition.type == "Complete"
-                        and condition.status == "True"
-                    ):
-                        continue
-                    if (
-                        condition.type == "Failed"
-                        and condition.status == "True"
-                    ):
-                        continue
+        if not errors and (stops_orchestrator or not is_dynamic):
+            for run_to_stop in runs:
+                publish_stopped_pipeline_run(run_to_stop)
 
             try:
-                self._k8s_batch_api.delete_namespaced_job(
-                    name=job.metadata.name,
-                    namespace=self.config.kubernetes_namespace,
-                    propagation_policy="Foreground",
-                )
-                jobs_stopped.append(f"step job: {job.metadata.name}")
-                logger.debug(
-                    f"Successfully initiated graceful stop of step job: {job.metadata.name}"
+                jobs = self._list_run_jobs(
+                    [run_to_stop.id for run_to_stop in runs]
                 )
             except Exception as e:
-                error_msg = f"Failed to stop step job {job.metadata.name}: {e}"
-                logger.warning(error_msg)
-                errors.append(error_msg)
+                errors.append(f"Failed to list step jobs: {e}")
+            else:
+                jobs_stopped_late, errors = self._delete_step_jobs(jobs)
+                jobs_stopped.extend(jobs_stopped_late)
 
-        # Summary logging
-        settings = cast(KubernetesOrchestratorSettings, self.get_settings(run))
-        grace_period_seconds = settings.pod_stop_grace_period
         if jobs_stopped:
+            settings = cast(
+                KubernetesOrchestratorSettings, self.get_settings(run)
+            )
             logger.debug(
-                f"Successfully initiated graceful termination of: {', '.join(jobs_stopped)}. "
-                f"Pods will terminate within {grace_period_seconds} seconds."
+                "Deleted step jobs %s. Pods will terminate within %s seconds.",
+                ", ".join(jobs_stopped),
+                settings.pod_stop_grace_period,
             )
 
         if errors:
-            error_summary = "; ".join(errors)
-            if not jobs_stopped:
-                # If nothing was stopped successfully, raise an error
-                raise RuntimeError(
-                    f"Failed to stop pipeline run: {error_summary}"
-                )
-            else:
-                # If some things were stopped but others failed, raise an error
-                raise RuntimeError(
-                    f"Partial stop operation completed with errors: {error_summary}"
-                )
+            raise RuntimeError(
+                f"Failed to stop pipeline run: {'; '.join(errors)}"
+            )
 
-        if not jobs_stopped and not errors:
+        if not jobs_stopped:
             logger.info(
                 f"No running step jobs found for pipeline run with ID: {run.id}"
             )
+
+    def _get_runs_to_stop(
+        self, run: "PipelineRunResponse"
+    ) -> List["PipelineRunResponse"]:
+        """Get a run and its in-progress child runs, recursively.
+
+        Args:
+            run: The root of the runs to get.
+
+        Returns:
+            The run and its in-progress child runs.
+        """
+        runs = [run]
+        parent_run_ids = [run.id]
+        while parent_run_ids:
+            child_runs = depaginate(
+                Client().list_pipeline_runs,
+                parent_run_id="oneof:"
+                + json.dumps([str(run_id) for run_id in parent_run_ids]),
+                in_progress=True,
+                project=run.project_id,
+                hydrate=True,
+            )
+            runs.extend(child_runs)
+            parent_run_ids = [child_run.id for child_run in child_runs]
+
+        return runs
+
+    def _list_run_jobs(self, run_ids: List[UUID]) -> List[k8s_client.V1Job]:
+        """List the jobs labeled with any of the given run IDs.
+
+        Args:
+            run_ids: The IDs of the runs.
+
+        Returns:
+            The jobs of the runs.
+        """
+        label_values = ",".join(
+            kube_utils.sanitize_label_value(str(run_id)) for run_id in run_ids
+        )
+        return cast(
+            List[k8s_client.V1Job],
+            kube_utils.list_jobs(
+                batch_api=self._k8s_batch_api,
+                namespace=self.config.kubernetes_namespace,
+                label_selector=f"run_id in ({label_values})",
+                api_request_timeout=self.config.api_request_timeout,
+                max_retries=self.config.max_api_retries,
+            ).items,
+        )
+
+    def _delete_orchestrator_job(
+        self, run: "PipelineRunResponse", run_jobs: List[k8s_client.V1Job]
+    ) -> None:
+        """Delete the orchestrator job of a run if it is still running.
+
+        Args:
+            run: The run for which to delete the orchestrator job.
+            run_jobs: The jobs labeled with the ID of the run.
+
+        Raises:
+            ApiException: If the Kubernetes API fails to look up the job.
+        """
+        jobs = [job for job in run_jobs if kube_utils.is_orchestrator_job(job)]
+
+        if not jobs and run.orchestrator_run_id:
+            # Orchestrator jobs of scheduled runs have no run ID label, but
+            # the orchestrator run ID of dynamic runs is the job name.
+            try:
+                job = kube_utils.get_job(
+                    batch_api=self._k8s_batch_api,
+                    namespace=self.config.kubernetes_namespace,
+                    job_name=run.orchestrator_run_id,
+                    api_request_timeout=self.config.api_request_timeout,
+                    max_retries=self.config.max_api_retries,
+                )
+            except ApiException as e:
+                if e.status != 404:
+                    raise
+            else:
+                if kube_utils.is_orchestrator_job(job):
+                    jobs.append(job)
+
+        for job in jobs:
+            if self._map_job_status_to_execution_status(job) is None:
+                self._delete_job(job.metadata.name)
+                logger.debug("Deleted orchestrator job %s.", job.metadata.name)
+
+    def _delete_step_jobs(
+        self, jobs: List[k8s_client.V1Job]
+    ) -> Tuple[List[str], List[str]]:
+        """Delete the unfinished step jobs among the given jobs.
+
+        Args:
+            jobs: The jobs to check.
+
+        Returns:
+            The names of the deleted jobs and the errors that occurred.
+        """
+        jobs_stopped = []
+        errors = []
+
+        for job in jobs:
+            if (
+                not kube_utils.is_step_job(job)
+                or self._map_job_status_to_execution_status(job) is not None
+            ):
+                continue
+
+            try:
+                self._delete_job(job.metadata.name)
+            except Exception as e:
+                errors.append(
+                    f"Failed to stop step job {job.metadata.name}: {e}"
+                )
+            else:
+                jobs_stopped.append(job.metadata.name)
+
+        return jobs_stopped, errors
+
+    def _delete_job(self, job_name: str) -> None:
+        """Delete a job, ignoring jobs that don't exist anymore.
+
+        Args:
+            job_name: The name of the job to delete.
+
+        Raises:
+            ApiException: If the Kubernetes API fails to delete the job.
+        """
+        try:
+            kube_utils.delete_job(
+                batch_api=self._k8s_batch_api,
+                namespace=self.config.kubernetes_namespace,
+                job_name=job_name,
+                api_request_timeout=self.config.api_request_timeout,
+                max_retries=self.config.max_api_retries,
+            )
+        except ApiException as e:
+            if e.status != 404:
+                raise
 
     def fetch_status(
         self, run: "PipelineRunResponse", include_steps: bool = False
@@ -1355,17 +1479,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         pipeline_status = None
         include_run_status = not run.status.is_finished
 
-        label_selector = (
-            f"run_id={kube_utils.sanitize_label_value(str(run.id))}"
-        )
         try:
-            job_list = kube_utils.list_jobs(
-                batch_api=self._k8s_batch_api,
-                namespace=self.config.kubernetes_namespace,
-                label_selector=label_selector,
-                api_request_timeout=self.config.api_request_timeout,
-                max_retries=self.config.max_api_retries,
-            )
+            jobs = self._list_run_jobs([run.id])
         except Exception as e:
             logger.warning(f"Failed to list jobs for run {run.id}: {e}")
             return None, None
@@ -1374,14 +1489,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         # Only fetch steps if we really need them
         steps_dict = run.steps if include_steps else {}
 
-        for job in job_list.items:
+        for job in jobs:
             if not job.metadata or not job.metadata.annotations:
                 continue
 
-            is_orchestrator_job = (
-                ORCHESTRATOR_ANNOTATION_KEY in job.metadata.annotations
-            )
-            if is_orchestrator_job:
+            if kube_utils.is_orchestrator_job(job):
                 if include_run_status:
                     pipeline_status = self._map_job_status_to_execution_status(
                         job
