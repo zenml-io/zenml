@@ -13,12 +13,16 @@
 #  permissions and limitations under the License.
 """Models representing tags."""
 
-import secrets
+import random
 from typing import TYPE_CHECKING, ClassVar, List, Optional, Type, TypeVar
 
 from pydantic import Field, field_validator
 
-from zenml.constants import STR_FIELD_MAX_LENGTH
+from zenml.constants import (
+    ENV_ZENML_USE_GLOBAL_RANDOM_SEED,
+    STR_FIELD_MAX_LENGTH,
+    handle_bool_env_var,
+)
 from zenml.enums import ColorVariants, TaggableResourceTypes
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import (
@@ -42,6 +46,20 @@ if TYPE_CHECKING:
 
     AnySchema = TypeVar("AnySchema", bound="BaseSchema")
 
+
+def _random_tag_color() -> ColorVariants:
+    """Pick a color for a tag that was created without one.
+
+    Returns:
+        A random color. It only follows the global `random` seed if
+        `ZENML_USE_GLOBAL_RANDOM_SEED` is enabled.
+    """
+    colors = list(ColorVariants)
+    if handle_bool_env_var(ENV_ZENML_USE_GLOBAL_RANDOM_SEED):
+        return random.choice(colors)
+    return random.SystemRandom().choice(colors)
+
+
 # ------------------ Request Model ------------------
 
 
@@ -58,7 +76,7 @@ class TagRequest(UserScopedRequest):
     )
     color: ColorVariants = Field(
         description="The color variant assigned to the tag.",
-        default_factory=lambda: secrets.choice(list(ColorVariants)),
+        default_factory=_random_tag_color,
     )
 
     @field_validator("name")
@@ -124,7 +142,7 @@ class TagResponseBody(UserScopedResponseBody):
 
     color: ColorVariants = Field(
         description="The color variant assigned to the tag.",
-        default_factory=lambda: secrets.choice(list(ColorVariants)),
+        default_factory=_random_tag_color,
     )
     exclusive: bool = Field(
         description="The flag signifying whether the tag is an exclusive tag."

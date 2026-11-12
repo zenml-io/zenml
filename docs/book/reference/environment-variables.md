@@ -178,19 +178,20 @@ the files committed to the repository includes everything necessary to run your 
 
 ## Reproducible generated names
 
-ZenML adds random suffixes to some of the names it generates, for example the names of the jobs it creates on Kubernetes, Vertex AI or SageMaker. By default, these suffixes don't use Python's `random` module, so generating them doesn't change your code's random state, and the names stay unique even when your code calls `random.seed(...)`.
+ZenML adds random suffixes to some of the names it generates, for example the names of the jobs it creates on Kubernetes, Vertex AI or SageMaker. It also picks a random color for tags that you create without one. By default, these values don't use Python's `random` module, so generating them doesn't change your code's random state, and the names stay unique even when your code calls `random.seed(...)`.
 
-If you want these names to follow the seed you set in your code, enable:
+If you want these values to follow the seed you set in your code, enable:
 
 ```bash
 export ZENML_USE_GLOBAL_RANDOM_SEED=true
 ```
 
-With this enabled, calling `random.seed(42)` before running a pipeline makes these names repeat from run to run. Keep the following in mind:
+With this enabled, calling `random.seed(42)` before running a pipeline makes these names and colors repeat from run to run. Keep the following in mind:
 
 * A seed only applies to the Python process that set it. Names that ZenML generates when you submit a pipeline follow the seed you set in that script. Names generated inside your orchestrator or step environments only follow it if your code also sets the seed there, for example at the top of the module that defines your steps. ZenML passes this environment variable on to those environments for you.
+* When you're connected to a ZenML server, tags that you pass to a pipeline, run or artifact are created on the server, so their colors don't follow your seed. Tags that you create with `add_tags` or `Client().create_tag` do.
 * Some services require unique names. Running the same seeded pipeline again can fail if a job with the same name still exists, for example on Vertex AI or Kubernetes.
-* ZenML takes these suffixes from your random sequence, so the random values your code draws afterwards depend on how many names ZenML generated. As long as you use the same stack, this stays the same between runs.
+* ZenML takes these values from your random sequence, so the random values your code draws afterwards depend on how many names and colors ZenML generated. A tag only gets a color when it's first created, so a run that creates new tags draws more values than later runs that reuse them. Apart from that, this stays the same between runs as long as you use the same stack.
 * Run IDs, run names and artifact paths don't depend on this setting.
 
 ## ZenML global config path
