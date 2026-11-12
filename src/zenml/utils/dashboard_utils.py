@@ -88,9 +88,7 @@ def get_stack_url(stack: StackResponse) -> Optional[str]:
     """
     cloud_url = get_cloud_dashboard_url()
     if cloud_url:
-        # We don't have a stack detail page here, so just link to the filtered
-        # list of stacks.
-        return f"{cloud_url}{constants.STACKS}?id={stack.id}"
+        return f"{cloud_url}{constants.STACKS}/{stack.id}"
 
     base_url = get_server_dashboard_url()
 
