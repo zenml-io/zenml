@@ -101,7 +101,7 @@ def b64_decode(input_: str) -> str:
 
 
 def random_str(length: int) -> str:
-    """Generate a random human-readable string of given length.
+    """Generate a random string without modifying the global random state.
 
     Args:
         length: Length of string
@@ -109,8 +109,9 @@ def random_str(length: int) -> str:
     Returns:
         Random human-readable string.
     """
-    random.seed()
-    return "".join(random.choices(string.ascii_letters, k=length))
+    return "".join(
+        random.SystemRandom().choices(string.ascii_letters, k=length)
+    )
 
 
 _URI_BANNED_CHARACTERS = ["<", ">", ":", '"', "/", "\\", "|", "?", "*"]
