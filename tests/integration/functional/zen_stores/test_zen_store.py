@@ -6466,7 +6466,7 @@ def _create_running_static_run(
     ],
     ids=["cancelled", "completed-and-failed"],
 )
-def test_updating_step_cache_expiration_does_not_recalculate_run_status(
+def test_updating_step_of_stopped_run_keeps_its_status(
     step_statuses, clean_client
 ):
     """Tests updating cache metadata of a step in a stopped pipeline run."""
@@ -6536,6 +6536,58 @@ def test_continue_on_failure_run_finishes_after_step_cache_expiration_update(
     assert run.status == ExecutionStatus.FAILED
     assert not run.in_progress
     assert run.end_time is not None
+
+
+def test_running_status_does_not_undo_stop_of_static_run(clean_client):
+    """Tests that a refresh reporting running keeps a static run stopping."""
+    pipeline_run, step_runs = _create_running_static_run(
+        clean_client, num_steps=2
+    )
+    clean_client.zen_store.update_run(
+        run_id=pipeline_run.id,
+        run_update=PipelineRunUpdate(
+            status=ExecutionStatus.STOPPING,
+            status_reason="Manual stop requested.",
+        ),
+    )
+
+    run = clean_client.zen_store.update_run(
+        run_id=pipeline_run.id,
+        run_update=PipelineRunUpdate(status=ExecutionStatus.RUNNING),
+    )
+    assert run.status == ExecutionStatus.STOPPING
+    assert run.get_body().status_reason == "Manual stop requested."
+
+    for step_run in step_runs:
+        clean_client.zen_store.update_run_step(
+            step_run_id=step_run.id,
+            step_run_update=StepRunUpdate(status=ExecutionStatus.STOPPED),
+        )
+    assert (
+        clean_client.get_pipeline_run(pipeline_run.id).status
+        == ExecutionStatus.STOPPED
+    )
+
+
+def test_running_status_does_not_undo_stop_of_dynamic_run(clean_client):
+    """Tests that a refresh reporting running keeps a dynamic run stopping."""
+    pipeline_run = _create_dynamic_pipeline_run(clean_client)
+    clean_client.zen_store.update_run(
+        run_id=pipeline_run.id,
+        run_update=PipelineRunUpdate(status=ExecutionStatus.STOPPING),
+    )
+
+    run = clean_client.zen_store.update_run(
+        run_id=pipeline_run.id,
+        run_update=PipelineRunUpdate(status=ExecutionStatus.RUNNING),
+    )
+    assert run.status == ExecutionStatus.STOPPING
+
+    run = clean_client.zen_store.update_run(
+        run_id=pipeline_run.id,
+        run_update=PipelineRunUpdate(status=ExecutionStatus.STOPPED),
+    )
+    assert run.status == ExecutionStatus.STOPPED
 
 
 @step
