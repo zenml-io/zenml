@@ -140,6 +140,7 @@ class JobStatus(enum.Enum):
     RUNNING = "Running"
     SUCCEEDED = "Succeeded"
     FAILED = "Failed"
+    NOT_FOUND = "NotFound"
 
 
 def is_inside_kubernetes() -> bool:
@@ -1273,13 +1274,24 @@ def check_job_status(
     Returns:
         The status of the job and an optional status message. For failed jobs,
         this is the error message; for running jobs, this can contain pending
-        pod diagnostics.
+        pod diagnostics. `JobStatus.NOT_FOUND` says nothing about the outcome
+        of the job: Kubernetes also deletes jobs that finished successfully
+        once their `ttlSecondsAfterFinished` expires.
+
+    Raises:
+        ApiException: If reading the job fails for any reason other than the
+            job not existing.
     """
-    job: k8s_client.V1Job = retry_on_api_exception(
-        batch_api.read_namespaced_job,
-        api_request_timeout=api_request_timeout,
-        max_retries=max_retries,
-    )(name=job_name, namespace=namespace)
+    try:
+        job: k8s_client.V1Job = retry_on_api_exception(
+            batch_api.read_namespaced_job,
+            api_request_timeout=api_request_timeout,
+            max_retries=max_retries,
+        )(name=job_name, namespace=namespace)
+    except ApiException as e:
+        if e.status == 404:
+            return JobStatus.NOT_FOUND, None
+        raise
 
     if job.status.conditions:
         for condition in job.status.conditions:

@@ -58,6 +58,7 @@ from zenml.models import (
     PipelineRunUpdate,
     PipelineSnapshotResponse,
     RunMetadataResource,
+    StepRunResponse,
 )
 from zenml.orchestrators import publish_utils
 from zenml.orchestrators.dag_runner import (
@@ -402,24 +403,49 @@ def main() -> None:
 
             return False
 
-        def _handle_failed_job(step_name: str) -> NodeStatus:
-            steps = Client().list_run_steps(
-                name=step_name, pipeline_run_id=pipeline_run.id
-            )
-            if steps.total > 0:
-                step_run = steps[0]
+        def _get_latest_step_run(step_name: str) -> Optional[StepRunResponse]:
+            """Get the latest attempt of a step.
 
+            Retrying a step marks all earlier attempts as `RETRIED`, so only
+            the latest attempt reflects the state of the step.
+
+            Args:
+                step_name: The name of the step.
+
+            Returns:
+                The latest step run, or `None` if the step has no step run.
+            """
+            step_runs = Client().list_run_steps(
+                name=step_name,
+                pipeline_run_id=pipeline_run.id,
+                exclude_retried=True,
+                size=1,
+                hydrate=False,
+            )
+            return step_runs.items[0] if step_runs.items else None
+
+        def _resolve_node_status_from_step_run(step_name: str) -> NodeStatus:
+            """Resolve the status of a node whose job failed or is missing.
+
+            The step run takes precedence over the job, because the step
+            publishes its final status before its pod exits.
+
+            Args:
+                step_name: The name of the step.
+
+            Returns:
+                The status of the node.
+            """
+            step_run = _get_latest_step_run(step_name)
+            if step_run:
                 if step_run.status.is_successful:
-                    # If the step run is successful in the DB, we override the
-                    # failed job status.
                     logger.info(
-                        "Found successful step run in the DB for failed job "
-                        "of step `%s`, overriding failed job status.",
+                        "Found successful step run in the DB for step `%s`, "
+                        "ignoring the failed or missing job.",
                         step_name,
                     )
                     return NodeStatus.COMPLETED
-                else:
-                    return NodeStatus.FAILED
+                return NodeStatus.FAILED
 
             step_run_request = step_run_request_factory.create_request(
                 step_name
@@ -718,23 +744,21 @@ def main() -> None:
             if node.id in step_run_skip_hb_set:
                 return False
 
-            sr_ = client.list_run_steps(
-                name=node.id, pipeline_run_id=pipeline_run.id, hydrate=False
-            )
+            step_run = _get_latest_step_run(node.id)
 
-            if sr_.items:
+            if step_run:
                 if (
-                    sr_.items[0].heartbeat_threshold is None
+                    step_run.heartbeat_threshold is None
                 ):  # heartbeat disabled/unset - skip next checks
                     step_run_skip_hb_set.add(node.id)
                     return False
 
                 return is_heartbeat_unhealthy(
-                    step_run_id=sr_.items[0].id,
-                    status=sr_.items[0].status,
-                    start_time=sr_.items[0].start_time,
-                    heartbeat_threshold=sr_.items[0].heartbeat_threshold,
-                    latest_heartbeat=sr_.items[0].latest_heartbeat,
+                    step_run_id=step_run.id,
+                    status=step_run.status,
+                    start_time=step_run.start_time,
+                    heartbeat_threshold=step_run.heartbeat_threshold,
+                    latest_heartbeat=step_run.latest_heartbeat,
                 )
 
             return False
@@ -773,13 +797,23 @@ def main() -> None:
             )
             if status == kube_utils.JobStatus.SUCCEEDED:
                 return NodeStatus.COMPLETED
+            elif status == kube_utils.JobStatus.NOT_FOUND:
+                logger.warning(
+                    "Job `%s` for step `%s` no longer exists, using the step "
+                    "run status instead. This usually means that "
+                    "`ttl_seconds_after_finished` is shorter than the time "
+                    "it takes to check all running steps.",
+                    job_name,
+                    step_name,
+                )
+                return _resolve_node_status_from_step_run(step_name)
             elif status == kube_utils.JobStatus.FAILED:
                 logger.error(
                     "Job for step `%s` failed: %s",
                     step_name,
                     status_message,
                 )
-                return _handle_failed_job(step_name)
+                return _resolve_node_status_from_step_run(step_name)
             elif (
                 snapshot.pipeline_configuration.enable_heartbeat
                 and is_node_heartbeat_unhealthy(node)
