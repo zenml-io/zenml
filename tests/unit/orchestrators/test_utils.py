@@ -18,11 +18,16 @@ from uuid import uuid4
 
 import pytest
 import yaml
+from pydantic import ValidationError
 
-from zenml.constants import ENV_ZENML_USE_GLOBAL_RANDOM_SEED
-from zenml.enums import StackComponentType
+from zenml.constants import (
+    ENV_ZENML_USE_GLOBAL_RANDOM_SEED,
+    UNRECOVERABLE_ORCHESTRATION_EXIT_CODE,
+)
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.orchestrators.utils import (
     dump_compose_yaml,
+    exit_on_unrecoverable_error,
     get_config_environment_vars,
     get_orchestrator_run_name,
     get_step_entrypoint_command,
@@ -268,3 +273,96 @@ def test_get_config_environment_vars_forwards_global_seed_setting(
     monkeypatch.setenv(ENV_ZENML_USE_GLOBAL_RANDOM_SEED, "true")
     environment, _ = get_config_environment_vars()
     assert environment[ENV_ZENML_USE_GLOBAL_RANDOM_SEED] == "true"
+
+
+@pytest.fixture
+def run_store():
+    """Patches the store calls that fail a pipeline run."""
+    with (
+        mock.patch("zenml.orchestrators.utils.Client") as client,
+        mock.patch(
+            "zenml.orchestrators.utils.publish_failed_pipeline_run"
+        ) as publish_failed,
+    ):
+        yield SimpleNamespace(
+            get_run=client.return_value.zen_store.get_run,
+            publish_failed=publish_failed,
+        )
+
+
+def test_exit_on_unrecoverable_error_ignores_recoverable_errors(run_store):
+    """Tests that errors a retry might fix leave the run alone."""
+    exit_on_unrecoverable_error(
+        RuntimeError("Server unavailable"), run_id=uuid4()
+    )
+
+    run_store.get_run.assert_not_called()
+    run_store.publish_failed.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "exception",
+    [
+        ValidationError.from_exception_data("StackResponse", []),
+        ModuleNotFoundError("No module named 'sklearn'"),
+    ],
+)
+@pytest.mark.parametrize(
+    "status",
+    [
+        ExecutionStatus.INITIALIZING,
+        ExecutionStatus.PROVISIONING,
+        ExecutionStatus.RUNNING,
+        ExecutionStatus.RESUMING,
+    ],
+)
+def test_exit_on_unrecoverable_error_fails_unfinished_run(
+    run_store, exception, status
+):
+    """Tests that an unrecoverable error fails a run that nothing else ends."""
+    run_id = uuid4()
+    run_store.get_run.return_value = SimpleNamespace(status=status)
+
+    with pytest.raises(SystemExit) as exc_info:
+        exit_on_unrecoverable_error(exception, run_id=run_id)
+
+    assert exc_info.value.code == UNRECOVERABLE_ORCHESTRATION_EXIT_CODE
+    run_store.publish_failed.assert_called_once()
+    assert run_store.publish_failed.call_args.args == (run_id,)
+    exception_info = run_store.publish_failed.call_args.kwargs[
+        "exception_info"
+    ]
+    assert type(exception).__name__ in exception_info.traceback
+
+
+@pytest.mark.parametrize(
+    "status",
+    [
+        ExecutionStatus.STOPPING,
+        ExecutionStatus.STOPPED,
+        ExecutionStatus.COMPLETED,
+        ExecutionStatus.FAILED,
+    ],
+)
+def test_exit_on_unrecoverable_error_keeps_stopping_and_finished_runs(
+    run_store, status
+):
+    """Tests that a stop request or a final status takes precedence."""
+    run_store.get_run.return_value = SimpleNamespace(status=status)
+
+    with pytest.raises(SystemExit):
+        exit_on_unrecoverable_error(ImportError(), run_id=uuid4())
+
+    run_store.publish_failed.assert_not_called()
+
+
+def test_exit_on_unrecoverable_error_without_reachable_run(run_store):
+    """Tests that an unknown or unreachable run doesn't prevent the exit."""
+    with pytest.raises(SystemExit):
+        exit_on_unrecoverable_error(ImportError(), run_id=None)
+    run_store.get_run.assert_not_called()
+
+    run_store.get_run.side_effect = ConnectionError("Server unavailable")
+    with pytest.raises(SystemExit):
+        exit_on_unrecoverable_error(ImportError(), run_id=uuid4())
+    run_store.publish_failed.assert_not_called()

@@ -316,7 +316,11 @@ ENV_ZENML_STEP_RUNS_FETCH_MAX_CHUNK_LENGTH = (
     "ZENML_STEP_RUNS_FETCH_MAX_CHUNK_LENGTH"
 )
 ENV_ZENML_STREAM_PUBLISHER_BATCH_SIZE = "ZENML_STREAM_PUBLISHER_BATCH_SIZE"
-DYNAMIC_PIPELINE_RUN_FAILED_EXIT_CODE = 45
+
+# Orchestration processes exit with this code if retrying them can't help,
+# because the run already finished or failed with an error that every retry
+# would hit again.
+UNRECOVERABLE_ORCHESTRATION_EXIT_CODE = 45
 
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)

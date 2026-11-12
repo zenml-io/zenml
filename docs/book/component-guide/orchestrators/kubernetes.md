@@ -172,6 +172,7 @@ doesn't actually get to the point of running the step. That means the server wil
 which in turn causes other inconsistencies like wrong step statuses. To mitigate this, this attribute allows to add a margin to the
 backoff limit. This means that the job will retry the pod startup for the configured amount of times plus the margin, which increases
 the chance of the server receiving the maximum amount of retry requests.
+- **`orchestrator_job_backoff_limit`** (default: 3): How often the orchestrator pod is restarted after it fails. A restarted orchestrator pod continues the existing run. Pods that Kubernetes disrupts, for example by evicting them, don't count toward this limit. Errors that a restart can't fix fail the orchestrator job and the run right away, without restarts. This is the case if the orchestrator pod can't parse what the ZenML server returns (for example, because the image contains an older ZenML version than the server) or if a package is missing from the image.
 - **`fail_on_container_waiting_reasons`**: List of container waiting reasons that should cause the job to fail immediately. This should be set to a list of nonrecoverable reasons, which if found in any
 `pod.status.containerStatuses[*].state.waiting.reason` of a job pod, should cause the job to fail immediately.
 - **`job_monitoring_interval`** (default 3): The interval in seconds to monitor the job. Each interval is used to check for container issues and streaming logs for the job pods.
