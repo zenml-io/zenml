@@ -375,6 +375,7 @@ class ManagedModelStore:
                 service.prediction_url = None
             elif request.action == "pause":
                 service.desired_state = "paused"
+                service.state = "pending"
                 service.prediction_url = None
             elif request.action == "resume":
                 service.desired_state = "running"

@@ -246,6 +246,19 @@ def test_inference_selects_active_revision_and_denies_pause_immediately(
     with pytest.raises(IllegalOperationError, match="admission is closed"):
         store.get_inference_target(service.id, key)
 
+    # The first drain observation must not report ready without a URL.
+    pause_lease = store.claim()
+    draining = pause_lease.service
+    assert draining.state == "pending"
+    assert draining.prediction_url is None
+    assert draining.active_revision_id == lease.target_revision_id
+    draining.operation.status = "pending"
+    store.finish(
+        pause_lease, draining, {str(lease.target_revision_id): resource}
+    )
+    with pytest.raises(IllegalOperationError):
+        store.get_claim(pause_lease.operation_id, pause_lease.lease_id)
+
 
 def test_retained_dependencies_block_deletion_until_cleanup(serving_store):
     """Real foreign keys protect dependencies and release them after owned cleanup."""
