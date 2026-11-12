@@ -223,3 +223,44 @@ def test_iam_supports_database_backup_strategy() -> None:
     )
 
     assert isinstance(backup_engine, DBCloneDatabaseBackupEngine)
+
+
+@pytest.mark.parametrize(
+    ("database", "exists"),
+    [(None, True), ("backup_'schema", False)],
+)
+def test_database_exists_without_selecting_the_database(
+    exists: bool, database: str | None
+) -> None:
+    """Missing databases are checked without a failed backend connection."""
+    backup = InMemoryDatabaseBackupEngine(_iam_config())
+    engine = MagicMock()
+    connection = engine.connect.return_value.__enter__.return_value
+    connection.execute.return_value.scalar.return_value = 1 if exists else None
+    backup.create_engine = MagicMock(return_value=engine)
+
+    assert backup.database_exists(database) is exists
+
+    backup.create_engine.assert_called_once_with()
+    statement, parameters = connection.execute.call_args.args
+    assert parameters == {"database": database or "zenml"}
+    if database:
+        assert database not in str(statement)
+
+
+def test_database_exists_propagates_connection_errors() -> None:
+    """Authentication failures must not be treated as missing databases."""
+    from sqlalchemy.exc import OperationalError
+
+    backup = InMemoryDatabaseBackupEngine(_iam_config())
+    engine = MagicMock()
+    error = OperationalError(
+        "connect", {}, pymysql.OperationalError(1045, "Access denied")
+    )
+    engine.connect.side_effect = error
+    backup.create_engine = MagicMock(return_value=engine)
+
+    with pytest.raises(OperationalError) as raised:
+        backup.database_exists()
+
+    assert raised.value is error
