@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 from uuid import UUID
 
 import yaml
+from pydantic import ValidationError
 
 from zenml.client import Client
 from zenml.config.global_config import (
@@ -32,11 +33,20 @@ from zenml.constants import (
     ENV_ZENML_SERVER,
     ENV_ZENML_STORE_PREFIX,
     ENV_ZENML_USE_GLOBAL_RANDOM_SEED,
+    UNRECOVERABLE_ORCHESTRATION_EXIT_CODE,
     ZENML_PIPELINE_RUN_API_TOKEN_EXPIRATION,
 )
-from zenml.enums import APITokenType, AuthScheme, StackComponentType, StoreType
+from zenml.enums import (
+    APITokenType,
+    AuthScheme,
+    ExecutionStatus,
+    StackComponentType,
+    StoreType,
+)
 from zenml.logger import get_logger
+from zenml.orchestrators.publish_utils import publish_failed_pipeline_run
 from zenml.stack import StackComponent
+from zenml.utils import exception_utils
 from zenml.utils.string_utils import random_hex_str
 
 logger = get_logger(__name__)
@@ -315,6 +325,68 @@ def dump_compose_yaml(compose: dict[str, Any]) -> str:
     """
     yaml_text: str = yaml.dump(compose, sort_keys=False)
     return yaml_text.replace("$", "$$")
+
+
+def exit_on_unrecoverable_error(
+    exception: BaseException, run_id: Optional[UUID]
+) -> None:
+    """Fails the run and exits if retrying its orchestration can't help.
+
+    A retried orchestrator runs the same code in the same image against the
+    same server, so some exceptions come back on every attempt:
+    - `pydantic.ValidationError`: the ZenML version in the image can't parse
+      what the server returns, for example after a server upgrade.
+    - `ImportError`: the image misses a package that the stack needs.
+
+    For these, the run is marked as failed, because no retry will ever finish
+    it. Runs that are being stopped or already finished keep their status.
+    For any other exception, this does nothing.
+
+    Args:
+        exception: The exception that the orchestration failed with.
+        run_id: The ID of the pipeline run, if it is known.
+
+    Raises:
+        SystemExit: With `UNRECOVERABLE_ORCHESTRATION_EXIT_CODE` if the
+            exception is unrecoverable.
+    """
+    if not isinstance(exception, (ValidationError, ImportError)):
+        return
+
+    logger.error(
+        "The orchestration failed with an error that retrying won't fix.",
+        exc_info=exception,
+    )
+    if run_id:
+        _fail_unfinished_run(run_id=run_id, exception=exception)
+    raise SystemExit(UNRECOVERABLE_ORCHESTRATION_EXIT_CODE)
+
+
+def _fail_unfinished_run(run_id: UUID, exception: BaseException) -> None:
+    """Marks a pipeline run as failed unless it is stopping or finished.
+
+    Args:
+        run_id: The ID of the pipeline run.
+        exception: The exception that the run failed with.
+    """
+    try:
+        run = Client().zen_store.get_run(run_id, hydrate=False)
+        if run.status in {
+            ExecutionStatus.INITIALIZING,
+            ExecutionStatus.PROVISIONING,
+            ExecutionStatus.RUNNING,
+            ExecutionStatus.RESUMING,
+        }:
+            publish_failed_pipeline_run(
+                run_id,
+                exception_info=exception_utils.collect_exception_information(
+                    exception
+                ),
+            )
+    except Exception as e:
+        logger.warning(
+            "Failed to mark pipeline run `%s` as failed: %s", run_id, e
+        )
 
 
 class register_artifact_store_filesystem:

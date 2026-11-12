@@ -54,11 +54,11 @@ from kubernetes.client import ApiException
 from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import (
-    DYNAMIC_PIPELINE_RUN_FAILED_EXIT_CODE,
     LINUX_GID_CLAIM_KEY,
     LINUX_UID_CLAIM_KEY,
     METADATA_ORCHESTRATOR_RUN_ID,
     ORCHESTRATOR_DOCKER_IMAGE_KEY,
+    UNRECOVERABLE_ORCHESTRATION_EXIT_CODE,
 )
 from zenml.enums import (
     ExecutionMode,
@@ -834,14 +834,15 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                         }
                     ],
                 },
-                # If the pod exits with the dedicated exit code, the run
-                # already reached a terminal status and retrying is useless.
+                # If the pod exits with the dedicated exit code, retrying is
+                # useless: the run already finished, or the orchestrator failed
+                # with an error that every retry would hit again.
                 {
                     "action": "FailJob",
                     "onExitCodes": {
                         "containerName": "main",
                         "operator": "In",
-                        "values": [DYNAMIC_PIPELINE_RUN_FAILED_EXIT_CODE],
+                        "values": [UNRECOVERABLE_ORCHESTRATION_EXIT_CODE],
                     },
                 },
                 # Any other failure of the main container counts towards the

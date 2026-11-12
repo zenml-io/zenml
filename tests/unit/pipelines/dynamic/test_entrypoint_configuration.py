@@ -13,16 +13,18 @@
 #  permissions and limitations under the License.
 """Tests for the dynamic pipeline entrypoint configuration."""
 
-from typing import Any
+from typing import Any, Callable
+from unittest.mock import MagicMock
 
 import pytest
 
-from zenml.constants import DYNAMIC_PIPELINE_RUN_FAILED_EXIT_CODE
+from zenml.constants import UNRECOVERABLE_ORCHESTRATION_EXIT_CODE
 from zenml.enums import ExecutionStatus
 from zenml.models import PipelineRequest, PipelineSnapshotRequest
 from zenml.pipelines.dynamic.entrypoint_configuration import (
     DynamicPipelineEntrypointConfiguration,
 )
+from zenml.pipelines.run_utils import create_placeholder_run
 
 
 class _StubRun:
@@ -53,7 +55,7 @@ def _create_snapshot(clean_client: Any) -> Any:
     request = PipelineSnapshotRequest(
         user=clean_client.active_user.id,
         project=clean_client.active_project.id,
-        run_name_template="",
+        run_name_template="test_run",
         pipeline_configuration={"name": "pipeline"},
         stack=clean_client.active_stack.id,
         client_version="0.12.3",
@@ -63,16 +65,15 @@ def _create_snapshot(clean_client: Any) -> Any:
     return clean_client.zen_store.create_snapshot(request)
 
 
-def _entrypoint_config_with_stub_runner(
-    clean_client: Any,
+def _entrypoint_config(
     monkeypatch: pytest.MonkeyPatch,
-    status: ExecutionStatus,
+    snapshot: Any,
+    runner_factory: Callable[..., Any],
+    run: Any = None,
 ) -> DynamicPipelineEntrypointConfiguration:
-    snapshot = _create_snapshot(clean_client)
-
     monkeypatch.setattr(
         "zenml.pipelines.dynamic.entrypoint_configuration.DynamicPipelineRunner",
-        lambda **kwargs: _FailingStubRunner(status=status, **kwargs),
+        runner_factory,
     )
     monkeypatch.setattr(
         "zenml.pipelines.dynamic.entrypoint_configuration.integration_registry.activate_integrations",
@@ -84,8 +85,23 @@ def _entrypoint_config_with_stub_runner(
         lambda self: None,
     )
 
-    return DynamicPipelineEntrypointConfiguration(
-        arguments=["--snapshot_id", str(snapshot.id)]
+    arguments = ["--snapshot_id", str(snapshot.id)]
+    if run:
+        arguments += ["--run_id", str(run.id)]
+    return DynamicPipelineEntrypointConfiguration(arguments=arguments)
+
+
+def _entrypoint_config_with_stub_runner(
+    clean_client: Any,
+    monkeypatch: pytest.MonkeyPatch,
+    status: ExecutionStatus,
+) -> DynamicPipelineEntrypointConfiguration:
+    return _entrypoint_config(
+        monkeypatch,
+        snapshot=_create_snapshot(clean_client),
+        runner_factory=lambda **kwargs: _FailingStubRunner(
+            status=status, **kwargs
+        ),
     )
 
 
@@ -100,7 +116,7 @@ def test_run_exits_with_dedicated_code_when_run_reached_terminal_status(
     with pytest.raises(SystemExit) as exc_info:
         entrypoint_config.run()
 
-    assert exc_info.value.code == DYNAMIC_PIPELINE_RUN_FAILED_EXIT_CODE
+    assert exc_info.value.code == UNRECOVERABLE_ORCHESTRATION_EXIT_CODE
 
 
 def test_run_reraises_when_run_did_not_reach_terminal_status(
@@ -113,3 +129,48 @@ def test_run_reraises_when_run_did_not_reach_terminal_status(
 
     with pytest.raises(RuntimeError, match="boom"):
         entrypoint_config.run()
+
+
+def test_run_fails_run_and_exits_on_unrecoverable_startup_error(
+    clean_client: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Tests that a startup error that every retry would hit ends the run."""
+    snapshot = _create_snapshot(clean_client)
+    run = create_placeholder_run(snapshot=snapshot)
+    entrypoint_config = _entrypoint_config(
+        monkeypatch,
+        snapshot=snapshot,
+        run=run,
+        runner_factory=MagicMock(
+            side_effect=ModuleNotFoundError("No module named 'x'")
+        ),
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        entrypoint_config.run()
+
+    assert exc_info.value.code == UNRECOVERABLE_ORCHESTRATION_EXIT_CODE
+    assert (
+        clean_client.get_pipeline_run(run.id).status == ExecutionStatus.FAILED
+    )
+
+
+def test_run_reraises_recoverable_startup_error(
+    clean_client: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Tests that a startup error that a retry might fix keeps the run."""
+    snapshot = _create_snapshot(clean_client)
+    run = create_placeholder_run(snapshot=snapshot)
+    entrypoint_config = _entrypoint_config(
+        monkeypatch,
+        snapshot=snapshot,
+        run=run,
+        runner_factory=MagicMock(
+            side_effect=RuntimeError("Server unavailable")
+        ),
+    )
+
+    with pytest.raises(RuntimeError, match="Server unavailable"):
+        entrypoint_config.run()
+
+    assert clean_client.get_pipeline_run(run.id).status == run.status

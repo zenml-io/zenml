@@ -72,6 +72,7 @@ from zenml.orchestrators.step_run_utils import (
     publish_cached_step_run,
 )
 from zenml.orchestrators.utils import (
+    exit_on_unrecoverable_error,
     get_config_environment_vars,
 )
 from zenml.pipelines.run_utils import create_placeholder_run
@@ -217,14 +218,15 @@ def _reconstruct_nodes(
     return list(nodes.values())
 
 
-def main() -> None:
-    """Entrypoint of the k8s master/orchestrator pod.
+def _run_orchestrator(args: argparse.Namespace) -> None:
+    """Runs the pipeline from the k8s master/orchestrator pod.
+
+    Args:
+        args: The parsed entrypoint arguments.
 
     Raises:
         RuntimeError: If the orchestrator pod is not associated with a job.
     """
-    args = parse_args()
-
     orchestrator_pod_name = socket.gethostname()
 
     client = Client()
@@ -984,6 +986,23 @@ def main() -> None:
             pass
 
         logger.info("Orchestrator pod finished.")
+
+
+def main() -> None:
+    """Entrypoint of the k8s master/orchestrator pod.
+
+    Raises:
+        Exception: If the orchestration failed with an error that retrying
+            the orchestrator pod might fix.
+    """
+    args = parse_args()
+    try:
+        _run_orchestrator(args)
+    except Exception as e:
+        exit_on_unrecoverable_error(
+            e, run_id=UUID(args.run_id) if args.run_id else None
+        )
+        raise
 
 
 if __name__ == "__main__":
