@@ -1365,6 +1365,18 @@ resources: {}
   #   cpu: 100m
   #   memory: 128Mi
 
+# Startup probe for the server container. The liveness and readiness probes
+# only start once it passes, so a slow first start (a cold node, low CPU) is
+# not restarted by the liveness probe. The default waits up to 5 minutes.
+# Set to null to disable it.
+startupProbe:
+  httpGet:
+    path: /health
+    port: http
+  periodSeconds: 10
+  timeoutSeconds: 10
+  failureThreshold: 30
+
 resourcesMigrationPod: {}
   # Resource requests and limits for the database migration pod.
   # If not set, falls back to the global resources configuration defined in .Values.resources
