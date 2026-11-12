@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Kubernetes step operator implementation."""
 
-import random
 from typing import (
     TYPE_CHECKING,
     Dict,
@@ -50,6 +49,7 @@ from zenml.integrations.kubernetes.manifest_utils import (
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
+from zenml.utils.string_utils import random_hex_str
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
@@ -297,7 +297,7 @@ class KubernetesStepOperator(BaseStepOperator):
         )
 
         job_name = settings.job_name_prefix or ""
-        random_prefix = "".join(random.choices("0123456789abcdef", k=8))
+        random_prefix = random_hex_str(8)
         job_name += f"-{random_prefix}-{info.pipeline_step_name}-{info.pipeline.name}-step-operator"
         # The job name will be used as a label on the pods, so we need to make
         # sure it doesn't exceed the label length limit

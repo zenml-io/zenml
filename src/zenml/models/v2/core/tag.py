@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing tags."""
 
-import random
+import secrets
 from typing import TYPE_CHECKING, ClassVar, List, Optional, Type, TypeVar
 
 from pydantic import Field, field_validator
@@ -58,7 +58,7 @@ class TagRequest(UserScopedRequest):
     )
     color: ColorVariants = Field(
         description="The color variant assigned to the tag.",
-        default_factory=lambda: random.choice(list(ColorVariants)),
+        default_factory=lambda: secrets.choice(list(ColorVariants)),
     )
 
     @field_validator("name")
@@ -124,7 +124,7 @@ class TagResponseBody(UserScopedResponseBody):
 
     color: ColorVariants = Field(
         description="The color variant assigned to the tag.",
-        default_factory=lambda: random.choice(list(ColorVariants)),
+        default_factory=lambda: secrets.choice(list(ColorVariants)),
     )
     exclusive: bool = Field(
         description="The flag signifying whether the tag is an exclusive tag."

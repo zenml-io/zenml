@@ -21,7 +21,11 @@ from typing import Any, Callable, Dict, Optional, TypeVar, cast
 
 from pydantic import BaseModel
 
-from zenml.constants import BANNED_NAME_CHARACTERS
+from zenml.constants import (
+    BANNED_NAME_CHARACTERS,
+    ENV_ZENML_USE_GLOBAL_RANDOM_SEED,
+    handle_bool_env_var,
+)
 from zenml.utils.time_utils import utc_now
 
 V = TypeVar("V", bound=Any)
@@ -100,18 +104,39 @@ def b64_decode(input_: str) -> str:
     return decoded_bytes.decode()
 
 
-def random_str(length: int) -> str:
-    """Generate a random string without modifying the global random state.
+def random_str(length: int, alphabet: str = string.ascii_letters) -> str:
+    """Generate a random string of given length.
+
+    By default, the characters come from OS randomness, so ZenML neither
+    reads nor changes the global `random` state of user code. If
+    `ZENML_USE_GLOBAL_RANDOM_SEED` is enabled, they come from the global
+    `random` module instead, so a `random.seed(...)` call in user code makes
+    the generated string reproducible.
 
     Args:
-        length: Length of string
+        length: Length of the string.
+        alphabet: Characters to pick from.
 
     Returns:
-        Random human-readable string.
+        Random string.
     """
-    return "".join(
-        random.SystemRandom().choices(string.ascii_letters, k=length)
-    )
+    if handle_bool_env_var(ENV_ZENML_USE_GLOBAL_RANDOM_SEED):
+        return "".join(random.choices(alphabet, k=length))
+    return "".join(random.SystemRandom().choices(alphabet, k=length))
+
+
+def random_hex_str(length: int) -> str:
+    """Generate a random lowercase hex string of given length.
+
+    Lowercase keeps the string valid in Kubernetes object names and labels.
+
+    Args:
+        length: Length of the string.
+
+    Returns:
+        Random lowercase hex string.
+    """
+    return random_str(length, alphabet="0123456789abcdef")
 
 
 _URI_BANNED_CHARACTERS = ["<", ">", ":", '"', "/", "\\", "|", "?", "*"]

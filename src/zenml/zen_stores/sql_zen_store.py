@@ -540,7 +540,7 @@ def exponential_backoff_with_jitter(
         The backoff duration.
     """
     exponential_backoff = base_duration * 1.5**attempt
-    return random.uniform(0, exponential_backoff)
+    return random.SystemRandom().uniform(0, exponential_backoff)
 
 
 class Session(SqlModelSession):

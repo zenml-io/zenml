@@ -14,7 +14,6 @@
 """Entrypoint of the Kubernetes master/orchestrator pod."""
 
 import argparse
-import random
 import socket
 import threading
 import time
@@ -82,6 +81,7 @@ from zenml.utils.logging_utils import (
     is_pipeline_logging_enabled,
     setup_logging_context,
 )
+from zenml.utils.string_utils import random_hex_str
 from zenml.utils.time_utils import utc_now
 
 logger = get_logger(__name__)
@@ -600,7 +600,7 @@ def main() -> None:
             }
 
             job_name = settings.job_name_prefix or ""
-            random_prefix = "".join(random.choices("0123456789abcdef", k=8))
+            random_prefix = random_hex_str(8)
             job_name += f"-{random_prefix}-{step_name}-{snapshot.pipeline_configuration.name}"
             # The job name will be used as a label on the pods, so we need to make
             # sure it doesn't exceed the label length limit

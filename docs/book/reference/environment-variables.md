@@ -176,6 +176,23 @@ in order to use the code repository to track the commit and download files. If y
 the `ZENML_CODE_REPOSITORY_IGNORE_UNTRACKED_FILES` environment variable to `True`. When doing this, you're responsible that
 the files committed to the repository includes everything necessary to run your pipeline.
 
+## Reproducible generated names
+
+ZenML adds random suffixes to some of the names it generates, for example the names of the jobs it creates on Kubernetes, Vertex AI or SageMaker. By default, these suffixes don't use Python's `random` module, so generating them doesn't change your code's random state, and the names stay unique even when your code calls `random.seed(...)`.
+
+If you want these names to follow the seed you set in your code, enable:
+
+```bash
+export ZENML_USE_GLOBAL_RANDOM_SEED=true
+```
+
+With this enabled, calling `random.seed(42)` before running a pipeline makes these names repeat from run to run. Keep the following in mind:
+
+* A seed only applies to the Python process that set it. Names that ZenML generates when you submit a pipeline follow the seed you set in that script. Names generated inside your orchestrator or step environments only follow it if your code also sets the seed there, for example at the top of the module that defines your steps. ZenML passes this environment variable on to those environments for you.
+* Some services require unique names. Running the same seeded pipeline again can fail if a job with the same name still exists, for example on Vertex AI or Kubernetes.
+* ZenML takes these suffixes from your random sequence, so the random values your code draws afterwards depend on how many names ZenML generated. As long as you use the same stack, this stays the same between runs.
+* Run IDs, run names and artifact paths don't depend on this setting.
+
 ## ZenML global config path
 
 To set the path to the global config file, used by ZenML to manage and store the state for a number of settings, set the environment variable as follows:
