@@ -1347,7 +1347,12 @@ def _compute_static_pipeline_run_status(
     Returns:
         The status of the pipeline run.
     """
-    if run_status == ExecutionStatus.STOPPING:
+    if run_status == ExecutionStatus.STOPPED:
+        # A stopped status is requested, for example by a status refresh when
+        # the job of the run is gone. Its steps might never report a final
+        # status then, so they can't keep the run from being stopped.
+        return ExecutionStatus.STOPPED
+    elif run_status == ExecutionStatus.STOPPING:
         if all(status.is_finished for status in step_statuses):
             return ExecutionStatus.STOPPED
         else:

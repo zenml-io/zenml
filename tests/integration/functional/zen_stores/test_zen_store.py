@@ -6590,6 +6590,42 @@ def test_running_status_does_not_undo_stop_of_dynamic_run(clean_client):
     assert run.status == ExecutionStatus.STOPPED
 
 
+def test_stopped_status_stops_static_run_with_running_steps(clean_client):
+    """Tests that a refresh reporting stopped stops a static run.
+
+    The steps of a run whose job is gone might never report a final status,
+    so they must not keep the run running or stopping.
+    """
+    pipeline_run, step_runs = _create_running_static_run(
+        clean_client, num_steps=2
+    )
+    clean_client.zen_store.update_run(
+        run_id=pipeline_run.id,
+        run_update=PipelineRunUpdate(
+            status=ExecutionStatus.STOPPING,
+            status_reason="Manual stop requested.",
+        ),
+    )
+
+    run = clean_client.zen_store.update_run(
+        run_id=pipeline_run.id,
+        run_update=PipelineRunUpdate(status=ExecutionStatus.STOPPED),
+    )
+    assert run.status == ExecutionStatus.STOPPED
+    assert run.get_body().status_reason == "Manual stop requested."
+    assert not run.in_progress
+    assert run.end_time is not None
+
+    clean_client.zen_store.update_run_step(
+        step_run_id=step_runs[0].id,
+        step_run_update=StepRunUpdate(status=ExecutionStatus.STOPPED),
+    )
+    assert (
+        clean_client.get_pipeline_run(pipeline_run.id).status
+        == ExecutionStatus.STOPPED
+    )
+
+
 @step
 def produce_artifact() -> int:
     """Produces an artifact and tags it."""
