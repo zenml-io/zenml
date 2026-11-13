@@ -143,6 +143,7 @@ class ManagedModelRevision(ManagedModelRevisionRequest):
 
     id: UUID
     created: datetime
+    rollback_available: bool = True
 
 
 class ManagedModelOperation(BaseModel):
@@ -150,7 +151,13 @@ class ManagedModelOperation(BaseModel):
 
     id: UUID
     action: Literal[
-        "create", "update", "rollback", "pause", "resume", "delete"
+        "create",
+        "update",
+        "rollback",
+        "pause",
+        "resume",
+        "delete",
+        "reconcile",
     ]
     status: Literal["pending", "running", "succeeded", "failed", "uncertain"]
     error: Optional[str] = None

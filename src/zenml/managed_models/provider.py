@@ -1,6 +1,7 @@
 """Provider-independent execution boundary for managed model services."""
 
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import Literal, Optional
 from uuid import UUID
 
@@ -18,6 +19,9 @@ class ManagedModelProviderResource(BaseModel):
     deployment_id: str
     environment: str
     credential_reference: Optional[str] = None
+    routing_mode: Literal["deployment", "service"] = "deployment"
+    last_activated_at: Optional[datetime] = None
+    source_expires_at: Optional[datetime] = None
 
 
 class ManagedModelObservation(BaseModel):
@@ -38,6 +42,9 @@ class ManagedModelPromotionObservation(BaseModel):
 class ManagedModelProvider(ABC):
     """Internal provider operations, independent of workspace HTTP handlers."""
 
+    native_promotion: bool = False
+    revision_pruning: bool = False
+
     def prepare(self, revision: ManagedModelRevisionRequest) -> None:
         """Validate dependencies before recording an external submission attempt.
 
@@ -49,13 +56,17 @@ class ManagedModelProvider(ABC):
         self,
         resource: ManagedModelProviderResource,
         revision: ManagedModelRevisionRequest,
-    ) -> None:
+    ) -> Optional[datetime]:
         """Renew source access before activating a retained deployment.
 
         Args:
             resource: Owned deployment whose credentials may have expired.
             revision: Immutable package to resolve through the assigned connector.
+
+        Returns:
+            Expiry of refreshed source access, or None for non-expiring access.
         """
+        return None
 
     def cleanup_revision_secrets(
         self, service_id: UUID, revision_id: UUID

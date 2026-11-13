@@ -19,6 +19,7 @@ class ManagedModelCheckpoint(BaseModel):
     resolved_at: Optional[datetime] = None
     cleanup_started_at: Optional[datetime] = None
     resource: Optional[ManagedModelProviderResource] = None
+    pruned_revision_ids: list[UUID] = Field(default_factory=list)
     error: Optional[str] = None
 
 
