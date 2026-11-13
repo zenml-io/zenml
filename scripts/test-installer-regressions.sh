@@ -28,6 +28,7 @@ for key in list(base):
 base.update(
     UV_CACHE_DIR=str(root / "cache"), UV_PYTHON_DOWNLOADS="never",
     UV_OFFLINE="1", UV_NO_INDEX="1", UV_NO_CONFIG="1", UV_NO_CACHE="1", NO_COLOR="1",
+    ZENML_ANALYTICS_OPT_IN="false",  # test installs must never report usage
 )
 base["UV_PYTHON_INSTALL_DIR"] = subprocess.check_output([uv, "python", "dir"], env=base, text=True).strip()
 failures = []
@@ -307,9 +308,36 @@ def windows_python_paths():
     assert (directory / "project-python.py").is_file()
 
 
+def install_report():
+    directory, env, _ = fixture("install-report")
+    observed = directory / "reported"
+    stub = directory / "zenml"
+    stub.write_text(f'#!/bin/sh\nprintf "%s\\n" "$*" > "{observed}"\n')
+    stub.chmod(0o755)
+    definitions = "REPORT_PID=\n"
+    for name in ("analytics_opted_out", "report_install", "wait_for_report"):
+        definitions += name + "() {" + source.read_text().split(name + "() {", 1)[1].split("\n}", 1)[0] + "\n}\n"
+    for opt_out, expected in (({}, "analytics report-install --scope global"),
+                              ({"ZENML_ANALYTICS_OPT_IN": "false"}, None), ({"DO_NOT_TRACK": "1"}, None)):
+        observed.unlink(missing_ok=True)
+        case_env = {key: value for key, value in env.items() if key not in ("ZENML_ANALYTICS_OPT_IN", "DO_NOT_TRACK")}
+        case_env.update(opt_out, ZENML_BIN=str(stub), ZENML_INSTALL_SCOPE="global")
+        result = subprocess.run([sys.argv[3], "-eu", "-c", definitions + "\nreport_install; wait_for_report"],
+                                env=case_env, capture_output=True, text=True)
+        assert result.returncode == 0, result.stderr
+        reported = observed.read_text().strip() if observed.exists() else None
+        assert reported == expected, f"{opt_out}: {reported!r}"
+    # A CLI without the command (an older pinned ZenML) must not fail the install.
+    stub.write_text("#!/bin/sh\nexit 2\n")
+    result = subprocess.run([sys.argv[3], "-eu", "-c", definitions + "\nreport_install; wait_for_report"],
+                            env={**case_env, "DO_NOT_TRACK": "0"}, capture_output=True, text=True)
+    assert result.returncode == 0 and not result.stdout and not result.stderr, result.stderr
+
+
 cases = [("capped project chooses intersection", capped_project), ("historical release floor and explicit override", historical_floor),
          ("project version transition and exact user pin", project_upgrade), ("global upgrade preserves extras, add-ons and Python", global_upgrade)]
 cases.append(("Git Bash normalizes uv Python paths", windows_python_paths))
+cases.append(("install report honors analytics opt-out", install_report))
 for startup in (".bash_profile", ".bash_login"):
     cases.append((f"Bash login PATH with {startup}", lambda s=startup: bash_login_path(s)))
 for request in ("3.9", "3.15"):

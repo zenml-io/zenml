@@ -26,6 +26,8 @@ The script installs [`uv`](https://docs.astral.sh/uv/) if it is missing, then in
 
 It also installs the [ZenML agent skills](../reference/llms-txt.md#zenml-agent-skills) for coding agents such as Claude Code and Codex. The script does not log you in or start a server; it finishes by printing the next steps. Re-running it upgrades ZenML within your project's version constraints.
 
+When it finishes, the script reports one anonymous usage event saying that ZenML was installed with the script, and sets up ZenML's local database to do so. To turn that off, set `ZENML_ANALYTICS_OPT_IN=false` before running it. See [usage analytics](../reference/global-settings.md#usage-analytics).
+
 Pass options after `bash -s --`:
 
 ```shell
