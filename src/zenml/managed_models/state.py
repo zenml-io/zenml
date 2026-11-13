@@ -92,6 +92,8 @@ class ManagedModelCleanupStatus(BaseModel):
 
     workspace_id: UUID
     ready: bool
+    command_id: Optional[UUID] = None
+    command_generation: Optional[int] = None
 
 
 class ManagedModelAbsenceConfirmation(BaseModel):
@@ -128,3 +130,12 @@ class ManagedWorkspaceCommandResult(BaseModel):
     command: ManagedWorkspaceCommand
     accepted: bool
     blocker: Optional[str] = None
+
+
+class ManagedRuntimeStatus(BaseModel):
+    """Controller observation used for cleanup and restored-runtime readiness."""
+
+    model_config = ConfigDict(extra="forbid")
+    ready: bool
+    active_workers: int = Field(ge=0)
+    deployment_id: Optional[UUID] = None

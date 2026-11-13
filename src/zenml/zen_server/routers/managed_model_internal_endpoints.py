@@ -26,6 +26,7 @@ from zenml.managed_models.state import (
     ManagedModelLease,
     ManagedModelResult,
     ManagedModelSource,
+    ManagedRuntimeStatus,
     ManagedWorkspaceCommand,
     ManagedWorkspaceCommandResult,
 )
@@ -345,7 +346,10 @@ def get_managed_model_cleanup_status(
         True only after admission closes and all owned service cleanup succeeds.
     """
     response.headers["Cache-Control"] = "no-store"
+    receipt = zen_store().managed_models.get_workspace_command_receipt()
     return ManagedModelCleanupStatus(
+        command_id=receipt.command.id if receipt else None,
+        command_generation=receipt.command.generation if receipt else None,
         workspace_id=server_config().get_external_server_id(),
         ready=zen_store().managed_models.cleanup_ready(),
     )
@@ -410,6 +414,7 @@ def resolve_managed_credential_write(
 @async_fastapi_endpoint_wrapper(deduplicate=False)
 def sync_managed_workspace_transition(
     response: Response,
+    observation: Optional[ManagedRuntimeStatus] = None,
 ) -> Optional[ManagedWorkspaceCommandResult]:
     """Fetch authorized platform intent and acknowledge its durable local receipt.
 
@@ -418,6 +423,7 @@ def sync_managed_workspace_transition(
 
     Args:
         response: Response carrying private cache controls.
+        observation: Optional controller observation of dependencies and active workers.
 
     Returns:
         Persisted outcome, or None when the platform has no outstanding command.
@@ -429,6 +435,11 @@ def sync_managed_workspace_transition(
     response.headers["Cache-Control"] = "no-store"
     try:
         cloud = cloud_connection()
+        if observation is not None:
+            cloud.post(
+                "/managed_serving_commands/runtime-status",
+                data=observation.model_dump(mode="json"),
+            )
         delivery = cloud.get("/managed_serving_commands", params=None).json()
         if not isinstance(delivery, dict) or delivery.get(
             "workspace_id"

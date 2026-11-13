@@ -47,15 +47,22 @@ from zenml.zen_stores.schemas.managed_model_schemas import (
 class ManagedModelStore:
     """Workspace-owned storage for model services and operation claims."""
 
-    def __init__(self, engine: Engine, retry_base_seconds: int = 10) -> None:
+    def __init__(
+        self,
+        engine: Engine,
+        retry_base_seconds: int = 10,
+        initial_admission_open: bool = True,
+    ) -> None:
         """Bind to the workspace database.
 
         Args:
             engine: Workspace SQL engine.
             retry_base_seconds: Minimum delay between observations.
+            initial_admission_open: Initial gate state for a newly configured runtime.
         """
         self.engine = engine
         self.retry_base_seconds = retry_base_seconds
+        self.initial_admission_open = initial_admission_open
 
     def get(self, service_id: UUID) -> ManagedModelService:
         """Read a service including its retained revisions.
@@ -876,6 +883,24 @@ class ManagedModelStore:
             )
             session.commit()
 
+    def get_workspace_command_receipt(
+        self,
+    ) -> Optional[ManagedWorkspaceCommandResult]:
+        """Read the durable command receipt without credential material.
+
+        Returns:
+            Latest admission command outcome, if the ordered protocol is active.
+        """
+        with Session(self.engine) as session:
+            gate = session.get(Workspace, UUID(int=0))
+            return (
+                ManagedWorkspaceCommandResult.model_validate_json(
+                    gate.command_receipt
+                )
+                if gate and gate.command_receipt != "{}"
+                else None
+            )
+
     def cleanup_ready(self) -> bool:
         """Check that admission is closed and every service finished cleanup.
 
@@ -891,7 +916,12 @@ class ManagedModelStore:
     def _ensure_workspace(self) -> None:
         with Session(self.engine) as session:
             if session.get(Workspace, UUID(int=0)) is None:
-                session.add(Workspace(id=UUID(int=0), admission_open=True))
+                session.add(
+                    Workspace(
+                        id=UUID(int=0),
+                        admission_open=self.initial_admission_open,
+                    )
+                )
                 try:
                     session.commit()
                 except IntegrityError:

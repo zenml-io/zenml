@@ -17,6 +17,7 @@ from sqlalchemy import (
     event,
 )
 from sqlalchemy.exc import IntegrityError
+
 from zenml.exceptions import EntityExistsError, IllegalOperationError
 from zenml.managed_models.provider import ManagedModelProviderResource
 from zenml.managed_models.state import (
@@ -822,6 +823,7 @@ def test_admission_migration_preserves_legacy_drain_intent(tmp_path):
     from alembic.migration import MigrationContext
     from alembic.operations import Operations
     from sqlalchemy import Boolean, DateTime, select
+
     from zenml.utils.time_utils import utc_now
 
     engine = create_engine(f"sqlite:///{tmp_path / 'gate-upgrade.db'}")
@@ -1089,3 +1091,20 @@ def test_command_adoption_preserves_legacy_transition_recovery(serving_store):
         store.apply_workspace_command(command)
     store.reopen_admission(legacy)
     assert store.apply_workspace_command(command).accepted
+
+
+def test_new_runtime_starts_closed_and_preserves_durable_gate(serving_store):
+    """A fresh runtime needs an authorized reopen; process restart cannot undo it."""
+    from zenml.managed_models.state import ManagedWorkspaceCommand
+
+    store, request = serving_store
+    closed = ManagedModelStore(store.engine, initial_admission_open=False)
+    with pytest.raises(IllegalOperationError):
+        closed.create(request, "before-readiness")
+    command = ManagedWorkspaceCommand(
+        id=uuid4(), generation=1, action="reopen"
+    )
+    assert closed.apply_workspace_command(command).accepted
+    restarted = ManagedModelStore(store.engine, initial_admission_open=False)
+    assert restarted.get_workspace_command_receipt().command == command
+    assert restarted.create(request, "after-readiness").name == request.name

@@ -1303,7 +1303,13 @@ class SqlZenStore(BaseZenStore):
         Returns:
             Store bound to the workspace database.
         """
-        return ManagedModelStore(self.engine)
+        return ManagedModelStore(
+            self.engine,
+            initial_admission_open=os.getenv(
+                "ZENML_MANAGED_MODEL_INITIAL_ADMISSION_CLOSED", "false"
+            ).lower()
+            != "true",
+        )
 
     @property
     def engine(self) -> Engine:
