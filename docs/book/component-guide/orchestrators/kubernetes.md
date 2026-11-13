@@ -157,9 +157,11 @@ The following configuration options can be set either through the orchestrator c
 - **`service_account_name`**: The name of a Kubernetes service account to use for running the pipelines. If configured, it must point to an existing service account in the default or configured `namespace` that has associated RBAC roles granting permissions to create and manage pods in that namespace. This can also be configured as an individual pipeline setting in addition to the global orchestrator setting.
 - **`step_pod_service_account_name`**: Name of the service account to use for the step pods. If not set, the step pods fall back to `service_account_name`; if that is not set either, they run with the namespace's `default` service account. Note that `pod_settings` has no service account field, so `pod_settings={"service_account_name": ...}` is accepted but ignored.
 - **`privileged`** (default: False): If the container should be run in privileged mode.
-- **`pod_settings`**: Node selectors, labels, affinity, and tolerations, secrets, environment variables, image pull secrets, the scheduler name and additional arguments to apply to the Kubernetes Pods running the steps of your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
-- **`orchestrator_pod_settings`**: Node selectors, labels, affinity, tolerations, secrets, environment variables and image pull secrets to apply to the Kubernetes Pod that is responsible for orchestrating the pipeline and starting the other Pods. These can be either specified using the Kubernetes model objects or as dictionaries.
+- **`pod_settings`**: Node selectors, labels, affinity, and tolerations, secrets, environment variables, image pull secrets, image pull policy, the scheduler name and additional arguments to apply to the Kubernetes Pods running the steps of your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
+    - `image_pull_policy` (default: `None`): When left as `None`, Kubernetes automatically determines the policy based on the image tag (defaulting to `Always` if the tag is `:latest` or omitted, and `IfNotPresent` otherwise).
+- **`orchestrator_pod_settings`**: Node selectors, labels, affinity, tolerations, secrets, environment variables, image pull secrets and image pull policy to apply to the Kubernetes Pod that is responsible for orchestrating the pipeline and starting the other Pods. These can be either specified using the Kubernetes model objects or as dictionaries.
   - If you're specifying `init_containers` as part of the `additional_pod_spec_args` of the pod settings, you can use an `"{{ image }}"` placeholder string. This placeholder will be replaced by the image that is also used to run the orchestration or step container.
+  - The orchestrator pod only uses `orchestrator_pod_settings`. If you reuse the same image tag and want every pod (both orchestrator and steps) to pull the latest image, you must set the `image_pull_policy` in both `pod_settings` and `orchestrator_pod_settings`.
 - **`pod_name_prefix`**: Prefix for the pod names. A random suffix and the step name will be appended to create unique pod names.
 - **`pod_startup_timeout`** (default: 600): The maximum time to wait for a pending step pod to start (in seconds). The orchestrator will delete the pending pod after this time has elapsed and raise an error. If configured, the `pod_failure_retry_delay` and `pod_failure_backoff` settings will also be used to calculate the delay between retries.
 - **`pod_failure_max_retries`** (default: 3): The maximum number of retries to create a step pod that fails to start.
@@ -368,6 +370,7 @@ kubernetes_settings = KubernetesOrchestratorSettings(
         ],
         "host_ipc": True,
         "image_pull_secrets": ["regcred", "gcr-secret"],
+        "image_pull_policy": "Always",
         "labels": {
             "app": "ml-pipeline",
             "environment": "production",
