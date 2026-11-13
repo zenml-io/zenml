@@ -10,7 +10,6 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
-
 from zenml.exceptions import IllegalOperationError
 from zenml.managed_models.state import (
     ManagedModelCheckpoint,
@@ -273,3 +272,38 @@ def test_deletion_waits_for_secret_cleanup(worker_api):
     store.managed_inference_keys.cleanup.side_effect = None
     assert client.put(url, headers=headers, json=result).status_code == 200
     store.managed_models.finish.assert_called_once()
+
+
+def test_credential_write_resolution_requires_operator_identity(worker_api):
+    """Worker capabilities cannot clear an uncertain credential write."""
+    client, store, config, lease, base, worker_headers = worker_api
+    identity = uuid4()
+    url = (
+        base
+        + f"/workspace/resolve-credential-write/{lease.service.id}/{identity}"
+    )
+    payload = {
+        "expected_generation": 1,
+        "writer_stopped": True,
+        "evidence": "Verified termination of the original writer.",
+    }
+    assert client.post(url, json=payload).status_code == 401
+    assert (
+        client.post(url, json=payload, headers=worker_headers).status_code
+        == 401
+    )
+    store.managed_inference_keys.resolve_stopped_write.assert_not_called()
+    headers = {
+        "Authorization": "Bearer "
+        + config.managed_model_controller_key.get_secret_value()
+    }
+    assert (
+        client.post(
+            url, json={**payload, "writer_stopped": False}, headers=headers
+        ).status_code
+        == 422
+    )
+    assert client.post(url, json=payload, headers=headers).status_code == 200
+    store.managed_inference_keys.resolve_stopped_write.assert_called_once_with(
+        lease.service.id, identity, 1, payload["evidence"]
+    )

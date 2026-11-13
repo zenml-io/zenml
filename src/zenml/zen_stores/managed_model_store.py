@@ -691,9 +691,13 @@ class ManagedModelStore:
             ):
                 return False
             journal = json.loads(row.inference_credentials)
-            if journal.get("active") or any(
-                session.get(SecretSchema, UUID(identity)) is not None
-                for identity in journal.get("owned", [])
+            if (
+                journal.get("writing")
+                or journal.get("active")
+                or any(
+                    session.get(SecretSchema, UUID(identity)) is not None
+                    for identity in journal.get("owned", [])
+                )
             ):
                 return False
         return (
@@ -1135,6 +1139,7 @@ class ManagedModelStore:
             IllegalOperationError: If cleanup is incomplete or resources remain.
         """
         with Session(self.engine) as session:
+            self.lock_public_mutation(session)
             row = self._get_row(session, service_id)
             service = row.to_model()
             if (
@@ -1144,6 +1149,10 @@ class ManagedModelStore:
             ):
                 raise IllegalOperationError(
                     "Complete provider cleanup before purging this service."
+                )
+            if json.loads(row.inference_credentials).get("writing"):
+                raise IllegalOperationError(
+                    "Resolve outstanding inference credential writes before purging."
                 )
             session.delete(row)
             session.commit()

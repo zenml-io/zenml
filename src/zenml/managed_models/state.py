@@ -101,3 +101,12 @@ class ManagedModelAbsenceConfirmation(BaseModel):
     expected_generation: int = Field(ge=1)
     confirmed_absent: Literal[True]
     evidence: str = Field(min_length=20, max_length=1000)
+
+
+class ManagedCredentialWriteResolution(BaseModel):
+    """Operator confirmation that a credential writer can no longer commit."""
+
+    model_config = ConfigDict(extra="forbid")
+    expected_generation: int = Field(ge=1)
+    writer_stopped: Literal[True]
+    evidence: str = Field(min_length=20, max_length=1000)

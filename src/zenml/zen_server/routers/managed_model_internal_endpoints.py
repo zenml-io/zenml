@@ -17,6 +17,7 @@ from fastapi import (
 
 from zenml.exceptions import IllegalOperationError
 from zenml.managed_models.state import (
+    ManagedCredentialWriteResolution,
     ManagedModelAbsenceConfirmation,
     ManagedModelAssignment,
     ManagedModelCheckpoint,
@@ -373,3 +374,28 @@ def confirm_managed_submission_absent(
 def reopen_managed_model_workspace() -> None:
     """Reopen a fully drained workspace after an operator cancels parent teardown."""
     zen_store().managed_models.reopen_admission()
+
+
+@router.post(
+    "/workspace/resolve-credential-write/{service_id}/{secret_id}",
+    dependencies=[Depends(_authorize_controller)],
+)
+@async_fastapi_endpoint_wrapper(deduplicate=False)
+def resolve_managed_credential_write(
+    service_id: UUID,
+    secret_id: UUID,
+    confirmation: ManagedCredentialWriteResolution,
+) -> None:
+    """Resolve an owned write only after explicit operator verification.
+
+    Args:
+        service_id: Deleted service retaining the uncertain write.
+        secret_id: Investigated owned credential.
+        confirmation: Generation and evidence that its writer cannot resume.
+    """
+    zen_store().managed_inference_keys.resolve_stopped_write(
+        service_id,
+        secret_id,
+        confirmation.expected_generation,
+        confirmation.evidence,
+    )

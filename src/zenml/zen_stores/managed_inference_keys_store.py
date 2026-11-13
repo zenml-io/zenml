@@ -32,6 +32,8 @@ class _CredentialJournal(BaseModel):
     initialized: bool = False
     active: Optional[ManagedModelInferenceSecret] = None
     owned: list[UUID] = Field(default_factory=list)
+    writing: list[UUID] = Field(default_factory=list)
+    write_resolutions: dict[UUID, str] = Field(default_factory=dict)
 
 
 class ManagedInferenceKeysStore:
@@ -107,6 +109,7 @@ class ManagedInferenceKeysStore:
                 )
             journal.version += 1
             journal.owned.append(secret_id)
+            journal.writing.append(secret_id)
             version = journal.version
             # Reserve ownership and secret metadata atomically. A crash during
             # external storage still leaves a discoverable cleanup record.
@@ -146,6 +149,7 @@ class ManagedInferenceKeysStore:
                     raise IllegalOperationError(
                         "Inference credentials changed; retry the request."
                     )
+                journal.writing.remove(secret_id)
                 journal.initialized = True
                 journal.active = reference
                 self._save(
@@ -176,6 +180,7 @@ class ManagedInferenceKeysStore:
             # A newer intent won. A late backend write must not leave a key
             # behind after service deletion or publish an obsolete reference.
             self._delete_owned_secret(secret_id)
+            self._finish_write(service_id, secret_id)
             raise
         return reference
 
@@ -225,6 +230,10 @@ class ManagedInferenceKeysStore:
             journal = _CredentialJournal.model_validate_json(
                 row.inference_credentials
             )
+            if journal.writing:
+                raise IllegalOperationError(
+                    "Inference credential writes are still outstanding; retain cleanup infrastructure until their outcomes are resolved."
+                )
             journal.version += 1
             journal.initialized = True
             journal.active = None
@@ -238,6 +247,69 @@ class ManagedInferenceKeysStore:
             session.commit()
         for secret_id in journal.owned:
             self._delete_owned_secret(secret_id)
+
+    def resolve_stopped_write(
+        self,
+        service_id: UUID,
+        secret_id: UUID,
+        expected_generation: int,
+        evidence: str,
+    ) -> None:
+        """Clean an uncertain write after an operator verifies its writer stopped.
+
+        Args:
+            service_id: Service already requested for deletion.
+            secret_id: Exact owned write investigated by the operator.
+            expected_generation: Investigated service generation.
+            evidence: Non-secret reference to the investigation.
+
+        Raises:
+            IllegalOperationError: If the generation, deletion or ownership does not match.
+        """
+        if len(evidence.strip()) < 20:
+            raise IllegalOperationError(
+                "Record evidence that the credential writer stopped."
+            )
+        with Session(self.store.engine) as session:
+            row = self._get_row(session, service_id)
+            journal = _CredentialJournal.model_validate_json(
+                row.inference_credentials
+            )
+            if (
+                row.generation != expected_generation
+                or row.to_model().desired_state != "deleted"
+                or secret_id not in journal.owned
+            ):
+                raise IllegalOperationError(
+                    "Credential resolution does not match the deleted service and owned write."
+                )
+            if secret_id not in journal.writing:
+                return
+        # Never clear the obligation until both secret backends and metadata
+        # have acknowledged cleanup. This may be replayed after interruption.
+        self._delete_owned_secret(secret_id)
+        self._finish_write(service_id, secret_id, evidence)
+
+    def _finish_write(
+        self, service_id: UUID, secret_id: UUID, evidence: Optional[str] = None
+    ) -> None:
+        """Acknowledge a returned backend write after cleaning its rejected value.
+
+        Args:
+            service_id: Service retaining the write obligation.
+            secret_id: Completed write whose value has been removed.
+            evidence: Optional operator verification reference.
+        """
+        with Session(self.store.engine) as session:
+            row = self._get_row(session, service_id)
+            original = row.inference_credentials
+            journal = _CredentialJournal.model_validate_json(original)
+            if secret_id in journal.writing:
+                journal.writing.remove(secret_id)
+            if evidence is not None:
+                journal.write_resolutions[secret_id] = evidence
+            self._save(session, service_id, original, journal)
+            session.commit()
 
     def _delete_owned_secret(self, secret_id: UUID) -> None:
         # Values can exist even if someone removed metadata manually.

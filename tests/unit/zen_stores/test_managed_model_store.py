@@ -611,12 +611,16 @@ def test_newer_rotation_wins_and_late_deleted_key_is_cleaned(serving_store):
             ManagedModelMutation(action="delete", expected_generation=1),
             "delete-race",
         )
-        keys.cleanup(service.id)
+        with pytest.raises(
+            IllegalOperationError, match="writes are still outstanding"
+        ):
+            keys.cleanup(service.id)
         original_write(identity, data)
 
     keys.store._set_secret_values = deletion_during_write
     with pytest.raises(IllegalOperationError, match="credentials changed"):
         keys.rotate(service.id, request.project_id)
+    keys.cleanup(service.id)
     assert not values
     assert store.get(service.id).inference_secret is None
 
@@ -898,3 +902,57 @@ def test_closed_transition_blocks_key_and_lifecycle_mutations(serving_store):
             ManagedModelMutation(action="retry", expected_generation=2),
             "retry",
         )
+
+
+def test_uncertain_secret_write_blocks_cleanup_until_explicit_resolution(
+    serving_store,
+):
+    """Lost write outcomes cannot be cleared merely because the caller failed."""
+    from sqlmodel import Session
+
+    store, request = serving_store
+    service = store.create(request, "uncertain-write")
+    keys, values = _credential_store(store)
+    original_write = keys.store._set_secret_values
+
+    def lose_response(identity, data):
+        original_write(identity, data)
+        raise TimeoutError("unknown outcome")
+
+    keys.store._set_secret_values = lose_response
+    with pytest.raises(RuntimeError):
+        keys.rotate(service.id, request.project_id)
+    identity = next(iter(values))
+    current = store.mutate(
+        service.id,
+        ManagedModelMutation(action="delete", expected_generation=1),
+        "delete",
+    )
+    with pytest.raises(
+        IllegalOperationError, match="writes are still outstanding"
+    ):
+        keys.cleanup(service.id)
+    with pytest.raises(IllegalOperationError):
+        keys.resolve_stopped_write(
+            service.id,
+            uuid4(),
+            current.generation,
+            "Verified the original writer has stopped.",
+        )
+    keys.resolve_stopped_write(
+        service.id,
+        identity,
+        current.generation,
+        "Verified the original writer has stopped.",
+    )
+    keys.resolve_stopped_write(
+        service.id,
+        identity,
+        current.generation,
+        "Verified the original writer has stopped.",
+    )
+    keys.cleanup(service.id)
+    assert not values
+    with Session(store.engine) as session:
+        row = session.get(ManagedModelServiceSchema, service.id)
+        assert not json.loads(row.inference_credentials)["writing"]
