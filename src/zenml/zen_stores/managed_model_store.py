@@ -709,10 +709,13 @@ class ManagedModelStore:
             result = ManagedWorkspaceCommandResult(
                 command=command, accepted=True
             )
-            if command.action in (
-                "close",
-                "reopen",
-            ) and not self._services_clean(session):
+            # Adopting coordinated provisioning may confirm an already-open
+            # legacy gate with live services. Opening a closed gate still needs
+            # complete cleanup; confirmation must never bypass a drain.
+            needs_cleanup = command.action == "close" or (
+                command.action == "reopen" and not gate.admission_open
+            )
+            if needs_cleanup and not self._services_clean(session):
                 result.accepted = False
                 result.blocker = "Complete service, provider, execution and credential cleanup first."
             else:

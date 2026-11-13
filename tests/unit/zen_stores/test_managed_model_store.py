@@ -1108,3 +1108,23 @@ def test_new_runtime_starts_closed_and_preserves_durable_gate(serving_store):
     restarted = ManagedModelStore(store.engine, initial_admission_open=False)
     assert restarted.get_workspace_command_receipt().command == command
     assert restarted.create(request, "after-readiness").name == request.name
+
+
+def test_adopting_open_workspace_preserves_services_but_cannot_bypass_drain(
+    serving_store,
+):
+    """Baseline readiness can confirm an open gate, never reopen an unfinished drain."""
+    from zenml.managed_models.state import ManagedWorkspaceCommand
+
+    store, request = serving_store
+    service = store.create(request, "legacy-service")
+    assert store.apply_workspace_command(
+        ManagedWorkspaceCommand(id=uuid4(), generation=1, action="reopen")
+    ).accepted
+    assert store.get(service.id).id == service.id
+    assert store.apply_workspace_command(
+        ManagedWorkspaceCommand(id=uuid4(), generation=2, action="drain")
+    ).accepted
+    assert not store.apply_workspace_command(
+        ManagedWorkspaceCommand(id=uuid4(), generation=3, action="reopen")
+    ).accepted
