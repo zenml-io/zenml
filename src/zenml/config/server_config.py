@@ -25,6 +25,7 @@ from pydantic import (
     Field,
     PositiveFloat,
     PositiveInt,
+    SecretStr,
     field_validator,
     model_validator,
 )
@@ -340,6 +341,16 @@ class ServerConfiguration(BaseModel):
     external_user_info_url: Optional[str] = None
     external_server_id: Optional[UUID] = None
 
+    managed_model_controller_key: Optional[SecretStr] = Field(
+        default=None, repr=False
+    )
+    managed_model_proxy_key: Optional[SecretStr] = Field(
+        default=None, repr=False
+    )
+    managed_model_inference_url: Optional[str] = None
+    managed_model_services_enabled: bool = False
+    managed_model_serving_profiles: List[str] = []
+
     rbac_implementation_source: Optional[str] = None
     feature_gate_implementation_source: Optional[str] = None
     reportable_resources: List[str] = []
@@ -633,17 +644,18 @@ class ServerConfiguration(BaseModel):
 
         return data
 
-    @field_validator("reportable_resources", mode="before")
+    @field_validator(
+        "reportable_resources", "managed_model_serving_profiles", mode="before"
+    )
     @classmethod
-    def _convert_reportable_resources(cls, value: Any) -> Any:
-        """Convert reportable resources value if necessary.
+    def _convert_json_lists(cls, value: Any) -> Any:
+        """Decode list settings supplied as JSON environment values.
 
-        This was previously set via an environment variable as a JSON-formatted
-        string. In case this still exists somewhere, this method converts the
-        JSON string to a list.
+        Managed serving profiles and legacy reportable resources can arrive
+        as JSON strings. Native lists pass through unchanged.
 
         Args:
-            value: The reportable resources values.
+            value: The list or JSON-encoded configuration value.
 
         Returns:
             The potentially converted value.
