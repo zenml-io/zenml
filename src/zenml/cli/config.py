@@ -13,8 +13,11 @@
 #  permissions and limitations under the License.
 """CLI for manipulating ZenML local and global config file."""
 
+from typing import Optional
+
 import click
 
+from zenml.analytics import track
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_decorator
 from zenml.cli import utils as cli_utils
@@ -56,6 +59,32 @@ def opt_out() -> None:
     gc = GlobalConfiguration()
     gc.analytics_opt_in = False
     cli_utils.declare("Opted out of analytics.")
+
+
+@analytics.command("report-install", hidden=True)
+@click.option(
+    "--scope",
+    type=click.Choice(["project", "global"]),
+    default=None,
+    help="Where the install script put ZenML.",
+)
+def report_install(scope: Optional[str] = None) -> None:
+    """Report an install made with the install script.
+
+    The install script runs this once, after it installs ZenML. It sends a
+    single usage event with the same anonymous client ID as every other
+    event, and sends nothing when analytics are opted out.
+
+    Args:
+        scope: Where the install script put ZenML.
+    """
+    metadata = {"install_method": "script"}
+    if scope:
+        metadata["install_scope"] = scope
+    # Analytics only send once the store is set up, and on a machine that
+    # has just installed ZenML nothing has set it up yet.
+    GlobalConfiguration().zen_store
+    track(AnalyticsEvent.INSTALL_SCRIPT_COMPLETED, metadata)
 
 
 # Logging
