@@ -199,3 +199,5 @@ class ManagedModelWorkspaceSchema(BaseSchema, table=True):
 
     __tablename__ = "managed_model_workspace"
     admission_open: bool = True
+    drain_requested: bool = False
+    transition_id: Optional[UUID] = None

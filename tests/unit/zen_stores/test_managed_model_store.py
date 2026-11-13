@@ -753,3 +753,121 @@ def test_concurrent_maintenance_queues_one_generation(
     assert current.generation == 2
     assert current.operation.action == "reconcile"
     assert current.active_revision_id == lease.target_revision_id
+
+
+def test_ordinary_disable_rejects_existing_service_without_draining(
+    serving_store,
+):
+    """A rejected disable preserves admission and does not schedule deletion."""
+    store, request = serving_store
+    service = store.create(request, "create")
+    with pytest.raises(IllegalOperationError, match="Delete managed services"):
+        store.close_if_clean(uuid4())
+    assert store.get(service.id).desired_state == "running"
+    assert store.create(request, "another-create").id != service.id
+
+
+def test_clean_disable_is_owned_idempotent_and_non_destructive(serving_store):
+    """Only the matching transition may reopen an ordinary disabled gate."""
+    store, request = serving_store
+    transition = uuid4()
+    store.close_if_clean(transition)
+    store.close_if_clean(transition)
+    assert store.cleanup_ready()
+    assert store.claim() is None
+    with pytest.raises(IllegalOperationError):
+        store.create(request, "closed")
+    with pytest.raises(IllegalOperationError):
+        store.close_if_clean(uuid4())
+    with pytest.raises(IllegalOperationError):
+        store.begin_drain()
+    with pytest.raises(IllegalOperationError):
+        store.reopen_admission()
+    store.reopen_admission(transition)
+    assert store.create(request, "open").id
+
+
+def test_disable_and_creation_serialize(serving_store):
+    """Concurrent creation either blocks disabling or observes closed admission."""
+    store, request = serving_store
+
+    def create():
+        try:
+            store.create(request, "race")
+            return True
+        except IllegalOperationError:
+            return False
+
+    def disable():
+        try:
+            store.close_if_clean(uuid4())
+            return True
+        except IllegalOperationError:
+            return False
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        a = pool.submit(create)
+        b = pool.submit(disable)
+        assert a.result() != b.result()
+
+
+def test_admission_migration_preserves_legacy_drain_intent(tmp_path):
+    """The additive migration preserves open and destructive legacy gates."""
+    import importlib
+
+    from alembic.migration import MigrationContext
+    from alembic.operations import Operations
+    from sqlalchemy import Boolean, DateTime, select
+    from zenml.utils.time_utils import utc_now
+
+    engine = create_engine(f"sqlite:///{tmp_path / 'gate-upgrade.db'}")
+    metadata = MetaData()
+    gates = Table(
+        "managed_model_workspace",
+        metadata,
+        Column("id", Uuid, primary_key=True),
+        Column("created", DateTime),
+        Column("updated", DateTime),
+        Column("admission_open", Boolean, nullable=False),
+    )
+    metadata.create_all(engine)
+    opened, closed = uuid4(), uuid4()
+    with engine.begin() as connection:
+        connection.execute(
+            gates.insert(),
+            [
+                {
+                    "id": opened,
+                    "admission_open": True,
+                    "created": utc_now(),
+                    "updated": utc_now(),
+                },
+                {
+                    "id": closed,
+                    "admission_open": False,
+                    "created": utc_now(),
+                    "updated": utc_now(),
+                },
+            ],
+        )
+        migration = importlib.import_module(
+            "zenml.zen_stores.migrations.versions.c4db519d2331_separate_managed_admission_and_drain"
+        )
+        with Operations.context(MigrationContext.configure(connection)):
+            migration.upgrade()
+        updated = Table(
+            "managed_model_workspace", MetaData(), autoload_with=connection
+        )
+        rows = {
+            str(row.id).replace("-", ""): row
+            for row in connection.execute(select(updated))
+        }
+        assert (
+            rows[opened.hex].admission_open
+            and not rows[opened.hex].drain_requested
+        )
+        assert (
+            not rows[closed.hex].admission_open
+            and rows[closed.hex].drain_requested
+        )
+        assert all(row.transition_id is None for row in rows.values())

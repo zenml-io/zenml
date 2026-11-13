@@ -630,22 +630,119 @@ class ManagedModelStore:
                 )
             session.commit()
 
-    def begin_drain(self) -> None:
-        """Close workspace admission durably before scheduling provider cleanup."""
+    def close_if_clean(self, transition_id: UUID) -> None:
+        """Close admission atomically without requesting deletion of services.
+
+        Args:
+            transition_id: Durable provisioning transition used for retries.
+
+        Raises:
+            IllegalOperationError: If cleanup remains or another transition owns the gate.
+        """
         self._ensure_workspace()
         with Session(self.engine) as session:
+            # Creation takes the same row lock before inserting its service.
             session.execute(
                 update(Workspace)
                 .where(col(Workspace.id) == UUID(int=0))
-                .values(admission_open=False, updated=utc_now())
+                .values(updated=utc_now())
             )
+            gate = session.get(Workspace, UUID(int=0))
+            assert gate is not None
+            if not gate.admission_open:
+                if (
+                    gate.transition_id == transition_id
+                    and not gate.drain_requested
+                ):
+                    return
+                raise IllegalOperationError(
+                    "Another managed-serving transition owns admission."
+                )
+            if not self._services_clean(session):
+                raise IllegalOperationError(
+                    "Delete managed services and complete provider and credential cleanup before disabling."
+                )
+            gate.admission_open = False
+            gate.drain_requested = False
+            gate.transition_id = transition_id
+            session.add(gate)
             session.commit()
 
-    def reopen_admission(self) -> None:
-        """Reopen a fully drained workspace after its teardown has been canceled.
+    @staticmethod
+    def _services_clean(session: Session) -> bool:
+        """Check persisted service cleanup and execution obligations.
+
+        Args:
+            session: Transaction holding admission closed or locked.
+
+        Returns:
+            Whether recorded service, credential and execution obligations are clear.
+        """
+        from zenml.zen_stores.schemas.secret_schemas import SecretSchema
+
+        for row in session.exec(select(Service)).all():
+            service = row.to_model()
+            if (
+                service.state != "deleted"
+                or service.operation.status != "succeeded"
+                or json.loads(row.resources)
+                or row.inference_key_hash is not None
+            ):
+                return False
+            journal = json.loads(row.inference_credentials)
+            if journal.get("active") or any(
+                session.get(SecretSchema, UUID(identity)) is not None
+                for identity in journal.get("owned", [])
+            ):
+                return False
+        return (
+            session.exec(
+                select(Operation)
+                .where(
+                    or_(
+                        col(Operation.status).in_(
+                            ("pending", "running", "uncertain")
+                        ),
+                        col(Operation.lease_expires_at) > utc_now(),
+                    )
+                )
+                .limit(1)
+            ).first()
+            is None
+        )
+
+    def begin_drain(self) -> None:
+        """Close workspace admission durably before scheduling provider cleanup.
 
         Raises:
-            IllegalOperationError: If any service still has a cleanup obligation.
+            IllegalOperationError: If ordinary disabling already owns the gate.
+        """
+        self._ensure_workspace()
+        with Session(self.engine) as session:
+            result = session.execute(
+                update(Workspace)
+                .where(col(Workspace.id) == UUID(int=0))
+                .where(col(Workspace.transition_id).is_(None))
+                .values(
+                    admission_open=False,
+                    drain_requested=True,
+                    updated=utc_now(),
+                )
+            )
+            if cast(CursorResult[Any], result).rowcount != 1:
+                raise IllegalOperationError(
+                    "Ordinary disabling already owns admission."
+                )
+            session.commit()
+
+    def reopen_admission(self, transition_id: Optional[UUID] = None) -> None:
+        """Reopen a fully drained workspace after its teardown has been canceled.
+
+        Args:
+            transition_id: Matching ordinary-disable transition, if one owns the gate.
+
+        Raises:
+            IllegalOperationError: If cleanup remains or the transition is stale.
         """
         self._ensure_workspace()
         with Session(self.engine) as session:
@@ -654,20 +751,24 @@ class ManagedModelStore:
                 .where(col(Workspace.id) == UUID(int=0))
                 .values(updated=utc_now())
             )
-            for row in session.exec(select(Service)).all():
-                service = row.to_model()
-                if (
-                    service.state != "deleted"
-                    or service.operation.status != "succeeded"
-                    or json.loads(row.resources)
-                ):
-                    raise IllegalOperationError(
-                        "Complete managed service cleanup before reopening admission."
-                    )
+            gate = session.get(Workspace, UUID(int=0))
+            assert gate is not None
+            if gate.transition_id != transition_id:
+                raise IllegalOperationError(
+                    "Managed-serving transition changed; admission remains closed."
+                )
+            if not self._services_clean(session):
+                raise IllegalOperationError(
+                    "Complete managed service cleanup before reopening admission."
+                )
             session.execute(
                 update(Workspace)
                 .where(col(Workspace.id) == UUID(int=0))
-                .values(admission_open=True)
+                .values(
+                    admission_open=True,
+                    drain_requested=False,
+                    transition_id=None,
+                )
             )
             session.commit()
 
@@ -681,12 +782,7 @@ class ManagedModelStore:
             gate = session.get(Workspace, UUID(int=0))
             if gate is None or gate.admission_open:
                 return False
-            return all(
-                row.to_model().state == "deleted"
-                and row.to_model().operation.status == "succeeded"
-                and not json.loads(row.resources)
-                for row in session.exec(select(Service)).all()
-            )
+            return self._services_clean(session)
 
     def _ensure_workspace(self) -> None:
         with Session(self.engine) as session:
@@ -715,7 +811,7 @@ class ManagedModelStore:
     def _schedule_drain(self) -> None:
         with Session(self.engine) as session:
             gate = session.get(Workspace, UUID(int=0))
-            if gate is None or gate.admission_open:
+            if gate is None or gate.admission_open or not gate.drain_requested:
                 return
             services = [
                 row.to_model() for row in session.exec(select(Service)).all()
