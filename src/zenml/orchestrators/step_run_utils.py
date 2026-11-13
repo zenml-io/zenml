@@ -251,7 +251,11 @@ class StepRunRequestFactory:
 
         request.docstring = docstring
         request.source_code = source_code
-        request.code_hash = step.config.parameters.get(
+        # The step source hash lives in `caching_parameters`, written by
+        # `BaseStep.caching_parameters`; `parameters` holds the user's own
+        # step inputs. Reading it from `parameters` left every step run with
+        # `code_hash=None` unless a user parameter happened to share the name.
+        request.code_hash = step.config.caching_parameters.get(
             CODE_HASH_PARAMETER_NAME
         )
 
