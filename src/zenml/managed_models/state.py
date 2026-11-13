@@ -17,6 +17,7 @@ class ManagedModelCheckpoint(BaseModel):
     phase: str = "pending"
     attempts: int = 0
     resolved_at: Optional[datetime] = None
+    cleanup_started_at: Optional[datetime] = None
     resource: Optional[ManagedModelProviderResource] = None
     error: Optional[str] = None
 

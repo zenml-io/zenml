@@ -836,9 +836,23 @@ class ManagedModelStore:
                 "Outcome does not match the execution claim."
             )
         with Session(self.engine) as session:
+            operation = session.get(Operation, lease.operation_id)
+            if operation is None:
+                raise IllegalOperationError("Operation no longer exists.")
+            checkpoint = ManagedModelCheckpoint.model_validate_json(
+                operation.checkpoint
+            )
+            if (
+                checkpoint.phase in ("handoff-cleanup", "candidate-cleanup")
+                and checkpoint.cleanup_started_at is None
+            ):
+                # Start draining atomically with the routing change, never at
+                # worker request time or in an earlier checkpoint transaction.
+                checkpoint.cleanup_started_at = utc_now()
             self._fence(
                 session,
                 lease,
+                checkpoint=checkpoint.model_dump_json(),
                 status=service.operation.status,
                 lease_expires_at=None,
                 available_at=utc_now()
