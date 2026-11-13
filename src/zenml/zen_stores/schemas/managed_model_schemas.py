@@ -201,3 +201,6 @@ class ManagedModelWorkspaceSchema(BaseSchema, table=True):
     admission_open: bool = True
     drain_requested: bool = False
     transition_id: Optional[UUID] = None
+    command_receipt: str = Field(
+        default="{}", sa_column=Column(Text, nullable=False)
+    )

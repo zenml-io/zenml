@@ -307,3 +307,49 @@ def test_credential_write_resolution_requires_operator_identity(worker_api):
     store.managed_inference_keys.resolve_stopped_write.assert_called_once_with(
         lease.service.id, identity, 1, payload["evidence"]
     )
+
+
+def test_transition_sync_scopes_commands_and_recovers_lost_ack(
+    worker_api, monkeypatch
+):
+    """Only a controller can trigger sync; the command itself comes from Cloud API."""
+    from zenml.managed_models.state import (
+        ManagedWorkspaceCommand,
+        ManagedWorkspaceCommandResult,
+    )
+
+    client, store, config, _, base, worker_headers = worker_api
+    identity = uuid4()
+    config.get_external_server_id = lambda: identity
+    cloud = MagicMock()
+    monkeypatch.setattr(endpoints, "cloud_connection", lambda: cloud)
+    path = base + "/workspace/sync-transition"
+    assert client.post(path).status_code == 401
+    assert client.post(path, headers=worker_headers).status_code == 401
+    cloud.get.assert_not_called()
+    headers = {
+        "Authorization": "Bearer "
+        + config.managed_model_controller_key.get_secret_value()
+    }
+    cloud.get.return_value.json.return_value = {
+        "workspace_id": str(uuid4()),
+        "command": None,
+    }
+    assert client.post(path, headers=headers).status_code == 503
+    store.managed_models.apply_workspace_command.assert_not_called()
+    command = ManagedWorkspaceCommand(id=uuid4(), generation=1, action="close")
+    receipt = ManagedWorkspaceCommandResult(command=command, accepted=True)
+    cloud.get.return_value.json.return_value = {
+        "workspace_id": str(identity),
+        "command": command.model_dump(mode="json"),
+    }
+    store.managed_models.apply_workspace_command.return_value = receipt
+    cloud.post.side_effect = [RuntimeError("lost acknowledgment"), None]
+    assert client.post(path, headers=headers).status_code == 503
+    response = client.post(path, headers=headers)
+    assert response.status_code == 200
+    assert response.json() == receipt.model_dump(mode="json")
+    assert response.headers["Cache-Control"] == "no-store"
+    cloud.post.assert_called_with(
+        "/managed_serving_commands", data=receipt.model_dump(mode="json")
+    )

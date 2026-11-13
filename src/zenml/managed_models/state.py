@@ -110,3 +110,21 @@ class ManagedCredentialWriteResolution(BaseModel):
     expected_generation: int = Field(ge=1)
     writer_stopped: Literal[True]
     evidence: str = Field(min_length=20, max_length=1000)
+
+
+class ManagedWorkspaceCommand(BaseModel):
+    """Ordered platform intent; runtime readiness is verified before issuing reopen."""
+
+    model_config = ConfigDict(extra="forbid")
+    id: UUID
+    generation: int = Field(ge=1)
+    action: Literal["close", "drain", "reopen"]
+
+
+class ManagedWorkspaceCommandResult(BaseModel):
+    """Durable command receipt, separate from eventual resource cleanup."""
+
+    model_config = ConfigDict(extra="forbid")
+    command: ManagedWorkspaceCommand
+    accepted: bool
+    blocker: Optional[str] = None

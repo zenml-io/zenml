@@ -956,3 +956,136 @@ def test_uncertain_secret_write_blocks_cleanup_until_explicit_resolution(
     with Session(store.engine) as session:
         row = session.get(ManagedModelServiceSchema, service.id)
         assert not json.loads(row.inference_credentials)["writing"]
+
+
+def test_workspace_commands_fence_replays_and_rejected_disables(serving_store):
+    """A delayed command cannot close a reopened gate or change a rejected outcome."""
+    from zenml.managed_models.state import ManagedWorkspaceCommand
+
+    store, request = serving_store
+    close = ManagedWorkspaceCommand(id=uuid4(), generation=1, action="close")
+    receipt = store.apply_workspace_command(close)
+    assert receipt.accepted
+    assert store.cleanup_ready()
+    assert store.apply_workspace_command(close) == receipt
+    with pytest.raises(IllegalOperationError, match="Conflicting"):
+        store.apply_workspace_command(
+            close.model_copy(update={"action": "drain"})
+        )
+    reopen = ManagedWorkspaceCommand(id=uuid4(), generation=2, action="reopen")
+    assert store.apply_workspace_command(reopen).accepted
+    with pytest.raises(IllegalOperationError, match="out-of-order"):
+        store.apply_workspace_command(close)
+    with pytest.raises(IllegalOperationError, match="ordered platform"):
+        store.close_if_clean(uuid4())
+    with pytest.raises(IllegalOperationError):
+        store.begin_drain()
+    service = store.create(request, "after-reopen")
+    rejected = ManagedWorkspaceCommand(
+        id=uuid4(), generation=3, action="close"
+    )
+    receipt = store.apply_workspace_command(rejected)
+    assert not receipt.accepted
+    assert receipt.blocker
+    assert store.apply_workspace_command(rejected) == receipt
+    store.mutate(
+        service.id,
+        ManagedModelMutation(
+            action="delete", expected_generation=service.generation
+        ),
+        "cleanup-after-rejection",
+    )
+    lease = store.claim()
+    lease.service.state = "deleted"
+    lease.service.operation.status = "succeeded"
+    store.finish(lease, lease.service, {})
+    # Cleanup becoming possible must not change the original rejected request.
+    assert store.apply_workspace_command(rejected) == receipt
+    assert not store.cleanup_ready()
+    store.create(
+        request.model_copy(update={"name": "still-open"}), "still-open"
+    )
+
+
+def test_coordinated_drain_blocks_users_but_schedules_owned_cleanup(
+    serving_store,
+):
+    """The internal deletion path is scoped to the current destructive transition."""
+    from zenml.managed_models.state import ManagedWorkspaceCommand
+
+    store, request = serving_store
+    service = store.create(request, "before-coordinated-drain")
+    command = ManagedWorkspaceCommand(id=uuid4(), generation=1, action="drain")
+    assert store.apply_workspace_command(command).accepted
+    with pytest.raises(IllegalOperationError, match="public mutations"):
+        store.mutate(
+            service.id,
+            ManagedModelMutation(
+                action="delete", expected_generation=service.generation
+            ),
+            "public-during-drain",
+        )
+    lease = store.claim()
+    assert lease is not None
+    assert lease.service.operation.action == "delete"
+    assert lease.service.desired_state == "deleted"
+    assert not store.cleanup_ready()
+    with pytest.raises(IllegalOperationError, match="no longer owns"):
+        store._mutate(
+            service.id,
+            ManagedModelMutation(
+                action="delete", expected_generation=lease.service.generation
+            ),
+            "stale-internal-delete",
+            drain_transition_id=uuid4(),
+        )
+
+
+def test_command_receipt_migration_preserves_admission(tmp_path):
+    """Older gate data gains an empty command journal without opening admission."""
+    import importlib
+
+    from alembic.migration import MigrationContext
+    from alembic.operations import Operations
+    from sqlalchemy import Boolean, String, text
+
+    engine = create_engine(f"sqlite:///{tmp_path / 'command-migration.db'}")
+    metadata = MetaData()
+    table = Table(
+        "managed_model_workspace",
+        metadata,
+        Column("id", String, primary_key=True),
+        Column("admission_open", Boolean),
+    )
+    metadata.create_all(engine)
+    with engine.begin() as connection:
+        connection.execute(
+            table.insert().values(id="existing", admission_open=False)
+        )
+        migration = importlib.import_module(
+            "zenml.zen_stores.migrations.versions.d93d714aa621_record_managed_workspace_commands"
+        )
+        with Operations.context(MigrationContext.configure(connection)):
+            migration.upgrade()
+        row = connection.execute(
+            text(
+                "SELECT admission_open, command_receipt FROM managed_model_workspace"
+            )
+        ).one()
+        assert not row.admission_open
+        assert row.command_receipt == "{}"
+    engine.dispose()
+
+
+def test_command_adoption_preserves_legacy_transition_recovery(serving_store):
+    """The protocol cannot consume the legacy owner's ability to reopen its gate."""
+    from zenml.managed_models.state import ManagedWorkspaceCommand
+
+    store, _ = serving_store
+    legacy = uuid4()
+    store.close_if_clean(legacy)
+    command = ManagedWorkspaceCommand(id=uuid4(), generation=1, action="close")
+    with pytest.raises(IllegalOperationError, match="unsequenced"):
+        store.apply_workspace_command(command)
+    store.reopen_admission(legacy)
+    assert store.apply_workspace_command(command).accepted

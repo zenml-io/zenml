@@ -18,6 +18,8 @@ from zenml.managed_models.state import (
     ManagedModelDependency,
     ManagedModelInferenceTarget,
     ManagedModelLease,
+    ManagedWorkspaceCommand,
+    ManagedWorkspaceCommandResult,
 )
 from zenml.models.managed_model import (
     ManagedModelMutation,
@@ -254,6 +256,7 @@ class ManagedModelStore:
         request: ManagedModelMutation,
         request_key: str,
         sources: Optional[List[ManagedModelDependency]] = None,
+        drain_transition_id: Optional[UUID] = None,
     ) -> ManagedModelService:
         """Accept a serialized lifecycle mutation with optimistic concurrency.
 
@@ -262,6 +265,7 @@ class ManagedModelStore:
             request: Lifecycle intent and expected generation.
             sources: Authorized source bindings for an update.
             request_key: Caller-stable request identity.
+            drain_transition_id: Internal ownership required for coordinated drain deletion.
 
         Returns:
             Updated service and accepted operation.
@@ -274,7 +278,26 @@ class ManagedModelStore:
             {"service_id": str(service_id), **request.model_dump(mode="json")}
         )
         with Session(self.engine) as session:
-            self.lock_public_mutation(session)
+            if drain_transition_id is None:
+                self.lock_public_mutation(session)
+            else:
+                result = session.execute(
+                    update(Workspace)
+                    .where(
+                        col(Workspace.id) == UUID(int=0),
+                        col(Workspace.transition_id) == drain_transition_id,
+                        col(Workspace.drain_requested).is_(True),
+                        col(Workspace.admission_open).is_(False),
+                    )
+                    .values(updated=utc_now())
+                )
+                if (
+                    request.action != "delete"
+                    or cast(CursorResult[Any], result).rowcount != 1
+                ):
+                    raise IllegalOperationError(
+                        "Destructive disable no longer owns admission."
+                    )
             row = self._get_row(session, service_id)
             replay = self._replay(
                 session, row.project_id, request_key, fingerprint
@@ -631,6 +654,73 @@ class ManagedModelStore:
                 )
             session.commit()
 
+    def apply_workspace_command(
+        self, command: ManagedWorkspaceCommand
+    ) -> ManagedWorkspaceCommandResult:
+        """Apply an authenticated, ordered platform intent in one admission transaction.
+
+        Args:
+            command: Platform command, authorized before entering the store.
+
+        Returns:
+            Persisted acceptance or rejection, stable across duplicate delivery.
+
+        Raises:
+            IllegalOperationError: If the command is stale, reordered or conflicts.
+        """
+        self._ensure_workspace()
+        with Session(self.engine) as session:
+            session.execute(
+                update(Workspace)
+                .where(col(Workspace.id) == UUID(int=0))
+                .values(updated=utc_now())
+            )
+            gate = session.get(Workspace, UUID(int=0))
+            assert gate is not None
+            previous = (
+                ManagedWorkspaceCommandResult.model_validate_json(
+                    gate.command_receipt
+                )
+                if gate.command_receipt != "{}"
+                else None
+            )
+            if previous is None and gate.transition_id is not None:
+                raise IllegalOperationError(
+                    "Resolve the existing unsequenced transition first."
+                )
+            if previous and command.generation == previous.command.generation:
+                if command != previous.command:
+                    raise IllegalOperationError(
+                        "Conflicting managed workspace command."
+                    )
+                return previous
+            expected = previous.command.generation + 1 if previous else 1
+            if command.generation != expected:
+                raise IllegalOperationError(
+                    "Stale or out-of-order managed workspace command."
+                )
+            result = ManagedWorkspaceCommandResult(
+                command=command, accepted=True
+            )
+            if command.action in (
+                "close",
+                "reopen",
+            ) and not self._services_clean(session):
+                result.accepted = False
+                result.blocker = "Complete service, provider, execution and credential cleanup first."
+            else:
+                gate.admission_open = command.action == "reopen"
+                gate.drain_requested = command.action == "drain"
+                gate.transition_id = (
+                    None if gate.admission_open else command.id
+                )
+            # Rejections also consume a generation: a retry must never silently
+            # change a rejected disable into a successful one after later cleanup.
+            gate.command_receipt = result.model_dump_json()
+            session.add(gate)
+            session.commit()
+            return result
+
     def close_if_clean(self, transition_id: UUID) -> None:
         """Close admission atomically without requesting deletion of services.
 
@@ -650,6 +740,10 @@ class ManagedModelStore:
             )
             gate = session.get(Workspace, UUID(int=0))
             assert gate is not None
+            if gate.command_receipt != "{}":
+                raise IllegalOperationError(
+                    "Use the ordered platform transition protocol."
+                )
             if not gate.admission_open:
                 if (
                     gate.transition_id == transition_id
@@ -728,6 +822,7 @@ class ManagedModelStore:
                 update(Workspace)
                 .where(col(Workspace.id) == UUID(int=0))
                 .where(col(Workspace.transition_id).is_(None))
+                .where(col(Workspace.command_receipt) == "{}")
                 .values(
                     admission_open=False,
                     drain_requested=True,
@@ -758,6 +853,10 @@ class ManagedModelStore:
             )
             gate = session.get(Workspace, UUID(int=0))
             assert gate is not None
+            if gate.command_receipt != "{}":
+                raise IllegalOperationError(
+                    "Use the ordered platform transition protocol."
+                )
             if gate.transition_id != transition_id:
                 raise IllegalOperationError(
                     "Managed-serving transition changed; admission remains closed."
@@ -847,13 +946,14 @@ class ManagedModelStore:
         for service in services:
             if service.desired_state != "deleted":
                 try:
-                    self.mutate(
+                    self._mutate(
                         service.id,
                         ManagedModelMutation(
                             action="delete",
                             expected_generation=service.generation,
                         ),
                         f"drain-{service.id}-{service.generation}",
+                        drain_transition_id=gate.transition_id,
                     )
                 except EntityExistsError:
                     continue

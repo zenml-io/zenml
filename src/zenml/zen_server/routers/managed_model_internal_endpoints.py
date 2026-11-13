@@ -26,8 +26,11 @@ from zenml.managed_models.state import (
     ManagedModelLease,
     ManagedModelResult,
     ManagedModelSource,
+    ManagedWorkspaceCommand,
+    ManagedWorkspaceCommandResult,
 )
 from zenml.models.managed_model import ModelArtifactReference
+from zenml.zen_server.cloud_utils import cloud_connection
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     server_config,
@@ -399,3 +402,50 @@ def resolve_managed_credential_write(
         confirmation.expected_generation,
         confirmation.evidence,
     )
+
+
+@router.post(
+    "/workspace/sync-transition", dependencies=[Depends(_authorize_controller)]
+)
+@async_fastapi_endpoint_wrapper(deduplicate=False)
+def sync_managed_workspace_transition(
+    response: Response,
+) -> Optional[ManagedWorkspaceCommandResult]:
+    """Fetch authorized platform intent and acknowledge its durable local receipt.
+
+    No command or target workspace is accepted from the triggering caller. The
+    existing workspace M2M identity scopes both requests to the control plane.
+
+    Args:
+        response: Response carrying private cache controls.
+
+    Returns:
+        Persisted outcome, or None when the platform has no outstanding command.
+
+    Raises:
+        HTTPException: If intent or acknowledgment cannot be verified. A failed
+            acknowledgment leaves the local receipt intact for safe redelivery.
+    """
+    response.headers["Cache-Control"] = "no-store"
+    try:
+        cloud = cloud_connection()
+        delivery = cloud.get("/managed_serving_commands", params=None).json()
+        if not isinstance(delivery, dict) or delivery.get(
+            "workspace_id"
+        ) != str(server_config().get_external_server_id()):
+            raise ValueError("Workspace command identity mismatch")
+        if delivery.get("command") is None:
+            return None
+        command = ManagedWorkspaceCommand.model_validate(delivery["command"])
+        result = zen_store().managed_models.apply_workspace_command(command)
+        cloud.post(
+            "/managed_serving_commands", data=result.model_dump(mode="json")
+        )
+        return result
+    except Exception:
+        # Cloud error bodies can include request data. The local receipt remains
+        # authoritative even if the acknowledgment response was lost.
+        raise HTTPException(
+            503,
+            "Managed workspace transition synchronization is incomplete; retry safely.",
+        ) from None
