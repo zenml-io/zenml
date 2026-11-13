@@ -695,6 +695,30 @@ class DynamicPipelineRunner:
                                 invocation_id=invocation_id,
                                 future=execution_future,
                             )
+                        else:
+                            # The step will not be retried, but the server
+                            # keeps it in `RETRYING` status. Resolve its
+                            # future with the step failure so nothing waits
+                            # on it forever.
+                            exception = self._get_step_exception(
+                                step_run=step_run
+                            )
+                            failed_launch: Future[StepRunResponse] = Future()
+                            failed_launch.set_exception(exception)
+                            self._future_registry.rebind_step_execution_future(
+                                invocation_id=invocation_id,
+                                future=_IsolatedStepFuture(
+                                    wrapped=failed_launch,
+                                    pipeline_run_id=self._run.id,
+                                    invocation_id=invocation_id,
+                                ),
+                            )
+                            self._fail_concurrent_node(
+                                invocation_id=invocation_id,
+                                exception=wrap_step_failure(
+                                    exception, invocation_id=invocation_id
+                                ),
+                            )
 
                 time.sleep(monitoring_delay)
 
