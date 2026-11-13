@@ -187,6 +187,9 @@ analytics_opted_out() {
 REPORT_PID=""
 report_install() {
   if analytics_opted_out; then return 0; fi
+  # Say so before anything is sent, on stderr so --quiet does not hide it.
+  printf '  %sZenML reports this install as anonymous usage data. To skip that, set%s\n' "$C_DIM" "$C_RESET" >&2
+  printf '  %sZENML_ANALYTICS_OPT_IN=false before installing; later: zenml analytics opt-out%s\n' "$C_DIM" "$C_RESET" >&2
   "$ZENML_BIN" analytics report-install --scope "$ZENML_INSTALL_SCOPE" >/dev/null 2>&1 </dev/null &
   REPORT_PID=$!
 }
@@ -758,11 +761,6 @@ fi
 say "  Check setup:      $Z status"
 say "  Docs:             https://docs.zenml.io"
 say ""
-if [ -n "$REPORT_PID" ]; then
-  note "This install was reported as anonymous usage data. Turn that off with: $Z analytics opt-out"
-  note "(or set ZENML_ANALYTICS_OPT_IN=false before installing)."
-  say ""
-fi
 wait_for_report
 }
 

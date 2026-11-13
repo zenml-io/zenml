@@ -314,7 +314,7 @@ def install_report():
     stub = directory / "zenml"
     stub.write_text(f'#!/bin/sh\nprintf "%s\\n" "$*" > "{observed}"\n')
     stub.chmod(0o755)
-    definitions = "REPORT_PID=\n"
+    definitions = "REPORT_PID=\nC_DIM=\nC_RESET=\n"
     for name in ("analytics_opted_out", "report_install", "wait_for_report"):
         definitions += name + "() {" + source.read_text().split(name + "() {", 1)[1].split("\n}", 1)[0] + "\n}\n"
     for opt_out, expected in (({}, "analytics report-install --scope global"),
@@ -327,11 +327,14 @@ def install_report():
         assert result.returncode == 0, result.stderr
         reported = observed.read_text().strip() if observed.exists() else None
         assert reported == expected, f"{opt_out}: {reported!r}"
+        # The notice goes to stderr, so --quiet cannot hide it, and only when an event is sent.
+        assert ("anonymous usage data" in result.stderr) == bool(expected), result.stderr
     # A CLI without the command (an older pinned ZenML) must not fail the install.
     stub.write_text("#!/bin/sh\nexit 2\n")
     result = subprocess.run([sys.argv[3], "-eu", "-c", definitions + "\nreport_install; wait_for_report"],
                             env={**case_env, "DO_NOT_TRACK": "0"}, capture_output=True, text=True)
-    assert result.returncode == 0 and not result.stdout and not result.stderr, result.stderr
+    assert result.returncode == 0 and not result.stdout, result.stderr
+    assert [line for line in result.stderr.splitlines() if "ZENML" not in line.upper()] == [], result.stderr
 
 
 cases = [("capped project chooses intersection", capped_project), ("historical release floor and explicit override", historical_floor),
