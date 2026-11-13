@@ -325,7 +325,6 @@ class KubernetesStepOperator(BaseStepOperator):
             args=args,
             env=environment,
             privileged=settings.privileged,
-            image_pull_policy=settings.image_pull_policy,
             pod_settings=pod_settings,
             service_account_name=settings.service_account_name,
             labels=step_labels,

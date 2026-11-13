@@ -38,7 +38,6 @@ The following configuration options can be set either through the sandbox config
 - **`service_account_name`**: The name of a Kubernetes service account to use for session pods. If not configured, pods use the namespace default service account.
 - **`automount_service_account_token`** (default: False): If `True`, a Kubernetes API token is mounted into session pods, allowing code running in the sandbox to call the Kubernetes API with the service account's RBAC permissions.
 - **`privileged`** (default: False): If the container should be run in privileged mode.
-- **`image_pull_policy`** (default: `None`): The image pull policy for the container (e.g., `Always`, `IfNotPresent`, or `Never`). When left as `None`, Kubernetes automatically determines the policy based on the image tag (defaulting to `Always` if the tag is `:latest` or omitted, and `IfNotPresent` otherwise).
 - **`owner`** (default: `none`): The Kubernetes object that owns session pods, so that they are garbage-collected together with it. See [Owning session pods](#owning-session-pods).
 - **`pod_startup_timeout`** (default: 120): The maximum time (in seconds) to wait for a session pod to become running.
 - **`api_request_timeout`**: Timeout (in seconds) for Kubernetes API requests. If not set, client defaults are used.

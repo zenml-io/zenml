@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Kubernetes orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
 from pydantic import (
     Field,
@@ -65,12 +65,6 @@ class KubernetesOrchestratorSettings(BaseSettings):
     privileged: bool = Field(
         default=False,
         description="Whether to run containers in privileged mode with extended permissions.",
-    )
-    image_pull_policy: Optional[Literal["Always", "IfNotPresent", "Never"]] = (
-        Field(
-            default=None,
-            description="Kubernetes image pull policy: Always, IfNotPresent, or Never.",
-        )
     )
     pod_settings: Optional[KubernetesPodSettings] = Field(
         default=None,

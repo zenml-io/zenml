@@ -16,7 +16,7 @@
 import base64
 import os
 import sys
-from typing import Any, Dict, List, Literal, Mapping, Optional
+from typing import Any, Dict, List, Mapping, Optional
 
 from kubernetes import client as k8s_client
 
@@ -102,9 +102,6 @@ def build_pod_manifest(
     command: List[str],
     args: List[str],
     privileged: bool,
-    image_pull_policy: Optional[
-        Literal["Always", "IfNotPresent", "Never"]
-    ] = None,
     pod_settings: Optional[KubernetesPodSettings] = None,
     service_account_name: Optional[str] = None,
     env: Optional[Dict[str, str]] = None,
@@ -124,7 +121,6 @@ def build_pod_manifest(
         command: Command to execute the entrypoint in the pod.
         args: Arguments provided to the entrypoint command.
         privileged: Whether to run the container in privileged mode.
-        image_pull_policy: Image pull policy: Always, IfNotPresent, or Never.
         pod_settings: Optional settings for the pod.
         service_account_name: Optional name of a service account.
             Can be used to assign certain roles to a pod, e.g., to allow it to
@@ -150,7 +146,6 @@ def build_pod_manifest(
     container_spec = k8s_client.V1Container(
         name="main",
         image=image_name,
-        image_pull_policy=image_pull_policy,
         command=command,
         args=args,
         env=[
