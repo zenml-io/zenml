@@ -382,7 +382,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
         scheme = re.search("^([a-z0-9]+://)", url)
         if scheme is None or scheme.group() not in ("https://", "http://"):
             raise ValueError(
-                "Invalid URL for REST store: {url}. Should be in the form "
+                f"Invalid URL for REST store: {url}. Should be in the form "
                 "https://hostname[:port] or http://hostname[:port]."
             )
 
