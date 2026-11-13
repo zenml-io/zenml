@@ -333,7 +333,9 @@ class ManagedModelStore:
                 target = revision.id
             elif request.action == "rollback":
                 if request.revision_id not in {
-                    revision.id for revision in service.revisions
+                    revision.id
+                    for revision in service.revisions
+                    if revision.rollback_available
                 }:
                     raise EntityExistsError(
                         "Rollback revision does not belong to this service."
@@ -417,6 +419,80 @@ class ManagedModelStore:
             session.commit()
             return service
 
+    def _schedule_maintenance(self) -> None:
+        """Queue bounded periodic work through the same generation/lease fence."""
+        now = utc_now()
+        with Session(self.engine) as session:
+            rows = session.exec(
+                select(Service)
+                .join(
+                    Operation,
+                    (col(Operation.service_id) == col(Service.id))
+                    & (col(Operation.generation) == col(Service.generation)),
+                )
+                .where(
+                    col(Service.updated) < now - timedelta(minutes=10),
+                    Service.resources != "{}",
+                    col(Operation.status).in_(("succeeded", "failed")),
+                    Operation.action != "delete",
+                )
+                .order_by(col(Service.updated))
+                .limit(20)
+            ).all()
+            for row in rows:
+                service = row.to_model()
+                if (
+                    service.desired_state == "deleted"
+                    or service.operation.status not in ("succeeded", "failed")
+                ):
+                    continue
+                previous = session.get(Operation, service.operation.id)
+                if previous is None or previous.status not in (
+                    "succeeded",
+                    "failed",
+                ):
+                    continue
+                # Unknown create outcomes remain operator-owned, never sweep them.
+                checkpoint = ManagedModelCheckpoint.model_validate_json(
+                    previous.checkpoint
+                )
+                if checkpoint.phase == "submitting":
+                    continue
+                old_generation = service.generation
+                service.generation += 1
+                service.updated = now
+                service.operation = ManagedModelOperation(
+                    id=uuid4(), action="reconcile", status="pending"
+                )
+                result = session.execute(
+                    update(Service)
+                    .where(
+                        col(Service.id) == service.id,
+                        col(Service.generation) == old_generation,
+                        col(Service.updated) == row.updated,
+                    )
+                    .values(
+                        generation=service.generation,
+                        updated=now,
+                        document=service.model_dump_json(),
+                    )
+                )
+                if cast(CursorResult[Any], result).rowcount != 1:
+                    continue
+                session.add(
+                    Operation(
+                        id=service.operation.id,
+                        project_id=service.project_id,
+                        service_id=service.id,
+                        request_key=f"maintenance-{service.operation.id}",
+                        request_hash="maintenance",
+                        generation=service.generation,
+                        action="reconcile",
+                        target_revision_id=service.active_revision_id,
+                    )
+                )
+            session.commit()
+
     def claim(self, lease_seconds: int = 120) -> Optional[ManagedModelLease]:
         """Claim pending work or recover an expired execution lease.
 
@@ -432,6 +508,7 @@ class ManagedModelStore:
         if lease_seconds < 1:
             raise ValueError("Lease lifetime must be positive.")
         self._schedule_drain()
+        self._schedule_maintenance()
         now = utc_now()
         eligible = or_(
             (col(Operation.status) == "pending")
@@ -843,7 +920,8 @@ class ManagedModelStore:
                 operation.checkpoint
             )
             if (
-                checkpoint.phase in ("handoff-cleanup", "candidate-cleanup")
+                checkpoint.phase
+                in ("handoff-cleanup", "candidate-cleanup", "route-migrated")
                 and checkpoint.cleanup_started_at is None
             ):
                 # Start draining atomically with the routing change, never at
@@ -866,6 +944,39 @@ class ManagedModelStore:
                 if service.operation.status == "pending"
                 else None,
             )
+            pruned = set(checkpoint.pruned_revision_ids)
+            if (
+                service.active_revision_id in pruned
+                or not pruned.issubset({r.id for r in service.revisions})
+                or any(str(r) in resources for r in pruned)
+            ):
+                raise IllegalOperationError(
+                    "Pruned revisions conflict with retained resources."
+                )
+            for revision in service.revisions:
+                if revision.id in pruned:
+                    revision.rollback_available = False
+            if pruned:
+                session.execute(
+                    delete(Dependency).where(
+                        col(Dependency.service_id) == service.id,
+                        col(Dependency.revision_id).in_(pruned),
+                    )
+                )
+            if (
+                service.active_revision_id
+                != self._get_row(session, service.id)
+                .to_model()
+                .active_revision_id
+                and service.active_revision_id is not None
+            ):
+                selected = resources.get(str(service.active_revision_id))
+                if selected is not None:
+                    resources[str(service.active_revision_id)] = (
+                        selected.model_copy(
+                            update={"last_activated_at": utc_now()}
+                        )
+                    )
             service.updated = utc_now()
             result = session.execute(
                 update(Service)
@@ -877,7 +988,7 @@ class ManagedModelStore:
                     document=service.model_dump_json(),
                     resources=json.dumps(
                         {
-                            key: value.model_dump()
+                            key: value.model_dump(mode="json")
                             for key, value in resources.items()
                         }
                     ),

@@ -1,5 +1,6 @@
 """Exercise persistence, retries and fencing against a disposable database."""
 
+import json
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from types import SimpleNamespace
@@ -16,7 +17,6 @@ from sqlalchemy import (
     event,
 )
 from sqlalchemy.exc import IntegrityError
-
 from zenml.exceptions import EntityExistsError, IllegalOperationError
 from zenml.managed_models.provider import ManagedModelProviderResource
 from zenml.managed_models.state import (
@@ -236,7 +236,8 @@ def test_inference_selects_active_revision_and_denies_pause_immediately(
     target = store.get_inference_target(service.id, key)
     assert (
         target.revision_id == lease.target_revision_id
-        and target.resource == resource
+        and target.resource.model_dump(exclude={"last_activated_at"})
+        == resource.model_dump(exclude={"last_activated_at"})
     )
     store.mutate(
         service.id,
@@ -618,3 +619,137 @@ def test_newer_rotation_wins_and_late_deleted_key_is_cleaned(serving_store):
         keys.rotate(service.id, request.project_id)
     assert not values
     assert store.get(service.id).inference_secret is None
+
+
+def test_pruning_releases_only_revision_owned_dependencies(serving_store):
+    """Shared artifact protection survives pruning until its final reference is released."""
+    from sqlmodel import Session, select
+
+    store, request = serving_store
+    source = ManagedModelDependency(
+        artifact_version_id=request.package.model.artifact_version_id,
+        artifact_store_id=request.model_deployer_id,
+        connector_id=uuid4(),
+        uri="s3://customer/shared/",
+    )
+    metadata = MetaData()
+    metadata.reflect(store.engine)
+    with store.engine.begin() as connection:
+        connection.execute(
+            metadata.tables["artifact_version"]
+            .insert()
+            .values(id=source.artifact_version_id.hex)
+        )
+        connection.execute(
+            metadata.tables["service_connector"]
+            .insert()
+            .values(id=source.connector_id.hex)
+        )
+    service = store.create(request, "create", [source])
+    lease = store.claim()
+    original = lease.target_revision_id
+    lease.service.active_revision_id = original
+    lease.service.operation.status = "succeeded"
+    resource = ManagedModelProviderResource(
+        model_id="m", deployment_id="a", environment="production"
+    )
+    store.finish(lease, lease.service, {str(original): resource})
+    with Session(store.engine) as session:
+        row = session.get(ManagedModelServiceSchema, service.id)
+        assert json.loads(row.resources)[str(original)]["last_activated_at"]
+    store.mutate(
+        service.id,
+        ManagedModelMutation(
+            action="update",
+            expected_generation=1,
+            revision={
+                "package": request.package,
+                "serving_profile": request.serving_profile,
+            },
+        ),
+        "update",
+        [source],
+    )
+    lease = store.claim()
+    target = lease.target_revision_id
+    lease.service.active_revision_id = target
+    lease.service.operation.status = "succeeded"
+    store.checkpoint(
+        lease,
+        ManagedModelCheckpoint(
+            phase="pruning", pruned_revision_ids=[original]
+        ),
+    )
+    store.finish(
+        lease,
+        lease.service,
+        {str(target): resource.model_copy(update={"deployment_id": "b"})},
+    )
+    with Session(store.engine) as session:
+        dependencies = session.exec(select(ManagedModelDependencySchema)).all()
+        assert len(dependencies) == 1
+        assert dependencies[0].revision_id == target
+    with pytest.raises(IntegrityError), store.engine.begin() as connection:
+        connection.execute(
+            delete(metadata.tables["artifact_version"]).where(
+                metadata.tables["artifact_version"].c.id
+                == source.artifact_version_id
+            )
+        )
+    current = store.get(service.id)
+    assert not current.revisions[0].rollback_available
+    assert current.revisions[1].rollback_available
+
+
+def test_maintenance_does_not_supersede_pending_or_uncertain_work(
+    serving_store, monkeypatch
+):
+    """A periodic sweep cannot steal ownership from an accepted lifecycle operation."""
+    from zenml.utils.time_utils import utc_now
+
+    store, request = serving_store
+    service = store.create(request, "create")
+    lease = store.claim()
+    resource = ManagedModelProviderResource(
+        model_id="m", deployment_id="a", environment="production"
+    )
+    lease.service.operation.status = "uncertain"
+    store.finish(
+        lease, lease.service, {str(lease.target_revision_id): resource}
+    )
+    future = utc_now() + timedelta(minutes=11)
+    monkeypatch.setattr(
+        "zenml.zen_stores.managed_model_store.utc_now", lambda: future
+    )
+    assert store.claim() is None
+    assert store.get(service.id).operation.id == lease.operation_id
+
+
+def test_concurrent_maintenance_queues_one_generation(
+    serving_store, monkeypatch
+):
+    """Competing dispatchers share one durable maintenance operation."""
+    from zenml.utils.time_utils import utc_now
+
+    store, request = serving_store
+    service = store.create(request, "create")
+    lease = store.claim()
+    lease.service.active_revision_id = lease.target_revision_id
+    lease.service.operation.status = "succeeded"
+    resource = ManagedModelProviderResource(
+        model_id="m", deployment_id="a", environment="production"
+    )
+    store.finish(
+        lease, lease.service, {str(lease.target_revision_id): resource}
+    )
+    future = utc_now() + timedelta(minutes=11)
+    monkeypatch.setattr(
+        "zenml.zen_stores.managed_model_store.utc_now", lambda: future
+    )
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        claims = list(pool.map(lambda _: store.claim(), range(2)))
+    assert sum(claim is not None for claim in claims) == 1
+    current = store.get(service.id)
+    assert current.generation == 2
+    assert current.operation.action == "reconcile"
+    assert current.active_revision_id == lease.target_revision_id
