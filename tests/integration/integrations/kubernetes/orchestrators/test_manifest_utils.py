@@ -68,7 +68,7 @@ def test_build_pod_manifest_explicit_image_pull_policy():
         command=["test", "command"],
         args=["test", "args"],
         privileged=False,
-        image_pull_policy="Always",
+        pod_settings=KubernetesPodSettings(image_pull_policy="Always"),
     )
 
     assert isinstance(manifest, V1Pod)

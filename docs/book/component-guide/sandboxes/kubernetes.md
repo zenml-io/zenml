@@ -34,7 +34,8 @@ The following configuration options can be set either through the sandbox config
 
 - **`sandbox_environment`**: Environment variables to set in session pods and command executions.
 - **`image`** (default: "python:3.11-slim"): The container image used for session pods. The image must provide `/bin/sh` and `base64`, so distroless images are not supported.
-- **`pod_settings`**: Node selectors, labels, affinity, tolerations, secrets, environment variables, image pull secrets, the scheduler name and additional arguments to apply to the session pods. These can be either specified using the Kubernetes model objects or as dictionaries.
+- **`pod_settings`**: Node selectors, labels, affinity, tolerations, secrets, environment variables, image pull secrets, image pull policy, the scheduler name and additional arguments to apply to the session pods. These can be either specified using the Kubernetes model objects or as dictionaries.
+    - `image_pull_policy` (default: `None`): When left as `None`, Kubernetes automatically determines the policy based on the image tag (defaulting to `Always` if the tag is `:latest` or omitted, and `IfNotPresent` otherwise).
 - **`service_account_name`**: The name of a Kubernetes service account to use for session pods. If not configured, pods use the namespace default service account.
 - **`automount_service_account_token`** (default: False): If `True`, a Kubernetes API token is mounted into session pods, allowing code running in the sandbox to call the Kubernetes API with the service account's RBAC permissions.
 - **`privileged`** (default: False): If the container should be run in privileged mode.
