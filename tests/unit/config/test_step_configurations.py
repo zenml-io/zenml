@@ -11,9 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+"""Tests for step configurations."""
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
+from zenml.config.retry_config import StepRetryConfig
 from zenml.config.step_configurations import (
     InputSpec,
     Step,
@@ -197,3 +198,25 @@ def test_from_dict_excludes_hook_sources():
 
     for field in _HOOK_SOURCES:
         assert getattr(step.config, field) is None
+
+
+def test_step_retry_config_defaults():
+    """Tests StepRetryConfig default values."""
+    config = StepRetryConfig()
+    assert config.max_retries == 1
+    assert config.delay == 0
+    assert config.backoff == 1
+
+
+def test_step_retry_config_custom_values():
+    """Tests StepRetryConfig with custom parameters."""
+    config = StepRetryConfig(max_retries=3, delay=10)
+    assert config.max_retries == 3
+    assert config.delay == 10
+    assert config.backoff == 1
+
+    config_with_backoff = StepRetryConfig(max_retries=3, delay=10, backoff=2)
+    assert config_with_backoff.backoff == 2
+
+    config_zero_backoff = StepRetryConfig(max_retries=3, delay=10, backoff=0)
+    assert config_zero_backoff.backoff == 0
