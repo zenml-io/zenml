@@ -84,6 +84,8 @@ from zenml.models.v2.core.artifact import (
 )
 from zenml.models.v2.core.artifact_version import (
     ArtifactVersionFilter,
+    ArtifactVersionPruneRequest,
+    ArtifactVersionPruneResponse,
     ArtifactVersionRequest,
     ArtifactVersionResponse,
     ArtifactVersionResponseBody,
@@ -721,6 +723,8 @@ __all__ = [
     "ArtifactVersionResponseMetadata",
     "ArtifactVersionResponseResources",
     "ArtifactVersionUpdate",
+    "ArtifactVersionPruneRequest",
+    "ArtifactVersionPruneResponse",
     "ArtifactVisualizationRequest",
     "ArtifactVisualizationResponse",
     "ArtifactVisualizationResponseBody",

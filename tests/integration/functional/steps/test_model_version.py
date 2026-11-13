@@ -661,7 +661,7 @@ def test_that_pipeline_run_is_removed_on_deletion_of_pipeline(
 def test_that_artifact_is_removed_on_deletion(
     clean_client: "Client",
 ):
-    """Test that if artifact gets deleted - it is removed from model version."""
+    """Test that a model-linked artifact version can only go with its model."""
 
     @pipeline(enable_cache=False)
     def _inner_pipeline():
@@ -676,7 +676,6 @@ def test_that_artifact_is_removed_on_deletion(
         run.steps["_this_step_produces_output"].outputs["data"][0].id
     )
     clean_client.delete_pipeline(pipeline_id)
-    clean_client.delete_artifact_version(artifact_version_id)
     model = clean_client.get_model(model_name_or_id="step")
     mvs = model.versions
     assert len(mvs) == 1
@@ -688,6 +687,11 @@ def test_that_artifact_is_removed_on_deletion(
         )
         == 0
     )
+    # The model version still references the artifact version.
+    with pytest.raises(ValueError):
+        clean_client.delete_artifact_version(artifact_version_id)
+    clean_client.delete_model_version(mvs[0].id)
+    clean_client.delete_artifact_version(artifact_version_id)
 
 
 @step

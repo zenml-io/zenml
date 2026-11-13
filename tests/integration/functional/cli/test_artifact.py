@@ -15,6 +15,7 @@
 
 import importlib
 
+import click
 from pytest_mock import MockerFixture
 
 from tests.cli_runner_utils import cli_runner
@@ -62,6 +63,56 @@ def test_artifact_version_delete_forwards_deletion_options(
         delete_from_artifact_store=True,
         server_side=True,
     )
+
+
+def test_artifact_prune_yes_skips_dry_run_count(
+    mocker: MockerFixture,
+) -> None:
+    """Test that confirmed artifact pruning immediately applies the prune.
+
+    Args:
+        mocker: Pytest mock fixture.
+    """
+    artifact_module = importlib.import_module("zenml.cli.artifact")
+    client = mocker.patch.object(artifact_module, "Client").return_value
+    client.prune_artifacts.return_value.task_id = "task-id"
+    assert isinstance(cli, click.Group)
+    artifact_command = cli.commands["artifact"]
+    assert isinstance(artifact_command, click.Group)
+    prune_command = artifact_command.commands["prune"]
+
+    result = cli_runner().invoke(prune_command, ["--yes"])
+
+    assert result.exit_code == 0
+    client.prune_artifacts.assert_called_once_with(
+        only_versions=False,
+        delete_from_artifact_store=True,
+        delete_metadata=True,
+    )
+    assert "task-id" in result.output
+
+
+def test_artifact_prune_dry_run_with_yes_only_counts(
+    mocker: MockerFixture,
+) -> None:
+    """Test that dry-run takes precedence over confirmation bypass.
+
+    Args:
+        mocker: Pytest mock fixture.
+    """
+    artifact_module = importlib.import_module("zenml.cli.artifact")
+    client = mocker.patch.object(artifact_module, "Client").return_value
+    client.prune_artifacts.return_value.artifact_version_count = 2
+    assert isinstance(cli, click.Group)
+    artifact_command = cli.commands["artifact"]
+    assert isinstance(artifact_command, click.Group)
+    prune_command = artifact_command.commands["prune"]
+
+    result = cli_runner().invoke(prune_command, ["--dry-run", "--yes"])
+
+    assert result.exit_code == 0
+    client.prune_artifacts.assert_called_once_with(dry_run=True)
+    assert "Found 2 unused artifact version(s)" in result.output
 
 
 def test_artifact_update(clean_client_with_run):
