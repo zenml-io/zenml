@@ -14,6 +14,7 @@ from zenml.exceptions import IllegalOperationError
 from zenml.models import SecretRequest
 from zenml.models.managed_model import ManagedModelInferenceSecret
 from zenml.utils.time_utils import utc_now
+from zenml.zen_stores.managed_model_store import ManagedModelStore
 from zenml.zen_stores.schemas.managed_model_schemas import (
     ManagedModelOperationSchema,
     ManagedModelServiceSchema,
@@ -89,6 +90,7 @@ class ManagedInferenceKeysStore:
             name=f"managed-model-{service_id}-{secret_id.hex}",
         )
         with Session(self.store.engine) as session:
+            ManagedModelStore.lock_public_mutation(session)
             row = self._get_row(session, service_id)
             original = row.inference_credentials
             journal = _CredentialJournal.model_validate_json(original)
@@ -184,6 +186,7 @@ class ManagedInferenceKeysStore:
             service_id: Service whose key is revoked.
         """
         with Session(self.store.engine) as session:
+            ManagedModelStore.lock_public_mutation(session)
             row = self._get_row(session, service_id)
             journal = _CredentialJournal.model_validate_json(
                 row.inference_credentials

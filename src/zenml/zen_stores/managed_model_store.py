@@ -274,6 +274,7 @@ class ManagedModelStore:
             {"service_id": str(service_id), **request.model_dump(mode="json")}
         )
         with Session(self.engine) as session:
+            self.lock_public_mutation(session)
             row = self._get_row(session, service_id)
             replay = self._replay(
                 session, row.project_id, request_key, fingerprint
@@ -792,6 +793,29 @@ class ManagedModelStore:
                     session.commit()
                 except IntegrityError:
                     session.rollback()
+
+    @staticmethod
+    def lock_public_mutation(session: Session) -> None:
+        """Serialize public writes with ordinary feature disabling.
+
+        Args:
+            session: Transaction that will commit the public mutation.
+
+        Raises:
+            IllegalOperationError: If an ordinary disable transition owns admission.
+        """
+        result = session.execute(
+            update(Workspace)
+            .where(
+                col(Workspace.id) == UUID(int=0),
+                col(Workspace.transition_id).is_(None),
+            )
+            .values(updated=utc_now())
+        )
+        if cast(CursorResult[Any], result).rowcount != 1:
+            raise IllegalOperationError(
+                "Managed serving is disabled or transitioning; public mutations are closed."
+            )
 
     @staticmethod
     def _lock_admission(session: Session) -> None:

@@ -871,3 +871,30 @@ def test_admission_migration_preserves_legacy_drain_intent(tmp_path):
             and rows[closed.hex].drain_requested
         )
         assert all(row.transition_id is None for row in rows.values())
+
+
+def test_closed_transition_blocks_key_and_lifecycle_mutations(serving_store):
+    """Even deleted tombstones cannot accept public writes during disable."""
+    store, request = serving_store
+    service = store.create(request, "create")
+    store.mutate(
+        service.id,
+        ManagedModelMutation(action="delete", expected_generation=1),
+        "delete",
+    )
+    lease = store.claim()
+    lease.service.state = "deleted"
+    lease.service.operation.status = "succeeded"
+    store.finish(lease, lease.service, {})
+    store.close_if_clean(uuid4())
+    keys, _ = _credential_store(store)
+    with pytest.raises(IllegalOperationError, match="public mutations"):
+        keys.revoke(service.id)
+    with pytest.raises(IllegalOperationError, match="public mutations"):
+        keys.rotate(service.id, request.project_id)
+    with pytest.raises(IllegalOperationError, match="public mutations"):
+        store.mutate(
+            service.id,
+            ManagedModelMutation(action="retry", expected_generation=2),
+            "retry",
+        )
