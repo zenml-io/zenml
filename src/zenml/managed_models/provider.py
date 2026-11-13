@@ -28,6 +28,13 @@ class ManagedModelObservation(BaseModel):
     error: Optional[str] = None
 
 
+class ManagedModelPromotionObservation(BaseModel):
+    """Provider-neutral observation of a requested serving transition."""
+
+    state: Literal["pending", "ready", "not_selected", "conflict"]
+    deployment_id: Optional[str] = None
+
+
 class ManagedModelProvider(ABC):
     """Internal provider operations, independent of workspace HTTP handlers."""
 
@@ -119,6 +126,37 @@ class ManagedModelProvider(ABC):
         Returns:
             Actual resource identity returned by promotion.
         """
+
+    def inspect_promotion(
+        self, resource: ManagedModelProviderResource
+    ) -> ManagedModelPromotionObservation:
+        """Observe a native serving transition without resubmitting it.
+
+        Args:
+            resource: Intended serving deployment.
+
+        Returns:
+            Observed serving transition, not a guarantee of old resource cleanup.
+
+        Raises:
+            NotImplementedError: If native promotion is unsupported.
+        """
+        raise NotImplementedError(
+            "Native promotion observation is unsupported."
+        )
+
+    def delete_revision(self, resource: ManagedModelProviderResource) -> None:
+        """Remove one unselected revision without deleting its parent service.
+
+        Args:
+            resource: Retained deployment to prune.
+
+        Raises:
+            NotImplementedError: If deployment-specific deletion is unsupported.
+        """
+        raise NotImplementedError(
+            "Deployment-specific deletion is unsupported."
+        )
 
     @abstractmethod
     def set_paused(
