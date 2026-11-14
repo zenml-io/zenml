@@ -53,6 +53,14 @@ def test_rest_store_url_is_normalized_before_moving_credentials(
     )
 
 
+def test_rest_store_invalid_url_error_includes_the_url() -> None:
+    """Tests that the invalid URL error message shows the offending URL."""
+    with pytest.raises(
+        ValueError, match="Invalid URL for REST store: ftp://bad.example"
+    ):
+        RestZenStoreConfiguration(url="ftp://bad.example")
+
+
 def test_delete_artifact_version_can_request_server_side_data_deletion(
     mocker: MockerFixture,
 ) -> None:
