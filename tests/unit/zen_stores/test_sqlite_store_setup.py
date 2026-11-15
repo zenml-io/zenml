@@ -16,10 +16,11 @@
 import importlib.util
 from pathlib import Path
 from types import ModuleType
-from typing import List, Set, Tuple
+from typing import Counter, List, Optional, Set, Tuple
 
 import pytest
 from sqlalchemy import create_engine, inspect
+from sqlalchemy.engine import Engine
 from sqlmodel import SQLModel
 
 import zenml.zen_stores.migrations.versions as migration_versions
@@ -101,33 +102,14 @@ def test_migration_covers_every_cascade_index() -> None:
     assert MIGRATION.INDEXED_COLUMNS == CASCADE_INDEXES
 
 
-def test_sqlite_store_uses_wal_journal_mode(sql_store: SqlZenStore) -> None:
-    """Test that a local store is created in WAL mode.
+def test_sqlite_store_keeps_rollback_journal(sql_store: SqlZenStore) -> None:
+    """Test that a local store is not switched to WAL mode.
 
-    In the default rollback journal mode a write transaction blocks all
-    readers for its duration, which makes a long delete lock out every other
-    client of the store.
-
-    Args:
-        sql_store: The store to check.
-    """
-    with sql_store.engine.connect() as connection:
-        journal_mode = connection.exec_driver_sql(
-            "PRAGMA journal_mode"
-        ).scalar()
-
-        assert journal_mode is not None
-        assert journal_mode.lower() == "wal"
-
-
-def test_sqlite_connections_relax_synchronous_under_wal(
-    sql_store: SqlZenStore,
-) -> None:
-    """Test that WAL mode is paired with `synchronous=NORMAL`.
-
-    Skipping the fsync on every commit is what makes WAL fast. It is only safe
-    because in WAL mode a power loss can cost the most recent commits but
-    cannot corrupt the database, so it must not be set unless WAL is in use.
+    The backup taken before a migration copies only `zenml.db`. In WAL mode,
+    commits still in `zenml.db-wal` would be applied on top of a restored
+    backup, so a failed migration would not be rolled back. WAL also needs all
+    writers on one host, which a store bind-mounted into a Docker Desktop
+    container does not satisfy.
 
     Args:
         sql_store: The store to check.
@@ -136,17 +118,9 @@ def test_sqlite_connections_relax_synchronous_under_wal(
         journal_mode = connection.exec_driver_sql(
             "PRAGMA journal_mode"
         ).scalar()
-        synchronous = connection.exec_driver_sql("PRAGMA synchronous").scalar()
-        foreign_keys = connection.exec_driver_sql(
-            "PRAGMA foreign_keys"
-        ).scalar()
 
-    assert journal_mode is not None and journal_mode.lower() == "wal"
-    # 1 is NORMAL, the default of 2 is FULL.
-    assert synchronous == 1
-    # Enabling `synchronous` must not have displaced the foreign key pragma,
-    # which is what makes the database perform the cascade at all.
-    assert foreign_keys == 1
+    assert journal_mode is not None
+    assert journal_mode.lower() != "wal"
 
 
 @pytest.mark.parametrize(
@@ -180,28 +154,59 @@ def test_run_cascade_foreign_key_is_indexed(
     )
 
 
+def _leading_index_counts(engine: Engine, table_name: str) -> Counter[str]:
+    """Count the indexes of a table by their leading column.
+
+    Args:
+        engine: Engine connected to the database.
+        table_name: The table to inspect.
+
+    Returns:
+        The number of indexes that lead on each column.
+    """
+    return Counter(
+        leading
+        for index in inspect(engine).get_indexes(table_name)
+        if (leading := index["column_names"][0])
+    )
+
+
 @pytest.mark.parametrize(
-    "existing_indexes",
-    [set(), {"ix_pipeline_run_root_run_id"}],
-    ids=["never_migrated", "migrated_through_c2f8d07a91b4"],
+    "kept_index_names,foreign_index_prefix",
+    [
+        (set(), None),
+        ({"ix_pipeline_run_root_run_id"}, None),
+        (set(), "fk"),
+    ],
+    ids=[
+        "never_migrated",
+        "migrated_through_c2f8d07a91b4",
+        "indexed_under_other_names",
+    ],
 )
 def test_migration_creates_every_cascade_index(
-    tmp_path: Path, existing_indexes: Set[str]
+    tmp_path: Path,
+    kept_index_names: Set[str],
+    foreign_index_prefix: Optional[str],
 ) -> None:
-    """Test that upgrading a database reaches the same indexes as a fresh one.
+    """Test that upgrading a database leaves each column with one index.
 
     Covers the migration half of the change, which the test above cannot: a
     store created by `create_all` is stamped at head and never replays the
-    migrations. The two parameters are the two shapes an existing database
-    comes in, and they disagree about `ix_pipeline_run_root_run_id`.
-    `c2f8d07a91b4` creates it, so a database old enough to have run that
-    migration has it, while one created from the schema afterwards does not,
-    because `PipelineRunSchema` did not declare it until this revision. Both
-    have to end up fully indexed.
+    migrations. The parameters are the shapes an existing database comes in:
+    - `c2f8d07a91b4` creates `ix_pipeline_run_root_run_id`, so a database old
+      enough to have run that migration has it, while one created from the
+      schema afterwards does not.
+    - A MySQL database has an implicit `fk_*` index on every foreign key, and
+      one restored with `mysqldump` keeps it as an explicit index, so adding
+      `ix_*` there would double it.
+    Every column has to end up indexed, and none twice.
 
     Args:
         tmp_path: Directory to hold the database.
-        existing_indexes: Cascade indexes the database has before the upgrade.
+        kept_index_names: Cascade indexes the database keeps from the schema.
+        foreign_index_prefix: If set, every removed cascade index is replaced
+            by one with this prefix instead of being dropped.
     """
     engine = create_engine(f"sqlite:///{tmp_path / 'upgrade.db'}")
     SQLModel.metadata.create_all(engine)
@@ -209,22 +214,27 @@ def test_migration_creates_every_cascade_index(
     with engine.begin() as connection:
         for table_name, column_name in CASCADE_INDEXES:
             name = index_name(table_name, column_name)
-            if name not in existing_indexes:
-                connection.exec_driver_sql(f"DROP INDEX `{name}`")
+            if name in kept_index_names:
+                continue
+            connection.exec_driver_sql(f"DROP INDEX `{name}`")
+            if foreign_index_prefix:
+                connection.exec_driver_sql(
+                    f"CREATE INDEX `{foreign_index_prefix}_{name}` "
+                    f"ON `{table_name}` (`{column_name}`)"
+                )
 
     alembic = Alembic(engine)
     alembic.stamp(MIGRATION.down_revision)
     alembic.upgrade(MIGRATION.revision)
 
-    inspector = inspect(engine)
-    missing = [
-        index_name(table_name, column_name)
+    counts = {
+        (table_name, column_name): _leading_index_counts(
+            engine, table_name
+        ).get(column_name, 0)
         for table_name, column_name in CASCADE_INDEXES
-        if index_name(table_name, column_name)
-        not in {index["name"] for index in inspector.get_indexes(table_name)}
-    ]
+    }
 
-    assert not missing, (
-        f"the upgrade left an upgraded store without {missing}, so deleting a "
-        f"pipeline run there still scans those tables"
+    assert all(count == 1 for count in counts.values()), (
+        f"the upgrade did not leave exactly one index on each cascade "
+        f"column: {counts}"
     )
