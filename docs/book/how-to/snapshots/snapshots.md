@@ -332,7 +332,7 @@ Read more about:
 7. **Monitor snapshot usage** to understand how your team is using them
 
 {% hint style="warning" %}
-**Important:** You need to recreate your snapshots after upgrading your ZenML server. Snapshots are tied to specific server versions and may not work correctly after an upgrade.
+**Important:** You need to recreate your snapshots after upgrading your ZenML server. Snapshots are tied to specific server versions and may not work correctly after an upgrade. The [Compatibility](https://docs.zenml.io/changelog/compatibility) page shows what each release changes for snapshots built with an older ZenML version.
 {% endhint %}
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

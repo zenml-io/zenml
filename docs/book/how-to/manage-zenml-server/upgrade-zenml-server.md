@@ -9,6 +9,10 @@ icon: circle-arrow-up
 
 The way to upgrade your ZenML server depends a lot on how you deployed it. However, there are some best practices that apply in all cases. Before you upgrade, check out the [best practices for upgrading ZenML](best-practices-upgrading-zenml.md) guide.
 
+{% hint style="info" %}
+Check the [Compatibility](https://docs.zenml.io/changelog/compatibility) page to see which client versions work with the server version you are upgrading to.
+{% endhint %}
+
 In general, upgrade your ZenML server as soon as you can once a new version is released. New versions come with a lot of improvements and fixes from which you can benefit.
 
 {% tabs %}
@@ -84,7 +88,7 @@ the `zenml.image.tag` value in your `custom-values.yaml` file to the desired Zen
 ## Important Considerations After Upgrading
 
 - **Downgrading is not supported**: Downgrading the server to an older version is not supported and can lead to unexpected behavior.
-- **Client-server version alignment**: The version of the Python client that connects to the server should be kept at the same version as the server.
+- **Client-server version alignment**: Keeping the Python client on the same version as the server is the safest setup.
 - **Recreate snapshots**: After upgrading your ZenML server, you need to recreate any [snapshots](../snapshots/snapshots.md) that you were using. Snapshots are tied to specific server versions and will often not work correctly after an upgrade.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

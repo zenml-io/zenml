@@ -32,7 +32,6 @@
 
 import json
 import os
-import random
 import socket
 from contextlib import contextmanager
 from typing import (
@@ -105,6 +104,7 @@ from zenml.stack import StackValidator
 from zenml.step_operators.step_operator_entrypoint_configuration import (
     StepOperatorEntrypointConfiguration,
 )
+from zenml.utils.string_utils import random_hex_str
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
@@ -682,7 +682,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             The job name.
         """
         job_name = settings.job_name_prefix or ""
-        random_prefix = "".join(random.choices("0123456789abcdef", k=8))
+        random_prefix = random_hex_str(8)
         job_name += f"-{random_prefix}-{pipeline_name}"
         if step_name:
             job_name += f"-{step_name}"
@@ -1102,20 +1102,30 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             )
             return ExecutionStatus.FAILED
 
-        if not job_list.items:
-            logger.warning("No jobs found for step run `%s`", step_run.id)
-            return ExecutionStatus.FAILED
+        if job_list.items:
+            job_name = job_list.items[0].metadata.name
+            status, error_message = kube_utils.check_job_status(
+                batch_api=self._k8s_batch_api,
+                core_api=self._k8s_core_api,
+                namespace=self.config.kubernetes_namespace,
+                job_name=job_name,
+                api_request_timeout=self.config.api_request_timeout,
+                max_retries=self.config.max_api_retries,
+            )
+        else:
+            status, error_message = kube_utils.JobStatus.NOT_FOUND, None
 
-        job = job_list.items[0]
-        job_name = job.metadata.name
-        status, error_message = kube_utils.check_job_status(
-            batch_api=self._k8s_batch_api,
-            core_api=self._k8s_core_api,
-            namespace=self.config.kubernetes_namespace,
-            job_name=job_name,
-            api_request_timeout=self.config.api_request_timeout,
-            max_retries=self.config.max_api_retries,
-        )
+        if status == kube_utils.JobStatus.NOT_FOUND:
+            # Kubernetes also deletes successful jobs once their TTL expires,
+            # so the step run is the only remaining record of the outcome. An
+            # unfinished step run can't finish without its job.
+            logger.warning("No job found for step run `%s`", step_run.id)
+            step_run_status = (
+                Client().get_run_step(step_run.id, hydrate=False).status
+            )
+            if step_run_status.is_finished:
+                return step_run_status
+            return ExecutionStatus.FAILED
         if status == kube_utils.JobStatus.SUCCEEDED:
             return ExecutionStatus.COMPLETED
         if status == kube_utils.JobStatus.FAILED:
