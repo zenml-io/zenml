@@ -14,8 +14,6 @@
 """Tests for hook invocation CRUD in SqlZenStore."""
 
 from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Iterator
 from uuid import UUID, uuid4
 
 import pytest
@@ -40,22 +38,7 @@ from zenml.zen_stores.schemas import (
 from zenml.zen_stores.sql_zen_store import (
     Session,
     SqlZenStore,
-    SqlZenStoreConfiguration,
 )
-
-
-@pytest.fixture
-def sql_store(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> Iterator[SqlZenStore]:
-    """Create a fresh SQLite-backed SqlZenStore for tests."""
-    db_dir = tmp_path / "zenml-cfg"
-    db_dir.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("ZENML_CONFIG_PATH", str(db_dir))
-    db_path = db_dir / "test.db"
-    config = SqlZenStoreConfiguration(url=f"sqlite:///{db_path}")
-    store = SqlZenStore(config=config, skip_default_registrations=False)
-    yield store
 
 
 def _project_id(store: SqlZenStore) -> UUID:
