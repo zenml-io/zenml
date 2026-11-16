@@ -564,7 +564,7 @@ Client().trigger_pipeline(snapshot_id=<ID>, run_configuration={"parameters": {"m
 
 When using the `FAIL_FAST` execution mode, failure of a step does not immediately cancel other **inline** steps. Instead, they continue executing until finished. **Isolated** steps on the other hand will be shut down immediately.
 
-Once a run has started failing, ZenML doesn't retry isolated steps anymore, even if their retry configuration allows more attempts. An isolated step that fails at that point gets the `stopped` status, and the orchestrator logs say why it wasn't retried.
+Once a run has started failing, ZenML doesn't retry isolated steps anymore, even if their retry configuration allows more attempts. An isolated step that fails at that point gets the `failed` status, and the orchestrator logs say why it wasn't retried.
 
 ### Orchestrator Support
 

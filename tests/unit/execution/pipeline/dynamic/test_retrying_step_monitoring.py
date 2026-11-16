@@ -48,6 +48,7 @@ class _MonitoringHarness:
         max_retries: int = 2,
         failure_detected: bool = False,
         exception_info: Optional[ExceptionInfo] = None,
+        server_keeps_retrying: bool = False,
     ) -> None:
         self.step_run: Any = SimpleNamespace(
             id=uuid4(),
@@ -62,6 +63,9 @@ class _MonitoringHarness:
                 retry=StepRetryConfig(max_retries=max_retries)
             ),
         )
+        # Older servers turn a `FAILED` update on a `RETRYING` step run back
+        # into `RETRYING`.
+        self.server_keeps_retrying = server_keeps_retrying
         self.published: List[Dict[str, Any]] = []
         self.relaunched: List[Any] = []
         self.failed_nodes: List[BaseException] = []
@@ -103,6 +107,7 @@ class _MonitoringHarness:
         )
 
         runner = object.__new__(DynamicPipelineRunner)
+        runner._run = SimpleNamespace(id=uuid4())
         runner._steps_to_monitor = {INVOCATION_ID: self.step_run}
         runner._shutdown_requested = False
         runner._failure_detected = failure_detected
@@ -126,7 +131,8 @@ class _MonitoringHarness:
 
     def _publish_status(self, **kwargs: Any) -> Any:
         self.published.append(kwargs)
-        self.step_run.status = kwargs["status"]
+        if not self.server_keeps_retrying:
+            self.step_run.status = kwargs["status"]
         if kwargs["exception_info"]:
             self.step_run.exception_info = kwargs["exception_info"]
         return self.step_run
@@ -141,7 +147,7 @@ class _MonitoringHarness:
 def test_step_is_relaunched_when_retries_are_left(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A `RETRYING` step with retries left is relaunched, not stopped."""
+    """A `RETRYING` step with retries left is relaunched, not failed."""
     harness = _MonitoringHarness(monkeypatch)
 
     harness.runner._monitoring_loop()
@@ -151,15 +157,19 @@ def test_step_is_relaunched_when_retries_are_left(
     assert harness.failed_nodes == []
 
 
-def test_step_is_stopped_when_run_already_failed(
-    monkeypatch: pytest.MonkeyPatch,
+@pytest.mark.parametrize("server_keeps_retrying", [False, True])
+def test_step_is_failed_when_run_already_failed(
+    monkeypatch: pytest.MonkeyPatch, server_keeps_retrying: bool
 ) -> None:
     """The failed attempt's exception is kept, not replaced by the reason."""
     original = exception_utils.collect_exception_information(
         ValueError("boom")
     )
     harness = _MonitoringHarness(
-        monkeypatch, failure_detected=True, exception_info=original
+        monkeypatch,
+        failure_detected=True,
+        exception_info=original,
+        server_keeps_retrying=server_keeps_retrying,
     )
 
     harness.runner._monitoring_loop()
@@ -168,7 +178,7 @@ def test_step_is_stopped_when_run_already_failed(
     assert harness.published == [
         {
             "step_run_id": harness.step_run.id,
-            "status": ExecutionStatus.STOPPED,
+            "status": ExecutionStatus.FAILED,
             "end_time": ATTEMPT_END_TIME,
             "exception_info": None,
         }
@@ -176,11 +186,14 @@ def test_step_is_stopped_when_run_already_failed(
     (failure,) = harness.failed_nodes
     assert isinstance(failure.__cause__, ValueError)
     assert str(failure.__cause__) == "boom"
+    # Checked first because `result()` would wait forever on a step run that
+    # stays `RETRYING`.
+    assert not harness.future.running()
     with pytest.raises(ValueError, match="boom"):
         harness.future.result()
 
 
-def test_step_is_stopped_with_reason_when_no_retries_are_left(
+def test_step_is_failed_with_reason_when_no_retries_are_left(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Without an exception from the attempt, the reason becomes the error."""
@@ -190,7 +203,7 @@ def test_step_is_stopped_with_reason_when_no_retries_are_left(
 
     assert harness.relaunched == []
     (published,) = harness.published
-    assert published["status"] == ExecutionStatus.STOPPED
+    assert published["status"] == ExecutionStatus.FAILED
     message = (
         f"Step `{INVOCATION_ID}` failed and was not retried because it has "
         "no retries left."
@@ -198,5 +211,6 @@ def test_step_is_stopped_with_reason_when_no_retries_are_left(
     assert published["exception_info"].message == message
     (failure,) = harness.failed_nodes
     assert str(failure.__cause__) == message
+    assert not harness.future.running()
     with pytest.raises(RuntimeError, match="no retries left"):
         harness.future.result()

@@ -703,7 +703,7 @@ class DynamicPipelineRunner:
                             )
 
                     if skip_retry_reason:
-                        self._stop_step_without_retry(
+                        self._fail_step_without_retry(
                             step_run=step_run, reason=skip_retry_reason
                         )
 
@@ -2468,16 +2468,13 @@ class DynamicPipelineRunner:
                 force_record=step_run.status == ExecutionStatus.STOPPED,
             )
 
-    def _stop_step_without_retry(
+    def _fail_step_without_retry(
         self, step_run: "StepRunResponse", reason: str
     ) -> None:
-        """Finish a `RETRYING` step run that the runner will not retry.
+        """Fail a `RETRYING` step run that the runner will not retry.
 
-        Without a terminal status, the step future keeps polling the
-        `RETRYING` step run and anything waiting on it hangs forever. The
-        server rewrites a published `FAILED` status back to `RETRYING` while
-        the step run is retriable, so `STOPPED` is the only terminal status
-        the runner can publish here.
+        Without this, the step run stays `RETRYING` and anything waiting on
+        its future hangs forever.
 
         Args:
             step_run: The step run in `RETRYING` status.
@@ -2500,20 +2497,31 @@ class DynamicPipelineRunner:
 
         step_run = publish_step_run_status_update(
             step_run_id=step_run.id,
-            status=ExecutionStatus.STOPPED,
+            status=ExecutionStatus.FAILED,
             # The attempt already ended when it failed, deciding not to retry
             # it shouldn't extend its duration.
             end_time=step_run.end_time,
             exception_info=exception_info,
         )
-        # This is a step failure, not a stop request, so unlike
-        # `_on_step_finished` it doesn't force-fail the run in the
-        # `CONTINUE_ON_FAILURE` mode.
+        exception = self._get_step_exception(step_run=step_run)
+
+        # Older servers turn this failure back into `RETRYING`, so the step
+        # future can't rely on the step run status to finish. Resolving it here
+        # works with any server version.
+        failed_attempt: Future[StepRunResponse] = Future()
+        failed_attempt.set_exception(exception)
+        self._future_registry.rebind_step_execution_future(
+            invocation_id=step_run.name,
+            future=_IsolatedStepFuture(
+                wrapped=failed_attempt,
+                pipeline_run_id=self._run.id,
+                invocation_id=step_run.name,
+            ),
+        )
         self._fail_concurrent_node(
             invocation_id=step_run.name,
             exception=wrap_step_failure(
-                self._get_step_exception(step_run=step_run),
-                invocation_id=step_run.name,
+                exception, invocation_id=step_run.name
             ),
         )
 
