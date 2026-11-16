@@ -30,12 +30,24 @@ on:
         type: number
         required: false
         default: 3
+      shards:
+        description: JSON list with one entry per shard the tests are split into.
+          Example '[1, 2, 3]'
+        type: string
+        required: false
+        default: '[1, 2, 3, 4, 5, 6]'
+      lanes:
+        description: Number of test processes to run side by side in each shard, to
+          use CPU cores a single process leaves idle. Example 2
+        type: string
+        required: false
+        default: '1'
   workflow_dispatch:
     inputs:
       os:
         description: OS
         type: choice
-        options: [ubuntu-latest, macos-13, windows-latest]
+        options: [ubuntu-latest, macos-latest, windows-latest]
         required: false
         default: ubuntu-latest
       python-version:
@@ -82,6 +94,18 @@ on:
         type: number
         required: false
         default: 3
+      shards:
+        description: JSON list with one entry per shard the tests are split into.
+          Example '[1, 2, 3]'
+        type: string
+        required: false
+        default: '[1, 2, 3, 4, 5, 6]'
+      lanes:
+        description: Number of test processes to run side by side in each shard, to
+          use CPU cores a single process leaves idle. Example 2
+        type: string
+        required: false
+        default: '1'
 env:
   ZENML_DEBUG: 1
   ZENML_LOGGING_VERBOSITY: debug
@@ -90,10 +114,11 @@ jobs:
   integration-tests-fast:
     name: integration-tests-fast
     runs-on: ${{ inputs.os }}
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6]
+        shard: ${{ fromJSON(inputs.shards) }}
     env:
       ZENML_ENABLE_RICH_TRACEBACK: false
       WHYLOGS_NO_ANALYTICS: 'True'
@@ -103,33 +128,56 @@ jobs:
       # to fix problems with the fork() calls (see this thread
       # for more information: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)
       OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_US_EAST_1_ENV_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_US_EAST_1_ENV_SECRET_ACCESS_KEY }}
-      AWS_US_EAST_1_SERVER_URL: ${{ secrets.AWS_US_EAST_1_SERVER_URL }}
-      AWS_US_EAST_1_SERVER_USERNAME: ${{ secrets.AWS_US_EAST_1_SERVER_USERNAME }}
-      AWS_US_EAST_1_SERVER_PASSWORD: ${{ secrets.AWS_US_EAST_1_SERVER_PASSWORD }}
-      GCP_US_EAST4_SERVER_URL: ${{ secrets.GCP_US_EAST4_SERVER_URL }}
-      GCP_US_EAST4_SERVER_USERNAME: ${{ secrets.GCP_US_EAST4_SERVER_USERNAME }}
-      GCP_US_EAST4_SERVER_PASSWORD: ${{ secrets.GCP_US_EAST4_SERVER_PASSWORD }}
       PYTEST_RERUNS: ${{ inputs.reruns }}
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
     defaults:
       run:
         shell: bash
     steps:
-      - name: Free disk space (Ubuntu)
-        if: inputs.os == 'ubuntu-latest'
+      - name: Safeguard macOS certificate trust
+        if: runner.os == 'macOS'
+        shell: bash
         run: |
-          set -euxo pipefail
-          echo "Before cleanup:"
-          df -h
-          sudo rm -rf /usr/share/dotnet || true
-          sudo rm -rf /usr/local/lib/android || true
-          sudo rm -rf /opt/ghc || true
-          sudo rm -rf /opt/hostedtoolcache/CodeQL || true
-          sudo docker image prune --all --force || true
-          echo "After cleanup:"
-          df -h
+          set -euo pipefail
+          # Temporary mitigation for actions/runner-images#15228, before any checkout/download.
+          blocked_roots='emSign ECC Root CA - G3|emSign ECC Root CA - C3|emSign Root CA - C1|AAA Certificate Services'
+          filtered=$(mktemp)
+          trap 'rm -f "$filtered"' EXIT
+          test -f /etc/ssl/cert.pem
+          for bundle in /etc/ssl/cert.pem /opt/homebrew/etc/ca-certificates/cert.pem /usr/local/etc/ca-certificates/cert.pem; do
+            [ -f "$bundle" ] || continue
+            openssl crl2pkcs7 -nocrl -certfile "$bundle" |
+              openssl pkcs7 -print_certs |
+              awk -v blocked="$blocked_roots" '/^subject=/{skip=($0 ~ blocked)} !skip' > "$filtered"
+            grep -q -- '-----BEGIN CERTIFICATE-----' "$filtered"
+            subjects=$(openssl crl2pkcs7 -nocrl -certfile "$filtered" | openssl pkcs7 -print_certs -noout)
+            if grep -Eq "$blocked_roots" <<< "$subjects"; then
+              echo "::error::Affected certificate roots remain in $bundle"
+              exit 1
+            fi
+            sudo cp "$filtered" "$bundle"
+          done
+          # pip/uv/Requests/Git may otherwise use their own, older CA bundles.
+          for variable in SSL_CERT_FILE CURL_CA_BUNDLE GIT_SSL_CAINFO PIP_CERT REQUESTS_CA_BUNDLE; do
+            export "$variable=/etc/ssl/cert.pem"
+            echo "$variable=/etc/ssl/cert.pem" >> "$GITHUB_ENV"
+          done
+          # Older Intel images can fall back to Apple's trust database even after filtering.
+          for client in /usr/bin/curl "$(command -v curl)"; do
+            "$client" --fail --silent --show-error --connect-timeout 10 --max-time 30 --output /dev/null https://github.com/
+            for host in dv-g3b-noct-emudhra.we-have-a-problem.com dv-g3b-aaa-noct-emudhra.we-have-a-problem.com; do
+              if "$client" --silent --connect-timeout 10 --max-time 30 --output /dev/null "https://$host/"; then
+                echo "::error::$client still trusts a compromised certificate chain ($host)"
+                exit 1
+              else
+                curl_status=$?
+                if [ "$curl_status" -ne 60 ]; then
+                  echo "::error::Certificate probe failed for a reason other than certificate rejection (curl $curl_status)"
+                  exit 1
+                fi
+              fi
+            done
+          done
       - name: Set uv cache + temp dirs (/opt)
         if: inputs.os == 'ubuntu-latest'
         run: |
@@ -170,32 +218,10 @@ jobs:
           sudo rm -rf /var/lib/docker/* || true
           sudo systemctl start docker
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-      - name: Restore uv cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
-        with:
-          path: ${{ inputs.os == 'ubuntu-latest' && '/opt/uv-cache' || '~/.cache/uv' }}
-          key: |
-            uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
-          restore-keys: |
-            uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd  # v6.3.0
-        with:
-          role-to-assume: ${{ secrets.AWS_US_EAST_1_ENV_ROLE_ARN }}
-          aws-region: us-east-1
-        if: contains(inputs.test_environment, 'aws')
-      - name: Configure GCP credentials
-        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093  # v3.0.0
-        with:
-          credentials_json: ${{ secrets.GCP_US_EAST4_ENV_CREDENTIALS }}
-        if: contains(inputs.test_environment, 'gcp')
-      - name: Set up gcloud SDK
-        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db  # v3.0.1
-        with:
-          install_components: gke-gcloud-auth-plugin
-        if: contains(inputs.test_environment, 'gcp')
+      - name: Free disk space
+        uses: $/.github/actions/free_disk_space
       - name: Login to Docker Hub
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f  # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6  # v4.7.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -262,38 +288,19 @@ jobs:
         run: |
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
         if: runner.os!='Windows' && contains(inputs.test_environment, 'kubeflow')
-      - name: Login to Amazon ECR
-        id: login-ecr
-        run: |
-          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 715803424590.dkr.ecr.us-east-1.amazonaws.com
-        if: contains(inputs.test_environment, 'aws')
-      - name: Login to Amazon EKS
-        id: login-eks
-        run: |
-          aws eks --region us-east-1 update-kubeconfig --name zenml-ci-cluster --alias zenml-ci-aws-us-east-1
-        if: contains(inputs.test_environment, 'aws')
-      - name: Login to Google ECR
-        run: |
-          gcloud auth configure-docker --project zenml-ci
-        if: contains(inputs.test_environment, 'gcp')
-      - name: Login to Google GKE
-        uses: google-github-actions/get-gke-credentials@3da1e46a907576cefaa90c484278bb5b259dd395  # v3.0.0
-        with:
-          cluster_name: zenml-ci-cluster
-          location: us-east4
-          project_id: zenml-ci
-        if: contains(inputs.test_environment, 'gcp')
       - name: Setup tmate session before tests
         if: ${{ inputs.enable_tmate == 'before-tests' }}
         uses: mxschmitt/action-tmate@35b54afac29c97fb54faba5b513f8fbd1882f113  # v3.24
         timeout-minutes: ${{ inputs.tmate_timeout }}
       - name: Sharded Integration Tests (Ubuntu) - Fast CI
-        # Ubuntu integration tests run as 6 shards
         if: runner.os != 'macOS' && runner.os != 'Windows'
         run: |
-          bash scripts/test-coverage-xml.sh integration ${INPUTS_TEST_ENVIRONMENT} 6 ${{ matrix.shard }}
+          bash scripts/test-coverage-xml.sh integration ${INPUTS_TEST_ENVIRONMENT} "${SHARD_COUNT}" "${SHARD}"
         env:
           INPUTS_TEST_ENVIRONMENT: ${{ inputs.test_environment }}
+          SHARD_COUNT: ${{ strategy.job-total }}
+          SHARD: ${{ matrix.shard }}
+          TEST_LANES: ${{ inputs.lanes }}
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
         uses: mxschmitt/action-tmate@35b54afac29c97fb54faba5b513f8fbd1882f113  # v3.24

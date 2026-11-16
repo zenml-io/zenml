@@ -907,7 +907,9 @@ class RunAIStepOperator(BaseStepOperator):
                     )
 
                 sleep_time = min(base_interval * (2**retry_count), 300)
-                sleep_time += random.uniform(0, 0.1 * sleep_time)
+                sleep_time += random.SystemRandom().uniform(
+                    0, 0.1 * sleep_time
+                )
                 logger.warning(
                     f"Status check failed (retry {retry_count}/{max_retries}): {exc}"
                 )

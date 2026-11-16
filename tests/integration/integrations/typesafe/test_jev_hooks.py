@@ -152,6 +152,41 @@ def test_response_to_metadata_flattens_every_answer_type() -> None:
     assert metadata["jev.anomaly.legend"]["2"] == "very odd"
 
 
+@pytest.mark.parametrize("confidence", [None, 0.9])
+def test_response_to_metadata_skips_unsupported_answers(
+    confidence: float | None,
+) -> None:
+    """New SDK answer types do not prevent supported answers from being logged."""
+    pytest.importorskip("typesafe_sdk", minversion="0.7.5")
+    response = SystemOneResponse.model_validate_json(
+        json.dumps({"model": "jev-test", "usage": {}, "answers": ANSWERS})
+    )
+    expected = jev_hooks.response_to_metadata(response)
+    response_with_box = SystemOneResponse.model_validate_json(
+        json.dumps(
+            {
+                "model": "jev-test",
+                "usage": {},
+                "answers": {
+                    "object_location": {
+                        "type": "box",
+                        "box": {
+                            "top": 0.2,
+                            "bottom": 0.6,
+                            "left": 0.1,
+                            "right": 0.8,
+                        },
+                        "confidence": confidence,
+                    },
+                    **ANSWERS,
+                },
+            }
+        )
+    )
+
+    assert jev_hooks.response_to_metadata(response_with_box) == expected
+
+
 def test_failure_hook_logs_triage_on_failed_step(
     clean_client: Client, fake_jev: type
 ) -> None:

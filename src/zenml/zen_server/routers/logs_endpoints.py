@@ -39,6 +39,7 @@ from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.logs import fetch_runner_logs
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
+    verify_permissions_and_get_step_run,
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import Action
@@ -75,9 +76,8 @@ def _verify_log_read_permission(logs: LogsResponse) -> None:
     if logs.pipeline_run_id:
         run_id = logs.pipeline_run_id
     elif logs.step_run_id:
-        run_id = store.get_run_step(
-            step_run_id=logs.step_run_id, hydrate=False
-        ).pipeline_run_id
+        verify_permissions_and_get_step_run(logs.step_run_id, Action.READ)
+        return
     elif logs.hook_invocation_id:
         run_id = store.get_hook_invocation(
             hook_invocation_id=logs.hook_invocation_id, hydrate=False
@@ -119,13 +119,7 @@ def create_logs(
             action=Action.UPDATE,
         )
     elif logs.step_run_id:
-        step = zen_store().get_run_step(logs.step_run_id)
-        verify_permission_for_model(
-            model=zen_store().get_run(
-                run_id=step.pipeline_run_id, hydrate=False
-            ),
-            action=Action.UPDATE,
-        )
+        verify_permissions_and_get_step_run(logs.step_run_id, Action.UPDATE)
 
     read_verify_models = []
     if logs.artifact_store_id:
@@ -278,14 +272,8 @@ def update_logs(
             action=Action.UPDATE,
         )
     elif logs_update.step_run_id:
-        step = zen_store().get_run_step(
-            step_run_id=logs_update.step_run_id, hydrate=False
-        )
-        verify_permission_for_model(
-            model=zen_store().get_run(
-                run_id=step.pipeline_run_id, hydrate=False
-            ),
-            action=Action.UPDATE,
+        verify_permissions_and_get_step_run(
+            logs_update.step_run_id, Action.UPDATE
         )
 
     return verify_permissions_and_update_entity(

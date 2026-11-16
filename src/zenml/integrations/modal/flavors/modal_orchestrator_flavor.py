@@ -43,6 +43,17 @@ class ModalOrchestratorConfig(
 ):
     """Configuration for the Modal orchestrator."""
 
+    app_name: str = Field(
+        "zenml-orchestrator",
+        min_length=1,
+        max_length=64,
+        description="Name of the Modal App that owns all orchestration and "
+        "step Sandboxes created by this orchestrator. Looked up (or created) "
+        "in the configured Modal environment. All pipeline runs share this "
+        "one App; each Sandbox is tagged with its ZenML run and step so runs "
+        "stay distinguishable. Examples: 'zenml-orchestrator', 'team-a-ml'",
+    )
+
     @property
     def is_remote(self) -> bool:
         """Checks if this stack component is running remotely."""

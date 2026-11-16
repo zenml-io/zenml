@@ -46,26 +46,42 @@ def test_server_cli_up_down(clean_client, mocker):
 
     port = scan_for_available_port(start=8003, stop=9000)
     login_command = cli.commands["login"]
-    runner.invoke(login_command, ["--local", "--port", port])
-
-    endpoint = f"http://127.0.0.1:{port}"
-    assert requests.head(endpoint + "/health", timeout=16).status_code == 200
-
     deployer = LocalServerDeployer()
-    server = deployer.get_server()
-    gc = GlobalConfiguration()
-    assert gc.store.url == server.status.url
+    try:
+        result = runner.invoke(login_command, ["--local", "--port", port])
+        assert result.exit_code == 0, (
+            f"CLI output:\n{result.output}\n"
+            f"CLI stderr:\n{result.stderr}\n"
+            f"Exception: {result.exception!r}"
+        )
 
-    # patch `gc.set_default_store()` to return None
-    mocker.patch.object(
-        GlobalConfiguration, "set_default_store", return_value=None
-    )
-    logout_command = cli.commands["logout"]
-    runner.invoke(logout_command)
+        endpoint = f"http://127.0.0.1:{port}"
+        assert (
+            requests.head(endpoint + "/health", timeout=16).status_code == 200
+        )
 
-    # sleep for a bit to let the server stop
-    time.sleep(5)
-
-    deployer = LocalServerDeployer()
-    with pytest.raises(ServerDeploymentNotFoundError):
         server = deployer.get_server()
+        gc = GlobalConfiguration()
+        assert gc.store.url == server.status.url
+
+        mocker.patch.object(
+            GlobalConfiguration, "set_default_store", return_value=None
+        )
+        logout_command = cli.commands["logout"]
+        runner.invoke(logout_command)
+
+        time.sleep(5)
+
+        with pytest.raises(ServerDeploymentNotFoundError):
+            deployer.get_server()
+    except BaseException:
+        try:
+            print(
+                "Daemon log tail:\n"
+                + "\n".join(deployer.get_server_logs(tail=100))
+            )
+        except (ServerDeploymentNotFoundError, FileNotFoundError) as error:
+            print(f"Daemon logs unavailable: {error}")
+        raise
+    finally:
+        deployer.remove_server()

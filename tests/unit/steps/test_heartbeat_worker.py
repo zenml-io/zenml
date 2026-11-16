@@ -4,6 +4,9 @@ import threading
 import time
 import uuid
 from datetime import datetime, timezone
+from typing import Any
+
+import pytest
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.source import Source, SourceType
@@ -62,6 +65,15 @@ class FakeServerHeartbeat:
             )
 
 
+def _patch_zen_store(m: pytest.MonkeyPatch, store: Any) -> None:
+    # Patch the class property instead of the `_zen_store` private attribute
+    # of the `GlobalConfiguration` singleton: since pytest 9.2, `monkeypatch`
+    # restores instance attributes through `__dict__`, where pydantic doesn't
+    # keep private attributes, so undoing the patch deleted the real store
+    # for every test that ran afterwards.
+    m.setattr(GlobalConfiguration, "zen_store", property(lambda _: store))
+
+
 def test_heartbeat_worker_with_remote_stopping(monkeypatch):
     step_run_id = uuid.uuid4()
 
@@ -80,9 +92,7 @@ def test_heartbeat_worker_with_remote_stopping(monkeypatch):
         interrupt_called.set()
 
     with monkeypatch.context() as m:
-        global_config = GlobalConfiguration()
-
-        m.setattr(global_config, "_zen_store", fake_server)
+        _patch_zen_store(m, fake_server)
         m.setattr(_thread, "interrupt_main", mock_interrupt_main)
 
         worker.start()
@@ -129,9 +139,7 @@ def test_heartbeat_worker_with_eager_stopping(monkeypatch):
     assert not worker.is_running
 
     with monkeypatch.context() as m:
-        global_config = GlobalConfiguration()
-
-        m.setattr(global_config, "_zen_store", fake_server)
+        _patch_zen_store(m, fake_server)
 
         worker.start()
 
@@ -161,9 +169,7 @@ def test_worker_with_disabled_heartbeat(monkeypatch):
     assert not worker.is_running
 
     with monkeypatch.context() as m:
-        global_config = GlobalConfiguration()
-
-        m.setattr(global_config, "_zen_store", fake_server)
+        _patch_zen_store(m, fake_server)
 
         worker.start()
 
