@@ -15,6 +15,7 @@
 
 import importlib
 import os
+import threading
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 
 import mlflow
@@ -46,6 +47,19 @@ if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
 
 logger = get_logger(__name__)
+
+_MLFLOW_PARENT_RUN_LOCKS: Dict[str, threading.Lock] = {}
+_MLFLOW_PARENT_RUN_LOCKS_LOCK = threading.Lock()
+
+
+def _get_parent_run_lock(experiment_name: str, run_name: str) -> threading.Lock:
+    key = f"{experiment_name}\x1f{run_name}"
+    with _MLFLOW_PARENT_RUN_LOCKS_LOCK:
+        lock = _MLFLOW_PARENT_RUN_LOCKS.get(key)
+        if lock is None:
+            lock = threading.Lock()
+            _MLFLOW_PARENT_RUN_LOCKS[key] = lock
+        return lock
 
 MLFLOW_TRACKING_URI = "MLFLOW_TRACKING_URI"
 MLFLOW_TRACKING_USERNAME = "MLFLOW_TRACKING_USERNAME"
@@ -220,39 +234,46 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
 
         experiment_name = settings.experiment_name or info.pipeline.name
         experiment = self._set_active_experiment(experiment_name)
-        run_id = self.get_run_id(
-            experiment_name=experiment_name, run_name=info.run_name
-        )
+        # Serialize parent-run creation for the same (experiment, run_name)
+        # so concurrent mapped steps do not each create a duplicate parent.
+        # Without this, two parallel `double.map()` invocations both see
+        # no existing run and create two parents with the same
+        # `mlflow.runName`, as reported in #5297.
+        parent_lock = _get_parent_run_lock(experiment_name, info.run_name)
+        with parent_lock:
+            run_id = self.get_run_id(
+                experiment_name=experiment_name, run_name=info.run_name
+            )
 
-        # Validate that the run exists before attempting to resume it
-        if run_id:
-            try:
-                run = mlflow.get_run(run_id)
-                if run.info.lifecycle_stage == LifecycleStage.DELETED:
+            # Validate that the run exists before attempting to resume it
+            if run_id:
+                try:
+                    run = mlflow.get_run(run_id)
+                    if run.info.lifecycle_stage == LifecycleStage.DELETED:
+                        logger.warning(
+                            f"Run with id {run_id} is in 'deleted' state. "
+                            "Creating a new run instead."
+                        )
+                        run_id = None
+                except MlflowException as e:
+                    # Run doesn't exist on the MLflow server, create a new one
                     logger.warning(
-                        f"Run with id {run_id} is in 'deleted' state. "
-                        "Creating a new run instead."
+                        f"Run with id {run_id} not found in MLflow tracking server. "
+                        f"Creating a new run instead. Error: {e}"
                     )
                     run_id = None
-            except MlflowException as e:
-                # Run doesn't exist on the MLflow server, create a new one
-                logger.warning(
-                    f"Run with id {run_id} not found in MLflow tracking server. "
-                    f"Creating a new run instead. Error: {e}"
-                )
-                run_id = None
 
-        tags = settings.tags.copy()
-        tags.update(self._get_internal_tags())
+            tags = settings.tags.copy()
+            tags.update(self._get_internal_tags())
 
-        self._clear_inherited_run_environment(run_id=run_id)
+            self._clear_inherited_run_environment(run_id=run_id)
 
-        mlflow.start_run(
-            run_id=run_id,
-            run_name=info.run_name,
-            experiment_id=experiment.experiment_id,
-            tags=tags,
-        )
+            mlflow.start_run(
+                run_id=run_id,
+                run_name=info.run_name,
+                experiment_id=experiment.experiment_id,
+                tags=tags,
+            )
 
         if settings.nested:
             mlflow.start_run(
