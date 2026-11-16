@@ -147,6 +147,7 @@ from zenml.orchestrators.publish_utils import (
     publish_failed_pipeline_run,
     publish_failed_step_run,
     publish_pipeline_run_status_update,
+    publish_step_run_status_update,
     publish_stopped_step_run,
     publish_successful_step_run,
 )
@@ -672,13 +673,18 @@ class DynamicPipelineRunner:
                             remaining_retries,
                         )
 
+                    skip_retry_reason: Optional[str] = None
                     with self._lifecycle_lock:
-                        if (
-                            remaining_retries > 0
-                            and not self._failure_detected
-                        ):
-                            # If there was a failure already, we do not want to
-                            # start any new work no matter the execution mode.
+                        # If there was a failure already, we do not want to
+                        # start any new work no matter the execution mode.
+                        if self._failure_detected:
+                            skip_retry_reason = (
+                                "the pipeline run is already shutting down "
+                                "after a failure"
+                            )
+                        elif remaining_retries <= 0:
+                            skip_retry_reason = "it has no retries left"
+                        else:
                             step = Step(
                                 spec=step_run.spec,
                                 config=step_run.config,
@@ -695,6 +701,11 @@ class DynamicPipelineRunner:
                                 invocation_id=invocation_id,
                                 future=execution_future,
                             )
+
+                    if skip_retry_reason:
+                        self._stop_step_without_retry(
+                            step_run=step_run, reason=skip_retry_reason
+                        )
 
                 time.sleep(monitoring_delay)
 
@@ -2456,6 +2467,55 @@ class DynamicPipelineRunner:
                 ),
                 force_record=step_run.status == ExecutionStatus.STOPPED,
             )
+
+    def _stop_step_without_retry(
+        self, step_run: "StepRunResponse", reason: str
+    ) -> None:
+        """Finish a `RETRYING` step run that the runner will not retry.
+
+        Without a terminal status, the step future keeps polling the
+        `RETRYING` step run and anything waiting on it hangs forever. The
+        server rewrites a published `FAILED` status back to `RETRYING` while
+        the step run is retriable, so `STOPPED` is the only terminal status
+        the runner can publish here.
+
+        Args:
+            step_run: The step run in `RETRYING` status.
+            reason: Why the step is not retried.
+        """
+        message = (
+            f"Step `{step_run.name}` failed and was not retried because "
+            f"{reason}."
+        )
+        logger.warning(message)
+
+        exception_info = None
+        if not step_run.exception_info:
+            # The failed attempt's own exception explains the failure better,
+            # so this message is only stored when there is none, e.g. when the
+            # step's pod crashed before it could report the exception.
+            exception_info = exception_utils.collect_exception_information(
+                RuntimeError(message)
+            )
+
+        step_run = publish_step_run_status_update(
+            step_run_id=step_run.id,
+            status=ExecutionStatus.STOPPED,
+            # The attempt already ended when it failed, deciding not to retry
+            # it shouldn't extend its duration.
+            end_time=step_run.end_time,
+            exception_info=exception_info,
+        )
+        # This is a step failure, not a stop request, so unlike
+        # `_on_step_finished` it doesn't force-fail the run in the
+        # `CONTINUE_ON_FAILURE` mode.
+        self._fail_concurrent_node(
+            invocation_id=step_run.name,
+            exception=wrap_step_failure(
+                self._get_step_exception(step_run=step_run),
+                invocation_id=step_run.name,
+            ),
+        )
 
     # Concurrent map lifecycle
 
