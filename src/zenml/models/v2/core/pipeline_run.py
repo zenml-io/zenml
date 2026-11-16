@@ -936,6 +936,7 @@ class PipelineRunFilter(
         "in_progress",
         "templatable",
         "root_runs_only",
+        "triggered_by_deployment",
     ]
 
     name: StringFilterOption = Field(
