@@ -147,7 +147,6 @@ from zenml.orchestrators.publish_utils import (
     publish_failed_pipeline_run,
     publish_failed_step_run,
     publish_pipeline_run_status_update,
-    publish_step_run_status_update,
     publish_stopped_step_run,
     publish_successful_step_run,
 )
@@ -673,18 +672,14 @@ class DynamicPipelineRunner:
                             remaining_retries,
                         )
 
-                    skip_retry_reason: Optional[str] = None
                     with self._lifecycle_lock:
                         # If there was a failure already, we do not want to
                         # start any new work no matter the execution mode.
-                        if self._failure_detected:
-                            skip_retry_reason = (
-                                "the pipeline run is already shutting down "
-                                "after a failure"
-                            )
-                        elif remaining_retries <= 0:
-                            skip_retry_reason = "it has no retries left"
-                        else:
+                        should_retry = (
+                            remaining_retries > 0
+                            and not self._failure_detected
+                        )
+                        if should_retry:
                             step = Step(
                                 spec=step_run.spec,
                                 config=step_run.config,
@@ -702,10 +697,12 @@ class DynamicPipelineRunner:
                                 future=execution_future,
                             )
 
-                    if skip_retry_reason:
-                        self._fail_step_without_retry(
-                            step_run=step_run, reason=skip_retry_reason
-                        )
+                    if not should_retry:
+                        # Nothing will retry the step, so its failure is
+                        # final. Otherwise, its future keeps waiting on a step
+                        # run that stays in `RETRYING` status.
+                        step_run = publish_failed_step_run(step_run.id)
+                        self._on_step_finished(step_run=step_run)
 
                 time.sleep(monitoring_delay)
 
@@ -2467,63 +2464,6 @@ class DynamicPipelineRunner:
                 ),
                 force_record=step_run.status == ExecutionStatus.STOPPED,
             )
-
-    def _fail_step_without_retry(
-        self, step_run: "StepRunResponse", reason: str
-    ) -> None:
-        """Fail a `RETRYING` step run that the runner will not retry.
-
-        Without this, the step run stays `RETRYING` and anything waiting on
-        its future hangs forever.
-
-        Args:
-            step_run: The step run in `RETRYING` status.
-            reason: Why the step is not retried.
-        """
-        message = (
-            f"Step `{step_run.name}` failed and was not retried because "
-            f"{reason}."
-        )
-        logger.warning(message)
-
-        exception_info = None
-        if not step_run.exception_info:
-            # The failed attempt's own exception explains the failure better,
-            # so this message is only stored when there is none, e.g. when the
-            # step's pod crashed before it could report the exception.
-            exception_info = exception_utils.collect_exception_information(
-                RuntimeError(message)
-            )
-
-        step_run = publish_step_run_status_update(
-            step_run_id=step_run.id,
-            status=ExecutionStatus.FAILED,
-            # The attempt already ended when it failed, deciding not to retry
-            # it shouldn't extend its duration.
-            end_time=step_run.end_time,
-            exception_info=exception_info,
-        )
-        exception = self._get_step_exception(step_run=step_run)
-
-        # Older servers turn this failure back into `RETRYING`, so the step
-        # future can't rely on the step run status to finish. Resolving it here
-        # works with any server version.
-        failed_attempt: Future[StepRunResponse] = Future()
-        failed_attempt.set_exception(exception)
-        self._future_registry.rebind_step_execution_future(
-            invocation_id=step_run.name,
-            future=_IsolatedStepFuture(
-                wrapped=failed_attempt,
-                pipeline_run_id=self._run.id,
-                invocation_id=step_run.name,
-            ),
-        )
-        self._fail_concurrent_node(
-            invocation_id=step_run.name,
-            exception=wrap_step_failure(
-                exception, invocation_id=step_run.name
-            ),
-        )
 
     # Concurrent map lifecycle
 

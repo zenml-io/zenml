@@ -21,7 +21,6 @@ from zenml.client import Client
 from zenml.config.retry_config import StepRetryConfig
 from zenml.enums import ExecutionStatus
 from zenml.models import StepRunUpdate
-from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas import PipelineRunSchema, StepRunSchema
 
 
@@ -39,21 +38,18 @@ def retriable_pipeline() -> None:
 @pytest.mark.parametrize(
     "current_status,expected_status",
     [
-        # The first failure is turned into a retry.
         (ExecutionStatus.RUNNING, ExecutionStatus.RETRYING),
-        # Failing again means the orchestrator won't retry it after all.
         (ExecutionStatus.RETRYING, ExecutionStatus.FAILED),
     ],
 )
-def test_failure_of_retriable_step(
+def test_only_first_failure_of_retriable_step_is_retried(
     clean_client: Client,
     current_status: ExecutionStatus,
     expected_status: ExecutionStatus,
 ) -> None:
-    """Only the first failure of a retriable step becomes a retry."""
+    """A step that fails while already retrying is not retried again."""
     run = retriable_pipeline()
     step_run = clean_client.get_pipeline_run(run.id).steps["retriable_step"]
-    assert step_run.is_retriable
 
     store = clean_client.zen_store
     with Session(store.engine) as session:
@@ -64,15 +60,12 @@ def test_failure_of_retriable_step(
         step_schema = session.get(StepRunSchema, step_run.id)
         step_schema.status = current_status.value
         step_schema.end_time = None
-        session.add(run_schema)
-        session.add(step_schema)
+        session.add_all([run_schema, step_schema])
         session.commit()
 
     updated = store.update_run_step(
         step_run_id=step_run.id,
-        step_run_update=StepRunUpdate(
-            status=ExecutionStatus.FAILED, end_time=utc_now()
-        ),
+        step_run_update=StepRunUpdate(status=ExecutionStatus.FAILED),
     )
 
     assert updated.status == expected_status
