@@ -120,7 +120,6 @@ Some configuration options for the Kubernetes step operator can only be set thro
 The following configuration options can be set either through the step operator config or overridden using `KubernetesStepOperatorSettings`:
 
 - **`pod_settings`**: Node selectors, labels, affinity, tolerations, secrets, environment variables, image pull secrets and image pull policy to apply to the Kubernetes Pods. These can be either specified using the Kubernetes model objects or as dictionaries.
-    - `image_pull_policy` (default: `None`): When left as `None`, Kubernetes automatically determines the policy based on the image tag (defaulting to `Always` if the tag is `:latest` or omitted, and `IfNotPresent` otherwise).
 - **`service_account_name`**: Name of the service account to use for the pod.
 - **`privileged`** (default: False): If the container should be run in privileged mode.
 - **`pod_startup_timeout`** (default: 600): The maximum time (in seconds) to wait for a pending step pod to start.
