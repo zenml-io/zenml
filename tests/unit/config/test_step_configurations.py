@@ -220,3 +220,33 @@ def test_step_retry_config_custom_values():
 
     config_zero_backoff = StepRetryConfig(max_retries=3, delay=10, backoff=0)
     assert config_zero_backoff.backoff == 0
+
+
+def test_step_retry_config_execution_backoff(mocker):
+    """Tests that launch_step maintains constant delay across retries by default."""
+    from unittest.mock import MagicMock
+
+    import pytest
+
+    from zenml.execution.step.utils import launch_step
+
+    mock_launcher = mocker.patch("zenml.execution.step.utils.StepLauncher")
+    mock_launcher.return_value.launch.side_effect = RuntimeError(
+        "step failure"
+    )
+    mock_sleep = mocker.patch("time.sleep")
+
+    mock_step = MagicMock()
+    mock_step.config.name = "test_step"
+    mock_step.config.retry = StepRetryConfig(max_retries=3, delay=10)
+
+    with pytest.raises(RuntimeError, match="step failure"):
+        launch_step(
+            snapshot=MagicMock(),
+            step=mock_step,
+            orchestrator_run_id="run_id",
+            retry=True,
+        )
+
+    # With default backoff=1, sleeps should be constant [10, 10, 10]
+    assert [call.args[0] for call in mock_sleep.call_args_list] == [10, 10, 10]
