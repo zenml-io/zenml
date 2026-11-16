@@ -41,6 +41,7 @@ The following configuration options can be set either through the sandbox config
 - **`owner`** (default: `none`): The Kubernetes object that owns session pods, so that they are garbage-collected together with it. See [Owning session pods](#owning-session-pods).
 - **`pod_startup_timeout`** (default: 120): The maximum time (in seconds) to wait for a session pod to become running.
 - **`api_request_timeout`**: Timeout (in seconds) for Kubernetes API requests. If not set, client defaults are used.
+- **`max_api_retries`** (default: 3): Maximum number of retries for failed Kubernetes API requests. Starting a command in a session pod is retried too, with exponential backoff, when the Kubernetes API or a proxy in front of it is temporarily unavailable; this always uses the value from the sandbox config. Set to 0 to disable retries.
 
 ## Security model
 
