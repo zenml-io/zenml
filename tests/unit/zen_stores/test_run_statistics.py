@@ -99,7 +99,6 @@ def _create_run(
     user_id: Optional[UUID] = None,
     index: int = 1,
     triggered_by_type: Optional[PipelineRunTriggeredByType] = None,
-    pipeline_configuration: Optional[str] = None,
 ) -> UUID:
     run = PipelineRunSchema(
         id=uuid4(),
@@ -115,7 +114,6 @@ def _create_run(
         pipeline_id=pipeline_id,
         snapshot_id=snapshot_id,
         user_id=user_id,
-        pipeline_configuration=pipeline_configuration,
         triggered_by=uuid4() if triggered_by_type else None,
         triggered_by_type=triggered_by_type.value
         if triggered_by_type
@@ -1357,8 +1355,6 @@ def _create_mixed_trigger_runs(
             name=name,
             start_time=base,
             end_time=base + timedelta(seconds=seconds),
-            # Listing runs builds response models, which need a configuration.
-            pipeline_configuration='{"name": "test"}',
             triggered_by_type=triggered_by_type,
         )
 
