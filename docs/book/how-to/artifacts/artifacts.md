@@ -266,7 +266,7 @@ Materializers are a key concept in ZenML's artifact system. They handle:
 
 * **Serializing data** when saving artifacts to storage
 * **Deserializing data** when loading artifacts from storage
-* **Generating visualizations** for the dashboard
+* **Generating visualizations** for the UI
 * **Extracting metadata** for tracking and searching
 
 When a step produces an output, ZenML automatically selects the appropriate materializer based on the data type (using type annotations). ZenML includes built-in materializers for common data types like:
@@ -383,7 +383,7 @@ This allows you to build modular pipelines that can work together as part of a l
 
 ### Visualizing Artifacts
 
-ZenML automatically generates visualizations for many types of artifacts, viewable in the dashboard:
+ZenML automatically generates visualizations for many types of artifacts, viewable in the UI:
 
 ```python
 # You can also view visualizations in notebooks

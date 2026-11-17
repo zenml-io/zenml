@@ -32,7 +32,7 @@ Pass options after `bash -s --`:
 # Install a specific version
 curl -fsSL https://zenml.io/install-zenml | bash -s -- --version=0.98.1
 
-# Include the local dashboard server and an extra package
+# Include the local UI server and an extra package
 curl -fsSL https://zenml.io/install-zenml | bash -s -- --extras=server --with=scikit-learn
 
 # Point the next steps at your ZenML server
@@ -61,8 +61,8 @@ pip install 'zenml[local]'
 {% endhint %}
 {% endtab %}
 
-{% tab title="Local Dashboard" %}
-If you want to use the ZenML dashboard locally, install ZenML with the `server` extra:
+{% tab title="Local UI" %}
+If you want to use the ZenML UI locally, install ZenML with the `server` extra:
 
 ```shell
 pip install 'zenml[server]'
@@ -131,12 +131,12 @@ docker run -it -d -p 8080:8080 zenmldocker/zenml-server
 
 ## Starting the local server
 
-By default, ZenML runs without a server connected to a local database on your machine. If you want to access the dashboard locally, you need to start a local server:
+By default, ZenML runs without a server connected to a local database on your machine. If you want to access the UI locally, you need to start a local server:
 
 ```shell
 # Make sure to have the `server` extra installed
 pip install "zenml[server]"
-zenml login --local  # opens the dashboard locally 
+zenml login --local  # opens the UI locally 
 ```
 
 However, advanced ZenML features are dependent on a centrally deployed ZenML server accessible to other MLOps stack components. You can read more about it [here](deploying-zenml/). For the deployment of ZenML, you have the option to either [self-host](deploying-zenml/) it or register for a free [ZenML Pro](https://zenml.io/pro?utm_source=docs\&utm_medium=referral_link\&utm_campaign=cloud_promotion\&utm_content=signup_link) account.

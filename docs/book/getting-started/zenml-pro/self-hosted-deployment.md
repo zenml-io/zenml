@@ -31,7 +31,7 @@ In a Self-hosted deployment, every component of ZenML Pro runs within your isola
 | Workspace Metadata Store | Your Infrastructure | Stores pipeline runs, model metadata, and tracking information |
 | Secrets Store | Your Infrastructure | Stores all credentials and sensitive configuration |
 | Identity Provider | Your Infrastructure | Handles authentication (OIDC/LDAP/SAML) |
-| Pro Dashboard | Your Infrastructure | Web interface for all ZenML Pro features |
+| Pro UI | Your Infrastructure | Web interface for all ZenML Pro features |
 | Compute Resources | Your infrastructure through [stacks](https://docs.zenml.io/concepts/stack_components) | Executes pipeline steps and training jobs |
 | Data & Artifacts | Your infrastructure through [stacks](https://docs.zenml.io/concepts/stack_components) | Stores datasets, models, and pipeline artifacts |
 

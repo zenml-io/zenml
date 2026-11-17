@@ -159,11 +159,11 @@ Successfully registered service connector `eks-zenhacks` with access to the foll
 ```
 {% endcode %}
 
-Alternatively, you can configure a Service Connector through the ZenML dashboard:
+Alternatively, open **Infra** > **Connectors** and select **New connector**:
 
 ![AWS Service Connector Type](../../.gitbook/assets/aws-service-connector-type.png) ![AWS EKS Service Connector Configuration](../../.gitbook/assets/aws-eks-service-connector-configuration.png)
 
-> **Note**: Please remember to grant the entity associated with your cloud credentials permissions to access the Kubernetes cluster and to list accessible Kubernetes clusters. For a full list of permissions required to use a AWS Service Connector to access one or more Kubernetes cluster, please refer to the [documentation for your Service Connector of choice](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/) or read the documentation available in the interactive CLI commands and dashboard. The Service Connectors supports many different authentication methods with different levels of security and convenience. You should pick the one that best fits your use-case.
+> **Note**: Please remember to grant the entity associated with your cloud credentials permissions to access the Kubernetes cluster and to list accessible Kubernetes clusters. For a full list of permissions required to use a AWS Service Connector to access one or more Kubernetes cluster, please refer to the [documentation for your Service Connector of choice](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/) or read the documentation available in the interactive CLI commands and UI. The Service Connectors supports many different authentication methods with different levels of security and convenience. You should pick the one that best fits your use-case.
 
 If you already have one or more Service Connectors configured in your ZenML deployment, you can check which of them can be used to access the Kubernetes cluster that you want to use for your Seldon Core Model Deployer by running e.g.:
 
@@ -217,7 +217,7 @@ Successfully connected model deployer `seldon-test` to the following resources:
 ```
 {% endcode %}
 
-A similar experience is available when you configure the Seldon Core Model Deployer through the ZenML dashboard:
+A similar experience is available when you configure the Seldon Core Model Deployer through the ZenML UI:
 
 ![Seldon Core Model Deployer Configuration](../../.gitbook/assets/seldon-model-deployer-service-connector.png)
 

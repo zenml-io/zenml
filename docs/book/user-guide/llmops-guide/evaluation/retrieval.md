@@ -101,7 +101,7 @@ as you use the system more and more, so it's a good idea to keep a record of
 them and add them to your test suite.
 
 You'd also want to examine the logs to see exactly which query failed. In our
-case, checking the logs in the ZenML dashboard, we find the following:
+case, checking the logs in the ZenML UI, we find the following:
 
 ```
 Failed for question: How do I generate embeddings as part of a RAG 
