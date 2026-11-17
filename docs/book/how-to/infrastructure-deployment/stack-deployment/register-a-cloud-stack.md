@@ -18,26 +18,26 @@ Alternatively, if you prefer to have more control over where and how resources a
 
 ## How to use the Stack Wizard?
 
-The stack wizard is available to you through both our CLI and our dashboard.
+The stack wizard is available to you through both our CLI and our UI.
 
 {% tabs %}
-{% tab title="Dashboard" %}
-If you are using the dashboard, the stack wizard is available through\
-the stacks page.
+{% tab title="UI" %}
+If you are using the UI, the stack wizard is available through\
+**Infra** > **Stacks**.
 
-![The new stacks page](../../../.gitbook/assets/stack-wizard-new-stack.png)
+![The Stacks page](../../../.gitbook/assets/stack-wizard-new-stack.png)
 
-Here you can click on "+ New Stack" and choose the option "Use existing Cloud".
+Select **New stack**, then **Scan your cloud**.
 
 ![New stack options](../../../.gitbook/assets/stack-wizard-options.png)
 
 Next, you have to select the cloud provider that you want to work with.
 
-![Stack Wizard Cloud Selection](../../../.gitbook/assets/stack-wizard-cloud-selection.png)
+![Pick a cloud](../../../.gitbook/assets/stack-wizard-cloud-selection.png)
 
 Choose one of the possible authentication methods based on your provider and fill in the required fields.
 
-![Wizard Example](../../../.gitbook/assets/stack-wizard-example.png)
+![Connect to AWS](../../../.gitbook/assets/stack-wizard-example.png)
 
 <details>
 

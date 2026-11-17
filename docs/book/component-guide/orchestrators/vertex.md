@@ -527,7 +527,7 @@ Note that if you wish to use this orchestrator to run steps on a GPU, you will n
 
 When developing ML pipelines that use Vertex AI, the startup time for each step can be significant since Vertex needs to provision new compute resources for each run. To speed up development iterations, you can use Vertex AI's [Persistent Resources](https://cloud.google.com/vertex-ai/docs/training/persistent-resource-overview) feature, which keeps compute resources warm between runs.
 
-To use persistent resources with the Vertex orchestrator, you first need to create a persistent resource using the GCP Cloud UI, or by [following instructions in the GCP docs](https://cloud.google.com/vertex-ai/docs/training/persistent-resource-create). Next, you'll need to configure your orchestrator to run on the persistent resource. This can be done either through the dashboard or CLI in which case it applies to all pipelines that will be run using this orchestrator, or dynamically in code for a specific pipeline or even just single steps.
+To use persistent resources with the Vertex orchestrator, you first need to create a persistent resource using the GCP Cloud UI, or by [following instructions in the GCP docs](https://cloud.google.com/vertex-ai/docs/training/persistent-resource-create). Next, you'll need to configure your orchestrator to run on the persistent resource. This can be done either through the UI or CLI in which case it applies to all pipelines that will be run using this orchestrator, or dynamically in code for a specific pipeline or even just single steps.
 
 {% hint style="warning" %}
 Note that a service account with permissions to access the persistent resource is mandatory, so make sure to always include it in the configuration:
@@ -540,9 +540,9 @@ Note that a service account with permissions to access the persistent resource i
 zenml orchestrator register <NAME> -f vertex --custom_job_parameters='{"persistent_resource_id": "<PERSISTENT_RESOURCE_ID>", "service_account": "<SERVICE_ACCOUNT_NAME>", "machine_type": "n1-standard-4", "boot_disk_type": "pd-standard"}'
 ```
 
-#### Configure the orchestrator using the dashboard
+#### Configure the orchestrator using the UI
 
-Navigate to the `Stacks` section in your ZenML dashboard and either create a new Vertex orchestrator or update an existing one. During the creation/update, set the persistent resource ID and other values in the `custom_job_parameters` attribute.
+Navigate to the `Stacks` section in your ZenML UI and either create a new Vertex orchestrator or update an existing one. During the creation/update, set the persistent resource ID and other values in the `custom_job_parameters` attribute.
 
 #### Configure the orchestrator dynamically in code
 

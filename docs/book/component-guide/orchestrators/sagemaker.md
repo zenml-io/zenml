@@ -223,7 +223,7 @@ If all went well, you should now see the following output:
 ```
 Steps can take 5-15 minutes to start running when using the Sagemaker Orchestrator.
 Your orchestrator 'sagemaker' is running remotely. Note that the pipeline run 
-will only show up on the ZenML dashboard once the first step has started 
+will only show up on the ZenML UI once the first step has started 
 executing on the remote infrastructure.
 ```
 
@@ -247,7 +247,7 @@ If you are running dynamic pipelines, you can access the training/processing job
 
 ### Debugging SageMaker Pipelines
 
-If your SageMaker pipeline encounters an error before the first ZenML step starts, the ZenML run will not appear in the ZenML dashboard. In such cases, use the [SageMaker UI](sagemaker.md#sagemaker-ui) to review the error message and logs. Here's how:
+If your SageMaker pipeline encounters an error before the first ZenML step starts, the ZenML run will not appear in the ZenML UI. In such cases, use the [SageMaker UI](sagemaker.md#sagemaker-ui) to review the error message and logs. Here's how:
 
 * Open the corresponding pipeline in the SageMaker UI as shown in the [SageMaker UI Section](sagemaker.md#sagemaker-ui),
 * Open the execution,

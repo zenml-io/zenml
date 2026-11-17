@@ -77,8 +77,8 @@ zenml model version list breast_cancer_classifier
 ```
 {% endtab %}
 
-{% tab title="Dashboard" %}
-[ZenML Pro](https://www.zenml.io/pro) ships with a Model Control Plane dashboard where you can visualize all the versions:
+{% tab title="UI" %}
+[ZenML Pro](https://www.zenml.io/pro) ships with a **Models** page where you can visualize all the versions:
 
 <figure><img src="../../.gitbook/assets/mcp_model_versions_list.png" alt=""><figcaption><p>All model versions listed</p></figcaption></figure>
 {% endtab %}

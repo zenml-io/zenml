@@ -10,16 +10,18 @@ Data visualization is a powerful tool for understanding your ML pipeline outputs
 
 ZenML automatically generates visualizations for many common data types, making it easy to inspect your artifacts without additional code.
 
-### Dashboard Visualizations
+### UI Visualizations
 
-The ZenML dashboard displays visualizations for artifacts produced by your pipeline runs:
+The ZenML UI displays visualizations for artifacts produced by your pipeline runs:
 
-To view visualizations in the dashboard:
+To view visualizations in the UI:
 
-1. Navigate to the **Runs** tab
-2. Select a specific pipeline run
-3. Click on any step to view its outputs
-4. Select an artifact to view its visualizations
+1. Open **Runs**
+2. Select a run
+3. Select a step in the DAG to view its outputs
+4. Select an artifact, then open its **Visualization** tab
+
+The artifact version page shows the same content in its **Visualizations** tab:
 
 ![ZenML Artifact Visualizations](../../.gitbook/assets/artifact_visualization_dashboard.png)
 
@@ -48,7 +50,7 @@ ZenML supports visualizations for many common data types out of the box:
 - Drift detection reports by [Evidently](https://docs.zenml.io/stacks/stack-components/data-validators/evidently), [Great Expectations](https://docs.zenml.io/stacks/stack-components/data-validators/great-expectations), and [whylogs](https://docs.zenml.io/stacks/stack-components/data-validators/whylogs).
 - A [Hugging Face](https://zenml.io/integrations/huggingface) datasets viewer embedded as a HTML iframe.
 
-![output.visualize() output for the Hugging Face datasets viewer](../../.gitbook/assets/artifact_visualization_huggingface.gif)
+![Hugging Face datasets viewer in the UI](../../.gitbook/assets/artifact_visualization_huggingface.png)
 
 ## Creating Custom Visualizations
 
@@ -60,7 +62,7 @@ It is simple to associate a custom visualization with an artifact in ZenML, if t
 * **Markdown:** Markdown strings or pages.
 * **JSON:** JSON strings or objects.
 
-There are three ways how you can add custom visualizations to the dashboard:
+There are three ways how you can add custom visualizations to the UI:
 
 * If you are already handling HTML, Markdown, CSV or JSON data in one of your steps, you can have them visualized in just a few lines of code by casting them to a [special class](#visualization-via-special-return-types) inside your step.
 * If you want to automatically extract visualizations for all artifacts of a certain data type, you can define type-specific visualization logic by [building a custom materializer](#visualization-via-materializers).
@@ -176,7 +178,7 @@ print(retrieved.resource.type)
 print(retrieved.resource.id)
 ```
 
-Curated visualizations are tied to their parent resources and automatically surface in the ZenML dashboard wherever those resources appear, so keep track of the IDs returned by `create_curated_visualization` if you need to reference them later.
+Curated visualizations are tied to their parent resources and automatically surface in the ZenML UI wherever those resources appear, so keep track of the IDs returned by `create_curated_visualization` if you need to reference them later.
 
 #### Updating curated visualizations
 
@@ -263,7 +265,7 @@ def my_step() -> CSVString:
     return CSVString(some_csv)
 ```
 
-This would create the following visualization in the dashboard:
+This would create the following visualization in the UI:
 
 ![CSV Visualization Example](../../.gitbook/assets/artifact_visualization_csv.png)
 
@@ -319,7 +321,7 @@ if __name__ == "__main__":
 
 ### Visualization via Materializers
 
-If you want to automatically extract visualizations for all artifacts of a certain data type, you can do so by overriding the `save_visualizations()` method of the corresponding [materializer](materializers.md). Let's look at an example of how to visualize matplotlib figures in your ZenML dashboard:
+If you want to automatically extract visualizations for all artifacts of a certain data type, you can do so by overriding the `save_visualizations()` method of the corresponding [materializer](materializers.md). Let's look at an example of how to visualize matplotlib figures in your ZenML UI:
 
 #### Example: Matplotlib Figure Visualization
 
@@ -377,7 +379,7 @@ When you use this step in your pipeline:
 1. The step creates and returns a `MatplotlibVisualization`
 2. ZenML finds the `MatplotlibMaterializer` and calls `save_visualizations()`
 3. The figure is saved as a PNG file in your artifact store
-4. The dashboard loads and displays this PNG when you view the artifact
+4. The UI loads and displays this PNG when you view the artifact
 {% endhint %}
 
 For another example, see our [Hugging Face datasets materializer](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/huggingface/materializers/huggingface_datasets_materializer.py) which visualizes datasets by embedding their preview viewer.
@@ -386,23 +388,23 @@ For another example, see our [Hugging Face datasets materializer](https://github
 
 ### Access to Visualizations
 
-In order for the visualizations to show up on the dashboard, the following must be true:
+In order for the visualizations to show up on the UI, the following must be true:
 
 #### Configuring a Service Connector
 
-Visualizations are usually stored alongside the artifact, in the [artifact store](https://docs.zenml.io/stacks/stack-components/artifact-stores). Therefore, if a user would like to see the visualization displayed on the ZenML dashboard, they must give access to the server to connect to the artifact store.
+Visualizations are usually stored alongside the artifact, in the [artifact store](https://docs.zenml.io/stacks/stack-components/artifact-stores). Therefore, if a user would like to see the visualization displayed on the ZenML UI, they must give access to the server to connect to the artifact store.
 
 The [service connector](https://docs.zenml.io/stacks/service-connectors/auth-management) documentation goes deeper into the concept of service connectors and how they can be configured to give the server permission to access the artifact store. For a concrete example, see the [AWS S3](https://docs.zenml.io/stacks/stack-components/artifact-stores/s3) artifact store documentation.
 
 {% hint style="info" %}
-When using the default/local artifact store with a deployed ZenML, the server naturally does not have access to your local files. In this case, the visualizations are also not displayed on the dashboard.
+When using the default/local artifact store with a deployed ZenML, the server naturally does not have access to your local files. In this case, the visualizations are also not displayed on the UI.
 
 Please use a service connector enabled and remote artifact store alongside a deployed ZenML to view visualizations.
 {% endhint %}
 
 #### Configuring Artifact Stores
 
-If all visualizations of a certain pipeline run are not showing up in the dashboard, it might be that your ZenML server does not have the required dependencies or permissions to access that artifact store. See the [custom artifact store docs page](https://docs.zenml.io/stacks/stack-components/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores) for more information.
+If all visualizations of a certain pipeline run are not showing up in the UI, it might be that your ZenML server does not have the required dependencies or permissions to access that artifact store. See the [custom artifact store docs page](https://docs.zenml.io/stacks/stack-components/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores) for more information.
 
 ### Enabling/Disabling Visualizations
 

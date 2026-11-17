@@ -14,7 +14,7 @@ A materializer is a class that defines how a particular data type is:
 - **Saved**: Written to the artifact store
 - **Loaded**: Read from the artifact store
 - **Deserialized**: Converted back to Python objects
-- **Visualized**: Displayed in the ZenML dashboard
+- **Visualized**: Displayed in the ZenML UI
 - **Analyzed**: Metadata extraction for tracking and search
 
 Materializers act as the bridge between your Python code and the underlying storage system, ensuring that any artifact can be saved, loaded, and visualized correctly, regardless of the data type.
@@ -184,7 +184,7 @@ class MyClassMaterializer(BaseMaterializer):
             json.dump(data.to_dict(), f)
     
     def save_visualizations(self, data: MyClass) -> Dict[str, VisualizationType]:
-        """Generate visualizations for the dashboard."""
+        """Generate visualizations for the UI."""
         # Optional - generate visualizations
         vis_path = os.path.join(self.uri, "visualization.html")
         with self.artifact_store.open(vis_path, "w") as f:
@@ -278,7 +278,7 @@ When reading or writing files, always use `self.artifact_store.open()` rather th
 
 ### Visualization Support
 
-The `save_visualizations()` method allows you to create visualizations that will be shown in the ZenML dashboard. You can return multiple visualizations of different types:
+The `save_visualizations()` method allows you to create visualizations that will be shown in the ZenML UI. You can return multiple visualizations of different types:
 
 - `VisualizationType.HTML`: Embedded HTML content
 - `VisualizationType.MARKDOWN`: Markdown content
@@ -293,7 +293,7 @@ Some materializers support configuration via environment variables to customize 
 
 ### Metadata Extraction
 
-The `extract_metadata()` method allows you to extract key information about your artifact for indexing and searching. This metadata will be displayed alongside the artifact in the dashboard.
+The `extract_metadata()` method allows you to extract key information about your artifact for indexing and searching. This metadata will be displayed alongside the artifact in the UI.
 
 ### Temporary Files
 
@@ -454,7 +454,7 @@ When working with materializers:
 
 3. **Consider versioning** if your data structure might change over time.
 
-4. **Create visualizations** to help users understand your artifacts in the dashboard.
+4. **Create visualizations** to help users understand your artifacts in the UI.
 
 5. **Extract useful metadata** to make artifacts easier to find and understand.
 
