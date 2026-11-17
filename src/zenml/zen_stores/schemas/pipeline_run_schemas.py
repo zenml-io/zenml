@@ -1074,14 +1074,14 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         """Record a stop request for the pipeline run.
 
         A graceful stop can be escalated to an immediate one. Immediate stops
-        can be requested again, for example if a previous one failed.
+        can be requested again, for example if a previous one failed. A
+        graceful stop of a run that is already being stopped changes nothing.
 
         Args:
             stop_mode: How the run should be stopped.
 
         Raises:
-            IllegalOperationError: If the run is not in progress or a graceful
-                stop is requested for a run that is already being stopped.
+            IllegalOperationError: If the run is not in progress.
         """
         if not self.in_progress:
             raise IllegalOperationError(
@@ -1089,7 +1089,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             )
 
         if stop_mode == RunStopMode.GRACEFUL and self.stop_requested:
-            raise IllegalOperationError("The run is already being stopped.")
+            return
 
         self.stop_mode = stop_mode.value
         self.updated = utc_now()

@@ -36,6 +36,7 @@ from zenml.models import (
     StepRunUpdate,
 )
 from zenml.orchestrators.publish_utils import (
+    publish_pipeline_run_status_update,
     publish_pipeline_run_stop_request,
 )
 from zenml.utils.time_utils import utc_now
@@ -49,8 +50,9 @@ def _create_run(
     max_retries: Optional[int] = None,
     step_names: Sequence[str] = STEP_NAMES,
     parent_run_id: Optional[UUID] = None,
+    is_dynamic: bool = False,
 ) -> PipelineRunResponse:
-    """Creates a running static pipeline run without any steps."""
+    """Creates a running pipeline run without any steps."""
     pipeline = client.zen_store.create_pipeline(
         PipelineRequest(
             name=sample_name("pipeline"), project=client.active_project.id
@@ -68,6 +70,7 @@ def _create_run(
             pipeline=pipeline.id,
             client_version="0.1.0",
             server_version="0.1.0",
+            is_dynamic=is_dynamic,
             step_configurations={
                 step_name: Step(
                     spec=StepSpec(
@@ -140,13 +143,13 @@ def test_stop_request_moves_run_to_stopping(clean_client: Client) -> None:
 
 
 def test_graceful_stop_can_be_escalated(clean_client: Client) -> None:
-    """Tests which stop requests are allowed for a run that is stopping."""
+    """Tests what stop requests change for a run that is stopping."""
     run = _create_run(clean_client)
     _create_step(clean_client, run, "step_1", ExecutionStatus.RUNNING)
     _request_stop(clean_client, run.id, RunStopMode.GRACEFUL)
 
-    with pytest.raises(IllegalOperationError):
-        _request_stop(clean_client, run.id, RunStopMode.GRACEFUL)
+    run = _request_stop(clean_client, run.id, RunStopMode.GRACEFUL)
+    assert run.stop_mode == RunStopMode.GRACEFUL
 
     run = _request_stop(clean_client, run.id, RunStopMode.IMMEDIATE)
     assert run.stop_mode == RunStopMode.IMMEDIATE
@@ -155,8 +158,9 @@ def test_graceful_stop_can_be_escalated(clean_client: Client) -> None:
     run = _request_stop(clean_client, run.id, RunStopMode.IMMEDIATE)
     assert run.status == ExecutionStatus.STOPPING
 
-    with pytest.raises(IllegalOperationError):
-        _request_stop(clean_client, run.id, RunStopMode.GRACEFUL)
+    # A graceful stop doesn't undo an immediate one.
+    run = _request_stop(clean_client, run.id, RunStopMode.GRACEFUL)
+    assert run.stop_mode == RunStopMode.IMMEDIATE
 
 
 def test_stopping_a_run_that_is_not_in_progress_fails(
@@ -268,3 +272,67 @@ def test_stop_request_cascades_to_child_runs(clean_client: Client) -> None:
     child_run = clean_client.zen_store.get_run(child_run.id)
     assert child_run.status == ExecutionStatus.STOPPING
     assert child_run.stop_mode == RunStopMode.GRACEFUL
+
+
+def _complete_immediate_stop(
+    client: Client, run_id: UUID
+) -> PipelineRunResponse:
+    """Completes an immediate stop the way orchestrators do."""
+    _request_stop(client, run_id, RunStopMode.IMMEDIATE)
+    publish_pipeline_run_status_update(
+        pipeline_run_id=run_id, status=ExecutionStatus.STOPPED
+    )
+    return client.zen_store.get_run(run_id)
+
+
+@pytest.mark.parametrize("is_dynamic", [False, True])
+def test_completing_an_immediate_stop_stops_all_unfinished_steps(
+    clean_client: Client, is_dynamic: bool
+) -> None:
+    """Tests that the server stops the whole run tree in one request."""
+    run = _create_run(clean_client, is_dynamic=is_dynamic)
+    completed_step = _create_step(
+        clean_client, run, "step_1", ExecutionStatus.COMPLETED
+    )
+    running_step = _create_step(
+        clean_client, run, "step_2", ExecutionStatus.RUNNING
+    )
+    child_run = _create_run(
+        clean_client, parent_run_id=run.id, is_dynamic=is_dynamic
+    )
+    child_step = _create_step(
+        clean_client, child_run, "step_1", ExecutionStatus.RUNNING
+    )
+
+    run = _complete_immediate_stop(clean_client, run.id)
+
+    assert run.status == ExecutionStatus.STOPPED
+    assert clean_client.zen_store.get_run(child_run.id).status == (
+        ExecutionStatus.STOPPED
+    )
+    assert clean_client.zen_store.get_run_step(completed_step.id).status == (
+        ExecutionStatus.COMPLETED
+    )
+    for step in (running_step, child_step):
+        assert clean_client.zen_store.get_run_step(step.id).status == (
+            ExecutionStatus.STOPPED
+        )
+
+
+def test_completing_an_immediate_stop_keeps_failed_runs_failed(
+    clean_client: Client,
+) -> None:
+    """Tests that a failed run stays failed when its stop completes."""
+    run = _create_run(clean_client)
+    running_step = _create_step(
+        clean_client, run, "step_2", ExecutionStatus.RUNNING
+    )
+    _create_step(clean_client, run, "step_1", ExecutionStatus.FAILED)
+
+    run = _complete_immediate_stop(clean_client, run.id)
+
+    assert run.status == ExecutionStatus.FAILED
+    assert run.in_progress is False
+    assert clean_client.zen_store.get_run_step(running_step.id).status == (
+        ExecutionStatus.STOPPED
+    )

@@ -7222,6 +7222,33 @@ class SqlZenStore(BaseZenStore):
             )
             return ExecutionStatus(run.status)
 
+    def _get_run_tree(
+        self, run: PipelineRunSchema, session: Session
+    ) -> List[PipelineRunSchema]:
+        """Get a run and its in-progress child runs, recursively.
+
+        Args:
+            run: The root of the run tree.
+            session: The database session to use.
+
+        Returns:
+            The run and its in-progress child runs.
+        """
+        runs = [run]
+        parent_run_ids = [run.id]
+        while parent_run_ids:
+            child_runs = session.exec(
+                select(PipelineRunSchema)
+                .where(
+                    col(PipelineRunSchema.parent_run_id).in_(parent_run_ids)
+                )
+                .where(col(PipelineRunSchema.in_progress).is_(True))
+            ).all()
+            runs.extend(child_runs)
+            parent_run_ids = [child_run.id for child_run in child_runs]
+
+        return runs
+
     def _request_run_stop(
         self,
         run: PipelineRunSchema,
@@ -7233,53 +7260,41 @@ class SqlZenStore(BaseZenStore):
         Unfinished runs move to `STOPPING`, while failed runs that are still in
         progress keep their status. Steps waiting for a retry are failed right
         away, as no new step attempts get started for a run that is being
-        stopped.
+        stopped. The runs and their steps are updated in separate
+        transactions, so that no transaction holds locks on both.
 
         Args:
             run: The run to stop.
             stop_mode: How the run should be stopped.
             session: The database session to use.
         """
-        run.request_stop(stop_mode)
-        session.add(run)
-
-        runs_to_stop = [run]
-        parent_run_ids = [run.id]
-        while parent_run_ids:
-            child_runs = session.exec(
-                select(PipelineRunSchema)
-                .where(
-                    col(PipelineRunSchema.parent_run_id).in_(parent_run_ids)
-                )
-                .where(col(PipelineRunSchema.in_progress).is_(True))
-            ).all()
-            parent_run_ids = [child_run.id for child_run in child_runs]
-            for child_run in child_runs:
-                try:
-                    child_run.request_stop(stop_mode)
-                except IllegalOperationError:
-                    # The child run is already being stopped in this mode.
-                    continue
-                session.add(child_run)
-                runs_to_stop.append(child_run)
+        runs_to_stop = self._get_run_tree(run, session)
+        for run_to_stop in runs_to_stop:
+            run_to_stop.request_stop(stop_mode)
+            session.add(run_to_stop)
+        finished_by_run_id = {
+            run_to_stop.id: ExecutionStatus(run_to_stop.status).is_finished
+            for run_to_stop in runs_to_stop
+        }
+        session.commit()
 
         session.execute(
             update(StepRunSchema)
             .where(
                 col(StepRunSchema.pipeline_run_id).in_(
-                    [run_to_stop.id for run_to_stop in runs_to_stop]
+                    list(finished_by_run_id)
                 )
             )
             .where(col(StepRunSchema.status) == ExecutionStatus.RETRYING.value)
             .values(status=ExecutionStatus.FAILED.value, end_time=utc_now())
         )
+        session.commit()
 
-        for run_to_stop in runs_to_stop:
-            # Updating finished runs without a status still refreshes whether
-            # they are in progress, which the stop request changes.
-            is_finished = ExecutionStatus(run_to_stop.status).is_finished
+        for run_id, is_finished in finished_by_run_id.items():
+            # Failed runs keep their status, but still need a status refresh:
+            # whether they are in progress depends on the stop request now.
             self._update_pipeline_run_status(
-                pipeline_run_id=run_to_stop.id,
+                pipeline_run_id=run_id,
                 session=session,
                 requested_status=None
                 if is_finished
@@ -7287,6 +7302,79 @@ class SqlZenStore(BaseZenStore):
                 status_reason=None
                 if is_finished
                 else "Manual stop requested.",
+            )
+
+    def _complete_run_stop(
+        self,
+        run: PipelineRunSchema,
+        session: Session,
+        status_reason: Optional[str] = None,
+    ) -> None:
+        """Mark a stopped run and its unfinished steps as stopped.
+
+        Orchestrators complete a stop once the execution environment of the
+        run is gone, as nothing is left to report the final statuses
+        afterwards. This includes the in-progress child runs, and failed runs
+        keep their status.
+
+        Args:
+            run: The run that was stopped.
+            session: The database session to use.
+            status_reason: The reason for the status of the run.
+        """
+        root_run_id = run.id
+        # The status of static runs follows from their step statuses, while
+        # unfinished dynamic runs need an explicit one.
+        requested_status_by_run_id = {
+            run_to_stop.id: ExecutionStatus.STOPPED
+            if run_to_stop.snapshot
+            and run_to_stop.snapshot.is_dynamic
+            and not ExecutionStatus(run_to_stop.status).is_finished
+            else None
+            for run_to_stop in self._get_run_tree(run, session)
+        }
+        unfinished_step_ids = session.exec(
+            select(StepRunSchema.id)
+            .where(
+                col(StepRunSchema.pipeline_run_id).in_(
+                    list(requested_status_by_run_id)
+                )
+            )
+            .where(
+                col(StepRunSchema.status).not_in(
+                    [
+                        status.value
+                        for status in ExecutionStatus
+                        if status.is_finished
+                    ]
+                )
+            )
+        ).all()
+        if unfinished_step_ids:
+            now = utc_now()
+            session.execute(
+                update(StepRunSchema)
+                .where(col(StepRunSchema.id).in_(unfinished_step_ids))
+                .values(
+                    status=ExecutionStatus.STOPPED.value,
+                    end_time=now,
+                    updated=now,
+                )
+            )
+        session.commit()
+
+        if self.resource_pools_enabled:
+            for step_run_id in unfinished_step_ids:
+                self.resource_pools.release_step_run_resources(
+                    session, step_run_id
+                )
+
+        for run_id, requested_status in requested_status_by_run_id.items():
+            self._update_pipeline_run_status(
+                pipeline_run_id=run_id,
+                session=session,
+                requested_status=requested_status,
+                status_reason=status_reason if run_id == root_run_id else None,
             )
 
     def _check_if_run_in_progress(
@@ -7641,6 +7729,15 @@ class SqlZenStore(BaseZenStore):
                     run=existing_run,
                     stop_mode=run_update.stop_mode,
                     session=session,
+                )
+            elif (
+                run_update.status == ExecutionStatus.STOPPED
+                and existing_run.stop_requested
+            ):
+                self._complete_run_stop(
+                    run=existing_run,
+                    session=session,
+                    status_reason=run_update.status_reason,
                 )
             elif run_update.status is not None:
                 self._update_pipeline_run_status(

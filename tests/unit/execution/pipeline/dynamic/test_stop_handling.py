@@ -54,6 +54,56 @@ def test_runner_stops_starting_work_once_a_stop_is_requested(
     assert request_shutdown.called is stop_requested
 
 
+def _create_fail_fast_runner(mocker, stop_requested: bool):
+    """Creates a FAIL_FAST runner with a running isolated step and child."""
+    runner = _create_runner()
+    runner._fail_fast = True
+    runner._steps_to_monitor = {"step": MagicMock()}
+    runner._child_runners = {"child": MagicMock()}
+    runner._dependency_graph = MagicMock()
+    runner._dependency_graph.list_nodes.return_value = []
+    runner._future_registry = MagicMock()
+    runner._startup_event = threading.Event()
+    runner._pipeline = MagicMock()
+    mocker.patch.object(runner, "_stop_isolated_step")
+    mocker.patch(
+        f"{RUNNER_MODULE}.Client"
+    ).return_value.zen_store.get_run.return_value = MagicMock(
+        stop_requested=stop_requested
+    )
+    return runner
+
+
+def test_stop_request_does_not_fail_running_work(mocker) -> None:
+    """Tests that a stop doesn't stop running work like a FAIL_FAST failure.
+
+    Stopping it here would also fail child pipelines with a message that
+    their parent failed, while they receive their own stop request.
+    """
+    runner = _create_fail_fast_runner(mocker, stop_requested=True)
+
+    runner._check_for_stop_request()
+
+    assert runner._failure_detected is True
+    runner._stop_isolated_step.assert_not_called()
+    runner._child_runners["child"].request_shutdown.assert_not_called()
+
+
+@pytest.mark.parametrize("stop_requested", [True, False])
+def test_failures_caused_by_a_stop_do_not_fail_running_work(
+    mocker, stop_requested: bool
+) -> None:
+    """Tests failures that surface a stop, like a rejected step launch."""
+    runner = _create_fail_fast_runner(mocker, stop_requested=stop_requested)
+
+    runner._on_failure_detected(RuntimeError("Cannot create step."))
+
+    assert runner._stop_isolated_step.called is not stop_requested
+    assert runner._child_runners["child"].request_shutdown.called is (
+        not stop_requested
+    )
+
+
 def test_monitoring_fails_steps_that_will_not_be_retried(
     mocker, monkeypatch
 ) -> None:

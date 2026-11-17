@@ -296,12 +296,13 @@ def _stop_run_immediately(
         f"{ORCHESTRATOR_MODULE}.kube_utils.delete_job", side_effect=_delete_job
     )
     mocker.patch(
-        f"{ORCHESTRATOR_MODULE}.publish_stopped_pipeline_run",
-        side_effect=lambda run: actions.append(("finalize", run.name)),
+        f"{ORCHESTRATOR_MODULE}.publish_pipeline_run_status_update",
+        side_effect=lambda **kwargs: actions.append(
+            ("finalize", kwargs["pipeline_run_id"])
+        ),
     )
 
-    run = MagicMock(root_run_id=root_run_id)
-    run.name = "run"
+    run = MagicMock(root_run_id=root_run_id, id="run")
     run.snapshot.is_dynamic = is_dynamic
     try:
         orchestrator._stop_run(run=run, graceful=False)

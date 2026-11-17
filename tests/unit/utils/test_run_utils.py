@@ -184,7 +184,8 @@ class TestFindAllDownstreamSteps:
         (ExecutionStatus.FAILED, True, True),
         (ExecutionStatus.COMPLETED, False, False),
         (ExecutionStatus.STOPPED, False, False),
-        (ExecutionStatus.STOPPING, True, False),
+        # The server decides what a repeated stop request changes.
+        (ExecutionStatus.STOPPING, True, True),
         (ExecutionStatus.STOPPING, False, True),
     ],
 )

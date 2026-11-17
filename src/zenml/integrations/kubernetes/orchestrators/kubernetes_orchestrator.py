@@ -100,7 +100,9 @@ from zenml.orchestrators import (
     SubmissionResult,
 )
 from zenml.orchestrators import utils as orchestrator_utils
-from zenml.orchestrators.publish_utils import publish_stopped_pipeline_run
+from zenml.orchestrators.publish_utils import (
+    publish_pipeline_run_status_update,
+)
 from zenml.stack import StackValidator
 from zenml.step_operators.step_operator_entrypoint_configuration import (
     StepOperatorEntrypointConfiguration,
@@ -1248,9 +1250,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         child runs. For dynamic pipelines, the orchestrator job is deleted
         first, as steps run inline in the orchestrator pod by default and it
         can't start any new step jobs once it's gone. With nothing left to
-        report the final statuses, the runs and their unfinished steps then
-        get marked as stopped, and step jobs that got created in the meantime
-        are deleted in a second pass. Static pipelines keep their
+        report the final statuses, the server then marks the runs and their
+        unfinished steps as stopped, and step jobs that got created in the
+        meantime are deleted in a second pass. Static pipelines keep their
         orchestrator pod, as it doesn't run any steps, stops by itself and
         cleans up after itself.
 
@@ -1269,16 +1271,14 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             )
             return
 
-        runs = self._get_runs_to_stop(run)
+        run_ids = self._get_run_ids_to_stop(run)
         is_dynamic = run.snapshot is not None and run.snapshot.is_dynamic
         # Child runs share the orchestrator pod of their root run, so
         # deleting it would stop more than the requested run.
         stops_orchestrator = is_dynamic and run.root_run_id is None
 
         try:
-            jobs = self._list_run_jobs(
-                [run_to_stop.id for run_to_stop in runs]
-            )
+            jobs = self._list_run_jobs(run_ids)
             if stops_orchestrator:
                 self._delete_orchestrator_job(run=run, run_jobs=jobs)
         except Exception as e:
@@ -1287,13 +1287,13 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         jobs_stopped, errors = self._delete_step_jobs(jobs)
 
         if not errors and (stops_orchestrator or not is_dynamic):
-            for run_to_stop in runs:
-                publish_stopped_pipeline_run(run_to_stop)
+            # The server completes the stop for the whole run tree.
+            publish_pipeline_run_status_update(
+                pipeline_run_id=run.id, status=ExecutionStatus.STOPPED
+            )
 
             try:
-                jobs = self._list_run_jobs(
-                    [run_to_stop.id for run_to_stop in runs]
-                )
+                jobs = self._list_run_jobs(run_ids)
             except Exception as e:
                 errors.append(f"Failed to list step jobs: {e}")
             else:
@@ -1320,32 +1320,31 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 f"No running step jobs found for pipeline run with ID: {run.id}"
             )
 
-    def _get_runs_to_stop(
-        self, run: "PipelineRunResponse"
-    ) -> List["PipelineRunResponse"]:
-        """Get a run and its in-progress child runs, recursively.
+    def _get_run_ids_to_stop(self, run: "PipelineRunResponse") -> List[UUID]:
+        """Get the IDs of a run and its in-progress child runs, recursively.
 
         Args:
             run: The root of the runs to get.
 
         Returns:
-            The run and its in-progress child runs.
+            The IDs of the run and its in-progress child runs.
         """
-        runs = [run]
+        run_ids = [run.id]
         parent_run_ids = [run.id]
         while parent_run_ids:
-            child_runs = depaginate(
-                Client().list_pipeline_runs,
-                parent_run_id="oneof:"
-                + json.dumps([str(run_id) for run_id in parent_run_ids]),
-                in_progress=True,
-                project=run.project_id,
-                hydrate=True,
-            )
-            runs.extend(child_runs)
-            parent_run_ids = [child_run.id for child_run in child_runs]
+            parent_run_ids = [
+                child_run.id
+                for child_run in depaginate(
+                    Client().list_pipeline_runs,
+                    parent_run_id="oneof:"
+                    + json.dumps([str(run_id) for run_id in parent_run_ids]),
+                    in_progress=True,
+                    project=run.project_id,
+                )
+            ]
+            run_ids.extend(parent_run_ids)
 
-        return runs
+        return run_ids
 
     def _list_run_jobs(self, run_ids: List[UUID]) -> List[k8s_client.V1Job]:
         """List the jobs labeled with any of the given run IDs.

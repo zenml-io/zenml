@@ -41,7 +41,7 @@ def stop_run(run: PipelineRunResponse, graceful: bool = False) -> None:
         graceful: Whether to stop the run gracefully.
 
     Raises:
-        IllegalOperationError: If the run is already stopped or being stopped.
+        IllegalOperationError: If the run is already completed or stopped.
         ValueError: If the stack is not accessible.
     """
     # Check if the stack is still accessible
@@ -59,9 +59,6 @@ def stop_run(run: PipelineRunResponse, graceful: bool = False) -> None:
 
     if run.status == ExecutionStatus.STOPPED:
         raise IllegalOperationError("Run is already stopped.")
-
-    if run.status == ExecutionStatus.STOPPING and graceful:
-        raise IllegalOperationError("Run is already being stopped.")
 
     # Check if the stack is still accessible
     orchestrator_list = run.stack.components.get(
