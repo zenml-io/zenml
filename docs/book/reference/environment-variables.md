@@ -31,7 +31,7 @@ See [this page](https://docs.zenml.io/concepts/steps_and_pipelines/logging) for 
 
 Usually, ZenML [stores step logs in the artifact store](https://docs.zenml.io/concepts/steps_and_pipelines/logging), but this can sometimes cause performance bottlenecks, especially if the code utilizes progress bars.
 
-If you want to configure whether logged output from steps is stored or not, set the `ZENML_DISABLE_STEP_LOGS_STORAGE` environment variable to `true`. Note that this will mean that logs from your steps will no longer be stored and thus won't be visible on the dashboard anymore.
+If you want to configure whether logged output from steps is stored or not, set the `ZENML_DISABLE_STEP_LOGS_STORAGE` environment variable to `true`. Note that this will mean that logs from your steps will no longer be stored and thus won't be visible on the UI anymore.
 
 ```bash
 export ZENML_DISABLE_STEP_LOGS_STORAGE=true

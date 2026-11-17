@@ -21,7 +21,7 @@ Personal Access Tokens in ZenML Pro are tied to your user account and are not sc
 
 ## Accessing Personal Access Token Management
 
-To manage Personal Access Tokens for your user account in ZenML Pro, navigate to your ZenML Pro dashboard, click on your profile picture in the top right corner, then select **"Settings"** and select **"Access Tokens"** from the settings sidebar. This is the main interface where you can perform all Personal Access Token operations.
+To manage Personal Access Tokens for your user account in ZenML Pro, navigate to your ZenML Pro UI, select **Settings** in the rail, then select **Access tokens** under **Account**. This is the main interface where you can perform all Personal Access Token operations.
 
 ![Personal Access Tokens](.gitbook/assets/pro-personal-access-tokens-01.png)
 

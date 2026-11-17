@@ -952,6 +952,7 @@ class PipelineRunFilter(
         "templatable",
         "triggered_by_step_run_id",
         "triggered_by_deployment_id",
+        "triggered_by_deployment",
         "linked_to_model_version_id",
         "trigger_id",
         "root_runs_only",
@@ -968,6 +969,7 @@ class PipelineRunFilter(
         "in_progress",
         "templatable",
         "root_runs_only",
+        "triggered_by_deployment",
     ]
 
     name: StringFilterOption = Field(
@@ -1092,6 +1094,12 @@ class PipelineRunFilter(
         default=None,
         description="The ID of the deployment that triggered this pipeline run.",
         union_mode="left_to_right",
+    )
+    triggered_by_deployment: Optional[bool] = Field(
+        default=None,
+        description="Whether the pipeline run was triggered by a deployment "
+        "invocation. If True, only deployment runs are returned. If False, "
+        "they are excluded. Not applied if unset.",
     )
     trigger_id: UUIDFilterOption = Field(
         default=None,
@@ -1454,6 +1462,24 @@ class PipelineRunFilter(
                         ),
                     )
                 )
+
+        if self.triggered_by_deployment is True:
+            custom_filters.append(
+                col(PipelineRunSchema.triggered_by_type)
+                == PipelineRunTriggeredByType.DEPLOYMENT.value
+            )
+        elif self.triggered_by_deployment is False:
+            # `triggered_by_type` is NULL for every run that wasn't launched
+            # by a step run or a deployment, and `NULL != 'deployment'`
+            # evaluates to NULL (not true), so a plain inequality would
+            # silently drop those runs.
+            custom_filters.append(
+                or_(
+                    col(PipelineRunSchema.triggered_by_type).is_(None),
+                    col(PipelineRunSchema.triggered_by_type)
+                    != PipelineRunTriggeredByType.DEPLOYMENT.value,
+                )
+            )
 
         if self.linked_to_model_version_id:
             linked_to_model_version_filters = (

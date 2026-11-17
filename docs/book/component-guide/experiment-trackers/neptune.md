@@ -207,9 +207,9 @@ Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/i
 
 ## Neptune UI
 
-Neptune comes with a web-based UI that you can use to find further details about your tracked experiments. You can find the URL of the Neptune run linked to a specific ZenML run printed on the console whenever a Neptune run is initialized. You can also find it in the dashboard in the metadata tab of any step that has used the tracker:
+Neptune comes with a web-based UI that you can use to find further details about your tracked experiments. You can find the URL of the Neptune run linked to a specific ZenML run printed on the console whenever a Neptune run is initialized. You can also find it in the UI in the metadata tab of any step that has used the tracker:
 
-<figure><img src="../../.gitbook/assets/zenml_neptune_dag.png" alt=""><figcaption><p>A pipeline with a Neptine run linked as metadata</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/zenml_neptune_dag.png" alt=""><figcaption><p>A pipeline with a Neptune run linked as metadata</p></figcaption></figure>
 
 Each pipeline run will be logged as a separate experiment run in Neptune, which you can inspect in the Neptune UI.
 

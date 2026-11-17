@@ -9,7 +9,7 @@ Service accounts in ZenML Pro provide a secure way to authenticate automated sys
 
 ## Accessing Service Account Management
 
-To manage service accounts in your ZenML Pro organization, navigate to your ZenML Pro dashboard, click on **"Settings"** in the organization navigation menu and select **"Service Accounts"** from the settings sidebar. This is the main interface where you can perform all service account and API key operations.
+To manage service accounts in your ZenML Pro organization, navigate to your ZenML Pro UI, select **Settings** in the rail, then **Service accounts** under **"Organization"**. This is the main interface where you can perform all service account and API key operations.
 
 ![Service Accounts](.gitbook/assets/pro-service-accounts-01.png)
 
@@ -262,7 +262,7 @@ This will return a response like this (the workspace API token is the `access_to
 
 ### Managing Service Account Roles and Permissions
 
-Service accounts are no different from regular users in that they can be assigned different [Organization, Workspace and Project roles](roles.md) to control their access to different parts of the organization and they can be organized into [teams](teams.md). They are marked as "BOT" in the UI, to clearly identify them as non-human users.
+Service accounts are no different from regular users in that they can be assigned different [Organization, Workspace and Project roles](roles.md) to control their access to different parts of the organization and they can be organized into [teams](teams.md). They are marked as "Service account" on the **People** page, to clearly identify them as non-human users.
 
 ![Service account Organization roles](.gitbook/assets/pro-service-accounts-13.png) ![Service account Workspace roles](.gitbook/assets/pro-service-accounts-14.png)
 
@@ -364,7 +364,7 @@ Use ZenML Pro organization service accounts instead. They are managed centrally 
 
 To migrate automation that still uses a workspace-level service account API key, follow these steps:
 
-1. Create a ZenML Pro organization service account in **Organization** > **Settings** > **Service Accounts**. Use the exact same username as the old workspace-level service account. This allows ZenML Pro to adopt the existing workspace account and preserve its resource ownership and lineage/history. Be aware that the organization-level service account is shared across all workspaces in the organization.
+1. Create a ZenML Pro organization service account in **Settings** > **Service accounts** (under **Organization**). Use the exact same username as the old workspace-level service account. This allows ZenML Pro to adopt the existing workspace account and preserve its resource ownership and lineage/history. Be aware that the organization-level service account is shared across all workspaces in the organization.
 2. [Assign Organization and Workspace roles](roles.md) to the new service account. To preserve the same unrestricted permissions that the workspace-level service account currently has but limited to the affected workspace, grant the **Organization Member** role at the organization level and the **Workspace Admin** role in the affected workspace. For better security, we strongly recommend making full use of ZenML Pro RBAC and granting only the specific roles and permissions that the service account actually needs.
 3. Create an API key for the new organization-level service account and update your automation, CI/CD jobs, and pipeline workloads to use that key instead of the old workspace-level API key.
 

@@ -268,7 +268,7 @@ The following secure headers environment variables are supported:
 * **ZENML\_SERVER\_SECURE\_HEADERS\_HSTS**: The `Strict-Transport-Security` HTTP header value. The default value is `max-age=63072000; includeSubDomains`.
 * **ZENML\_SERVER\_SECURE\_HEADERS\_XFO**: The `X-Frame-Options` HTTP header value. The default value is `SAMEORIGIN`.
 * **ZENML\_SERVER\_SECURE\_HEADERS\_CONTENT**: The `X-Content-Type-Options` HTTP header value. The default value is `nosniff`.
-* **ZENML\_SERVER\_SECURE\_HEADERS\_CSP**: The `Content-Security-Policy` HTTP header value. This is by default set to a strict CSP policy that only allows content from the origins required by the ZenML dashboard. NOTE: customizing this header is discouraged, as it may cause the ZenML dashboard to malfunction.
+* **ZENML\_SERVER\_SECURE\_HEADERS\_CSP**: The `Content-Security-Policy` HTTP header value. This is by default set to a strict CSP policy that only allows content from the origins required by the ZenML UI. NOTE: customizing this header is discouraged, as it may cause the ZenML UI to malfunction.
 * **ZENML\_SERVER\_SECURE\_HEADERS\_REFERRER**: The `Referrer-Policy` HTTP header value. The default value is `no-referrer-when-downgrade`.
 * **ZENML\_SERVER\_SECURE\_HEADERS\_CACHE**: The `Cache-Control` HTTP header value. The default value is `no-store, no-cache, must-revalidate`.
 * **ZENML\_SERVER\_SECURE\_HEADERS\_PERMISSIONS**: The `Permissions-Policy` HTTP header value. The default value is `accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()`.
@@ -291,7 +291,7 @@ docker run -it -d -p 8080:8080 --name zenml zenmldocker/zenml-server
 
 The above command will start a containerized ZenML server running on your machine that uses a temporary SQLite database file stored in the container. Temporary means that the database and all its contents (stacks, pipelines, pipeline runs, etc.) will be lost when the container is removed with `docker rm`.
 
-You need to visit the ZenML dashboard at `http://localhost:8080` and activate the server by creating an initial admin user account. You can then connect your client to the server with the web login flow:
+You need to visit the ZenML UI at `http://localhost:8080` and activate the server by creating an initial admin user account. You can then connect your client to the server with the web login flow:
 
 ```shell
 $ zenml login http://localhost:8080
@@ -371,7 +371,7 @@ docker run -it -d -p 8080:8080 --name zenml \
     zenmldocker/zenml-server
 ```
 
-You need to visit the ZenML dashboard at `http://localhost:8080` and activate the server by creating an initial admin user account. You can then connect your client to the server with the web login flow:
+You need to visit the ZenML UI at `http://localhost:8080` and activate the server by creating an initial admin user account. You can then connect your client to the server with the web login flow:
 
 ```shell
 zenml login http://localhost:8080
@@ -445,7 +445,7 @@ or, if you need to use a different filename or path:
 docker compose -f /path/to/docker-compose.yml -p zenml up -d
 ```
 
-You need to visit the ZenML dashboard at `http://localhost:8080` to activate the server by creating an initial admin account. You can then connect your client to the server with the web login flow:
+You need to visit the ZenML UI at `http://localhost:8080` to activate the server by creating an initial admin account. You can then connect your client to the server with the web login flow:
 
 ```shell
 zenml login http://localhost:8080
@@ -506,7 +506,7 @@ docker run -it -d -p 8080:8080 --name zenml \
 
 ## Troubleshooting
 
-You can check the logs of the container to verify if the server is up and, depending on where you have deployed it, you can also access the dashboard at a `localhost` port (if running locally) or through some other service that exposes your container to the internet.
+You can check the logs of the container to verify if the server is up and, depending on where you have deployed it, you can also access the UI at a `localhost` port (if running locally) or through some other service that exposes your container to the internet.
 
 ### CLI Docker deployments
 

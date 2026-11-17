@@ -127,7 +127,7 @@ Keep your steps in separate Python files. This allows you to optionally keep the
 
 #### Logging
 
-ZenML records the root python logging handler's output into the artifact store as a side-effect of running a step. Therefore, when writing steps, use the `logging` module to record logs, to ensure that these logs then show up in the ZenML dashboard.
+ZenML records the root python logging handler's output into the artifact store as a side-effect of running a step. Therefore, when writing steps, use the `logging` module to record logs, to ensure that these logs then show up in the ZenML UI.
 
 ```python
 # Use ZenML handler
@@ -138,7 +138,7 @@ logger = get_logger(__name__)
 
 @step
 def training_data_loader():
-    # This will show up in the dashboard
+    # This will show up in the UI
     logger.info("My logs")
 ```
 

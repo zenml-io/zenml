@@ -679,11 +679,11 @@ class DynamicPipelineRunner:
                     with self._lifecycle_lock:
                         # If there was a failure already, we do not want to
                         # start any new work no matter the execution mode.
-                        retry_step = (
+                        should_retry = (
                             remaining_retries > 0
                             and not self._failure_detected
                         )
-                        if retry_step:
+                        if should_retry:
                             step = Step(
                                 spec=step_run.spec,
                                 config=step_run.config,
@@ -701,15 +701,16 @@ class DynamicPipelineRunner:
                                 future=execution_future,
                             )
 
-                    if not retry_step:
-                        # Nothing will retry the step anymore. Its failure is
-                        # final, and leaving it in `RETRYING` status would
-                        # block everything waiting for the step forever.
+                    if not should_retry:
+                        # Nothing will retry the step, so its failure is
+                        # final. Otherwise, its future keeps waiting on a step
+                        # run that stays in `RETRYING` status.
                         try:
                             step_run = publish_failed_step_run(step_run.id)
                         except Exception:
-                            # The step might have been finalized concurrently,
-                            # for example by a stop request.
+                            # A stop request fails retrying steps on the
+                            # server, which might have happened in the
+                            # meantime.
                             step_run = Client().get_run_step(step_run.id)
                         self._on_step_finished(step_run=step_run)
 

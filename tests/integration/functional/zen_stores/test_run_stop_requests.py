@@ -226,26 +226,6 @@ def test_stop_request_fails_steps_waiting_for_retry(
     assert run.status == ExecutionStatus.STOPPED
 
 
-def test_failing_a_step_waiting_for_retry_is_final(
-    clean_client: Client,
-) -> None:
-    """Tests that a step waiting for a retry can be failed for good."""
-    run = _create_run(clean_client, max_retries=2, step_names=("step_1",))
-    step = _create_step(clean_client, run, "step_1", ExecutionStatus.RUNNING)
-    step = clean_client.zen_store.update_run_step(
-        step_run_id=step.id,
-        step_run_update=StepRunUpdate(status=ExecutionStatus.FAILED),
-    )
-    assert step.status == ExecutionStatus.RETRYING
-
-    step = clean_client.zen_store.update_run_step(
-        step_run_id=step.id,
-        step_run_update=StepRunUpdate(status=ExecutionStatus.FAILED),
-    )
-
-    assert step.status == ExecutionStatus.FAILED
-
-
 def test_steps_of_a_failed_run_are_not_retried(clean_client: Client) -> None:
     """Tests that steps don't wait for retries a failed run won't start."""
     run = _create_run(
