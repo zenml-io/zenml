@@ -1,11 +1,11 @@
 ---
-description: Trigger pipelines from the dashboard, SDK, CLI, or REST API.
+description: Trigger pipelines from the UI, SDK, CLI, or REST API.
 icon: camera
 ---
 
 # Snapshots
 
-A **Pipeline Snapshot** is an immutable snapshot of your pipeline that includes the pipeline DAG, code, configuration, and container images. Snapshots enable you to trigger pipeline runs without direct access to the codebase—from the ZenML Pro dashboard, Python SDK, CLI, or REST API.
+A **Pipeline Snapshot** is an immutable snapshot of your pipeline that includes the pipeline DAG, code, configuration, and container images. Snapshots enable you to trigger pipeline runs without direct access to the codebase—from the ZenML Pro UI, Python SDK, CLI, or REST API.
 
 {% hint style="success" %}
 Running snapshots is a ZenML Pro feature. For comprehensive documentation including advanced usage patterns, see the [main Snapshots documentation](../../how-to/snapshots/snapshots.md).
@@ -17,7 +17,7 @@ Snapshots solve common production challenges:
 
 - **Data Scientists** can experiment with different parameters without modifying code
 - **MLOps Engineers** can schedule retraining or integrate with CI/CD systems
-- **Stakeholders** can trigger model training through the dashboard
+- **Stakeholders** can trigger model training through the UI
 - **External Systems** can invoke pipelines via REST API calls
 
 ## Requirements
@@ -64,12 +64,12 @@ def my_pipeline():
 snapshot = my_pipeline.create_snapshot(name="production-training")
 ```
 
-### From the Dashboard
+### From the UI
 
 1. Navigate to a pipeline run
 2. Click `...` in the top right corner
-3. Select `+ New Snapshot`
-4. Enter a name and click `Create`
+3. Select `New snapshot`
+4. Enter a name and click `Create snapshot`
 
 ## Running Snapshots
 
@@ -101,11 +101,11 @@ Client().trigger_pipeline(
 )
 ```
 
-### From the Dashboard
+### From the UI
 
-1. Click `Run a Pipeline` on the Pipelines page, or navigate to a snapshot and click `Run Snapshot`
+1. Click `Run pipeline` on the Pipelines page, or navigate to a snapshot and click `Run snapshot`
 2. Modify configuration using the built-in editor or upload a YAML file
-3. Click `Run`
+3. Click `Start`
 
 ### From REST API
 

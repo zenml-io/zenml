@@ -21,8 +21,8 @@ A ZenML deployment consists of multiple infrastructure components:
 
 * [FastAPI server](https://github.com/zenml-io/zenml/tree/main/src/zenml/zen_server) backed with a SQLite or MySQL database
 * [Python Client](https://github.com/zenml-io/zenml/tree/main/src/zenml)
-* An [open-source companion ReactJS](https://github.com/zenml-io/zenml-dashboard) dashboard
-* (Optional) [ZenML Pro API + Database + ZenML Pro dashboard](../system-architectures.md)
+* An [open-source companion ReactJS](https://github.com/zenml-io/zenml-dashboard) UI
+* (Optional) [ZenML Pro API + Database + ZenML Pro UI](../system-architectures.md)
 
 You can read more in-depth about the system architecture of ZenML [here](../system-architectures.md).\
 This documentation page will focus on the components required to deploy ZenML OSS.
@@ -47,7 +47,7 @@ When you first get started with ZenML, you have the following architecture on yo
 
 The SQLite database that you can see in this diagram is used to store information about pipelines, pipeline runs, stacks, and other configurations. This default setup allows you to get started and try out the core features, but you won't be able to use cloud-based components like serverless orchestrators and so on.
 
-Users can run the `zenml login --local` command to spin up a local ZenML OSS server to serve the dashboard. For the local OSS server option, the `zenml login --local` command implicitly connects the client to the server. The diagram for this looks as follows:
+Users can run the `zenml login --local` command to spin up a local ZenML OSS server to serve the UI. For the local OSS server option, the `zenml login --local` command implicitly connects the client to the server. The diagram for this looks as follows:
 
 ![ZenML with a local ZenML OSS Server](../../.gitbook/assets/Scenario2.png)
 

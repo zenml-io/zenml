@@ -4,7 +4,7 @@ description: Exporting logs to Datadog's log management platform.
 
 # Datadog Log Store
 
-The Datadog Log Store is a log store flavor that exports logs to [Datadog's log management platform](https://www.datadoghq.com/product/log-management/). It provides full integration with Datadog, including both log export and retrieval, enabling you to view pipeline logs directly in the ZenML dashboard.
+The Datadog Log Store is a log store flavor that exports logs to [Datadog's log management platform](https://www.datadoghq.com/product/log-management/). It provides full integration with Datadog, including both log export and retrieval, enabling you to view pipeline logs directly in the ZenML UI.
 
 ### When would you want to use it?
 
@@ -14,7 +14,7 @@ The Datadog Log Store is ideal when:
 - You need advanced log querying, filtering, and alerting capabilities
 - You want to correlate ML pipeline logs with other application metrics and traces
 - You need long-term log retention with Datadog's archiving features
-- You want to view logs both in the ZenML dashboard and Datadog's native interface
+- You want to view logs both in the ZenML UI and Datadog's native interface
 
 ### How it works
 
@@ -26,7 +26,7 @@ The Datadog Log Store extends the [OTEL Log Store](otel.md) with Datadog-specifi
 
 3. **Datadog export**: A custom `DatadogLogExporter` sends logs to Datadog's OTLP intake endpoint with proper attribute mapping for Datadog's log structure.
 
-4. **Log retrieval**: The log store uses Datadog's Logs Search API to fetch logs for display in the ZenML dashboard.
+4. **Log retrieval**: The log store uses Datadog's Logs Search API to fetch logs for display in the ZenML UI.
 
 #### ZenML-specific attributes
 
@@ -73,7 +73,7 @@ The Datadog Log Store comes built-in with ZenML. You need:
 2. **Application Key**: Navigate to **Organization Settings** → **Application Keys** in Datadog
 
 {% hint style="info" %}
-Both the API key and Application key are **required** to register a Datadog log store. The API key is used for log ingestion, while the Application key is used for log retrieval (displaying logs in the ZenML dashboard).
+Both the API key and Application key are **required** to register a Datadog log store. The API key is used for log ingestion, while the Application key is used for log retrieval (displaying logs in the ZenML UI).
 {% endhint %}
 
 ### How to use it
@@ -149,9 +149,9 @@ Datadog has a maximum batch size limit of 1000 logs per request. The `max_export
 
 ### Viewing logs
 
-#### In ZenML Dashboard
+#### In ZenML UI
 
-Logs are automatically fetched from Datadog when viewing step details in the ZenML dashboard. The dashboard uses Datadog's Logs Search API to retrieve logs filtered by the step's log ID.
+Logs are automatically fetched from Datadog when viewing step details in the ZenML UI. The UI uses Datadog's Logs Search API to retrieve logs filtered by the step's log ID.
 
 #### Pagination and search
 
@@ -190,7 +190,7 @@ service:zenml @zenml.pipeline.run.name:<YOUR_RUN_NAME> @zenml.step.run.name:my_t
 3. Ensure the service name filter matches your configuration
 4. Allow a few minutes for logs to be indexed
 
-#### Logs not appearing in ZenML Dashboard
+#### Logs not appearing in ZenML UI
 
 1. Verify your Application key is correct
 2. Ensure the Application key has the `logs_read_data` permission

@@ -322,7 +322,7 @@ ZenML Pro requires several network services to expose its APIs and handle secure
 
 A load balancer or ingress mechanism is needed to:
 
-- Route external traffic to the control plane API and dashboard
+- Route external traffic to the control plane API and UI
 - Route traffic to workspace server APIs
 - Distribute traffic across multiple replicas for high availability
 
@@ -350,7 +350,7 @@ Using a common parent subdomain for all ZenML Pro components is recommended:
 **Benefits of a common subdomain:**
 
 - **Simplified TLS certificates**: A single wildcard certificate (`*.zenml.example.com`) can secure all components
-- **Secure cookie sharing**: Authentication cookies can be shared across subdomains, enabling seamless integration between the dashboard and workspace servers
+- **Secure cookie sharing**: Authentication cookies can be shared across subdomains, enabling seamless integration between the UI and workspace servers
 - **Easier DNS management**: All records can be managed under a single DNS zone
 
 **Alternative — separate domains:**
@@ -386,7 +386,7 @@ ZenML Pro containers do **not** handle TLS termination internally. HTTPS traffic
 
 **Certificate requirements:**
 
-- Valid TLS certificates for all exposed endpoints (control plane API, dashboard, workspace servers)
+- Valid TLS certificates for all exposed endpoints (control plane API, UI, workspace servers)
 - Certificates can be issued by a public CA, a private/internal CA, or be self-signed
 - If using self-signed certificates or a private CA, the CA certificate must be installed on all client machines and in container images used for ZenML Pro containers and ML pipelines
 
@@ -411,7 +411,7 @@ Depending on your deployment model:
 
 | Connectivity | Required For |
 |--------------|--------------|
-| Inbound HTTPS (443) | Client access to dashboard and APIs |
+| Inbound HTTPS (443) | Client access to UI and APIs |
 | Outbound HTTPS (443) | Control plane server connecting to the identity provider for SSO authentication (if enabled and using [the fully self-hosted scenario](self-hosted-deployment.md)) |
 | Outbound HTTPS (443) | Pulling images from ZenML registries (if not air-gapped) |
 | Outbound HTTPS (443) | Workspace servers connecting to the control plane for enrollment, status updates, RBAC permissions (if using [the hybrid scenario](hybrid-deployment.md)) |
@@ -482,7 +482,7 @@ Choose where ZenML Pro container images will be pulled from:
 | Image | URI |
 |-------|-----|
 | Control Plane API | `_______________` (e.g., `europe-west3-docker.pkg.dev/zenml-cloud/zenml-pro/zenml-pro-api:<version>`) |
-| Web UI (Dashboard) | `_______________` (e.g., `europe-west3-docker.pkg.dev/zenml-cloud/zenml-pro/zenml-pro-dashboard:<version>`) |
+| Web UI | `_______________` (e.g., `europe-west3-docker.pkg.dev/zenml-cloud/zenml-pro/zenml-pro-dashboard:<version>`) |
 | Workspace Server | `_______________` (e.g., `europe-west3-docker.pkg.dev/zenml-cloud/zenml-pro/zenml-pro-server:<version>`) |
 
 ### SSO Configuration (if enabled)

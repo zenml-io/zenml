@@ -69,12 +69,12 @@ terraform {
 
 provider "zenml" {
   # Configuration options will be loaded from environment variables:
-  # ZENML_SERVER_URL (for Pro users, this should be your Workspace URL from the dashboard)
+  # ZENML_SERVER_URL (for Pro users, this should be your Workspace URL from the UI)
   # ZENML_API_KEY
 }
 
 {% hint style="info" %}
-**For ZenML Pro users:** The `ZENML_SERVER_URL` should be your Workspace URL, which can be found in your dashboard. It typically looks like: `https://1bfe8d94-zenml.cloudinfra.zenml.io`. Make sure you use the complete URL of your workspace, not just the domain. The `ZENML_API_KEY` should be [the ZenML Pro API key](https://docs.zenml.io/pro/access-management/service-accounts) or [Personal Access Token](https://docs.zenml.io/pro/access-management/personal-access-tokens).
+**For ZenML Pro users:** The `ZENML_SERVER_URL` should be your Workspace URL, which can be found in the UI. It typically looks like: `https://1bfe8d94-zenml.cloudinfra.zenml.io`. Make sure you use the complete URL of your workspace, not just the domain. The `ZENML_API_KEY` should be [the ZenML Pro API key](https://docs.zenml.io/pro/access-management/service-accounts) or [Personal Access Token](https://docs.zenml.io/pro/access-management/personal-access-tokens).
 {% endhint %}
 ```
 
@@ -392,7 +392,7 @@ output "container_registry_uri" {
 Create a `terraform.tfvars` file (remember to never commit this to version control):
 
 ```hcl
-zenml_server_url = "https://your-zenml-server.com"  # For Pro users: your Workspace URL from dashboard
+zenml_server_url = "https://your-zenml-server.com"  # For Pro users: your Workspace URL from the UI
 project_id       = "your-gcp-project-id"
 region           = "us-central1"
 environment      = "dev"
