@@ -6501,6 +6501,41 @@ def test_updating_step_of_stopped_run_keeps_its_status(
     )
 
 
+def test_updating_step_cache_expiration_leaves_run_untouched(clean_client):
+    """Tests that a step update which can't affect the run skips updating it."""
+    pipeline_run, (step_run,) = _create_running_static_run(
+        clean_client, num_steps=1
+    )
+    run_before_update = clean_client.get_pipeline_run(pipeline_run.id)
+
+    clean_client.update_step_run(
+        step_run_id=step_run.id,
+        cache_expires_at=datetime.now() + timedelta(days=1),
+    )
+
+    run = clean_client.get_pipeline_run(pipeline_run.id)
+    assert run.updated == run_before_update.updated
+
+
+def test_updating_step_status_with_cache_expiration_updates_run(clean_client):
+    """Tests that a step update with a status still updates the run."""
+    pipeline_run, (step_run,) = _create_running_static_run(
+        clean_client, num_steps=1
+    )
+
+    clean_client.zen_store.update_run_step(
+        step_run_id=step_run.id,
+        step_run_update=StepRunUpdate(
+            status=ExecutionStatus.COMPLETED,
+            cache_expires_at=datetime.now() + timedelta(days=1),
+        ),
+    )
+
+    run = clean_client.get_pipeline_run(pipeline_run.id)
+    assert run.status == ExecutionStatus.COMPLETED
+    assert not run.in_progress
+
+
 def test_continue_on_failure_run_finishes_after_step_cache_expiration_update(
     clean_client,
 ):

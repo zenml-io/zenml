@@ -1191,6 +1191,15 @@ SNAPSHOT_OWNER_COLUMNS = (
     TriggerSnapshotSchema.snapshot_id,
 )
 
+# Step run fields that can't affect the status of the pipeline run, so updates
+# that only change these fields skip recalculating it. They can also be updated
+# after the run finished, for example to expire the cache of a step, which
+# shouldn't depend on deriving the status of the finished run again. Fields not
+# listed here, including new ones, still trigger the recalculation.
+_RUN_STATUS_INDEPENDENT_STEP_RUN_FIELDS = frozenset(
+    {"cache_expires_at", "outputs", "loaded_artifact_versions", "add_logs"}
+)
+
 
 class SqlZenStore(BaseZenStore):
     """Store Implementation that uses SQL database backend.
@@ -13214,10 +13223,20 @@ class SqlZenStore(BaseZenStore):
                     session, existing_step_run.id
                 )
 
-            self._update_pipeline_run_status(
-                pipeline_run_id=existing_step_run.pipeline_run_id,
-                session=session,
-            )
+            # Fields count as updated by the same rule as in
+            # `StepRunSchema.update`. Empty updates still recalculate the run
+            # status, as they always did.
+            updated_fields = step_run_update.model_dump(
+                exclude_unset=True, exclude_none=True
+            ).keys()
+            if not (
+                updated_fields
+                and updated_fields <= _RUN_STATUS_INDEPENDENT_STEP_RUN_FIELDS
+            ):
+                self._update_pipeline_run_status(
+                    pipeline_run_id=existing_step_run.pipeline_run_id,
+                    session=session,
+                )
 
             # Add logs if specified
             if step_run_update.add_logs:

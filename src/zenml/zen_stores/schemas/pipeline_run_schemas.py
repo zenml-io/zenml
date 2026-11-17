@@ -1028,12 +1028,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 and new_status == ExecutionStatus.FAILED
             ):
                 new_status = ExecutionStatus.STOPPED
-        elif current_status.is_finished and requested_status is None:
-            # Steps of a finished run can still be updated, for example to
-            # expire their cache. Deriving the status from them again ignores
-            # how the run ended (a run stopped while a step failed would become
-            # failed), so only an explicitly requested status is considered.
-            new_status = current_status
         else:
             # For static pipelines we compute the run status based on the step
             # statuses.
@@ -1348,9 +1342,10 @@ def _compute_static_pipeline_run_status(
         The status of the pipeline run.
     """
     if run_status == ExecutionStatus.STOPPED:
-        # A stopped status is requested, for example by a status refresh when
-        # the job of the run is gone. Its steps might never report a final
-        # status then, so they can't keep the run from being stopped.
+        # A stopped run stays stopped, and a requested stopped status stops the
+        # run, for example from a status refresh when the job of the run is
+        # gone. Its steps might never report a final status then, so they
+        # can't move the run out of stopped.
         return ExecutionStatus.STOPPED
     elif run_status == ExecutionStatus.STOPPING:
         if all(status.is_finished for status in step_statuses):
