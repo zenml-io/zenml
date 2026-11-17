@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import random
 from types import SimpleNamespace
 from unittest import mock
 from uuid import uuid4
@@ -18,9 +19,11 @@ from uuid import uuid4
 import pytest
 import yaml
 
+from zenml.constants import ENV_ZENML_USE_GLOBAL_RANDOM_SEED
 from zenml.enums import StackComponentType
 from zenml.orchestrators.utils import (
     dump_compose_yaml,
+    get_config_environment_vars,
     get_orchestrator_run_name,
     get_step_entrypoint_command,
     is_setting_enabled,
@@ -235,3 +238,33 @@ def test_get_orchestrator_run_name():
 
     with pytest.raises(ValueError):
         get_orchestrator_run_name(pipeline_name, max_length=7)
+
+
+@pytest.mark.parametrize(
+    "env_value, names_repeat", [("false", False), ("true", True)]
+)
+def test_get_orchestrator_run_name_global_seed(
+    monkeypatch: pytest.MonkeyPatch, env_value: str, names_repeat: bool
+) -> None:
+    """Tests that run names only repeat for a repeated seed when users opt in."""
+    monkeypatch.setenv(ENV_ZENML_USE_GLOBAL_RANDOM_SEED, env_value)
+
+    random.seed(42)
+    first = get_orchestrator_run_name("pipeline")
+    random.seed(42)
+    second = get_orchestrator_run_name("pipeline")
+
+    assert (first == second) is names_repeat
+
+
+def test_get_config_environment_vars_forwards_global_seed_setting(
+    clean_client, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Tests that the global seed setting reaches the run environment."""
+    monkeypatch.delenv(ENV_ZENML_USE_GLOBAL_RANDOM_SEED, raising=False)
+    environment, _ = get_config_environment_vars()
+    assert ENV_ZENML_USE_GLOBAL_RANDOM_SEED not in environment
+
+    monkeypatch.setenv(ENV_ZENML_USE_GLOBAL_RANDOM_SEED, "true")
+    environment, _ = get_config_environment_vars()
+    assert environment[ENV_ZENML_USE_GLOBAL_RANDOM_SEED] == "true"

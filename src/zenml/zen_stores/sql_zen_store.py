@@ -540,7 +540,7 @@ def exponential_backoff_with_jitter(
         The backoff duration.
     """
     exponential_backoff = base_duration * 1.5**attempt
-    return random.uniform(0, exponential_backoff)
+    return random.SystemRandom().uniform(0, exponential_backoff)
 
 
 class Session(SqlModelSession):
@@ -13146,7 +13146,14 @@ class SqlZenStore(BaseZenStore):
                 ExecutionStatus.FAILED,
                 ExecutionStatus.CANCELLED,
             }:
-                can_retry = existing_step_run.is_retriable
+                # A step that is already `RETRYING` only fails again when the
+                # orchestrator decided not to retry it after all, so that
+                # failure is final.
+                can_retry = (
+                    existing_step_run.is_retriable
+                    and existing_step_run.status
+                    != ExecutionStatus.RETRYING.value
+                )
 
                 if can_retry:
                     run_status = ExecutionStatus(
