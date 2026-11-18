@@ -4,7 +4,7 @@ description: Creating a full picture of a ML model using the Model Control Plane
 
 # Track ML models
 
-![Walkthrough of ZenML Model Control Plane (Dashboard available only on ZenML Pro)](../../.gitbook/assets/mcp-walkthrough.gif)
+![Models list in the UI (available only on ZenML Pro)](../../.gitbook/assets/mcp-walkthrough.png)
 
 As discussed in the [Core Concepts](https://docs.zenml.io/getting-started/core-concepts), ZenML also contains the notion of a `Model`, which consists of many model versions (the iterations of the model). These concepts are exposed in the `Model Control Plane` (MCP for short).
 
@@ -16,7 +16,7 @@ Before diving in, let's take some time to build an understanding of what we mean
 Please note that one of the most common artifacts that is associated with a Model in ZenML is the so-called technical model, which is the actually model file/files that holds the weight and parameters of a machine learning training result. However, this is not the only artifact that is relevant; artifacts such as the training data and the predictions this model produces in production are also linked inside a ZenML Model.
 {% endhint %}
 
-Models are first-class citizens in ZenML and as such viewing and using them is unified and centralized in the ZenML API, the ZenML client as well as on the [ZenML Pro](https://zenml.io/pro) dashboard.
+Models are first-class citizens in ZenML and as such viewing and using them is unified and centralized in the ZenML API, the ZenML client as well as on the [ZenML Pro](https://zenml.io/pro) UI.
 
 These models can be viewed within ZenML:
 
@@ -25,10 +25,10 @@ These models can be viewed within ZenML:
 `zenml model list` can be used to list all models.
 {% endtab %}
 
-{% tab title="Cloud (Dashboard)" %}
-The [ZenML Pro](https://zenml.io/pro) dashboard has additional capabilities, that include visualizing these models in the dashboard.
+{% tab title="Cloud (UI)" %}
+The [ZenML Pro](https://zenml.io/pro) UI has additional capabilities, that include visualizing these models in the UI.
 
-<figure><img src="../../.gitbook/assets/mcp_model_list.png" alt=""><figcaption><p>ZenML Model Control Plane.</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/mcp_model_list.png" alt=""><figcaption><p>Models list.</p></figcaption></figure>
 {% endtab %}
 {% endtabs %}
 
@@ -102,10 +102,10 @@ The following commands can be used to list the various artifacts associated with
 * `zenml model version deployment_artifacts <MODEL_NAME> <MODEL_VERSIONNAME>`
 {% endtab %}
 
-{% tab title="Cloud (Dashboard)" %}
-The [ZenML Pro](https://zenml.io/pro) dashboard has additional capabilities, that include visualizing all associated runs and artifacts for a model version:
+{% tab title="Cloud (UI)" %}
+The [ZenML Pro](https://zenml.io/pro) UI has additional capabilities, that include visualizing all associated runs and artifacts for a model version:
 
-<figure><img src="../../.gitbook/assets/mcp_model_versions_list.png" alt="ZenML Model Versions List."><figcaption><p>ZenML Model versions List.</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/mcp_model_versions_list.png" alt="Artifacts tab of a model version."><figcaption><p>Artifacts tab of a model version, with the Versions pane.</p></figcaption></figure>
 {% endtab %}
 {% endtabs %}
 
@@ -180,7 +180,7 @@ def svc_trainer(
         # model_name="iris_classifier", model_version="my_version"
 
         # A dictionary of dictionaries can also be passed to group metadata
-        #  in the dashboard
+        #  in the UI
         # metadata = {"metrics": {"accuracy": accuracy}}
     )
 ```
@@ -198,10 +198,10 @@ model_version.run_metadata["accuracy"].value
 ```
 {% endtab %}
 
-{% tab title="Cloud (Dashboard)" %}
-The [ZenML Pro](https://zenml.io/pro) dashboard offers advanced visualization features for artifact exploration, including a dedicated artifacts tab with metadata visualization:
+{% tab title="Cloud (UI)" %}
+In the [ZenML Pro](https://zenml.io/pro) UI, open a model version's **Metadata** tab to inspect its logged metadata:
 
-<figure><img src="../../.gitbook/assets/dcp_metadata.png" alt=""><figcaption><p>ZenML Artifact Control Plane.</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/mcp-embeddings.png" alt=""><figcaption><p>Model version metadata.</p></figcaption></figure>
 {% endtab %}
 {% endtabs %}
 
@@ -266,10 +266,10 @@ zenml model version update <MODEL_NAME> <MODEL_VERSIONNAME> -s production
 ```
 {% endtab %}
 
-{% tab title="Cloud (Dashboard)" %}
-The [ZenML Pro](https://zenml.io/pro) dashboard has additional capabilities, that include easily changing the stage:
+{% tab title="Cloud (UI)" %}
+The [ZenML Pro](https://zenml.io/pro) UI has additional capabilities, that include changing the stage with **Promote to…**:
 
-![ZenML Pro Transition Model Stages](../../.gitbook/assets/dcp_transition_stage.gif)
+![Promote a model version to a stage](../../.gitbook/assets/dcp_transition_stage.png)
 {% endtab %}
 {% endtabs %}
 

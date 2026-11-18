@@ -56,7 +56,7 @@ Check out the [ZenML Client Documentation](https://docs.zenml.io/sdk-reference/z
 
 ### Discovering and Listing All Pipelines
 
-If you're not sure which pipeline you need to fetch, you can find a list of all registered pipelines in the ZenML dashboard, or list them programmatically either via the Client or the CLI.
+If you're not sure which pipeline you need to fetch, you can find a list of all registered pipelines in the ZenML UI, or list them programmatically either via the Client or the CLI.
 
 {% tabs %}
 {% tab title="Python" %}
@@ -142,7 +142,7 @@ Client().get_pipeline_run(runs[0].id) # to get a refreshed version
 
 ### Getting a Run via the Client
 
-If you already know the exact run that you want to fetch (e.g., from looking at the dashboard), you can use the [`Client.get_pipeline_run()`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client) method to fetch the run directly without having to query the pipeline first:
+If you already know the exact run that you want to fetch (e.g., from looking at the UI), you can use the [`Client.get_pipeline_run()`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client) method to fetch the run directly without having to query the pipeline first:
 
 ```python
 from zenml.client import Client
@@ -350,7 +350,7 @@ output.visualize()
 ![output.visualize() Output](../../.gitbook/assets/artifact_visualization_evidently.png)
 
 {% hint style="info" %}
-If you're not in a Jupyter notebook, you can simply view the visualizations in the ZenML dashboard by running `zenml login --local` and clicking on the respective artifact in the pipeline run DAG instead. Check out the [artifact visualization page](https://docs.zenml.io/how-to/data-artifact-management/visualize-artifacts) to learn more about how to build and view artifact visualizations in ZenML!
+If you're not in a Jupyter notebook, you can simply view the visualizations in the ZenML UI by running `zenml login --local` and clicking on the respective artifact in the pipeline run DAG instead. Check out the [artifact visualization page](https://docs.zenml.io/how-to/data-artifact-management/visualize-artifacts) to learn more about how to build and view artifact visualizations in ZenML!
 {% endhint %}
 
 ## Step 6: Fetching Information During Run Execution

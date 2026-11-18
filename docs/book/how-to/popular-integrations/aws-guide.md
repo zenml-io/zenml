@@ -291,8 +291,8 @@ In case you want to also add any other stack components to this stack, feel free
 {% endhint %}
 {% endtab %}
 
-{% tab title="Dashboard" %}
-Combine the three stack components using the stack creation form in the ZenML dashboard. Feel free to add any other component of your choice as well.
+{% tab title="UI" %}
+Combine the three stack components using the stack creation form in the ZenML UI. Feel free to add any other component of your choice as well.
 {% endtab %}
 {% endtabs %}
 

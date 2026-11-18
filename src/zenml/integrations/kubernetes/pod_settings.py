@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Kubernetes pod settings."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import field_validator
 
@@ -65,6 +65,7 @@ class KubernetesPodSettings(BaseSettings):
         host_ipc: Whether to enable host IPC for the pod.
         scheduler_name: The name of the scheduler to use for the pod.
         image_pull_secrets: Image pull secrets to use for the pod.
+        image_pull_policy: Image pull policy to apply to the pod containers. If not set, Kubernetes picks the policy based on the image tag.
         labels: Labels to apply to the pod.
         env: Environment variables to apply to the container.
         env_from: Environment variables to apply to the container.
@@ -88,6 +89,9 @@ class KubernetesPodSettings(BaseSettings):
     host_ipc: bool = False
     scheduler_name: Optional[str] = None
     image_pull_secrets: List[str] = []
+    image_pull_policy: Optional[Literal["Always", "IfNotPresent", "Never"]] = (
+        None
+    )
     labels: Dict[str, str] = {}
     env: List[Dict[str, Any]] = []
     env_from: List[Dict[str, Any]] = []

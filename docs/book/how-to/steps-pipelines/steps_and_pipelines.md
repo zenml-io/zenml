@@ -100,7 +100,7 @@ You can run a pipeline by simply calling the function:
 simple_ml_pipeline()
 ```
 
-The run is automatically logged to the ZenML dashboard where you can view the DAG or [Timeline view](../dashboard/dashboard-features.md#timeline-view) and associated metadata.
+The run is automatically logged to the ZenML UI where you can view the DAG or [Timeline view](../dashboard/dashboard-features.md#timeline-view) and associated metadata.
 
 {% hint style="info" %}
 **Want an AI agent to help write this pipeline?** Install ZenML Agent Skills:

@@ -16,7 +16,7 @@ You should use the SkyPilot VM Orchestrator if:
 
 * you want to maximize cost savings by leveraging spot VMs and auto-picking the cheapest VM/zone/region/cloud.
 * you want to ensure high GPU availability by provisioning VMs in all zones/regions/clouds you have access to.
-* you don't need a built-in UI of the orchestrator. (You can still use ZenML's Dashboard to view and monitor your pipelines/artifacts.)
+* you don't need a built-in UI of the orchestrator. (You can still use ZenML's UI to view and monitor your pipelines/artifacts.)
 * you're not willing to maintain Kubernetes-based solutions or pay for managed solutions like [Sagemaker](sagemaker.md).
 
 ## How it works
@@ -36,7 +36,7 @@ All ZenML pipeline runs are executed using Docker containers within the VMs prov
 {% endhint %}
 
 {% hint style="info" %}
-SkyPilot also ships an optional API server with a web dashboard. You can start it with `sky api start`, then run `sky api info` and open the `/dashboard` path of the returned base URL. ZenML does not integrate with this dashboard, but you can use it alongside the ZenML dashboard.
+SkyPilot also ships an optional API server with a web dashboard. You can start it with `sky api start`, then run `sky api info` and open the `/dashboard` path of the returned base URL. ZenML does not integrate with this dashboard, but you can use it alongside the ZenML UI.
 {% endhint %}
 
 ## How to deploy it
@@ -89,7 +89,7 @@ zenml service-connector list-types --type aws
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
 ```
 
-Next, configure a service connector using the CLI or the dashboard with the AWS credentials. For example, the following command uses the local AWS CLI credentials to auto-configure the service connector:
+Next, configure a service connector using the CLI or the UI with the AWS credentials. For example, the following command uses the local AWS CLI credentials to auto-configure the service connector:
 
 ```shell
 zenml service-connector register aws-skypilot-vm --type aws --region=us-east-1 --auto-configure
@@ -284,7 +284,7 @@ zenml service-connector list-types --type kubernetes
 ┗━━━━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
 ```
 
-Next, configure a service connector using the CLI or the dashboard with the Kubernetes credentials. For example, the following command uses the local Kubernetes CLI credentials to auto-configure the service connector:
+Next, configure a service connector using the CLI or the UI with the Kubernetes credentials. For example, the following command uses the local Kubernetes CLI credentials to auto-configure the service connector:
 
 ```shell
 zenml service-connector register kubernetes-skypilot --type kubernetes -i

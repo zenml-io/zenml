@@ -13,7 +13,7 @@ You can sign up for a free trial [here](https://zenml.io/pro).
 
 ## Autoscaling replicas
 
-In production, you often have to run bigger and longer running pipelines that might strain your server's resources. It is a good idea to set up autoscaling for your ZenML server so that you don't have to worry about your pipeline runs getting interrupted or your Dashboard slowing down due to high traffic.
+In production, you often have to run bigger and longer running pipelines that might strain your server's resources. It is a good idea to set up autoscaling for your ZenML server so that you don't have to worry about your pipeline runs getting interrupted or your UI slowing down due to high traffic.
 
 How you do it depends greatly on the environment in which you have deployed your ZenML server. Below are some common deployment options and how to set up autoscaling for them.
 

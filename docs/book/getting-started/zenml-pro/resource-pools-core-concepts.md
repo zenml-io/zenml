@@ -94,8 +94,8 @@ A resource pool is a named scheduling and accounting boundary. It has:
 | `target_settings` | UI-supported settings merged into selected targets |
 | `attributes` | Optional metadata for filtering and pool selectors |
 
-The UI exposes pools under **Organization Settings > Resource Pools** and
-**Workspace Settings > Resource Pools**.
+The UI exposes pools under **Settings** > **Workspace** > **Resource pools**,
+for the workspace selected in the **Workspace** dropdown.
 
 ### Accounting modes
 
