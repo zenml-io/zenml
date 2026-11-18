@@ -315,6 +315,11 @@ class AnalyticsContext:
         if self.server_metadata:
             properties.update(self.server_metadata)
 
+        if self.external_user_id:
+            properties["cloud_user_id"] = self.external_user_id
+        else:
+            properties.pop("cloud_user_id", None)
+
         if self.project_id:
             properties.setdefault("project_id", str(self.project_id))
 
