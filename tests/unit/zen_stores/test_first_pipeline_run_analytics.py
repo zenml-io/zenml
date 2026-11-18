@@ -12,11 +12,12 @@ from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
 @pytest.mark.parametrize("has_previous", [False, True])
-def test_first_run_event(has_previous: bool) -> None:
+@pytest.mark.parametrize("hosted", [False, True])
+def test_first_run_event(has_previous: bool, hosted: bool) -> None:
     user = SimpleNamespace(
         id=uuid4(),
         email="user@example.com",
-        external_user_id=uuid4(),
+        external_user_id=uuid4() if hosted else None,
         is_service_account=False,
     )
     run = SimpleNamespace(id=uuid4(), project_id=uuid4(), user=user)
@@ -33,7 +34,7 @@ def test_first_run_event(has_previous: bool) -> None:
             context_class.assert_not_called()
         else:
             context = context_class.return_value.__enter__.return_value
-            assert context.user_id == user.id
+            assert context.user_id == (user.external_user_id or user.id)
             assert context.external_user_id == user.external_user_id
             context.track.assert_called_once_with(
                 event=AnalyticsEvent.FIRST_PIPELINE_RUN_COMPLETED,

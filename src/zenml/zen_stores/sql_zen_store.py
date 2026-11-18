@@ -13636,7 +13636,7 @@ class SqlZenStore(BaseZenStore):
         if previous_run is not None:
             return
         with AnalyticsContext() as context:
-            context.user_id = user.id
+            context.user_id = user.external_user_id or user.id
             context.external_user_id = user.external_user_id
             context.executed_by_service_account = False
             context.track(
