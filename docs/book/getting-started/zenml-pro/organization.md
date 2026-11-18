@@ -9,7 +9,7 @@ ZenML Pro arranges various aspects of your work experience around the concept of
 
 ## Inviting Team Members to Your Organization
 
-Inviting users to your organization to work on the organization's workspaces is easy. Simply click `Add Member` in the Organization settings, and give them an initial Role. The user will be sent an invitation email. If a user is part of an organization, they can utilize their login on all workspaces they have authority to access.
+Inviting users to your organization to work on the organization's workspaces is easy. Simply select **Invite** on the **People** page under **Settings** > **Organization**, and give them an initial Role. The user will be sent an invitation email. If a user is part of an organization, they can utilize their login on all workspaces they have authority to access.
 
 ![Image showing invite flow](.gitbook/assets/add_org_members.png)
 
@@ -23,7 +23,7 @@ If you self-host the ZenML Pro control plane, super-user administrators configur
 
 ## Manage Organization settings like billing and roles
 
-The billing information for your workspaces is managed on the organization level, among other settings like the members in your organization and the roles they have. You can access the organization settings by clicking on your profile picture in the top right corner and selecting "Settings".
+The billing information for your workspaces is managed on the organization level, among other settings like the people in your organization and the roles they have. Select **Settings** at the foot of the rail; organization pages are under **Organization** (General, People, Access, Teams, Roles, Service accounts, Bots, Environments, Connections, Trusted domains, Announcements, Navigation, Billing).
 
 ![Image showing the organization settings page](.gitbook/assets/org_settings.png)
 

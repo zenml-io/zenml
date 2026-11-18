@@ -8,9 +8,13 @@ metadata:
   annotations:
     "helm.sh/hook": test
 spec:
+  securityContext:
+    {{- toYaml .Values.podSecurityContext | nindent 4 }}
   containers:
     - name: wget
-      image: busybox
+      image: busybox:1.37
+      securityContext:
+        {{- toYaml .Values.securityContext | nindent 8 }}
       command: ['wget']
-      args: ['{{ include "zenml.fullname" . }}:{{ $server.service.port }}']
+      args: ['-O', '/dev/null', '{{ include "zenml.fullname" . }}:{{ $server.service.port }}']
   restartPolicy: Never

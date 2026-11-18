@@ -131,6 +131,153 @@ def my_step():
     ...
 ```
 
+### Classifying failures and runs with TypeSafe Jev
+
+The TypeSafe integration ships hooks that ask
+[Jev](https://docs.typesafe.ai/), a fast and cheap classification model, typed
+questions about a failure or a finished run. Jev answers with a label or a
+probability instead of text, and the hooks store every answer as run metadata
+under keys starting with `jev.`.
+
+```shell
+zenml integration install typesafe
+zenml secret create typesafe --api_key=<YOUR_TYPESAFE_API_KEY>
+```
+
+The hooks read the key from the `TYPESAFE_API_KEY` environment variable
+first and fall back to the `api_key` key of a secret named `typesafe`. With
+neither set, they log a warning and do nothing. API errors are also logged and
+never fail the step or run. The key and the other knobs (model, metadata key
+prefix, traceback length, baseline size) live on a `JevConfig` object, which
+keeps the key as a Pydantic `SecretStr`.
+
+`jev_failure_triage_hook` classifies the exception and traceback of a failed
+step. It logs `jev.failure_category` (`infrastructure`, `data`, `code`,
+`dependency` or `credentials`, plus `.confidence` and `.probabilities`
+sub-keys) and `jev.retry_likely_to_help` (the probability that an unchanged
+rerun succeeds) on the failed step run:
+
+```python
+from zenml import step
+from zenml.client import Client
+from zenml.integrations.typesafe.hooks import jev_failure_triage_hook
+
+@step(on_failure=jev_failure_triage_hook)
+def load_data():
+    ...
+
+# Later: every step failure Jev put down to bad data
+Client().list_run_steps(run_metadata="jev.failure_category:data")
+```
+
+Used as a run-level `on_failure` hook of a dynamic pipeline, it logs the same
+keys on the pipeline run instead.
+
+`jev_run_summary_hook` is a run end hook for **dynamic pipelines**. When the
+run finishes, it sends Jev the run's status, duration and per-step results
+alongside a summary of the five most recent runs of the pipeline that finished
+before this one started, then logs
+`jev.needs_attention` (the probability that a human should look at the run)
+and `jev.anomaly` (0 means the run looks like recent runs, 2 means very
+unusual) on the pipeline run. On a static pipeline it skips with a warning,
+because static pipelines copy pipeline-level hooks onto each step and there
+is no finished run to assess.
+
+```python
+from zenml import pipeline
+from zenml.client import Client
+from zenml.integrations.typesafe.hooks import jev_run_summary_hook
+
+@pipeline(dynamic=True, on_end=jev_run_summary_hook)
+def nightly_training():
+    ...
+
+# Later: runs worth a look
+Client().list_pipeline_runs(run_metadata="jev.needs_attention:gt:0.7")
+```
+
+To ask your own questions, call `jev_classify_and_log` from a custom hook.
+It logs the answers on the current step run, or on the pipeline run when
+called from a run-level hook of a dynamic pipeline:
+
+```python
+from typesafe_sdk import Noul
+from zenml import get_step_context
+from zenml.integrations.typesafe.hooks import jev_classify_and_log
+
+def config_risk_hook() -> None:
+    jev_classify_and_log(
+        state=get_step_context().step_run.config.parameters,
+        questions={
+            "risky_config": Noul(instructions="Is this training config risky?")
+        },
+    )
+```
+
+Lifecycle hooks cannot take arguments, so to change what the built-in hooks
+ask or compare against, write a small hook of your own from the same building
+blocks. `build_failure_state` and `build_run_summary_state` produce exactly
+what the built-in hooks send to Jev, and `FAILURE_TRIAGE_QUESTIONS` and
+`RUN_SUMMARY_QUESTIONS` are the questions they ask. This hook adds a question
+to the failure triage:
+
+```python
+from typesafe_sdk import Noul
+from zenml import step
+from zenml.integrations.typesafe.hooks import (
+    FAILURE_TRIAGE_QUESTIONS,
+    JevConfig,
+    build_failure_state,
+    jev_classify_and_log,
+)
+
+def triage_with_flakiness(exception: BaseException) -> None:
+    config = JevConfig.load()
+    jev_classify_and_log(
+        state=build_failure_state(exception, config),
+        questions={
+            **FAILURE_TRIAGE_QUESTIONS,
+            "flaky_test": Noul(instructions="Is this a flaky test, not a bug?"),
+        },
+        config=config,
+    )
+
+@step(on_failure=triage_with_flakiness)
+def run_tests():
+    ...
+```
+
+`JevConfig.load()` accepts overrides for every field. This run summary hook
+compares against the last ten successful runs instead of the last five runs
+of any status, which stops a string of identical failures from looking
+normal:
+
+```python
+from zenml import pipeline
+from zenml.enums import ExecutionStatus
+from zenml.integrations.typesafe.hooks import (
+    RUN_SUMMARY_QUESTIONS,
+    JevConfig,
+    build_run_summary_state,
+    jev_classify_and_log,
+)
+
+def summary_against_successes(exception: BaseException | None = None) -> None:
+    config = JevConfig.load(
+        recent_runs=10, recent_run_status=ExecutionStatus.COMPLETED
+    )
+    if state := build_run_summary_state(exception, config):
+        jev_classify_and_log(state, RUN_SUMMARY_QUESTIONS, config)
+
+@pipeline(dynamic=True, on_end=summary_against_successes)
+def nightly_training():
+    ...
+```
+
+For remote orchestrators, add the integration to the image with
+`DockerSettings(required_integrations=["typesafe"])`, and pass the API key as
+an environment variable or keep it in the `typesafe` secret.
+
 ## Behavior notes
 
 * **Retries.** A retried step fires one `on_start` / `on_end` pair per attempt.

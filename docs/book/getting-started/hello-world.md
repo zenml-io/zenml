@@ -21,7 +21,7 @@ zenml login
 ```
 
 This gives you access to both the ZenML Python SDK and CLI tools. It also surfaces the
-ZenML dashboard + connects it to your local client.
+ZenML UI + connects it to your local client.
 {% endstep %}
 
 {% step %}
@@ -55,7 +55,7 @@ Run this pipeline in batch mode locally:
 python run.py
 ```
  
-You will see ZenML automatically tracks the execution and stores artifacts. View these on the CLI or on the dashboard.
+You will see ZenML automatically tracks the execution and stores artifacts. View these on the CLI or in the UI.
 
 {% endstep %}
 
@@ -73,7 +73,7 @@ Snapshots are powerful because they:
 - **Freeze your pipeline state** - Ensure the exact same pipeline always runs
 - **Enable parameterization** - Run the same snapshot with different inputs
 - **Support team collaboration** - Share ready-to-use pipeline configurations
-- **Integrate with automation** - Trigger from dashboards, APIs, or CI/CD systems
+- **Integrate with automation** - Trigger from the UI, APIs, or CI/CD systems
 
 [Learn more about Snapshots](../how-to/snapshots/snapshots.md)
 {% endstep %}
@@ -110,7 +110,7 @@ zenml login
 zenml project set <PROJECT_NAME>
 ```
 
-Once connected, you'll have a centralized dashboard to manage infrastructure, collaborate with team members, and schedule pipeline runs.
+Once connected, you'll have a centralized UI to manage infrastructure, collaborate with team members, and schedule pipeline runs.
 {% endstep %}
 
 {% step %}
@@ -125,7 +125,7 @@ Remote stacks can include:
 - **[Remote Orchestrators](https://docs.zenml.io/stacks/stack-components/orchestrators)** ([Kubernetes](https://docs.zenml.io/stacks/stack-components/orchestrators/kubernetes), [GCP Vertex AI](https://docs.zenml.io/stacks/stack-components/orchestrators/vertex), [AWS SageMaker](https://docs.zenml.io/stacks/stack-components/orchestrators/sagemaker)) - for running batch pipelines at scale
 - **[Remote Artifact Stores](https://docs.zenml.io/stacks/stack-components/artifact-stores)** ([S3](https://docs.zenml.io/stacks/stack-components/artifact-stores/s3), [GCS](https://docs.zenml.io/stacks/stack-components/artifact-stores/gcp), [Azure Blob](https://docs.zenml.io/stacks/stack-components/artifact-stores/azure)) - for storing and versioning pipeline artifacts
 
-The fastest way to create a cloud stack is through the **Infrastructure-as-Code** option, which uses Terraform to deploy cloud resources and register them as a ZenML stack.
+The fastest way to create a cloud stack is through the **Terraform** option, which uses Terraform to deploy cloud resources and register them as a ZenML stack.
 
 You'll need:
 
@@ -163,7 +163,7 @@ python run.py  # Automatically runs on cloud infrastructure
 
 ZenML handles packaging code, building containers, orchestrating execution, and tracking artifacts automatically across all cloud providers.
 
-<figure><img src="../.gitbook/assets/pipeline-run-on-the-dashboard.png" alt="Pipeline Run in ZenML Dashboard"><figcaption><p>Your pipeline in the ZenML Pro Dashboard</p></figcaption></figure>
+<figure><img src="../.gitbook/assets/pipeline-run-on-the-dashboard.png" alt="Pipeline Run in ZenML UI"><figcaption><p>Your pipeline in the ZenML Pro UI</p></figcaption></figure>
 {% endstep %}
 
 {% step %}

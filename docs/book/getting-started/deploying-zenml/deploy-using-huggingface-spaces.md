@@ -46,7 +46,7 @@ You can use the 'Direct URL' to connect to your ZenML server from your local mac
 zenml login '<YOUR_HF_SPACES_DIRECT_URL>'
 ```
 
-You can also use the Direct URL in your browser to use the ZenML dashboard as a fullscreen application (i.e. without the HuggingFace Spaces wrapper around it).
+You can also use the Direct URL in your browser to use the ZenML UI as a fullscreen application (i.e. without the HuggingFace Spaces wrapper around it).
 
 ## Extra configuration options
 
@@ -59,7 +59,7 @@ If you are using the space just for testing and experimentation, you don't need 
 You can also use an external secrets backend together with your HuggingFace Spaces as described in [our documentation](deploy-with-docker.md#advanced-server-configuration-options). You should be sure to use HuggingFace's inbuilt ' Repository secrets' functionality to configure any secrets you need to use in your`Dockerfile` configuration. [See the documentation](https://huggingface.co/docs/hub/spaces-sdks-docker#secret-management) for more details on how to set this up.
 
 {% hint style="warning" %}
-If you wish to use a cloud secrets backend together with ZenML for secrets management, **you must update your password** on your ZenML Server on the Dashboard. This is because the default user created by the HuggingFace Spaces deployment process has no password assigned to it and as the Space is publicly accessible (since the Space is public) _potentially anyone could access your secrets without this extra step_. To change your password navigate to the Settings page by clicking the button in the upper right-hand corner of the Dashboard and then click 'Update Password'.
+If you wish to use a cloud secrets backend together with ZenML for secrets management, **you must update your password** on your ZenML Server in the UI. This is because the default user created by the HuggingFace Spaces deployment process has no password assigned to it and as the Space is publicly accessible (since the Space is public) _potentially anyone could access your secrets without this extra step_. To change your password navigate to the Settings page by clicking the button in the upper right-hand corner of the UI and then click 'Update Password'.
 {% endhint %}
 
 ## Troubleshooting

@@ -9,7 +9,7 @@ Organizing and categorizing your machine learning artifacts and models can\
 streamline your workflow and enhance discoverability. ZenML enables the use of\
 tags as a flexible tool to classify and filter your ML assets.
 
-![Tags are visible in the ZenML Dashboard](../../.gitbook/assets/tags-in-dashboard.png)
+![Tags are visible in the ZenML UI](../../.gitbook/assets/tags-in-dashboard.png)
 
 ## Tagging different entities
 

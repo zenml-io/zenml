@@ -61,7 +61,7 @@ def train() -> str:
         args=transformers.TrainingArguments(
             output_dir="test_trainer",
             eval_strategy="epoch",
-            no_cuda=True,
+            use_cpu=True,
             max_steps=1,
             per_device_train_batch_size=1,
             report_to="none",

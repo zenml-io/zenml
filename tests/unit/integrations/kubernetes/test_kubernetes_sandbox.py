@@ -21,6 +21,8 @@ from uuid import uuid4
 
 import pytest
 from kubernetes import client as k8s_client
+from kubernetes.client.exceptions import ApiException
+from websocket import WebSocketBadStatusException
 
 from zenml.integrations.kubernetes import kube_utils
 from zenml.integrations.kubernetes.flavors import (
@@ -33,6 +35,7 @@ from zenml.integrations.kubernetes.sandboxes.kubernetes_sandbox import (
     KubernetesSandboxProcess,
     KubernetesSandboxSession,
 )
+from zenml.sandboxes.process import SandboxExecError
 
 
 def _build_script(
@@ -312,6 +315,81 @@ def test_collect_exec_output_joins_chunks() -> None:
     )
 
     assert output == "abcdef"
+
+
+def _handshake_error(cause: BaseException) -> ApiException:
+    """Build the error the Kubernetes client raises for a failed handshake."""
+    error = ApiException(status=0, reason=str(cause))
+    error.__context__ = cause
+    return error
+
+
+def _bad_status(status_code: int) -> WebSocketBadStatusException:
+    # A format string, because websocket-client < 1.0 interpolates the status
+    # into the message itself.
+    return WebSocketBadStatusException("Handshake status %d %s", status_code)
+
+
+@pytest.fixture
+def sleep(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
+    """Replace the retry backoff sleep with a mock."""
+    sleep = MagicMock()
+    monkeypatch.setattr(kubernetes_sandbox.time, "sleep", sleep)
+    return sleep
+
+
+@pytest.mark.parametrize(
+    "cause",
+    [_bad_status(503), ConnectionRefusedError("refused")],
+    ids=["unavailable", "connection-refused"],
+)
+def test_open_exec_stream_retries_transient_handshake_failures(
+    cause: BaseException,
+    sleep: MagicMock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that transient exec handshake failures are retried with backoff."""
+    websocket_client = MagicMock()
+    stream = MagicMock(
+        side_effect=[
+            _handshake_error(cause),
+            _handshake_error(cause),
+            websocket_client,
+        ]
+    )
+    monkeypatch.setattr(kubernetes_sandbox, "k8s_stream", stream)
+
+    assert _make_session()._open_exec_stream(["true"]) is websocket_client
+    first_delay, second_delay = (call.args[0] for call in sleep.call_args_list)
+    assert 0.5 <= first_delay <= 1.0
+    assert 1.0 <= second_delay <= 2.0
+
+
+@pytest.mark.parametrize(
+    "error, calls",
+    [
+        (_handshake_error(_bad_status(503)), 4),
+        (_handshake_error(_bad_status(504)), 1),
+        (_handshake_error(_bad_status(403)), 1),
+        (RuntimeError("unexpected"), 1),
+    ],
+    ids=["retries-exhausted", "gateway-timeout", "forbidden", "unknown"],
+)
+def test_open_exec_stream_raises_once_retries_do_not_apply(
+    error: Exception,
+    calls: int,
+    sleep: MagicMock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that exec handshakes fail when retries are exhausted or unsafe."""
+    stream = MagicMock(side_effect=error)
+    monkeypatch.setattr(kubernetes_sandbox, "k8s_stream", stream)
+
+    with pytest.raises(SandboxExecError, match="failed to launch"):
+        _make_session()._open_exec_stream(["true"])
+
+    assert stream.call_count == calls
+    assert sleep.call_count == calls - 1
 
 
 _STEP_POD_NAME = "step-pod"

@@ -12,17 +12,28 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from whylogs.core import DatasetProfileView
+import pytest
 
 from tests.unit.test_general import _test_materializer
-from zenml.integrations.whylogs.materializers.whylogs_materializer import (
-    WhylogsMaterializer,
-)
+
+if TYPE_CHECKING:
+    from zenml.client import Client
 
 
-def test_whylogs_materializer(clean_client):
-    """Tests whether the steps work for the Whylogs materializer."""
+def test_whylogs_materializer(clean_client: "Client") -> None:
+    """Test persistence and visualization of whylogs profiles.
+
+    Args:
+        clean_client: The isolated ZenML client.
+    """
+    DatasetProfileView = pytest.importorskip("whylogs.core").DatasetProfileView
+
+    from zenml.integrations.whylogs.materializers.whylogs_materializer import (
+        WhylogsMaterializer,
+    )
+
     dataset_profile_view = _test_materializer(
         step_output=DatasetProfileView(
             columns={},

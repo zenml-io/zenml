@@ -185,6 +185,27 @@ settings = {
 
 The pipeline still runs on Modal. You can monitor it from ZenML because the pipeline run metadata contains the Modal orchestration sandbox ID.
 
+## Modal Apps and finding a run's sandboxes
+
+Every Modal Sandbox belongs to a Modal App. The orchestrator puts the sandboxes of all pipeline runs into one Modal App, named `zenml-orchestrator` by default, so the Modal dashboard shows a single App instead of one new App per run. Set `app_name` on the orchestrator to use a different App, for example one per team:
+
+```shell
+zenml orchestrator update <ORCHESTRATOR_NAME> --app_name=team-a-ml
+```
+
+To tell runs apart inside that App, ZenML tags every sandbox with `zenml-orchestrator-run-id` (the run's orchestrator run ID) and, for step sandboxes, `zenml-step` (the step name). While a run is in progress, you can find its sandboxes with the Modal SDK:
+
+```python
+import modal
+
+for sandbox in modal.Sandbox.list(tags={"zenml-orchestrator-run-id": "<RUN_ID>"}):
+    print(sandbox.object_id)
+```
+
+`modal.Sandbox.list` only returns sandboxes that are still running. For a finished run, use the sandbox IDs that ZenML stores in the run and step metadata (`modal_orchestration_sandbox_id`, `sandbox_id`) with `modal.Sandbox.from_id(...)`.
+
+The App lives in Modal's records, not in running compute: once its sandboxes finish, it shows `Tasks: 0` and costs nothing.
+
 ## Stopping runs
 
 Stop behavior depends on the pipeline type and whether the stop is graceful or forceful.

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Kubernetes step operator implementation."""
 
-import random
 from typing import (
     TYPE_CHECKING,
     Dict,
@@ -35,6 +34,7 @@ from zenml.integrations.kubernetes import kube_utils
 from zenml.integrations.kubernetes.constants import (
     STEP_NAME_ANNOTATION_KEY,
     STEP_OPERATOR_ANNOTATION_KEY,
+    WORKSPACE_USER_ID_ANNOTATION_KEY,
 )
 from zenml.integrations.kubernetes.flavors import (
     KubernetesStepOperatorConfig,
@@ -49,6 +49,7 @@ from zenml.integrations.kubernetes.manifest_utils import (
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
+from zenml.utils.string_utils import random_hex_str
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
@@ -272,9 +273,11 @@ class KubernetesStepOperator(BaseStepOperator):
                 info.pipeline_step_name
             ),
         }
+        workspace_user_id = str(Client().active_user.id)
         step_annotations = {
             STEP_NAME_ANNOTATION_KEY: info.pipeline_step_name,
             STEP_OPERATOR_ANNOTATION_KEY: str(self.id),
+            WORKSPACE_USER_ID_ANNOTATION_KEY: workspace_user_id,
         }
 
         # We set some default minimum memory resource requests for the step pod
@@ -294,7 +297,7 @@ class KubernetesStepOperator(BaseStepOperator):
         )
 
         job_name = settings.job_name_prefix or ""
-        random_prefix = "".join(random.choices("0123456789abcdef", k=8))
+        random_prefix = random_hex_str(8)
         job_name += f"-{random_prefix}-{info.pipeline_step_name}-{info.pipeline.name}-step-operator"
         # The job name will be used as a label on the pods, so we need to make
         # sure it doesn't exceed the label length limit
@@ -325,6 +328,7 @@ class KubernetesStepOperator(BaseStepOperator):
             pod_settings=pod_settings,
             service_account_name=settings.service_account_name,
             labels=step_labels,
+            annotations={WORKSPACE_USER_ID_ANNOTATION_KEY: workspace_user_id},
             run_as_user=oidc_claims.get(LINUX_UID_CLAIM_KEY),
             run_as_group=oidc_claims.get(LINUX_GID_CLAIM_KEY),
         )
@@ -411,7 +415,13 @@ class KubernetesStepOperator(BaseStepOperator):
             return ExecutionStatus.FAILED
 
         if not job_list.items:
+            # Kubernetes also deletes successful jobs once their TTL expires,
+            # so the step run is the only remaining record of the outcome. An
+            # unfinished step run can't finish without its job.
             logger.warning("No jobs found for step run `%s`", step_run.id)
+            status = Client().get_run_step(step_run.id, hydrate=False).status
+            if status.is_finished:
+                return status
             return ExecutionStatus.FAILED
 
         job = job_list.items[0]

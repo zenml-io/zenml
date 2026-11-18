@@ -12,8 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Initialization of the Huggingface integration."""
+
 import sys
-from typing import List, Type, Optional
+from typing import List, Optional, Type
 
 from zenml.integrations.constants import HUGGINGFACE
 from zenml.integrations.integration import Integration
@@ -38,7 +39,10 @@ class HuggingfaceIntegration(Integration):
         from zenml.integrations.huggingface import services
 
     @classmethod
-    def get_requirements(cls, target_os: Optional[str] = None, python_version: Optional[str] = None
+    def get_requirements(
+        cls,
+        target_os: Optional[str] = None,
+        python_version: Optional[str] = None,
     ) -> List[str]:
         """Defines platform specific requirements for the integration.
 
@@ -51,7 +55,8 @@ class HuggingfaceIntegration(Integration):
         """
         requirements = [
             "datasets>=2.16.0,<4.0.0",
-            "huggingface_hub>0.19.0",
+            # The Space deployer uses the storage tier API removed in Hub 2.0.
+            "huggingface_hub>0.19.0,<2.0.0",
             "accelerate",
             "bitsandbytes>=0.41.3",
             "peft",
@@ -60,14 +65,15 @@ class HuggingfaceIntegration(Integration):
             # install hits a conflict. Those versions pin tokenizers<0.11,
             # which has no wheels and fails to build from source on modern
             # Rust toolchains.
-            "transformers>=4.40,<4.55.0",
+            "transformers[torch]>=4.40,<6.0.0",
         ]
 
         # Add the pandas integration requirements
         from zenml.integrations.pandas import PandasIntegration
 
-        return requirements + \
-            PandasIntegration.get_requirements(target_os=target_os, python_version=python_version)
+        return requirements + PandasIntegration.get_requirements(
+            target_os=target_os, python_version=python_version
+        )
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
@@ -82,5 +88,3 @@ class HuggingfaceIntegration(Integration):
         )
 
         return [HuggingFaceDeployerFlavor, HuggingFaceModelDeployerFlavor]
-
-

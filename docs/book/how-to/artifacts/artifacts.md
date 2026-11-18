@@ -266,7 +266,7 @@ Materializers are a key concept in ZenML's artifact system. They handle:
 
 * **Serializing data** when saving artifacts to storage
 * **Deserializing data** when loading artifacts from storage
-* **Generating visualizations** for the dashboard
+* **Generating visualizations** for the UI
 * **Extracting metadata** for tracking and searching
 
 When a step produces an output, ZenML automatically selects the appropriate materializer based on the data type (using type annotations). ZenML includes built-in materializers for common data types like:
@@ -383,7 +383,7 @@ This allows you to build modular pipelines that can work together as part of a l
 
 ### Visualizing Artifacts
 
-ZenML automatically generates visualizations for many types of artifacts, viewable in the dashboard:
+ZenML automatically generates visualizations for many types of artifacts, viewable in the UI:
 
 ```python
 # You can also view visualizations in notebooks
@@ -408,6 +408,8 @@ This deletes artifacts that are no longer referenced by any pipeline run. You ca
 * `--only-artifact`: Only delete the physical files, keep database entries
 * `--only-metadata`: Only delete database entries, keep files
 * `--ignore-errors`: Continue pruning even if some artifacts can't be deleted
+
+ZenML preserves output files when a step fails or is interrupted to avoid deleting artifacts after a communication error with the server. Failed attempts can therefore leave partial or unused files in the artifact store. Artifact pruning only covers artifacts registered with ZenML; files that were never registered must be managed directly in the underlying storage after confirming that they are no longer needed or being written by a running step.
 
 ### Registering Existing Data as Artifacts
 

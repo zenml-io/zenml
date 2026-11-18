@@ -134,6 +134,13 @@ install_integrations() {
     if [ "$os_name" = "Windows" ]; then
         ignore_integrations="$ignore_integrations pytorch neural_prophet pytorch_lightning"
     fi
+
+    # whylogs-sketching has no Python 3.13/3.14 wheels. Its source build
+    # fails with GCC 15 on Ubuntu, so retain coverage on the other CI jobs.
+    if [ "$os_name" = "Linux" ] &&
+        { [ "$python_version" = "3.13" ] || [ "$python_version" = "3.14" ]; }; then
+        ignore_integrations="$ignore_integrations whylogs"
+    fi
     
     # turn the ignore integrations into a list of --ignore-integration args
     ignore_integrations_args=""
@@ -164,6 +171,12 @@ install_integrations() {
         echo "maison<2" >> integration-requirements.txt
     fi
     
+    # TensorFlow <2.15 keeps these shared integration environments on NumPy 1.
+    # PyArrow 26 needs NumPy 2 but omits that requirement from its wheel metadata.
+    if [ "$python_version" = "3.10" ] || [ "$python_version" = "3.11" ]; then
+        echo "pyarrow<26" >> integration-requirements.txt
+    fi
+
     echo "-e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]" >> integration-requirements.txt
 
     # Build upgrade arguments based on UPGRADE_ALL flag

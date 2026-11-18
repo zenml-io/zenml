@@ -100,7 +100,13 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
                 return self._filesystem
 
             token = self.get_credentials()
-            self._filesystem = gcsfs.GCSFileSystem(token=token)
+            kwargs: Dict[str, Any] = {}
+            if self.config.request_timeout is not None:
+                kwargs.update(
+                    timeout=self.config.request_timeout,
+                    requests_timeout=self.config.request_timeout,
+                )
+            self._filesystem = gcsfs.GCSFileSystem(token=token, **kwargs)
 
             return self._filesystem
 
@@ -119,7 +125,15 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
             logger.warning(
                 "GCS Filesystem is immutable, so append mode will overwrite existing files."
             )
-        return self.filesystem.open(path=path, mode=mode)
+        kwargs: Dict[str, Any] = {}
+        if self.config.request_timeout is not None:
+            # File handles do not inherit the filesystem's upload timeout.
+            kwargs["timeout"] = self.config.request_timeout
+        if self.config.read_cache_type is not None and "r" in mode:
+            # An explicit cache can avoid background prefetcher cleanup hangs
+            # in affected gcsfs releases (fsspec/gcsfs#1037).
+            kwargs["cache_type"] = self.config.read_cache_type
+        return self.filesystem.open(path=path, mode=mode, **kwargs)
 
     def copyfile(
         self, src: PathType, dst: PathType, overwrite: bool = False
