@@ -13585,6 +13585,12 @@ class SqlZenStore(BaseZenStore):
                     **stack_metadata,
                 }
 
+            if (
+                new_status == ExecutionStatus.COMPLETED
+                and previous_status != new_status
+            ):
+                self._track_first_pipeline_run_completed(pipeline_run, session)
+
             completed_onboarding_steps: Set[str] = {
                 OnboardingStep.PIPELINE_RUN,
             }
@@ -13606,6 +13612,41 @@ class SqlZenStore(BaseZenStore):
 
             self._update_onboarding_state(
                 completed_steps=completed_onboarding_steps, session=session
+            )
+
+    def _track_first_pipeline_run_completed(
+        self, pipeline_run: PipelineRunSchema, session: Session
+    ) -> None:
+        """Track a user's first successful run in this workspace.
+
+        Args:
+            pipeline_run: Run that just completed successfully.
+            session: Database session.
+        """
+        user = pipeline_run.user
+        if user is None or user.is_service_account:
+            return
+        previous_run = session.exec(
+            select(PipelineRunSchema.id)
+            .where(PipelineRunSchema.user_id == user.id)
+            .where(PipelineRunSchema.id != pipeline_run.id)
+            .where(PipelineRunSchema.status == ExecutionStatus.COMPLETED)
+            .limit(1)
+        ).first()
+        if previous_run is not None:
+            return
+        with AnalyticsContext() as context:
+            context.user_id = user.id
+            context.external_user_id = user.external_user_id
+            context.executed_by_service_account = False
+            context.track(
+                event=AnalyticsEvent.FIRST_PIPELINE_RUN_COMPLETED,
+                properties={
+                    "email": user.email,
+                    "pipeline_run_id": pipeline_run.id,
+                    "project_id": pipeline_run.project_id,
+                    "event_success": True,
+                },
             )
 
     def _verify_step_status_transition(
