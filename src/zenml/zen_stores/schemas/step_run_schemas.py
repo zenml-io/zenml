@@ -73,6 +73,12 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.model_schemas import ModelVersionSchema
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 
+# Fields of a step run update that can't affect the status of its pipeline
+# run: the cache expiration, links to saved or loaded artifacts, and logs.
+_RUN_STATUS_INDEPENDENT_UPDATE_FIELDS = frozenset(
+    {"cache_expires_at", "outputs", "loaded_artifact_versions", "add_logs"}
+)
+
 
 class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     """SQL Model for steps of pipeline runs."""
@@ -612,6 +618,30 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         self.updated = utc_now()
 
         return self
+
+    @staticmethod
+    def update_affects_run_status(step_update: "StepRunUpdate") -> bool:
+        """Check whether a step run update can affect the status of its run.
+
+        Steps can update some fields after their run finished, for example to
+        expire their cache. Such updates shouldn't depend on deriving the
+        status of the finished run again.
+
+        Args:
+            step_update: The step run update model.
+
+        Returns:
+            False if the update only sets fields in
+            `_RUN_STATUS_INDEPENDENT_UPDATE_FIELDS`, True otherwise. Empty
+            updates and updates that set any other field, including fields
+            added to `StepRunUpdate` later, return True. A field counts as set
+            even when it's set to `None`.
+        """
+        updated_fields = step_update.model_fields_set
+        return not (
+            updated_fields
+            and updated_fields <= _RUN_STATUS_INDEPENDENT_UPDATE_FIELDS
+        )
 
 
 class StepRunParentsSchema(SQLModel, table=True):

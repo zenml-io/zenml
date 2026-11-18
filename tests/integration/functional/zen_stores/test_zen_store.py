@@ -6501,8 +6501,18 @@ def test_updating_step_of_stopped_run_keeps_its_status(
     )
 
 
-def test_updating_step_cache_expiration_leaves_run_untouched(clean_client):
-    """Tests that a step update which can't affect the run skips updating it."""
+@pytest.mark.parametrize(
+    "expires_in",
+    [timedelta(days=1), None],
+    ids=["expiration", "no-expiration"],
+)
+def test_updating_step_cache_expiration_leaves_run_untouched(
+    clean_client, expires_in
+):
+    """Tests that a step update which can't affect the run skips updating it.
+
+    Without an expiration, the client still sends `cache_expires_at=None`.
+    """
     pipeline_run, (step_run,) = _create_running_static_run(
         clean_client, num_steps=1
     )
@@ -6510,7 +6520,7 @@ def test_updating_step_cache_expiration_leaves_run_untouched(clean_client):
 
     clean_client.update_step_run(
         step_run_id=step_run.id,
-        cache_expires_at=datetime.now() + timedelta(days=1),
+        cache_expires_at=datetime.now() + expires_in if expires_in else None,
     )
 
     run = clean_client.get_pipeline_run(pipeline_run.id)
