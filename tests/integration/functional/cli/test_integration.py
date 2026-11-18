@@ -228,7 +228,8 @@ def test_integration_requirements_exporting(tmp_path) -> None:
     from zenml.integrations.kubeflow import KubeflowIntegration
     from zenml.integrations.mlflow import MlflowIntegration
 
-    flow_integration_requirements = set(
+    # Exported in integration name order, whatever order they are passed in.
+    flow_integration_requirements = (
         AirflowIntegration.get_requirements()
         + KubeflowIntegration.get_requirements()
         + MlflowIntegration.get_requirements()
@@ -236,14 +237,14 @@ def test_integration_requirements_exporting(tmp_path) -> None:
 
     command = [
         "export-requirements",
+        MlflowIntegration.NAME,
         AirflowIntegration.NAME,
         KubeflowIntegration.NAME,
-        MlflowIntegration.NAME,
     ]
     runner = cli_runner()
     result = runner.invoke(integration, command)
     assert result.exit_code == 0
-    assert set(result.output.split(" ")) == flow_integration_requirements
+    assert result.output.split(" ") == flow_integration_requirements
 
     output_file = str(tmp_path / "requirements.txt")
     command += ["--output-file", output_file]
@@ -252,6 +253,4 @@ def test_integration_requirements_exporting(tmp_path) -> None:
     assert result.exit_code == 0
 
     with open(output_file, "r") as f:
-        assert (
-            set(f.read().strip().split("\n")) == flow_integration_requirements
-        )
+        assert f.read().strip().split("\n") == flow_integration_requirements
