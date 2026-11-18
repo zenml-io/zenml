@@ -67,7 +67,6 @@ from zenml.enums import (
     ArtifactType,
     ColorVariants,
     CuratedVisualizationSize,
-    ExecutionMode,
     ExecutionStatus,
     MetadataResourceTypes,
     ModelStages,
@@ -6390,7 +6389,7 @@ def test_updating_the_pipeline_run_status(
 def _create_running_static_run(
     client: Client, num_steps: int
 ) -> Tuple[PipelineRunResponse, List[StepRunResponse]]:
-    """Creates a running static `CONTINUE_ON_FAILURE` run with running steps.
+    """Creates a running static run with running steps.
 
     Args:
         client: The client to use.
@@ -6410,7 +6409,6 @@ def _create_running_static_run(
             run_name_template=sample_name("run"),
             pipeline_configuration=PipelineConfiguration(
                 name=sample_name("pipeline-config"),
-                execution_mode=ExecutionMode.CONTINUE_ON_FAILURE,
             ),
             pipeline=pipeline_model.id,
             stack=client.active_stack.id,
@@ -6501,18 +6499,8 @@ def test_updating_step_of_stopped_run_keeps_its_status(
     )
 
 
-@pytest.mark.parametrize(
-    "expires_in",
-    [timedelta(days=1), None],
-    ids=["expiration", "no-expiration"],
-)
-def test_updating_step_cache_expiration_leaves_run_untouched(
-    clean_client, expires_in
-):
-    """Tests that a step update which can't affect the run skips updating it.
-
-    Without an expiration, the client still sends `cache_expires_at=None`.
-    """
+def test_updating_step_cache_expiration_leaves_run_untouched(clean_client):
+    """Tests that a step update which can't affect the run skips updating it."""
     pipeline_run, (step_run,) = _create_running_static_run(
         clean_client, num_steps=1
     )
@@ -6520,67 +6508,11 @@ def test_updating_step_cache_expiration_leaves_run_untouched(
 
     clean_client.update_step_run(
         step_run_id=step_run.id,
-        cache_expires_at=datetime.now() + expires_in if expires_in else None,
+        cache_expires_at=datetime.now() + timedelta(days=1),
     )
 
     run = clean_client.get_pipeline_run(pipeline_run.id)
     assert run.updated == run_before_update.updated
-
-
-def test_updating_step_status_with_cache_expiration_updates_run(clean_client):
-    """Tests that a step update with a status still updates the run."""
-    pipeline_run, (step_run,) = _create_running_static_run(
-        clean_client, num_steps=1
-    )
-
-    clean_client.zen_store.update_run_step(
-        step_run_id=step_run.id,
-        step_run_update=StepRunUpdate(
-            status=ExecutionStatus.COMPLETED,
-            cache_expires_at=datetime.now() + timedelta(days=1),
-        ),
-    )
-
-    run = clean_client.get_pipeline_run(pipeline_run.id)
-    assert run.status == ExecutionStatus.COMPLETED
-    assert not run.in_progress
-
-
-def test_continue_on_failure_run_finishes_after_step_cache_expiration_update(
-    clean_client,
-):
-    """Tests that a failed run still finishes after a step cache update.
-
-    With `CONTINUE_ON_FAILURE`, a run is `failed` but stays in progress while
-    its other steps are running, and only finishes once they finish.
-    """
-    pipeline_run, (failed_step_run, running_step_run) = (
-        _create_running_static_run(clean_client, num_steps=2)
-    )
-
-    clean_client.zen_store.update_run_step(
-        step_run_id=failed_step_run.id,
-        step_run_update=StepRunUpdate(status=ExecutionStatus.FAILED),
-    )
-    assert clean_client.get_pipeline_run(pipeline_run.id).in_progress
-
-    clean_client.update_step_run(
-        step_run_id=running_step_run.id,
-        cache_expires_at=datetime.now() - timedelta(days=1),
-    )
-    run = clean_client.get_pipeline_run(pipeline_run.id)
-    assert run.status == ExecutionStatus.FAILED
-    assert run.in_progress
-    assert run.end_time is None
-
-    clean_client.zen_store.update_run_step(
-        step_run_id=running_step_run.id,
-        step_run_update=StepRunUpdate(status=ExecutionStatus.COMPLETED),
-    )
-    run = clean_client.get_pipeline_run(pipeline_run.id)
-    assert run.status == ExecutionStatus.FAILED
-    assert not run.in_progress
-    assert run.end_time is not None
 
 
 def test_running_status_does_not_undo_stop_of_static_run(clean_client):

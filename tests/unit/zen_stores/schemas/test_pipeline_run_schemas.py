@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Unit tests for step run schemas."""
+"""Unit tests for pipeline run schemas."""
 
 from datetime import datetime
 from uuid import uuid4
@@ -20,7 +20,7 @@ import pytest
 
 from zenml.enums import ExecutionStatus
 from zenml.models import StepRunUpdate
-from zenml.zen_stores.schemas import StepRunSchema
+from zenml.zen_stores.schemas import PipelineRunSchema
 
 CACHE_EXPIRES_AT = datetime(2026, 1, 1)
 
@@ -65,12 +65,12 @@ CACHE_EXPIRES_AT = datetime(2026, 1, 1)
         "exception-info-none-and-outputs",
     ],
 )
-def test_step_run_update_affects_run_status(
+def test_step_run_update_affects_status(
     step_run_update: StepRunUpdate, affects_run_status: bool
 ) -> None:
     """Tests which step run updates can affect the status of their run."""
     assert (
-        StepRunSchema.update_affects_run_status(step_run_update)
+        PipelineRunSchema.step_run_update_affects_status(step_run_update)
         is affects_run_status
     )
 
@@ -80,6 +80,6 @@ def test_step_run_update_affects_run_status(
         step_run_update.model_dump(mode="json", exclude_unset=True)
     )
     assert (
-        StepRunSchema.update_affects_run_status(sent_update)
+        PipelineRunSchema.step_run_update_affects_status(sent_update)
         is affects_run_status
     )

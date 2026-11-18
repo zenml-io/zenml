@@ -55,6 +55,7 @@ from zenml.models import (
     PipelineRunTriggerInfo,
     PipelineRunUpdate,
     RunMetadataEntry,
+    StepRunUpdate,
 )
 from zenml.models.v2.core.pipeline_run import PipelineRunResponseResources
 from zenml.utils.run_utils import (
@@ -104,6 +105,12 @@ if TYPE_CHECKING:
 
 
 logger = get_logger(__name__)
+
+# Fields of a step run update that can't affect the status of its pipeline
+# run: the cache expiration, links to saved or loaded artifacts, and logs.
+_RUN_STATUS_INDEPENDENT_STEP_RUN_UPDATE_FIELDS = frozenset(
+    {"cache_expires_at", "outputs", "loaded_artifact_versions", "add_logs"}
+)
 
 
 class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
@@ -937,6 +944,31 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         self.updated = utc_now()
         return self
+
+    @staticmethod
+    def step_run_update_affects_status(step_run_update: StepRunUpdate) -> bool:
+        """Check whether a step run update can affect the status of a run.
+
+        Steps can update some fields after their run finished, for example to
+        expire their cache. Such updates shouldn't depend on deriving the
+        status of the finished run again.
+
+        Args:
+            step_run_update: The update of one of the steps of the run.
+
+        Returns:
+            False if the update only sets fields in
+            `_RUN_STATUS_INDEPENDENT_STEP_RUN_UPDATE_FIELDS`, True otherwise.
+            Empty updates and updates that set any other field, including
+            fields added to `StepRunUpdate` later, return True. A field counts
+            as set even when it's set to `None`.
+        """
+        updated_fields = step_run_update.model_fields_set
+        return not (
+            updated_fields
+            and updated_fields
+            <= _RUN_STATUS_INDEPENDENT_STEP_RUN_UPDATE_FIELDS
+        )
 
     def update_status(
         self,

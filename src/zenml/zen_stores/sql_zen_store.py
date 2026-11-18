@@ -13221,7 +13221,9 @@ class SqlZenStore(BaseZenStore):
                     session, existing_step_run.id
                 )
 
-            if StepRunSchema.update_affects_run_status(step_run_update):
+            if PipelineRunSchema.step_run_update_affects_status(
+                step_run_update
+            ):
                 self._update_pipeline_run_status(
                     pipeline_run_id=existing_step_run.pipeline_run_id,
                     session=session,
