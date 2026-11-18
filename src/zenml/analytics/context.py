@@ -59,7 +59,6 @@ class AnalyticsContext:
 
         self.user_id: Optional[UUID] = None
         self.external_user_id: Optional[UUID] = None
-        self.email: Optional[str] = None
         self.executed_by_service_account: Optional[bool] = None
         self.client_id: Optional[UUID] = None
         self.server_id: Optional[UUID] = None
@@ -115,7 +114,6 @@ class AnalyticsContext:
                 auth_context = get_auth_context()
                 if auth_context is not None:
                     self.user_id = auth_context.user.id
-                    self.email = auth_context.user.email
                     self.executed_by_service_account = (
                         auth_context.user.is_service_account
                     )
@@ -129,7 +127,6 @@ class AnalyticsContext:
                 # If the code is running on the client, use the default user.
                 active_user = gc.zen_store.get_user()
                 self.user_id = active_user.id
-                self.email = active_user.email
                 self.executed_by_service_account = (
                     active_user.is_service_account
                 )
@@ -318,14 +315,10 @@ class AnalyticsContext:
         if self.server_metadata:
             properties.update(self.server_metadata)
 
-        if event_value in {
-            AnalyticsEvent.RUN_PIPELINE.value,
-            AnalyticsEvent.RUN_PIPELINE_ENDED.value,
-        }:
-            if self.email:
-                properties["email"] = self.email
-            else:
-                properties.pop("email", None)
+        if self.external_user_id:
+            properties["cloud_user_id"] = self.external_user_id
+        else:
+            properties.pop("cloud_user_id", None)
 
         if self.project_id:
             properties.setdefault("project_id", str(self.project_id))
