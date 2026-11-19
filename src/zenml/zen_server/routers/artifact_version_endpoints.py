@@ -274,6 +274,10 @@ def delete_artifact_version(
             )
 
     if delete_from_artifact_store:
+        if artifact_version.managed_model_retained:
+            raise ValueError(
+                "Delete dependent managed model services before removing this artifact's files."
+            )
         if not artifact_version.artifact_store_id:
             raise ValueError(
                 "Artifact version has no artifact store, cannot delete data."

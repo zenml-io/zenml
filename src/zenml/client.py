@@ -6248,6 +6248,10 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             Exception: If the artifact store is inaccessible.
         """
+        if artifact_version.managed_model_retained:
+            raise ValueError(
+                "Delete dependent managed model services before removing this artifact's files."
+            )
         from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
         from zenml.stack.stack_component import StackComponent
 

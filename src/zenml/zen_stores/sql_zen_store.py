@@ -421,6 +421,10 @@ from zenml.zen_stores.dag.utils import (
     load_step_run_metadata,
     sort_dag_steps,
 )
+from zenml.zen_stores.managed_inference_keys_store import (
+    ManagedInferenceKeysStore,
+)
+from zenml.zen_stores.managed_model_store import ManagedModelStore
 from zenml.zen_stores.migrations.alembic import (
     Alembic,
 )
@@ -438,6 +442,7 @@ from zenml.zen_stores.schemas import (
     FlavorSchema,
     HookInvocationOutputArtifactSchema,
     HookInvocationSchema,
+    ManagedModelDependencySchema,
     ModelSchema,
     ModelVersionArtifactSchema,
     ModelVersionPipelineRunSchema,
@@ -1281,6 +1286,30 @@ class SqlZenStore(BaseZenStore):
             resource_pools: The resource pools store to set.
         """
         self._resource_pools = resource_pools
+
+    @property
+    def managed_inference_keys(self) -> "ManagedInferenceKeysStore":
+        """Get recoverable inference-key storage.
+
+        Returns:
+            Coordinator for service hashes and configured secret storage.
+        """
+        return ManagedInferenceKeysStore(self)
+
+    @property
+    def managed_models(self) -> ManagedModelStore:
+        """Get the workspace managed model operation store.
+
+        Returns:
+            Store bound to the workspace database.
+        """
+        return ManagedModelStore(
+            self.engine,
+            initial_admission_open=os.getenv(
+                "ZENML_MANAGED_MODEL_INITIAL_ADMISSION_CLOSED", "false"
+            ).lower()
+            != "true",
+        )
 
     @property
     def engine(self) -> Engine:
@@ -3409,9 +3438,21 @@ class SqlZenStore(BaseZenStore):
                 schema_class=ArtifactVersionSchema,
                 session=session,
             )
-            return artifact_version.to_model(
+            model = artifact_version.to_model(
                 include_metadata=hydrate, include_resources=True
             )
+            model.get_body().managed_model_retained = (
+                session.exec(
+                    select(ManagedModelDependencySchema.id)
+                    .where(
+                        ManagedModelDependencySchema.artifact_version_id
+                        == artifact_version_id
+                    )
+                    .limit(1)
+                ).first()
+                is not None
+            )
+            return model
 
     def list_artifact_versions(
         self,
@@ -3530,6 +3571,11 @@ class SqlZenStore(BaseZenStore):
                 for a in session.execute(
                     select(ArtifactVersionSchema.id).where(
                         and_(
+                            col(ArtifactVersionSchema.id).notin_(
+                                select(
+                                    ManagedModelDependencySchema.artifact_version_id
+                                )
+                            ),
                             col(ArtifactVersionSchema.id).notin_(
                                 select(StepRunOutputArtifactSchema.artifact_id)
                             ),

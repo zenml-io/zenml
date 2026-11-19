@@ -141,3 +141,29 @@ def test_pro_server_cors_includes_hosted_classic_dashboard(
     assert config.dashboard_url == (
         f"{dashboard_url.rstrip('/')}/workspaces/test-workspace"
     )
+
+
+def test_managed_serving_profiles_from_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The JSON list emitted by Terraform must not prevent server startup."""
+    for name in os.environ:
+        if name.startswith("ZENML_SERVER_"):
+            monkeypatch.delenv(name)
+    monkeypatch.setenv(
+        "ZENML_SERVER_MANAGED_MODEL_SERVING_PROFILES", '["smollm2-l4"]'
+    )
+    monkeypatch.setenv("ZENML_SERVER_MANAGED_MODEL_SERVICES_ENABLED", "false")
+    config = ServerConfiguration.get_server_config()
+    assert config.managed_model_serving_profiles == ["smollm2-l4"]
+    assert config.managed_model_services_enabled is False
+
+
+def test_managed_serving_profiles_reject_json_object() -> None:
+    """Invalid profile structures must still fail configuration validation."""
+    with pytest.raises(
+        ValidationError, match="managed_model_serving_profiles"
+    ):
+        ServerConfiguration(
+            managed_model_serving_profiles='{"profile": "smollm2-l4"}'
+        )
