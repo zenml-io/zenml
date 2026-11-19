@@ -13,11 +13,15 @@
 #  permissions and limitations under the License.
 """Unit tests for run utils."""
 
+from unittest.mock import MagicMock, patch
+
 import pytest
 
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.utils.run_utils import (
     build_dag,
     find_all_downstream_steps,
+    refresh_run_status,
 )
 
 
@@ -169,3 +173,50 @@ class TestFindAllDownstreamSteps:
 
         with pytest.raises(KeyError):
             find_all_downstream_steps("nonexistent_step", dag)
+
+
+def _refresh_with_orchestrator_status(
+    run_status: ExecutionStatus, orchestrator_status: ExecutionStatus
+) -> MagicMock:
+    """Refresh a run whose orchestrator reports a status, return the store."""
+    run = MagicMock(status=run_status)
+    run.stack.components = {StackComponentType.ORCHESTRATOR: [MagicMock()]}
+    orchestrator = MagicMock()
+    orchestrator.fetch_status.return_value = (orchestrator_status, {})
+    zen_store = MagicMock()
+
+    with patch(
+        "zenml.utils.run_utils.StackComponent.from_model",
+        return_value=orchestrator,
+    ):
+        refresh_run_status(run=run, zen_store=zen_store)
+
+    return zen_store
+
+
+@pytest.mark.parametrize(
+    "orchestrator_status",
+    [ExecutionStatus.COMPLETED, ExecutionStatus.FAILED],
+)
+def test_refresh_keeps_paused_run_paused(orchestrator_status):
+    """A paused run's exited orchestrator process must not finish the run."""
+    zen_store = _refresh_with_orchestrator_status(
+        run_status=ExecutionStatus.PAUSED,
+        orchestrator_status=orchestrator_status,
+    )
+
+    zen_store.update_run.assert_not_called()
+
+
+def test_refresh_updates_running_run():
+    """A running run takes the status reported by its orchestrator."""
+    zen_store = _refresh_with_orchestrator_status(
+        run_status=ExecutionStatus.RUNNING,
+        orchestrator_status=ExecutionStatus.COMPLETED,
+    )
+
+    zen_store.update_run.assert_called_once()
+    assert (
+        zen_store.update_run.call_args.kwargs["run_update"].status
+        == ExecutionStatus.COMPLETED
+    )
