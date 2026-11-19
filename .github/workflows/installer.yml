@@ -200,11 +200,22 @@ jobs:
         # server dependencies). ubuntu-latest only: it has Docker, and the
         # zenml-server image is amd64 only. macOS also needs
         # OBJC_DISABLE_INITIALIZE_FORK_SAFETY, which the installer prints.
+        # The command pulls zenmldocker/zenml-server:<installed version>, which
+        # the release workflow publishes after PyPI. A release PR's version has
+        # no image yet (nor does develop's, until that release step is done):
+        # skip while Docker Hub has no such tag.
         if: matrix.os == 'ubuntu-latest'
         run: |
           set -euxo pipefail
           export PATH="$HOME/.local/bin:$PATH"
           grep -q 'zenml login --local --docker' "$RUNNER_TEMP/install.log"
+          version="$(zenml --version 2>&1 | tail -1 | awk '{print $NF}')"
+          # Only a definite 404 skips; if Docker Hub cannot be asked, run anyway.
+          tag="$(curl -sS --retry 3 -o /dev/null -w '%{http_code}' "https://hub.docker.com/v2/namespaces/zenmldocker/repositories/zenml-server/tags/$version" || true)"
+          if [ "$tag" = 404 ]; then
+            echo "::notice::zenmldocker/zenml-server:$version is not published yet (the release workflow publishes it); skipping zenml login --local --docker."
+            exit 0
+          fi
           zenml login --local --docker
           zenml status
           zenml logout --local
@@ -284,12 +295,23 @@ jobs:
           path: ${{ runner.temp }}/zenml-wheel
       - name: Point the menu at this checkout and the PR's wheel
         if: github.event_name == 'pull_request'
+        # The menu installs ZenML without a version, as users run it. In a
+        # project, that `uv add` records `zenml>=<version>` and locks without
+        # keeping zenml on a UV_CONSTRAINT (neither a `zenml @ file://` URL
+        # nor an exact pin), so the lock took zenml from PyPI: PyPI's files on
+        # ordinary PRs, and a failure on release PRs, whose version is not on
+        # PyPI yet. An index holding only the wheel, which uv asks before
+        # PyPI, keeps every resolution on it: uv takes each package from the
+        # first index that has it.
         run: |
           wheel=$(find "$RUNNER_TEMP/zenml-wheel" -maxdepth 1 -name 'zenml-*.whl' -print -quit)
-          wheel_uri=$(python -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).resolve().as_uri())' "$wheel")
-          printf 'zenml @ %s\n' "$wheel_uri" > "$RUNNER_TEMP/zenml-constraint.txt"
+          name=$(basename "$wheel")
+          index="$RUNNER_TEMP/zenml-index"
+          mkdir -p "$index/zenml"
+          cp "$wheel" "$index/zenml/"
+          printf '<!DOCTYPE html><html><body><a href="%s">%s</a></body></html>\n' "$name" "$name" > "$index/zenml/index.html"
           {
-            printf 'UV_CONSTRAINT=%s\n' "$RUNNER_TEMP/zenml-constraint.txt"
+            printf 'UV_INDEX=%s\n' "$index"
             printf 'ZENML_INSTALL_ZENML_URL=%s\n' "$GITHUB_WORKSPACE/install-zenml.sh"
             printf 'ZENML_INSTALL_KITARU_URL=%s\n' "https://raw.githubusercontent.com/zenml-io/kitaru/main/install.sh"
           } >> "$GITHUB_ENV"
@@ -335,6 +357,17 @@ jobs:
           test -x ../.venv/bin/kitaru
           uv run --no-sync zenml --version
           uv run --no-sync kitaru --version
+          # On PRs, the project must have locked the PR's wheel, not PyPI's.
+          if [ -n "${UV_INDEX:-}" ]; then
+            uv run --no-sync python - ../uv.lock "$UV_INDEX" <<'PY'
+          import sys, tomllib
+          from pathlib import Path
+          lock = tomllib.loads(Path(sys.argv[1]).read_text())
+          (zenml,) = [p for p in lock["package"] if p["name"] == "zenml"]
+          source = Path(zenml["source"].get("registry", "")).resolve()
+          assert source == Path(sys.argv[2]).resolve(), f"zenml was locked from {zenml['source']}"
+          PY
+          fi
       - name: In a terminal it asks, and installs only what was picked
         run: |
           set -euxo pipefail
