@@ -2,6 +2,11 @@
 description: Orchestrating your pipelines on a remote host via SSH and Docker.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # SSH Orchestrator
 
 The SSH orchestrator is an [orchestrator](./) flavor that runs your pipelines on a remote Linux host over SSH, using Docker Compose. It is a generic, vendor-neutral alternative to managed orchestrators: if you have a machine reachable over SSH that can run Docker, you can use it as a ZenML orchestrator.

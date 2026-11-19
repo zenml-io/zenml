@@ -2,6 +2,11 @@
 description: Understand how reranking works.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 ## What is reranking?
 
 Reranking is the process of refining the initial ranking of documents retrieved

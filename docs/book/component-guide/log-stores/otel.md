@@ -2,6 +2,11 @@
 description: Exporting logs to any OpenTelemetry-compatible backend.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # OpenTelemetry Log Store
 
 The OpenTelemetry (OTEL) Log Store is a log store flavor that exports logs to any OpenTelemetry-compatible backend using the OTLP/HTTP protocol with JSON encoding. Built on the [OpenTelemetry Python SDK](https://opentelemetry.io/docs/languages/python/), it provides maximum flexibility for integrating with your existing observability infrastructure.

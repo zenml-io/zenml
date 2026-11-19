@@ -3,6 +3,11 @@ description: How Bots fit into ZenML Pro, where your data lives, and how sandbox
 icon: diagram-project
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Bots System Architecture
 
 Bots run coding agents for your ZenML Pro organization. Every chat gets its own sandbox, a remote computer with a checkout of your repositories. This page explains how Bots fit into ZenML Pro, where your data lives, and how sandboxes keep credentials safe.
