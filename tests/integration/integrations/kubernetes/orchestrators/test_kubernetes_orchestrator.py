@@ -14,13 +14,19 @@
 
 
 from contextlib import ExitStack as does_not_raise
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+from typing import Dict, Optional
 from uuid import uuid4
 
 import pytest
+from kubernetes import client as k8s_client
 
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.exceptions import StackValidationError
+from zenml.integrations.kubernetes.constants import (
+    ORCHESTRATOR_ANNOTATION_KEY,
+    STEP_NAME_ANNOTATION_KEY,
+)
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
     KubernetesOrchestratorConfig,
     KubernetesOrchestratorSettings,
@@ -216,3 +222,123 @@ def test_concurrency_policy_validation_rejects_invalid_values(input_value):
     """Test that concurrency_policy validator rejects invalid values."""
     with pytest.raises(Exception):
         KubernetesOrchestratorSettings(concurrency_policy=input_value)
+
+
+def _job(
+    annotations: Dict[str, str],
+    created_minutes: int,
+    condition: Optional[str] = None,
+    labels: Optional[Dict[str, str]] = None,
+) -> k8s_client.V1Job:
+    """Helper function to build a Kubernetes job of a pipeline run."""
+    conditions = (
+        [k8s_client.V1JobCondition(type=condition, status="True")]
+        if condition
+        else None
+    )
+    return k8s_client.V1Job(
+        metadata=k8s_client.V1ObjectMeta(
+            annotations=annotations,
+            labels=labels,
+            creation_timestamp=datetime(2026, 1, 1, tzinfo=timezone.utc)
+            + timedelta(minutes=created_minutes),
+        ),
+        status=k8s_client.V1JobStatus(conditions=conditions),
+    )
+
+
+@pytest.mark.parametrize("reverse_job_order", [False, True])
+@pytest.mark.parametrize(
+    "old_condition,new_condition,expected_status",
+    [
+        ("Failed", None, None),
+        ("Complete", None, None),
+        ("Failed", "Complete", ExecutionStatus.COMPLETED),
+        ("Complete", "Failed", ExecutionStatus.FAILED),
+    ],
+)
+def test_fetch_status_uses_newest_jobs(
+    mocker, old_condition, new_condition, expected_status, reverse_job_order
+):
+    """Test that only the newest job of a run or step decides its status.
+
+    Resuming a run creates a new orchestrator job and retrying a step creates
+    a new step job, while the jobs of the previous attempt remain.
+    """
+    _patch_k8s_clients(mocker)
+    orchestrator_annotations = {ORCHESTRATOR_ANNOTATION_KEY: "orchestrator"}
+    step_annotations = {STEP_NAME_ANNOTATION_KEY: "trainer"}
+    jobs = [
+        _job(orchestrator_annotations, 0, old_condition),
+        _job(step_annotations, 1, old_condition),
+        _job(orchestrator_annotations, 10, new_condition),
+        _job(step_annotations, 11, new_condition),
+    ]
+    if reverse_job_order:
+        jobs.reverse()
+    mocker.patch(
+        "zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.kube_utils.list_jobs",
+        return_value=k8s_client.V1JobList(items=jobs),
+    )
+    run = mocker.Mock(status=ExecutionStatus.RUNNING)
+    run.steps = {"trainer": mocker.Mock(status=ExecutionStatus.RUNNING)}
+
+    pipeline_status, step_statuses = (
+        _get_kubernetes_orchestrator().fetch_status(
+            run=run, include_steps=True
+        )
+    )
+
+    assert pipeline_status == expected_status
+    assert step_statuses == (
+        {"trainer": expected_status} if expected_status else {}
+    )
+
+
+@pytest.mark.parametrize(
+    "current_job_condition,expected_step_statuses",
+    [
+        (None, {}),
+        ("Complete", {"trainer": ExecutionStatus.COMPLETED}),
+    ],
+)
+def test_fetch_status_matches_step_jobs_by_step_run_id(
+    mocker, current_job_condition, expected_step_statuses
+):
+    """Test that a step run only takes its status from its own job.
+
+    A retried step run exists before its job is created, and meanwhile the
+    newest job of the step is the failed job of the previous attempt.
+    """
+    _patch_k8s_clients(mocker)
+    step_run = mocker.Mock(id=uuid4(), status=ExecutionStatus.RUNNING)
+    step_annotations = {STEP_NAME_ANNOTATION_KEY: "trainer"}
+    jobs = [
+        _job(
+            step_annotations,
+            0,
+            "Failed",
+            labels={"step_run_id": str(uuid4())},
+        )
+    ]
+    if current_job_condition:
+        jobs.append(
+            _job(
+                step_annotations,
+                10,
+                current_job_condition,
+                labels={"step_run_id": str(step_run.id)},
+            )
+        )
+    mocker.patch(
+        "zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.kube_utils.list_jobs",
+        return_value=k8s_client.V1JobList(items=jobs),
+    )
+    run = mocker.Mock(status=ExecutionStatus.RUNNING)
+    run.steps = {"trainer": step_run}
+
+    _, step_statuses = _get_kubernetes_orchestrator().fetch_status(
+        run=run, include_steps=True
+    )
+
+    assert step_statuses == expected_step_statuses
