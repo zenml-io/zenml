@@ -158,10 +158,17 @@ def refresh_run_status(
                         )
 
     # Update pipeline status
+    status_reason = None
+    if isinstance(pipeline_status, PipelineRunUpdate):
+        status_reason = pipeline_status.status_reason
+        pipeline_status = pipeline_status.status
+
     if pipeline_status is not None and pipeline_status != run.status:
         return zen_store.update_run(
             run_id=run.id,
-            run_update=PipelineRunUpdate(status=pipeline_status),
+            run_update=PipelineRunUpdate(
+                status=pipeline_status, status_reason=status_reason
+            ),
         )
 
     return run

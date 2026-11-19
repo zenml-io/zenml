@@ -137,6 +137,25 @@ kubectl get pods -n zenml --show-labels
 
 Then copy the sanitized label value from Kubernetes.
 
+### Refreshing the status of a run
+
+If the orchestrator pod stops before it reports a final status, for example
+because its image can't be pulled, the run stays in `provisioning` or `running`.
+To update it, refresh the run status:
+
+```shell
+zenml pipeline runs refresh <RUN_NAME_OR_ID>
+```
+
+ZenML then looks up the orchestrator job of the run in Kubernetes. If the job
+has failed or completed, the run gets the same status. If the job no longer
+exists, for example because you deleted it or `ttl_seconds_after_finished`
+cleaned it up, a run submitted more than 10 minutes ago is marked as `failed`,
+or as `stopped` if it was being stopped. Runs that are initializing, paused, or
+resuming keep their status, and so do scheduled runs, runs of pipeline
+deployments, and child runs of dynamic pipelines. If ZenML can't reach the
+cluster, the run status doesn't change.
+
 ### Additional configuration
 
 Some configuration options for the Kubernetes orchestrator can only be set through the orchestrator config when you register it (and cannot be changed per-run or per-step through the settings):

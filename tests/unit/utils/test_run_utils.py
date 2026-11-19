@@ -13,11 +13,16 @@
 #  permissions and limitations under the License.
 """Unit tests for run utils."""
 
+from unittest.mock import MagicMock, patch
+
 import pytest
 
+from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.models import PipelineRunUpdate
 from zenml.utils.run_utils import (
     build_dag,
     find_all_downstream_steps,
+    refresh_run_status,
 )
 
 
@@ -169,3 +174,33 @@ class TestFindAllDownstreamSteps:
 
         with pytest.raises(KeyError):
             find_all_downstream_steps("nonexistent_step", dag)
+
+
+def test_refresh_applies_status_and_reason_from_orchestrator_update():
+    """Only the status and status reason of an orchestrator update apply."""
+    run = MagicMock(status=ExecutionStatus.RUNNING)
+    run.stack.components = {StackComponentType.ORCHESTRATOR: [MagicMock()]}
+    orchestrator = MagicMock()
+    orchestrator.fetch_status.return_value = (
+        PipelineRunUpdate(
+            status=ExecutionStatus.FAILED,
+            status_reason="Job is gone.",
+            add_tags=["ignored"],
+        ),
+        {},
+    )
+    zen_store = MagicMock()
+
+    with patch(
+        "zenml.utils.run_utils.StackComponent.from_model",
+        return_value=orchestrator,
+    ):
+        refreshed_run = refresh_run_status(run=run, zen_store=zen_store)
+
+    zen_store.update_run.assert_called_once_with(
+        run_id=run.id,
+        run_update=PipelineRunUpdate(
+            status=ExecutionStatus.FAILED, status_reason="Job is gone."
+        ),
+    )
+    assert refreshed_run == zen_store.update_run.return_value
