@@ -2,6 +2,11 @@
 description: Put your new knowledge into action with a simple starter project
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # A starter project
 
 By now, you have understood some of the basic pillars of a MLOps system:

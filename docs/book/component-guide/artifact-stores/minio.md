@@ -2,6 +2,11 @@
 description: Storing artifacts in MinIO object storage.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # MinIO
 
 [MinIO](https://min.io/) is a high-performance, S3-compatible object storage system. Since MinIO provides a fully S3-compatible API, you can use ZenML's S3 Artifact Store integration to connect to MinIO.

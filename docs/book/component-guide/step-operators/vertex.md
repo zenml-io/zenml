@@ -2,6 +2,11 @@
 description: Executing individual steps in Vertex AI.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Google Cloud VertexAI
 
 [Vertex AI](https://cloud.google.com/vertex-ai) offers specialized compute instances to run your training jobs and has a comprehensive UI to track and manage your models and logs. ZenML's Vertex AI step operator allows you to submit individual steps to be run on Vertex AI compute instances.

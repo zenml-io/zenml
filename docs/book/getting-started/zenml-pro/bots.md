@@ -5,6 +5,11 @@ description: >-
 icon: robot
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Bots
 
 Bots run a coding agent for your team. Every conversation with the agent is a
