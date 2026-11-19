@@ -61,6 +61,7 @@ from zenml.materializers.in_memory_materializer import (
 )
 from zenml.metadata.metadata_types import validate_metadata
 from zenml.models import (
+    ArtifactVersionFilter,
     ArtifactVersionRequest,
     ArtifactVersionResponse,
     ArtifactVisualizationRequest,
@@ -70,7 +71,7 @@ from zenml.models import (
     StepRunUpdate,
 )
 from zenml.steps.step_context import get_step_context
-from zenml.utils import source_utils
+from zenml.utils import io_utils, source_utils
 from zenml.utils.uuid_utils import to_uuid
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
@@ -731,6 +732,65 @@ def get_artifacts_versions_of_pipeline_run(
 # -------------------------
 # Internal Helper Functions
 # -------------------------
+
+
+def verify_artifact_data_is_not_shared(
+    artifact_version: ArtifactVersionResponse,
+    artifact_store: "BaseArtifactStore",
+    zen_store: "BaseZenStore",
+) -> None:
+    """Verify that deleting an artifact version's data keeps all other data.
+
+    Only versions in the same project are checked, because listing artifact
+    versions is always scoped to a project.
+
+    Args:
+        artifact_version: The artifact version whose data would be deleted.
+        artifact_store: The artifact store that holds the data.
+        zen_store: The store to look up other artifact versions in.
+
+    Raises:
+        IllegalOperationError: If the data is the artifact store root, or if
+            another artifact version stores its data at or below its URI.
+    """
+    uri = io_utils.normalize_uri(artifact_version.uri)
+    if uri == io_utils.normalize_uri(artifact_store.path):
+        raise IllegalOperationError(
+            f"Keeping the data at '{artifact_version.uri}' because it is the "
+            "root of the artifact store, which holds the data of other "
+            f"artifacts. Delete only the metadata of artifact version "
+            f"{artifact_version.id} instead."
+        )
+    # The `startswith` filter becomes a SQL `LIKE`, where `_` and `%` are
+    # wildcards and MySQL treats a backslash as an escape character.
+    # Replacing backslashes with the `_` wildcard makes the query return every
+    # version whose stored URI starts with the prefix, plus some false
+    # matches, which the exact comparison below drops.
+    separator = "/" if io_utils.is_remote(uri) else os.sep
+    for prefix in {uri, artifact_version.uri.rstrip("/")}:
+        like_prefix = prefix.replace("\\", "_")
+        page = 1
+        while True:
+            others = zen_store.list_artifact_versions(
+                ArtifactVersionFilter(
+                    project=artifact_version.project_id,
+                    id=f"notequals:{artifact_version.id}",
+                    uri=f"startswith:{like_prefix}",
+                    page=page,
+                )
+            )
+            for other in others.items:
+                other_uri = io_utils.normalize_uri(other.uri)
+                if other_uri == uri or other_uri.startswith(uri + separator):
+                    raise IllegalOperationError(
+                        f"Keeping the data at '{artifact_version.uri}' "
+                        "because it also holds the data of artifact version "
+                        f"{other.id}. Delete only the metadata of artifact "
+                        f"version {artifact_version.id} instead."
+                    )
+            if page >= others.total_pages:
+                break
+            page += 1
 
 
 def _check_if_artifact_with_given_uri_already_registered(

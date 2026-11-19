@@ -197,6 +197,25 @@ def is_remote(path: str) -> bool:
     return any(path.startswith(prefix) for prefix in REMOTE_FS_PREFIX)
 
 
+def normalize_uri(uri: str) -> str:
+    """Normalizes a URI the way artifact stores resolve it before access.
+
+    Local paths are resolved to absolute paths, which follows symlinks and
+    collapses `.` and `..` segments. Remote object stores keep dot segments as
+    literal key characters, so remote URIs only get backslashes replaced by
+    slashes.
+
+    Args:
+        uri: The local path or remote URI.
+
+    Returns:
+        The normalized URI without a trailing separator.
+    """
+    if is_remote(uri):
+        return uri.replace("\\", "/").rstrip("/")
+    return str(Path(uri).absolute().resolve())
+
+
 def create_file_if_not_exists(
     file_path: str, file_contents: str = "{}"
 ) -> None:
