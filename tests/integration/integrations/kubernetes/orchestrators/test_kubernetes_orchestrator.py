@@ -14,19 +14,31 @@
 
 
 from contextlib import ExitStack as does_not_raise
-from datetime import datetime
-from uuid import uuid4
+from datetime import datetime, timedelta
+from typing import List, Optional, Union
+from uuid import UUID, uuid4
 
 import pytest
+from kubernetes import client as k8s_client
+from kubernetes.client import ApiException
 
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.exceptions import StackValidationError
+from zenml.integrations.kubernetes.constants import (
+    ORCHESTRATOR_ANNOTATION_KEY,
+    STEP_NAME_ANNOTATION_KEY,
+)
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
     KubernetesOrchestratorConfig,
     KubernetesOrchestratorSettings,
 )
 from zenml.integrations.kubernetes.orchestrators import KubernetesOrchestrator
+from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import (
+    MISSING_ORCHESTRATOR_JOB_GRACE_PERIOD,
+)
+from zenml.models import PipelineRunUpdate
 from zenml.stack import Stack
+from zenml.utils.time_utils import utc_now
 
 K8S_CONTEXT = "kubernetes_context"
 
@@ -216,3 +228,113 @@ def test_concurrency_policy_validation_rejects_invalid_values(input_value):
     """Test that concurrency_policy validator rejects invalid values."""
     with pytest.raises(Exception):
         KubernetesOrchestratorSettings(concurrency_policy=input_value)
+
+
+def _job(annotations: dict) -> k8s_client.V1Job:
+    """Helper function to build an unfinished Kubernetes job of a run."""
+    return k8s_client.V1Job(
+        metadata=k8s_client.V1ObjectMeta(annotations=annotations),
+        status=k8s_client.V1JobStatus(),
+    )
+
+
+ORCHESTRATOR_JOB = _job({ORCHESTRATOR_ANNOTATION_KEY: "orchestrator"})
+STEP_JOB = _job({STEP_NAME_ANNOTATION_KEY: "trainer"})
+
+
+def _fetch_run_status(
+    mocker,
+    jobs: Union[List[k8s_client.V1Job], Exception],
+    status: ExecutionStatus = ExecutionStatus.RUNNING,
+    age: timedelta = MISSING_ORCHESTRATOR_JOB_GRACE_PERIOD
+    + timedelta(minutes=1),
+    schedule: Optional[str] = None,
+    root_run_id: Optional[UUID] = None,
+    triggered_by_deployment: bool = False,
+):
+    """Fetch the status of a run whose job list returns the jobs or raises."""
+    _patch_k8s_clients(mocker)
+    list_jobs = mocker.patch(
+        "zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.kube_utils.list_jobs"
+    )
+    if isinstance(jobs, Exception):
+        list_jobs.side_effect = jobs
+    else:
+        list_jobs.return_value = k8s_client.V1JobList(items=jobs)
+    run = mocker.Mock(
+        status=status,
+        created=utc_now() - age,
+        schedule=schedule,
+        root_run_id=root_run_id,
+        triggered_by_deployment=triggered_by_deployment,
+    )
+
+    pipeline_status, _ = _get_kubernetes_orchestrator().fetch_status(run=run)
+    return pipeline_status
+
+
+@pytest.mark.parametrize(
+    "jobs", [[], [STEP_JOB]], ids=["no_jobs", "only_step_job"]
+)
+@pytest.mark.parametrize(
+    "status", [ExecutionStatus.PROVISIONING, ExecutionStatus.RUNNING]
+)
+def test_fetch_status_fails_run_without_orchestrator_job(mocker, jobs, status):
+    """A run without an orchestrator job can't finish anymore, so it fails."""
+    pipeline_status = _fetch_run_status(mocker, jobs=jobs, status=status)
+
+    assert isinstance(pipeline_status, PipelineRunUpdate)
+    assert pipeline_status.status == ExecutionStatus.FAILED
+    assert "no longer exists" in pipeline_status.status_reason
+
+
+def test_fetch_status_stops_stopping_run_without_orchestrator_job(mocker):
+    """A stopping run without an orchestrator job stops.
+
+    No status reason is set, so the run keeps the reason of the stop request.
+    """
+    pipeline_status = _fetch_run_status(
+        mocker, jobs=[], status=ExecutionStatus.STOPPING
+    )
+
+    assert pipeline_status == PipelineRunUpdate(status=ExecutionStatus.STOPPED)
+
+
+@pytest.mark.parametrize(
+    "fetch_kwargs",
+    [
+        pytest.param(
+            {"status": ExecutionStatus.INITIALIZING}, id="initializing"
+        ),
+        pytest.param({"status": ExecutionStatus.RESUMING}, id="resuming"),
+        pytest.param({"status": ExecutionStatus.PAUSED}, id="paused"),
+        pytest.param({"status": ExecutionStatus.COMPLETED}, id="finished"),
+        pytest.param({"schedule": "schedule"}, id="scheduled"),
+        pytest.param({"root_run_id": uuid4()}, id="child_run"),
+        pytest.param({"triggered_by_deployment": True}, id="deployment_run"),
+        pytest.param(
+            {
+                "age": MISSING_ORCHESTRATOR_JOB_GRACE_PERIOD
+                - timedelta(minutes=1)
+            },
+            id="within_grace_period",
+        ),
+    ],
+)
+def test_fetch_status_keeps_status_of_run_without_orchestrator_job(
+    mocker, fetch_kwargs
+):
+    """Runs that might have no orchestrator job yet or ever keep their status."""
+    assert _fetch_run_status(mocker, jobs=[], **fetch_kwargs) is None
+
+
+def test_fetch_status_keeps_status_of_run_with_unfinished_orchestrator_job(
+    mocker,
+):
+    """A run whose orchestrator job is still running keeps its status."""
+    assert _fetch_run_status(mocker, jobs=[ORCHESTRATOR_JOB]) is None
+
+
+def test_fetch_status_keeps_status_when_listing_jobs_fails(mocker):
+    """An unreachable cluster says nothing about the orchestrator job."""
+    assert _fetch_run_status(mocker, jobs=ApiException(status=503)) is None
