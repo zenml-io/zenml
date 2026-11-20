@@ -14,6 +14,7 @@
 """Tests for stack behavior."""
 
 from contextlib import ExitStack as does_not_raise
+from typing import List, Type
 from uuid import uuid4
 
 import pytest
@@ -26,6 +27,7 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
 from zenml.stack import Stack
+from zenml.step_operators import BaseStepOperator, BaseStepOperatorFlavor
 
 
 def test_initializing_a_stack_from_components(
@@ -438,3 +440,52 @@ def test_docker_builds_collection(
     assert first_orchestrator_build in stack_builds
     assert second_orchestrator_build in stack_builds
     assert artifact_store_build in stack_builds
+
+
+class _StubStepOperatorFlavor(BaseStepOperatorFlavor):
+    @property
+    def name(self) -> str:
+        return "stub_step_operator"
+
+    @property
+    def implementation_class(self) -> Type[BaseStepOperator]:
+        return BaseStepOperator
+
+
+def test_stack_from_model_uses_stored_default_step_operator(clean_client):
+    """Tests that the runtime stack uses the stored default, not the oldest."""
+    clean_client.zen_store.create_flavor(_StubStepOperatorFlavor().to_model())
+    for name in ("first", "second"):
+        clean_client.create_stack_component(
+            name=name,
+            flavor="stub_step_operator",
+            component_type=StackComponentType.STEP_OPERATOR,
+            configuration={},
+        )
+
+    def _create_stack(name: str, step_operators: List[str]) -> None:
+        clean_client.create_stack(
+            name=name,
+            components={
+                StackComponentType.ORCHESTRATOR: "default",
+                StackComponentType.ARTIFACT_STORE: "default",
+                StackComponentType.STEP_OPERATOR: step_operators,
+            },
+        )
+
+    _create_stack("first_default", ["first", "second"])
+    _create_stack("second_default", ["first"])
+    clean_client.update_stack(
+        "second_default",
+        component_updates={
+            StackComponentType.STEP_OPERATOR: ["second", "first"]
+        },
+    )
+
+    for stack_name, expected_default in [
+        ("first_default", "first"),
+        ("second_default", "second"),
+    ]:
+        stack_model = clean_client.get_stack(stack_name, hydrate=False)
+        stack = Stack.from_model(stack_model)
+        assert stack.step_operator.name == expected_default

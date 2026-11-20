@@ -236,6 +236,13 @@ class Stack:
                 stack_components[component.type].append(
                     StackComponent.from_model(component)
                 )
+            # The list call returns components by creation time, but the stack
+            # response lists the stored default of each type first.
+            for component_type, components in stack_components.items():
+                stored = stack_model.components.get(component_type)
+                if stored:
+                    default_id = stored[0].id
+                    components.sort(key=lambda c: c.id != default_id)
         except ImportError as e:
             stack_hint = (
                 "\n\nTo install all requirements for this stack at "
