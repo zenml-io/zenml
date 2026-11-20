@@ -195,6 +195,33 @@ def test_counter_with_integer_keys_materialization():
     assert result == Counter({1: 10})
 
 
+def test_dict_with_tuple_keys_materialization():
+    """Test that tuple dict keys, including nested ones, load as tuples."""
+    example = {(1, 2): "a", ((3, 4), "b"): "c"}
+    result = _test_materializer(
+        step_output_type=dict,
+        step_output=example,
+        expected_metadata_size=2,
+    )
+
+    assert result == example
+    assert all(type(key) is tuple for key in result)
+
+
+def test_counter_with_tuple_keys_materialization():
+    """Test materialization for a counter with tuple keys."""
+    with TemporaryDirectory(
+        dir=Client().active_stack.artifact_store.path
+    ) as artifact_uri:
+        materializer = BuiltInContainerMaterializer(uri=artifact_uri)
+        materializer.save(Counter({("new", "york"): 3, ("new", "jersey"): 1}))
+
+        result = materializer.load(Counter)
+
+    assert type(result) is Counter
+    assert result == Counter({("new", "york"): 3, ("new", "jersey"): 1})
+
+
 def test_list_of_bytes_materialization():
     """Test materialization for lists of bytes."""
     example = [b"0", b"1", b"2"]
