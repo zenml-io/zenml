@@ -14,17 +14,18 @@
 """Entrypoint configuration to run a dynamic pipeline."""
 
 import sys
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from zenml.client import Client
-from zenml.constants import DYNAMIC_PIPELINE_RUN_FAILED_EXIT_CODE
+from zenml.constants import UNRECOVERABLE_ORCHESTRATION_EXIT_CODE
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
 from zenml.execution.pipeline.dynamic.runner import DynamicPipelineRunner
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
+from zenml.orchestrators.utils import exit_on_unrecoverable_error
 
 logger = get_logger(__name__)
 
@@ -66,29 +67,34 @@ class DynamicPipelineEntrypointConfiguration(BaseEntrypointConfiguration):
 
         Raises:
             BaseException: If the pipeline run did not reach a terminal
-                status.
+                status and retrying might help.
         """
-        snapshot = self.snapshot
+        run_id_option = self.entrypoint_args.get(RUN_ID_OPTION, None)
+        run_id = UUID(run_id_option) if run_id_option else None
 
-        # Activate all the integrations. This makes sure that all materializers
-        # and stack component flavors are registered.
-        integration_registry.activate_integrations()
-
-        self.prepare_code_environment()
-
-        run = None
-        if run_id := self.entrypoint_args.get(RUN_ID_OPTION, None):
-            run = Client().get_pipeline_run(UUID(run_id))
-
-        runner = DynamicPipelineRunner(snapshot=snapshot, run=run)
+        runner: Optional[DynamicPipelineRunner] = None
         try:
+            snapshot = self.snapshot
+
+            # Activate all the integrations. This makes sure that all
+            # materializers and stack component flavors are registered.
+            integration_registry.activate_integrations()
+
+            self.prepare_code_environment()
+
+            run = Client().get_pipeline_run(run_id) if run_id else None
+            runner = DynamicPipelineRunner(snapshot=snapshot, run=run)
             runner.run_pipeline()
-        except BaseException:
-            if runner.run.status.is_finished:
+        except BaseException as e:
+            if runner and runner.run.status.is_finished:
                 logger.error(
                     "Pipeline run `%s` failed.",
                     runner.run.id,
                     exc_info=True,
                 )
-                sys.exit(DYNAMIC_PIPELINE_RUN_FAILED_EXIT_CODE)
+                sys.exit(UNRECOVERABLE_ORCHESTRATION_EXIT_CODE)
+
+            exit_on_unrecoverable_error(
+                e, run_id=runner.run.id if runner else run_id
+            )
             raise
