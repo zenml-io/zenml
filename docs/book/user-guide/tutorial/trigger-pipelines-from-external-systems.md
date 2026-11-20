@@ -141,7 +141,7 @@ These parameters make it an ideal candidate for external triggering scenarios wh
 ## Method 1: Using Snapshots (ZenML Pro)
 
 {% hint style="success" %}
-This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please [sign up here](https://zenml.io/book-your-demo) to get access.
+This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please [sign up here](https://cloud.zenml.io/signup?utm_source=zenml.io&utm_medium=website&utm_campaign=signup&utm_content=pro) to get access.
 {% endhint %}
 
 {% hint style="info" %}
