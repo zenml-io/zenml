@@ -489,7 +489,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 )
 
             if retry_config := step.config.retry:
-                if retry_config.delay or retry_config.backoff:
+                if retry_config.delay:
                     logger.warning(
                         "Specifying retry delay or backoff is not supported "
                         "for the Kubernetes orchestrator."

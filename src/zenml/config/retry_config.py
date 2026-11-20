@@ -22,8 +22,10 @@ class StepRetryConfig(FrozenBaseModel):
     """Retry configuration for a step.
 
     Delay is an integer (specified in seconds).
+    Backoff is an integer multiplier applied to delay after each retry.
+    Defaults to 1 (constant delay).
     """
 
     max_retries: PositiveInt = 1
     delay: NonNegativeInt = 0  # in seconds
-    backoff: NonNegativeInt = 0
+    backoff: NonNegativeInt = 1
