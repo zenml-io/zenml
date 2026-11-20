@@ -111,6 +111,13 @@ server:
     # The name of the ZenML Pro organization to use.
     organizationName:
 
+    # Get the organization and workspace name from the ZenML Pro API when the
+    # server starts, instead of from `organizationID`, `organizationName` and
+    # `workspaceName`. A warm workspace uses this, because it has no customer
+    # until it gets claimed. To restart the server with new values, change
+    # `podAnnotations`.
+    identityFromControlPlane: false
+
     # The enrollment key to use for the ZenML Pro workspace. If not specified,
     # an enrollment key will be auto-generated.
     enrollmentKey:

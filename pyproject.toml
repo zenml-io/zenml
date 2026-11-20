@@ -75,6 +75,7 @@ Issues = "https://github.com/zenml-io/zenml/issues"
 
 [project.scripts]
 zenml = "zenml_cli:cli"
+zenml-server-warm-start = "zenml.zen_server.warm_start:main"
 
 [project.optional-dependencies]
 local = [
