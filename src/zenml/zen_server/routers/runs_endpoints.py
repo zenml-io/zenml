@@ -580,7 +580,7 @@ def run_logs(
     store = zen_store()
 
     run = verify_permissions_and_get_entity(
-        id=run_id, get_method=store.get_run, hydrate=True
+        id=run_id, get_method=store.get_run, hydrate=False
     )
 
     logs: Optional["LogsResponse"] = None
