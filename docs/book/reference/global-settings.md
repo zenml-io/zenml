@@ -96,6 +96,10 @@ In order to help us better understand how the community uses ZenML, the pip pack
 zenml analytics opt-out
 ```
 
+You can also set the environment variable `ZENML_ANALYTICS_OPT_IN=false`.
+
+The [one-line installer](../getting-started/installation.md) reports one event of this kind when it finishes, saying that ZenML was installed with the script. It carries the same anonymous client ID as every other event. Because the installer runs before you have had a chance to opt out, set `ZENML_ANALYTICS_OPT_IN=false` (or `DO_NOT_TRACK=1`) before running it if you do not want the install reported.
+
 #### Why does ZenML collect analytics? <a href="#motivation" id="motivation"></a>
 
 In addition to the community at large, **ZenML** is created and maintained by a startup based in Munich, Germany, called [ZenML GmbH](https://zenml.io). We're a team of techies that love MLOps and want to build tools that fellow developers would love to use in their daily work. [This is us](https://zenml.io/company#CompanyTeam) if you want to put faces to the names!
