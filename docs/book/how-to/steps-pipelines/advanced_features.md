@@ -186,8 +186,8 @@ my_pipeline_with_fail_fast = my_pipeline.with_options(
 my_pipeline.configure(execution_mode=ExecutionMode.STOP_ON_FAILURE)
 ```
 
-{% hint style="warning" %}
-In the current implementation, if you use the execution mode `STOP_ON_FAILURE`, the token that is associated with your pipeline run stays valid until its leeway runs out (defaults to 1 hour).
+{% hint style="info" %}
+With the `STOP_ON_FAILURE` and `CONTINUE_ON_FAILURE` execution modes, a run that failed stays in progress while some of its steps are still running. You can still stop such a run, and it keeps its `FAILED` status.
 {% endhint %}
 
 As an example, you can consider a pipeline with this dependency structure:
@@ -249,7 +249,7 @@ This enables ZenML to:
     - Steps run via the `local` orchestrator.
     - Heartbeat is enabled by default.
 - A step that becomes unhealthy automatically triggers a graceful shutdown (currently supported for the `kubernetes` orchestrator).
-- When using `CONTINUE_ON_FAILURE` execution mode, heartbeat status is also used to decide whether execution tokens should be invalidated.
+- When using the `STOP_ON_FAILURE` or `CONTINUE_ON_FAILURE` execution mode, heartbeat status is also used to decide whether execution tokens should be invalidated.
 
 *Configuration*
 

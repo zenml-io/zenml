@@ -67,6 +67,7 @@ from zenml.enums import (
     RunWaitConditionType,
     StepRuntime,
 )
+from zenml.exceptions import RunStoppedException
 from zenml.execution.context import (
     record_step_run,
     setup_execution_context,
@@ -701,7 +702,13 @@ class DynamicPipelineRunner:
                         # Nothing will retry the step, so its failure is
                         # final. Otherwise, its future keeps waiting on a step
                         # run that stays in `RETRYING` status.
-                        step_run = publish_failed_step_run(step_run.id)
+                        try:
+                            step_run = publish_failed_step_run(step_run.id)
+                        except Exception:
+                            # A stop request fails retrying steps on the
+                            # server, which might have happened in the
+                            # meantime.
+                            step_run = Client().get_run_step(step_run.id)
                         self._on_step_finished(step_run=step_run)
 
                 time.sleep(monitoring_delay)
@@ -710,6 +717,53 @@ class DynamicPipelineRunner:
             time_to_sleep = max(0, monitoring_interval - duration)
             self._monitoring_event.wait(timeout=time_to_sleep)
             self._monitoring_event.clear()
+
+            # Checking after the first interval spares runs that finish
+            # within it the request.
+            if not self._shutdown_requested and not self._failure_detected:
+                self._check_for_stop_request()
+
+    def _check_for_stop_request(self) -> None:
+        """Stop starting new work if a stop of the run was requested."""
+        try:
+            run = Client().zen_store.get_run(self._run.id, hydrate=False)
+        except Exception as e:
+            logger.debug("Failed to check for a stop request: %s", e)
+            return
+
+        if run.stop_requested:
+            logger.info(
+                "Stop of pipeline run `%s` requested, not starting any new "
+                "work.",
+                run.name,
+            )
+            self.request_shutdown(
+                reason=RunStoppedException("The pipeline run was stopped.")
+            )
+
+    def _is_stop_requested(self, exception: BaseException) -> bool:
+        """Check whether a failure was caused by a stop of the run.
+
+        Besides the stop check, a stop also surfaces as a failure to start a
+        step, as the server rejects new steps of a run that is being stopped.
+
+        Args:
+            exception: The failure exception.
+
+        Returns:
+            Whether a stop of the run was requested.
+        """
+        if isinstance(exception, RunStoppedException):
+            return True
+
+        try:
+            return (
+                Client()
+                .zen_store.get_run(self._run.id, hydrate=False)
+                .stop_requested
+            )
+        except Exception:
+            return False
 
     def _start_monitoring_loop(self) -> threading.Thread:
         """Start the monitoring loop.
@@ -2002,11 +2056,22 @@ class DynamicPipelineRunner:
         This method
         - cancels all in-progress startup work
         - sets a flag that prevents any new startup work from being started
-        - stops all isolated steps in the FAIL_FAST execution mode
+        - stops all isolated steps and child pipelines in the FAIL_FAST
+          execution mode, unless the failure comes from a stop of the run
 
         Args:
             exception: The failure exception.
         """
+        if self._failure_detected:
+            return
+
+        # A stop leaves running work to the stop itself: a graceful stop lets
+        # it finish, an immediate stop deletes it, and child runs receive
+        # their own stop request.
+        stop_running_work = self._fail_fast and not self._is_stop_requested(
+            exception
+        )
+
         steps_to_stop: List["StepRunResponse"] = []
         nodes_to_cancel: List[
             Union["StepNode", "MapNode", "ChildPipelineNode"]
@@ -2022,7 +2087,7 @@ class DynamicPipelineRunner:
             nodes_to_cancel = self._dependency_graph.list_nodes(
                 states={NodeState.PENDING, NodeState.READY, NodeState.STARTING}
             )
-            if self._fail_fast:
+            if stop_running_work:
                 steps_to_stop = list(self._steps_to_monitor.values())
                 child_runners_to_shutdown = list(self._child_runners.values())
 

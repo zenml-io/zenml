@@ -31,12 +31,17 @@ logger = get_logger(__name__)
 def stop_run(run: PipelineRunResponse, graceful: bool = False) -> None:
     """Stop a pipeline run.
 
+    A graceful stop can be escalated to an immediate stop, and an immediate
+    stop can be retried. Failed runs can be stopped as long as they are still
+    in progress, which is the case for the `STOP_ON_FAILURE` and
+    `CONTINUE_ON_FAILURE` execution modes.
+
     Args:
         run: The pipeline run to stop.
         graceful: Whether to stop the run gracefully.
 
     Raises:
-        IllegalOperationError: If the run is already stopped or being stopped.
+        IllegalOperationError: If the run is already completed or stopped.
         ValueError: If the stack is not accessible.
     """
     # Check if the stack is still accessible
@@ -54,9 +59,6 @@ def stop_run(run: PipelineRunResponse, graceful: bool = False) -> None:
 
     if run.status == ExecutionStatus.STOPPED:
         raise IllegalOperationError("Run is already stopped.")
-
-    if run.status == ExecutionStatus.STOPPING:
-        raise IllegalOperationError("Run is already being stopped.")
 
     # Check if the stack is still accessible
     orchestrator_list = run.stack.components.get(

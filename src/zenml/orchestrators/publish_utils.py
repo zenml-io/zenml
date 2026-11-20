@@ -18,7 +18,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Dict, List, Optional
 
 from zenml.client import Client
-from zenml.enums import ExecutionStatus, MetadataResourceTypes
+from zenml.enums import ExecutionStatus, MetadataResourceTypes, RunStopMode
 from zenml.models import (
     ExceptionInfo,
     PipelineRunResponse,
@@ -226,6 +226,34 @@ def publish_pipeline_run_status_update(
             status=status,
             status_reason=status_reason,
         ),
+    )
+
+
+def publish_pipeline_run_stop_request(
+    pipeline_run: "PipelineRunResponse",
+    stop_mode: RunStopMode,
+) -> "PipelineRunResponse":
+    """Publishes a stop request for a pipeline run.
+
+    Unfinished runs transition to `STOPPING`. Failed runs that are still in
+    progress keep their status and only record the stop request.
+
+    Args:
+        pipeline_run: The pipeline run to stop.
+        stop_mode: How the pipeline run should be stopped.
+
+    Returns:
+        The updated pipeline run.
+    """
+    run_update = PipelineRunUpdate(stop_mode=stop_mode)
+    if not pipeline_run.status.is_finished:
+        # Servers that know about stop modes set the status themselves, but
+        # older ones ignore the stop mode.
+        run_update.status = ExecutionStatus.STOPPING
+        run_update.status_reason = "Manual stop requested."
+
+    return Client().zen_store.update_run(
+        run_id=pipeline_run.id, run_update=run_update
     )
 
 

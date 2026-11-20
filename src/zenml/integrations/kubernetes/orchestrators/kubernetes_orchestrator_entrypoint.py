@@ -853,14 +853,10 @@ def main() -> None:
                     hydrate=False,  # We only need status, not full hydration
                 )
 
-                if run.status in [
-                    ExecutionStatus.STOPPING,
-                    ExecutionStatus.STOPPED,
-                ]:
+                if run.stop_requested:
                     logger.info(
-                        "Stopping DAG execution because pipeline run is in "
-                        "`%s` state.",
-                        run.status,
+                        "Stopping DAG execution because a stop of the "
+                        "pipeline run was requested."
                     )
                     return InterruptMode.GRACEFUL
                 elif run.status == ExecutionStatus.FAILED:
