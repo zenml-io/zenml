@@ -90,24 +90,27 @@ class PathMaterializer(BaseMaterializer):
             file_path_remote = os.path.join(self.uri, self.FILE_NAME)
 
             if fileio.exists(archive_path_remote):
-                # This is a directory artifact
-                archive_path_local = os.path.join(directory, self.ARCHIVE_NAME)
-                fileio.copy(archive_path_remote, archive_path_local)
+                # Keep the archive separate from user-provided filenames.
+                with self.get_temporary_directory(
+                    delete_at_exit=True
+                ) as archive_directory:
+                    archive_path_local = os.path.join(
+                        archive_directory, self.ARCHIVE_NAME
+                    )
+                    fileio.copy(archive_path_remote, archive_path_local)
 
-                # Extract the archive to the temporary directory
-                with tarfile.open(archive_path_local, "r:gz") as tar:
-                    # Validate archive members to prevent path traversal attacks
-                    # Filter members to only those with safe paths and link targets
-                    safe_members = []
-                    for member in tar.getmembers():
-                        if _is_safe_tar_member(member, directory):
-                            safe_members.append(member)
+                    # Extract the archive to the temporary directory
+                    with tarfile.open(archive_path_local, "r:gz") as tar:
+                        # Validate archive members to prevent path traversal attacks
+                        # Filter members to only those with safe paths and link targets
+                        safe_members = []
+                        for member in tar.getmembers():
+                            if _is_safe_tar_member(member, directory):
+                                safe_members.append(member)
 
-                    # Extract only safe members
-                    tar.extractall(path=directory, members=safe_members)  # nosec B202 - members are filtered through _is_safe_tar_member
+                        # Extract only safe members
+                        tar.extractall(path=directory, members=safe_members)  # nosec B202 - members are filtered through _is_safe_tar_member
 
-                # Clean up the archive file
-                os.remove(archive_path_local)
                 return Path(directory)
             elif fileio.exists(file_path_remote):
                 # This is a single file artifact
