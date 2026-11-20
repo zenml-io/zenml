@@ -909,42 +909,42 @@ class DynamicPipelineRunner:
             ):
                 monitoring_thread = self._start_monitoring_loop()
                 startup_thread = self._start_startup_loop()
+                run_cleanup_hook = False
 
-                if run_start_hook:
-                    run_lifecycle_hook(
-                        self._snapshot.pipeline_configuration.start_hook_source,
-                        HookType.RUN_START,
-                    )
-                elif run_resume_hook:
-                    run_lifecycle_hook(
-                        self._snapshot.pipeline_configuration.resume_hook_source,
-                        HookType.RUN_RESUME,
-                    )
+                try:
+                    if run_start_hook:
+                        run_lifecycle_hook(
+                            self._snapshot.pipeline_configuration.start_hook_source,
+                            HookType.RUN_START,
+                        )
+                    elif run_resume_hook:
+                        run_lifecycle_hook(
+                            self._snapshot.pipeline_configuration.resume_hook_source,
+                            HookType.RUN_RESUME,
+                        )
 
-                if not self._run.triggered_by_deployment:
-                    # Only run the init hook if the run is not triggered by
-                    # a deployment, as the deployment service will have
-                    # already run the init hook.
-                    try:
+                    if not self._run.triggered_by_deployment:
+                        # Only run the init and cleanup hooks if the run is not
+                        # triggered by a deployment, as the deployment service
+                        # will have already run them.
                         self._orchestrator.run_init_hook(
                             snapshot=self._snapshot
                         )
-                    except BaseException as e:
-                        # The init hook itself is not tracked, but its failure
-                        # ends the run, so the run end and failure hooks fire
-                        # before the failure propagates.
-                        self._fire_terminal_run_hooks(
-                            ExecutionStatus.FAILED, e
-                        )
-                        raise
-
-                try:
+                        run_cleanup_hook = True
+                except BaseException as e:
+                    # The init hook itself is not tracked, but its failure ends
+                    # the run. Mark the run as failed so the orchestration
+                    # environment exits as finished instead of being restarted,
+                    # then fire the run end and failure hooks.
+                    self._publish_run_status(exception=e)
+                    self._fire_terminal_run_hooks(ExecutionStatus.FAILED, e)
+                    raise
+                else:
+                    # Failures in here publish the run status and fire the
+                    # terminal hooks themselves.
                     self._run_entrypoint_and_finalize()
                 finally:
-                    if not self._run.triggered_by_deployment:
-                        # Only run the cleanup hook if the run is not
-                        # triggered by a deployment, as the deployment
-                        # service will have already run the cleanup hook.
+                    if run_cleanup_hook:
                         self._orchestrator.run_cleanup_hook(
                             snapshot=self._snapshot
                         )

@@ -13,19 +13,27 @@
 #  permissions and limitations under the License.
 """End-to-end tests for pipeline-level lifecycle hooks."""
 
+import threading
 from typing import List, Optional
+from uuid import uuid4
 
 import pytest
 
 from zenml import pipeline, step, wait
 from zenml.client import Client
+from zenml.constants import DYNAMIC_PIPELINE_RUN_FAILED_EXIT_CODE
 from zenml.enums import (
     ExecutionStatus,
     HookType,
     RunWaitConditionResolution,
 )
 from zenml.models import PipelineRunUpdate
+from zenml.pipelines.dynamic.entrypoint_configuration import (
+    DynamicPipelineEntrypointConfiguration,
+)
+from zenml.pipelines.run_utils import create_placeholder_run
 from zenml.stack import Stack
+from zenml.steps.step_context import RunContext
 
 _events: List[str] = []
 
@@ -248,6 +256,57 @@ def test_dynamic_init_failure_still_records_start_end_failure():
     assert types.count(HookType.RUN_START) == 1
     assert types.count(HookType.RUN_END) == 1
     assert types.count(HookType.RUN_FAILURE) == 1
+
+
+def _runner_threads() -> List[threading.Thread]:
+    return [
+        thread
+        for thread in threading.enumerate()
+        if thread.name.startswith("DynamicPipelineRunner-")
+    ]
+
+
+def test_dynamic_init_failure_in_entrypoint_fails_run(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """Tests that an init hook failure ends the run instead of a restart.
+
+    Remote orchestrators run the pipeline through the entrypoint, which has
+    no submission-side fallback that marks the run as failed.
+    """
+    monkeypatch.setattr(
+        "zenml.pipelines.dynamic.entrypoint_configuration.integration_registry.activate_integrations",
+        lambda: None,
+    )
+    monkeypatch.setattr(
+        DynamicPipelineEntrypointConfiguration,
+        "prepare_code_environment",
+        lambda self: None,
+    )
+    RunContext._clear()
+    _events.clear()
+    threads_before = _runner_threads()
+
+    dynamic_init_failure_pipeline.prepare()
+    snapshot = dynamic_init_failure_pipeline._create_snapshot()
+    run = create_placeholder_run(
+        snapshot=snapshot, orchestrator_run_id=str(uuid4())
+    )
+    entrypoint_config = DynamicPipelineEntrypointConfiguration(
+        arguments=["--snapshot_id", str(snapshot.id), "--run_id", str(run.id)]
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        entrypoint_config.run()
+
+    assert exc_info.value.code == DYNAMIC_PIPELINE_RUN_FAILED_EXIT_CODE
+    run = Client().get_pipeline_run(run.id)
+    assert run.status == ExecutionStatus.FAILED
+    assert run.exception_info is not None
+    assert "init hook" in run.exception_info.message
+    assert "init boom" in run.exception_info.traceback
+    assert _events == ["start", "end", "failure"]
+    assert _runner_threads() == threads_before
 
 
 def test_static_pipeline_fires_no_run_hooks():
