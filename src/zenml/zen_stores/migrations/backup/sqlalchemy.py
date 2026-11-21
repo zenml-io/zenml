@@ -13,10 +13,12 @@
 #  permissions and limitations under the License.
 """JSON database backup engine."""
 
+import datetime
 import json
 import os
 import re
 import shutil
+import uuid
 from abc import abstractmethod
 from typing import (
     TYPE_CHECKING,
@@ -385,6 +387,15 @@ class InMemoryDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
         """
         super().__init__(config, location or "memory")
         self.database_data: list[dict[str, Any]] = []
+        self._backup_completed: bool = False
+
+    def is_valid_backup(self) -> bool:
+        """Check if a valid, completed backup exists.
+
+        Returns:
+            Whether a valid completed backup exists.
+        """
+        return len(self.database_data) > 0 and self._backup_completed
 
     def store_database_data(self, data: dict[str, Any], **kwargs: Any) -> None:
         """Store the database data.
@@ -419,7 +430,7 @@ class InMemoryDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
             overwrite: Whether to overwrite an existing backup if it exists.
                 If set to False, the existing backup will be reused.
         """
-        if len(self.database_data) > 0:
+        if self.is_valid_backup():
             if not overwrite:
                 logger.warning(
                     "An existing backup already exists. Reusing the existing backup."
@@ -427,8 +438,16 @@ class InMemoryDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
                 return
 
             self.cleanup_database_backup()
+        elif len(self.database_data) > 0:
+            self.cleanup_database_backup()
 
-        self.backup_database_to_storage()
+        self._backup_completed = False
+        try:
+            self.backup_database_to_storage()
+            self._backup_completed = True
+        except Exception:
+            self.cleanup_database_backup()
+            raise
 
         logger.debug("Database backed up to memory.")
 
@@ -444,7 +463,7 @@ class InMemoryDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
         Raises:
             RuntimeError: If no in-memory backup exists.
         """
-        if len(self.database_data) == 0:
+        if not self.is_valid_backup():
             raise RuntimeError(
                 "No in-memory backup exists. Please backup the database first."
             )
@@ -461,6 +480,7 @@ class InMemoryDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
     ) -> None:
         """Delete the database backup."""
         self.database_data = []
+        self._backup_completed = False
 
         logger.debug("In-memory database backup cleaned up.")
 
@@ -504,6 +524,34 @@ class FileDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
             self.config.backup_directory,
             f"{self.url.database}-backup.json",
         )
+
+    def _get_completion_marker_path(self) -> str:
+        """Get the path to the backup completion marker file.
+
+        Returns:
+            The path to the completion marker file.
+        """
+        return f"{self.backup_location}.complete"
+
+    def is_valid_backup(self) -> bool:
+        """Check if a valid, completed backup exists.
+
+        Returns:
+            Whether a valid completed backup exists.
+        """
+        if not os.path.isfile(self.backup_location):
+            return False
+
+        marker_path = self._get_completion_marker_path()
+        if not os.path.isfile(marker_path):
+            return False
+
+        try:
+            with open(marker_path, "r", encoding="utf-8") as f:
+                marker_data = json.load(f)
+            return marker_data.get("status") == "completed"
+        except Exception:
+            return False
 
     def store_database_data(self, data: dict[str, Any], **kwargs: Any) -> None:
         """Store the database data.
@@ -557,28 +605,69 @@ class FileDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
             overwrite: Whether to overwrite an existing backup if it exists.
                 If set to False, the existing backup will be reused.
         """
-        if os.path.isfile(self.backup_location):
-            if not overwrite:
+        if os.path.exists(self.backup_location):
+            if not self.is_valid_backup():
+                logger.warning(
+                    f"An incomplete or invalid backup file was found at "
+                    f"`{self.backup_location}`. Cleaning it up before "
+                    "creating a fresh backup."
+                )
+                self.cleanup_database_backup()
+            elif not overwrite:
                 logger.warning(
                     f"A previous backup file already exists at `{self.backup_location}`. "
                     "Reusing the existing backup."
                 )
                 return
+            else:
+                self.cleanup_database_backup()
 
-            self.cleanup_database_backup()
+        backup_dir = os.path.dirname(os.path.abspath(self.backup_location))
+        os.makedirs(backup_dir, exist_ok=True)
 
-        if self.url.drivername == "sqlite":
-            # For a sqlite database, we can just make a copy of the database
-            # file
-            assert self.url.database is not None
-            shutil.copyfile(
-                self.url.database,
-                self.backup_location,
-            )
-            return
+        unique_id = uuid.uuid4().hex
+        staging_file = f"{self.backup_location}.tmp.{unique_id}"
+        marker_path = self._get_completion_marker_path()
+        staging_marker = f"{marker_path}.tmp.{unique_id}"
 
-        with open(self.backup_location, "w") as f:
-            self.backup_database_to_storage(dump_file=f)
+        try:
+            if self.url.drivername == "sqlite":
+                # For a sqlite database, copy to the staging file
+                assert self.url.database is not None
+                shutil.copyfile(
+                    self.url.database,
+                    staging_file,
+                )
+            else:
+                with open(staging_file, "w", encoding="utf-8") as f:
+                    self.backup_database_to_storage(dump_file=f)
+
+            # Write the completion marker to staging
+            marker_data = {
+                "status": "completed",
+                "backup_location": self.backup_location,
+                "timestamp": datetime.datetime.now(
+                    datetime.timezone.utc
+                ).isoformat(),
+            }
+            with open(staging_marker, "w", encoding="utf-8") as f:
+                json.dump(marker_data, f)
+
+            # Promote staging files atomically to their final locations
+            os.replace(staging_file, self.backup_location)
+            os.replace(staging_marker, marker_path)
+        except Exception:
+            if os.path.isfile(staging_file):
+                try:
+                    os.remove(staging_file)
+                except OSError:
+                    pass
+            if os.path.isfile(staging_marker):
+                try:
+                    os.remove(staging_marker)
+                except OSError:
+                    pass
+            raise
 
         logger.debug(f"Database backed up to file `{self.backup_location}`.")
 
@@ -594,10 +683,10 @@ class FileDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
         Raises:
             RuntimeError: If the backup file does not exist or is not accessible.
         """
-        if not os.path.isfile(self.backup_location):
+        if not self.is_valid_backup():
             raise RuntimeError(
                 f"Database backup file `{self.backup_location}` does not "
-                "exist or is not accessible."
+                "exist, is incomplete, or is not accessible."
             )
 
         if self.url.drivername == "sqlite":
@@ -610,7 +699,7 @@ class FileDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
             )
             return
 
-        with open(self.backup_location, "r") as f:
+        with open(self.backup_location, "r", encoding="utf-8") as f:
             self.restore_database_from_storage(dump_file=f)
 
         logger.debug(f"Database restored from file `{self.backup_location}`.")
@@ -634,6 +723,37 @@ class FileDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
                     f"Successfully cleaned up database dump file "
                     f"`{self.backup_location}`."
                 )
+
+        marker_path = self._get_completion_marker_path()
+        if os.path.isfile(marker_path):
+            try:
+                os.remove(marker_path)
+            except OSError:
+                logger.warning(
+                    f"Failed to cleanup backup completion marker `{marker_path}`."
+                )
+            else:
+                logger.info(
+                    f"Successfully cleaned up backup completion marker `{marker_path}`."
+                )
+
+        # Cleanup any lingering temporary staging files
+        backup_dir = os.path.dirname(os.path.abspath(self.backup_location))
+        if os.path.isdir(backup_dir):
+            base_name = os.path.basename(self.backup_location)
+            try:
+                for fname in os.listdir(backup_dir):
+                    if fname.startswith(
+                        f"{base_name}.tmp."
+                    ) or fname.startswith(
+                        f"{os.path.basename(marker_path)}.tmp."
+                    ):
+                        try:
+                            os.remove(os.path.join(backup_dir, fname))
+                        except OSError:
+                            pass
+            except OSError:
+                pass
 
 
 class DBCloneDatabaseBackupEngine(BaseDatabaseBackupEngine):
@@ -685,6 +805,8 @@ class DBCloneDatabaseBackupEngine(BaseDatabaseBackupEngine):
 
         # Create all tables in the target database
         for table in src_metadata.sorted_tables:
+            if table.name == "_zenml_backup_metadata":
+                continue
             table.create(bind=dst_engine)
 
         # Refresh target metadata after creating the tables
@@ -695,6 +817,8 @@ class DBCloneDatabaseBackupEngine(BaseDatabaseBackupEngine):
         with src_engine.begin() as src_conn:
             with dst_engine.begin() as dst_conn:
                 for src_table in src_metadata.sorted_tables:
+                    if src_table.name == "_zenml_backup_metadata":
+                        continue
                     dst_table = dst_metadata.tables[src_table.name]
                     insert = dst_table.insert()
 
@@ -735,6 +859,25 @@ class DBCloneDatabaseBackupEngine(BaseDatabaseBackupEngine):
                                 insert, [row._asdict() for row in rows]
                             )
 
+    def is_valid_backup(self) -> bool:
+        """Check if a valid, completed backup exists.
+
+        Returns:
+            Whether a valid completed backup exists.
+        """
+        if not self.database_exists(database=self.backup_location):
+            return False
+
+        try:
+            backup_engine = self.create_engine(database=self.backup_location)
+            with backup_engine.connect() as conn:
+                result = conn.execute(
+                    text("SELECT status FROM `_zenml_backup_metadata` LIMIT 1")
+                ).scalar()
+                return result == "completed"
+        except Exception:
+            return False
+
     def backup_database(
         self,
         overwrite: bool = False,
@@ -746,14 +889,21 @@ class DBCloneDatabaseBackupEngine(BaseDatabaseBackupEngine):
                 If set to False, the existing backup will be reused.
         """
         if self.database_exists(database=self.backup_location):
-            if not overwrite:
+            if not self.is_valid_backup():
+                logger.warning(
+                    f"An incomplete backup database already exists at "
+                    f"`{self.backup_location}`. Cleaning it up before "
+                    "creating a fresh backup."
+                )
+                self.cleanup_database_backup()
+            elif not overwrite:
                 logger.warning(
                     f"A previous backup database already exists at "
                     f"`{self.backup_location}`. Reusing the existing backup."
                 )
                 return
-
-            self.cleanup_database_backup()
+            else:
+                self.cleanup_database_backup()
 
         self.create_database(
             database=self.backup_location,
@@ -762,7 +912,24 @@ class DBCloneDatabaseBackupEngine(BaseDatabaseBackupEngine):
 
         backup_engine = self.create_engine(database=self.backup_location)
 
-        self._copy_database(self.engine, backup_engine)
+        try:
+            self._copy_database(self.engine, backup_engine)
+            with backup_engine.begin() as conn:
+                conn.execute(
+                    text(
+                        "CREATE TABLE IF NOT EXISTS `_zenml_backup_metadata` "
+                        "(`status` VARCHAR(32) PRIMARY KEY)"
+                    )
+                )
+                conn.execute(
+                    text(
+                        "INSERT INTO `_zenml_backup_metadata` (`status`) "
+                        "VALUES ('completed')"
+                    )
+                )
+        except Exception:
+            self.cleanup_database_backup()
+            raise
 
         logger.debug(
             f"Database backed up to the `{self.backup_location}` backup database."
@@ -780,9 +947,10 @@ class DBCloneDatabaseBackupEngine(BaseDatabaseBackupEngine):
         Raises:
             RuntimeError: If the backup database does not exist.
         """
-        if not self.database_exists(database=self.backup_location):
+        if not self.is_valid_backup():
             raise RuntimeError(
-                f"Backup database `{self.backup_location}` does not exist."
+                f"Backup database `{self.backup_location}` does not exist "
+                "or is incomplete."
             )
 
         backup_engine = self.create_engine(database=self.backup_location)
