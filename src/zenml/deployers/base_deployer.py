@@ -379,6 +379,12 @@ class BaseDeployer(StackComponent, ABC):
             f"Waiting for the deployment {deployment.name} to reach "
             f"desired state '{desired_status}' for max {timeout} seconds..."
         )
+        if desired_status == DeploymentStatus.RUNNING:
+            logger.info(
+                "A pending deployment is still provisioning resources or "
+                "waiting to pass its health checks. Startup time depends on "
+                "the deployer and the resources being provisioned."
+            )
 
         start_time = time.time()
         sleep_time = 5
@@ -417,14 +423,24 @@ class BaseDeployer(StackComponent, ABC):
                 raise DeploymentTimeoutError(
                     f"Timed out waiting for deployment {deployment.name} "
                     f"to reach desired state '{desired_status}' after {timeout} "
-                    "seconds"
+                    f"seconds. Last status: '{deployment.status}'. The "
+                    "deployment may still be changing state. Check its status "
+                    f"with `zenml deployment refresh {deployment.id}` and "
+                    f"its logs with `zenml deployment logs {deployment.id}`."
                 )
-            logger.debug(
+            logger.info(
                 f"The deployment {deployment.name} state is still "
                 f"'{deployment.status}' after {elapsed_time} seconds. Waiting for "
                 f"max {timeout - elapsed_time} seconds..."
             )
             time.sleep(sleep_time)
+
+        if deployment.status == desired_status:
+            logger.info(
+                f"Deployment {deployment.name} reached state "
+                f"'{desired_status}' after {int(time.time() - start_time)} "
+                "seconds."
+            )
 
         return deployment, deployment_state
 
