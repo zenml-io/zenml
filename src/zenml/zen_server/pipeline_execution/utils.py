@@ -44,7 +44,12 @@ from zenml.constants import (
     handle_bool_env_var,
     handle_int_env_var,
 )
-from zenml.enums import ExecutionStatus, StackComponentType, StoreType
+from zenml.enums import (
+    ExecutionStatus,
+    ModelStages,
+    StackComponentType,
+    StoreType,
+)
 from zenml.exceptions import IllegalOperationError, MaxConcurrentTasksError
 from zenml.logger import get_logger
 from zenml.models import (
@@ -82,6 +87,8 @@ from zenml.zen_server.pipeline_execution.snapshot_run_dispatcher import (
 from zenml.zen_server.pipeline_execution.workload_manager_interface import (
     WorkloadType,
 )
+from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.utils import verify_permission
 from zenml.zen_server.utils import (
     get_auth_context,
     server_config,
@@ -1066,6 +1073,54 @@ def validate_snapshot_for_server_execution(
 
     assert build.zenml_version
     return build, stack, build.zenml_version
+
+
+def verify_model_version_permissions_for_snapshot_run(
+    snapshot: PipelineSnapshotResponse,
+    run_configuration: Optional[PipelineRunConfiguration] = None,
+) -> None:
+    """Verify the permission to create model versions for a snapshot run.
+
+    A run creates a new model version if a model is configured without a
+    version, or with a version name that is neither a number nor a stage.
+    Checking this when a trigger is attached surfaces a missing
+    `ModelVersion::CREATE` permission immediately instead of when the trigger
+    fires.
+
+    Args:
+        snapshot: The snapshot that will be run.
+        run_configuration: Optional run configuration overriding the snapshot
+            configuration.
+    """
+    pipeline_model = (
+        run_configuration.model if run_configuration else None
+    ) or snapshot.pipeline_configuration.model
+    step_updates = (
+        run_configuration.steps if run_configuration else None
+    ) or {}
+
+    models = [pipeline_model]
+    for invocation_id, step in snapshot.step_configurations.items():
+        step_update = step_updates.get(invocation_id)
+        models.append(
+            (step_update.model if step_update else None)
+            or step.step_config_overrides.model
+        )
+
+    for model in models:
+        if model is None:
+            continue
+        version = str(model.version) if model.version is not None else None
+        if version and (
+            version.isnumeric() or version in ModelStages.values()
+        ):
+            continue
+        verify_permission(
+            resource_type=ResourceType.MODEL_VERSION,
+            action=Action.CREATE,
+            project_id=snapshot.project_id,
+        )
+        return
 
 
 def build_runner_environment(
