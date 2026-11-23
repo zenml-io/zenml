@@ -313,7 +313,7 @@ class MyCustomLogExporter(LogRecordExporter):
 
 ### Implementing Log Fetching
 
-Implement `fetch()` to retrieve logs from your backend for the ZenML dashboard and API.
+Implement `fetch()` to retrieve logs from your backend for the ZenML UI and API.
 
 Return each page in chronological order. `start` selects the initial end of the stream (`oldest` or `newest`); choose a supported default when omitted and reject unsupported values.
 
@@ -530,7 +530,7 @@ This separation allows you to register flavors even when their dependencies aren
 
 
 {% hint style="warning" %}
-**Important**: Log stores are instantiated on the ZenML server to fetch logs for display in the dashboard. This introduces a critical constraint on your implementation. When the ZenML dashboard or API requests logs, the server instantiates the log store and calls its `fetch()` method. This means that there can be **no external dependencies** that aren't already installed on the ZenML server.
+**Important**: Log stores are instantiated on the ZenML server to fetch logs for display in the UI. This introduces a critical constraint on your implementation. When the ZenML UI or API requests logs, the server instantiates the log store and calls its `fetch()` method. This means that there can be **no external dependencies** that aren't already installed on the ZenML server.
 {% endhint %}
 
 ### Best Practices

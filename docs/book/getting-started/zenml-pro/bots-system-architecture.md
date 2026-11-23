@@ -11,7 +11,7 @@ For the objects users work with, such as bots, environments, chats, and automati
 
 ```mermaid
 flowchart LR
-    UI[Bots UI<br/>in the ZenML Pro dashboard]
+    UI[Bots UI<br/>in the ZenML Pro UI]
     Slack[Slack and GitHub]
     SDK[Python SDK and REST API]
     CP[ZenML Pro control plane<br/>identity and permissions]
@@ -42,7 +42,7 @@ The Bots server is a service of the ZenML Pro control plane, next to your worksp
 
 **Bots and workspaces:** Every bot acts as a ZenML Pro service account. Inside the sandbox, the ZenML and Kitaru clients are signed in as that service account, so the agent sees exactly the workspaces, projects, and pipelines that the service account may access. You control a bot's reach with the service account's roles.
 
-**Context:** A chat started from a page in the ZenML Pro dashboard carries a pointer to that page's workspace, project, pipeline run, or other resource. The agent reads the resource from the workspace when it needs it.
+**Context:** A chat started from a page in the ZenML Pro UI carries a pointer to that page's workspace, project, pipeline run, or other resource. The agent reads the resource from the workspace when it needs it.
 
 ## How a Chat Runs
 

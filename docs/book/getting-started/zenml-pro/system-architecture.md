@@ -37,15 +37,15 @@ The **Control Plane** is the organization-level management layer. It sits above 
 
 ## Workspace Server
 
-The **Workspace Server** is the central hub for your ML operations. It provides the API layer that your SDK, dashboard, and orchestrators connect to for all pipeline-related operations.
+The **Workspace Server** is the central hub for your ML operations. It provides the API layer that your SDK, UI, and orchestrators connect to for all pipeline-related operations.
 
 **Key responsibilities:**
 
 - **Metadata Storage & API:** Pipeline run tracking with status, timing, and lineage; step execution details; artifact registry (pointers to your artifact store); model registry with versions and stages
 - **Entity Management:** Stacks and components, pipeline definitions, artifact versions, code repository connections
 - **Token & Credential Management:** Short-lived service connector tokens for cloud resources, stack component authentication, API validation
-- **Integration Hub:** REST API for Python SDK, dashboard backend, orchestrator callbacks for status updates
-- **Pipeline Execution from UI:** The workspace server includes a workload manager that creates ad-hoc runner pods in a Kubernetes cluster to execute pipelines triggered from the dashboard
+- **Integration Hub:** REST API for Python SDK, UI backend, orchestrator callbacks for status updates
+- **Pipeline Execution from UI:** The workspace server includes a workload manager that creates ad-hoc runner pods in a Kubernetes cluster to execute pipelines triggered from the UI
 
 | Deployment | Workspace Server Location |
 |------------|---------------------------|

@@ -111,7 +111,7 @@ zenml service-connector list-types
 ```
 {% endcode %}
 
-Service Connector Types are also displayed in the dashboard during the configuration of a new Service Connector:
+Service Connector Types are also displayed in the UI during the configuration of a new Service Connector:
 
 The cloud provider of choice for our example is AWS and we're looking to hook up an S3 bucket to an S3 Artifact Store Stack Component. We'll use the AWS Service Connector Type.
 
@@ -119,7 +119,7 @@ The cloud provider of choice for our example is AWS and we're looking to hook up
 
 <summary>Interactive structured docs with Service Connector Types</summary>
 
-A lot more is hidden behind a Service Connector Type than a name and a simple list of resource types. Before using a Service Connector Type to configure a Service Connector, you probably need to understand what it is, what it can offer and what are the supported authentication methods and their requirements. All this can be accessed on-site directly through the CLI or in the dashboard. Some examples are included here.
+A lot more is hidden behind a Service Connector Type than a name and a simple list of resource types. Before using a Service Connector Type to configure a Service Connector, you probably need to understand what it is, what it can offer and what are the supported authentication methods and their requirements. All this can be accessed on-site directly through the CLI or in the UI. Some examples are included here.
 
 Showing information about the AWS Service Connector Type:
 
@@ -189,9 +189,9 @@ setup that includes using the auto-configuration Service Connector features.
 ```
 {% endcode %}
 
-Dashboard equivalent:
+UI equivalent:
 
-<img src="../../.gitbook/assets/aws-service-connector-type.png" alt="AWS Service Connector Type Details" data-size="original">
+<img src="../../.gitbook/assets/aws-service-connector-type.png" alt="New service connector flow listing connector types" data-size="original">
 
 Fetching details about the S3 bucket resource type:
 

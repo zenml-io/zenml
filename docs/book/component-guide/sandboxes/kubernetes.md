@@ -34,13 +34,14 @@ The following configuration options can be set either through the sandbox config
 
 - **`sandbox_environment`**: Environment variables to set in session pods and command executions.
 - **`image`** (default: "python:3.11-slim"): The container image used for session pods. The image must provide `/bin/sh` and `base64`, so distroless images are not supported.
-- **`pod_settings`**: Node selectors, labels, affinity, tolerations, secrets, environment variables, image pull secrets, the scheduler name and additional arguments to apply to the session pods. These can be either specified using the Kubernetes model objects or as dictionaries.
+- **`pod_settings`**: Node selectors, labels, affinity, tolerations, secrets, environment variables, image pull secrets, image pull policy, the scheduler name and additional arguments to apply to the session pods. These can be either specified using the Kubernetes model objects or as dictionaries.
 - **`service_account_name`**: The name of a Kubernetes service account to use for session pods. If not configured, pods use the namespace default service account.
 - **`automount_service_account_token`** (default: False): If `True`, a Kubernetes API token is mounted into session pods, allowing code running in the sandbox to call the Kubernetes API with the service account's RBAC permissions.
 - **`privileged`** (default: False): If the container should be run in privileged mode.
 - **`owner`** (default: `none`): The Kubernetes object that owns session pods, so that they are garbage-collected together with it. See [Owning session pods](#owning-session-pods).
 - **`pod_startup_timeout`** (default: 120): The maximum time (in seconds) to wait for a session pod to become running.
 - **`api_request_timeout`**: Timeout (in seconds) for Kubernetes API requests. If not set, client defaults are used.
+- **`max_api_retries`** (default: 3): Maximum number of retries for failed Kubernetes API requests. Starting a command in a session pod is retried too, with exponential backoff, when the Kubernetes API or a proxy in front of it is temporarily unavailable; this always uses the value from the sandbox config. Set to 0 to disable retries.
 
 ## Security model
 

@@ -440,7 +440,7 @@ def parent_pipeline_inline():
 `embed(...)` behavior:
 
 - It executes the child pipeline entrypoint inline as part of the parent run.
-- It does not create a separate child run in the dashboard.
+- It does not create a separate child run in the UI.
 - It is only valid inside a dynamic pipeline body.
 - It is not allowed inside `@step` functions.
 

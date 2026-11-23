@@ -340,6 +340,9 @@ def add_pod_settings(
                     settings.container_security_context
                 )
 
+        if settings.image_pull_policy:
+            container.image_pull_policy = settings.image_pull_policy
+
     if settings.volumes:
         if pod_spec.volumes:
             pod_spec.volumes.extend(settings.volumes)
