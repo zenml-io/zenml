@@ -28,6 +28,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.exc import (
     OperationalError,
 )
+from sqlalchemy.pool import NullPool
 from sqlmodel import create_engine
 
 from zenml.logger import get_logger
@@ -67,16 +68,21 @@ class BaseDatabaseBackupEngine(ABC):
 
         Args:
             database: The name of the database. If not set, a master engine
-                will be returned.
+                with no connection pooling will be returned.
 
         Returns:
             The SQLAlchemy engine.
         """
         url = self.url._replace(database=database)
+        engine_args = self.engine_args
+        if database is None:
+            # Master connections are used for short metadata and DDL operations.
+            engine_args = {"poolclass": NullPool}
+
         engine = create_engine(
             url=url,
             connect_args=self.connect_args,
-            **self.engine_args,
+            **engine_args,
         )
         self.config.configure_engine_auth(engine)
         return engine
