@@ -1,7 +1,7 @@
 """Add execution payloads [6fce9968352d].
 
 Revision ID: 6fce9968352d
-Revises: 8d638fcb4bd5
+Revises: 0.99.0
 Create Date: 2026-10-19 22:32:17.741748
 
 """
@@ -15,7 +15,7 @@ from sqlalchemy.dialects import mysql
 
 # revision identifiers, used by Alembic.
 revision = "6fce9968352d"
-down_revision = "8d638fcb4bd5"
+down_revision = "0.99.0"
 branch_labels = None
 depends_on = None
 
