@@ -46,9 +46,9 @@ zenml project set default
 zenml stack set default
 ```
 
-### Using the Dashboard
+### Using the UI
 
-You can also access your workspace through the web dashboard, which provides a graphical interface for managing all your MLOps resources.
+You can also access your workspace through the web UI, which provides a graphical interface for managing all your MLOps resources.
 
 ## Create a Workspace in your organization
 
@@ -56,11 +56,11 @@ A workspace is a crucial part of your Organization and serves as a container for
 
 {% stepper %}
 {% step %}
-**Go to your organization page**
+**Open All workspaces from the workspace menu**
 {% endstep %}
 
 {% step %}
-**Click on the "New Workspace" button**
+**Select "New Workspace"**
 
 <figure><img src=".gitbook/assets/image (1).png" alt=""><figcaption><p>Image showing the "New Workspace" button</p></figcaption></figure>
 {% endstep %}
@@ -68,13 +68,13 @@ A workspace is a crucial part of your Organization and serves as a container for
 {% step %}
 **Add a name and id**
 
-Give your workspace a name, an id, and click on the "**Create Workspace**" button.
+Pick the **Workspace type** (ZenML), enter a **Workspace name** and **Workspace ID**, then select **Create Workspace**.
 
 {% hint style="warning" %}
-**Important**: The workspace ID must be globally unique across all ZenML instances and cannot be changed after creation. Choose carefully as this permanent identifier will be used in all future API calls and references.
+**Important**: Workspace IDs are permanent. Choose carefully as this identifier will be used in all future API calls and references.
 {% endhint %}
 
-<figure><img src=".gitbook/assets/New Workspace.png" alt="" width="375"><figcaption></figcaption></figure>
+<figure><img src=".gitbook/assets/New Workspace.png" alt="New Workspace form"><figcaption></figcaption></figure>
 {% endstep %}
 
 {% step %}
@@ -82,7 +82,7 @@ Give your workspace a name, an id, and click on the "**Create Workspace**" butto
 
 The workspace will then be created and added to your organization. In the meantime, you can already get started with setting up your environment for the onboarding experience.
 
-The image below shows you how the overview page looks like when you are being onboarded. Follow the instructions on the screen to get started.
+The workspace Overview shows a **Get started** checklist while you are being onboarded. Follow the instructions on the screen to get started.
 
 ![Image showing the onboarding experience](.gitbook/assets/tenant_onboarding.png)
 
@@ -164,8 +164,8 @@ Some Pro-only features that you can leverage in your workspace are as follows:
 * [Projects for Resource Organization](projects.md)
 * [Model Control Plane](https://docs.zenml.io/how-to/model-management-metrics/model-control-plane/register-a-model)
 * [Artifact Control Plane](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts)
-* [Create snapshots out of your pipeline runs](https://docs.zenml.io/concepts/snapshots#using-the-dashboard)
-* [Run snapshots from the Dashboard](https://docs.zenml.io/concepts/snapshots#running-the-dashboard)
+* [Create snapshots out of your pipeline runs](https://docs.zenml.io/concepts/snapshots#using-the-ui)
+* [Run snapshots from the UI](https://docs.zenml.io/concepts/snapshots#using-the-ui-1)
 
 and [more](https://zenml.io/pro)!
 

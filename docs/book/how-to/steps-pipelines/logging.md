@@ -24,17 +24,17 @@ def my_step() -> None:
     print("World.")  # You can utilize `print` statements as well. 
 ```
 
-All these logs are stored within the respective artifact store of your stack. You can visualize the pipeline run logs and step logs in the dashboard as follows:
+All these logs are stored within the respective artifact store of your stack. You can visualize the pipeline run logs and step logs in the UI as follows:
 
 * Local ZenML server (`zenml login --local`): Both local and remote artifact stores may be accessible
 * Deployed ZenML server: Local artifact store logs won't be accessible; remote artifact store logs require [service connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide) configuration (see [remote storage guide](https://docs.zenml.io/user-guides/production-guide/remote-storage))
 
 {% hint style="warning" %}
-In order for logs to be visible in the dashboard with a deployed ZenML server, you must configure both a remote artifact store and the appropriate service connector to access it. Without this configuration, your logs won't be accessible through the dashboard.
+In order for logs to be visible in the UI with a deployed ZenML server, you must configure both a remote artifact store and the appropriate service connector to access it. Without this configuration, your logs won't be accessible through the UI.
 {% endhint %}
 
-![Displaying pipeline run logs on the dashboard](../../.gitbook/assets/zenml_pipeline_run_logs.png)
-![Displaying step logs on the dashboard](../../.gitbook/assets/zenml_step_logs.png)
+![Displaying pipeline run logs on the UI](../../.gitbook/assets/zenml_pipeline_run_logs.png)
+![Displaying step logs on the UI](../../.gitbook/assets/zenml_step_logs.png)
 
 ## Logging Configuration
 
@@ -342,18 +342,18 @@ def async_step() -> None:
     thread.join()
 ```
 
-### on the Dashboard
+### on the UI
 
-When viewing logs in the dashboard, ZenML currently loads logs **in bulk** and
+When viewing logs in the UI, ZenML currently loads logs **in bulk** and
 pagination/filtering happens on the client side. To keep the response size and
 server memory usage bounded (especially when logs are stored in remote artifact
-stores), the dashboard is limited to **500 pages** (**100 log entries per
+stores), the UI is limited to **500 pages** (**100 log entries per
 page**, i.e. **50,000 entries** total) by default.
 
 You can adjust this limit by setting `ZENML_LOGS_MAX_ENTRIES_PER_REQUEST` in the
 environment when you are deploying your ZenML workspace.
 
-Downloading logs from the dashboard will also only include up to this limit.
+Downloading logs from the UI will also only include up to this limit.
 
 {% hint style="info" %}
 We’re actively working on improving log loading to remove the need for this cap.

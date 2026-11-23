@@ -210,8 +210,11 @@ def export_requirements(
     if "whylogs" in integrations_to_export:
         warning(_WHYLOGS_INTEGRATION_WARNING)
 
+    # Sorted so the output does not depend on set order, which changes with
+    # every process. uv can resolve the same requirements in a different
+    # order to different versions.
     requirements = []
-    for integration_name in integrations_to_export:
+    for integration_name in sorted(integrations_to_export):
         try:
             requirements += (
                 integration_registry.select_integration_requirements(

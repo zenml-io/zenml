@@ -126,8 +126,8 @@ This account will be used to invite SSO users and grant them the necessary permi
 
 While logged in with the local user account, invite the SSO users who will take over management of the organization:
 
-1. Navigate to **Organization Settings** → **Members**
-2. Click **Invite Member**
+1. Navigate to **Settings** → **People**
+2. Click **Add member**
 3. Enter the email address of the SSO user (this should match the email address in your identity provider)
 4. Assign appropriate roles (e.g., Organization Owner, Organization Admin)
 5. Repeat for all SSO users who need access

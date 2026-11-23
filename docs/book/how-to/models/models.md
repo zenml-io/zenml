@@ -8,7 +8,7 @@ icon: rectangle-history
 Machine learning models and AI agent configurations are at the heart of any ML workflow and AI system. ZenML provides comprehensive model management capabilities through its Model Control Plane, allowing you to track, version, promote, and share both traditional ML models and AI agent systems across your pipelines.
 
 {% hint style="info" %}
-The ZenML Model Control Plane is a [ZenML Pro](https://zenml.io/pro) feature. While the Python functions for creating and interacting with models are available in the open-source version, the visual dashboard for exploring and managing models is only available in ZenML Pro. Please [sign up here](https://zenml.io/pro) to get access to the full model management experience.
+The ZenML Model Control Plane is a [ZenML Pro](https://zenml.io/pro) feature. While the Python functions for creating and interacting with models are available in the open-source version, the visual UI for exploring and managing models is only available in ZenML Pro. Please [sign up here](https://zenml.io/pro) to get access to the full model management experience.
 {% endhint %}
 
 This guide covers all aspects of working with models in ZenML, from basic concepts to advanced usage patterns.
@@ -40,10 +40,10 @@ The Model Control Plane is ZenML's unified interface for managing models through
 * Exchange data between pipelines using models
 
 {% hint style="info" %}
-While all Model Control Plane functionality is accessible programmatically through the Python SDK in both OSS and Pro versions, the visual dashboard shown below is only available in ZenML Pro.
+While all Model Control Plane functionality is accessible programmatically through the Python SDK in both OSS and Pro versions, the visual UI shown below is only available in ZenML Pro.
 {% endhint %}
 
-![Model Control Plane Overview in ZenML Pro Dashboard](<../../.gitbook/assets/dcp_walkthrough.gif>)
+![Artifacts list in the ZenML Pro UI](<../../.gitbook/assets/dcp_walkthrough.png>)
 
 ## Working with Models
 
@@ -239,7 +239,7 @@ This pattern enables clean separation between training and inference pipelines w
 ZenML allows you to attach metadata to models, which is crucial for tracking performance, understanding training conditions, and making promotion decisions.
 
 {% hint style="info" %}
-While metadata tracking is available in both OSS and Pro versions through the Python SDK, visualizing and exploring model metrics through a dashboard interface is only available in ZenML Pro.
+While metadata tracking is available in both OSS and Pro versions through the Python SDK, visualizing and exploring model metrics through a UI is only available in ZenML Pro.
 {% endhint %}
 
 ### Logging Model Metadata
@@ -362,7 +362,7 @@ The Model Control Plane in ZenML provides a comprehensive solution for managing 
 {% hint style="info" %}
 **OSS vs Pro Feature Summary:**
 * **ZenML OSS:** Includes all the programmatic (Python SDK) model features described in this guide
-* **ZenML Pro:** Adds visual model dashboard, advanced model exploration, comprehensive metrics visualization, and integrated model lineage views
+* **ZenML Pro:** Adds a visual UI for models, advanced model exploration, comprehensive metrics visualization, and integrated model lineage views
 {% endhint %}
 
 Whether you're working on a simple classification model, a complex production ML system, or a sophisticated multi-agent AI application, ZenML's unified model management capabilities help you organize your resources and maintain clarity across your entire AI development lifecycle.

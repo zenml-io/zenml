@@ -6,7 +6,7 @@ description: Understand and adjust how ZenML versions your data.
 
 Data sits at the heart of every machine learning workflow. Managing and versioning this data correctly is essential for reproducibility and traceability within your ML pipelines. ZenML takes a proactive approach to data versioning, ensuring that every artifact—be it data, models, or evaluations—is automatically tracked and versioned upon pipeline execution.
 
-![Walkthrough of ZenML Artifact Control Plane (Dashboard available only on ZenML Pro)](../../.gitbook/assets/dcp_walkthrough.gif)
+![Artifacts list in the UI (available only on ZenML Pro)](../../.gitbook/assets/dcp_walkthrough.png)
 
 This guide will delve into artifact versioning and management, showing you how to efficiently name, organize, and utilize your data with the ZenML framework.
 
@@ -43,7 +43,7 @@ if __name__ == "__main__":
 ```
 
 {% hint style="info" %}
-Unspecified artifact outputs default to a naming pattern of `{pipeline_name}::{step_name}::output`. For visual exploration in the ZenML dashboard, it's best practice to give significant outputs clear custom names.
+Unspecified artifact outputs default to a naming pattern of `{pipeline_name}::{step_name}::output`. For visual exploration in the ZenML UI, it's best practice to give significant outputs clear custom names.
 {% endhint %}
 
 Artifacts named `iris_dataset` can then be found swiftly using various ZenML interfaces:
@@ -53,10 +53,10 @@ Artifacts named `iris_dataset` can then be found swiftly using various ZenML int
 To list artifacts: `zenml artifact list`
 {% endtab %}
 
-{% tab title="Cloud (Dashboard)" %}
-The [ZenML Pro](https://zenml.io/pro) dashboard offers advanced visualization features for artifact exploration.
+{% tab title="Cloud (UI)" %}
+The [ZenML Pro](https://zenml.io/pro) UI offers advanced visualization features for artifact exploration.
 
-<figure><img src="../../.gitbook/assets/dcp_artifacts_list.png" alt=""><figcaption><p>ZenML Artifact Control Plane.</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/dcp_artifacts_list.png" alt=""><figcaption><p>Artifacts list.</p></figcaption></figure>
 
 {% hint style="info" %}
 To prevent visual clutter, make sure to assign names to your most important artifacts that you would like to explore visually.
@@ -102,8 +102,8 @@ After execution, `iris_dataset` and its version `raw_2023` can be seen using:
 To list versions: `zenml artifact version list`
 {% endtab %}
 
-{% tab title="Cloud (Dashboard)" %}
-The Cloud dashboard visualizes version history for your review.
+{% tab title="Cloud (UI)" %}
+The Cloud UI visualizes version history for your review.
 
 <figure><img src="../../.gitbook/assets/dcp_artifacts_versions_list.png" alt=""><figcaption><p>ZenML Data Versions List.</p></figcaption></figure>
 {% endtab %}
@@ -144,7 +144,7 @@ There are multiple ways to interact with tags and metadata in ZenML. If you woul
 
 ## Comparing metadata across runs (Pro)
 
-The [ZenML Pro](https://www.zenml.io/pro) dashboard includes an Experiment Comparison tool that allows you to visualize and analyze metadata across different pipeline runs. This feature helps you understand patterns and changes in your pipeline's behavior over time.
+The [ZenML Pro](https://www.zenml.io/pro) UI includes an Experiment Comparison tool that allows you to visualize and analyze metadata across different pipeline runs. This feature helps you understand patterns and changes in your pipeline's behavior over time.
 
 ### Using the comparison views
 
@@ -157,7 +157,7 @@ The tabular view provides a structured comparison of metadata across runs:
 
 This view automatically calculates changes between runs and allows you to:
 
-* Sort and filter metadata values
+* Filter metadata keys with **Find parameter** and **Differences only**
 * Track changes over time
 * Compare up to 20 runs simultaneously
 
@@ -170,16 +170,16 @@ This view is particularly useful for:
 
 * Discovering correlations between different metrics
 * Identifying patterns across pipeline runs
-* Filtering and focusing on specific parameter ranges
+* Focusing on specific metadata keys with **Find parameter**
 
 ### Accessing the comparison tool
 
 To compare metadata across runs:
 
-1. Navigate to any pipeline in your dashboard
-2. Click the "Compare" button in the top navigation
-3. Select the runs you want to compare
-4. Switch between table and parallel coordinates views using the tabs
+1. Open **Runs** in your UI
+2. Select the runs you want to compare
+3. Select **Compare**
+4. Inspect the parallel coordinates chart above the comparison table
 
 {% hint style="info" %}
 The comparison tool works with any numerical metadata (`float` or `int`) that you've logged in your pipelines. Make sure to log meaningful metrics in your steps to make the most of this feature.
@@ -195,7 +195,7 @@ This feature is currently in Alpha Preview. We encourage you to share feedback a
 
 ## Specify a type for your artifacts
 
-Assigning a type to an artifact allows ZenML to highlight them differently in the dashboard and also lets you filter your artifacts better.
+Assigning a type to an artifact allows ZenML to highlight them differently in the UI and also lets you filter your artifacts better.
 
 {% hint style="info" %}
 If you don't specify a type for your artifact, ZenML will use the default artifact type provided by the materializer that is used to
@@ -422,16 +422,16 @@ artifact.run_metadata["shape"].value  # Shape e.g. (500,20)
 ```
 {% endtab %}
 
-{% tab title="OSS (Dashboard)" %}
-The information regarding the metadata of an artifact can be found within the DAG visualizer interface on the OSS dashboard:
+{% tab title="OSS (UI)" %}
+The information regarding the metadata of an artifact can be found within the DAG visualizer interface on the OSS UI:
 
-<figure><img src="../../.gitbook/assets/dashboard_artifact_metadata.png" alt=""><figcaption><p>ZenML Artifact Control Plane.</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/dashboard_artifact_metadata.png" alt=""><figcaption><p>Artifact metadata in the run DAG.</p></figcaption></figure>
 {% endtab %}
 
-{% tab title="Cloud (Dashboard)" %}
-The [ZenML Pro](https://zenml.io/pro) dashboard offers advanced visualization features for artifact exploration, including a dedicated artifacts tab with metadata visualization:
+{% tab title="Cloud (UI)" %}
+The [ZenML Pro](https://zenml.io/pro) UI offers advanced visualization features for artifact exploration, including a Metadata tab on each artifact version:
 
-<figure><img src="../../.gitbook/assets/dcp_metadata.png" alt=""><figcaption><p>ZenML Artifact Control Plane.</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/dcp_metadata.png" alt=""><figcaption><p>Artifact metadata.</p></figcaption></figure>
 {% endtab %}
 {% endtabs %}
 
@@ -466,7 +466,7 @@ def model_finetuner_step(
         # artifact_name="my_model", infer_artifact=True
 
         # A dictionary of dictionaries can also be passed to group metadata
-        #  in the dashboard
+        #  in the UI
         # metadata = {"metrics": {"accuracy": accuracy}}
     )
     return model
@@ -582,7 +582,7 @@ This would create the following pipeline run DAGs:
 
 **Run 2:**
 
-<img src="../../.gitbook/assets/artifact_management_2.png" alt="Uses a second version of my_dataset" data-size="original">
+<img src="../../.gitbook/assets/artifact_management_2.png" alt="Reuses version 1 of my_dataset to finetune the latest model" data-size="original">
 
 </details>
 

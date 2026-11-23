@@ -363,7 +363,7 @@ the Bots UI enables it again.
 
 Before your Slack messages or GitHub comments are acted on, link your Slack or
 GitHub user to your ZenML Pro account from the connections page of the ZenML Pro
-dashboard settings. A message from an unlinked user gets a hint to link and is
+UI settings. A message from an unlinked user gets a hint to link and is
 otherwise ignored. You can list and remove your linked identities, and choose
 one linked Slack identity as your [notification target](#notifications).
 

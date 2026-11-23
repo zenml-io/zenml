@@ -30,7 +30,7 @@ ZenML also provides `zenml-scoping` (architecture planning) and `zenml-pipeline-
 | [Log rich metadata](#id-1-log-rich-metadata-on-every-run) | Track params, metrics, and properties on every run | Foundation for reproducibility and analytics |
 | [Experiment comparison](#id-2-activate-the-experiment-comparison-view-zenml-pro) | Visualize and compare runs with parallel plots | Identify patterns and optimize faster |
 | [Autologging](#id-3-drop-in-experiment-tracker-autologging) | Automatic metric and artifact tracking | Zero-effort experiment tracking |
-| [Slack/Discord alerts](#id-4-instant-alerter-notifications-for-successesfailures) | Instant notifications for pipeline events | Stay informed without checking dashboards |
+| [Slack/Discord alerts](#id-4-instant-alerter-notifications-for-successesfailures) | Instant notifications for pipeline events | Stay informed without checking the UI |
 | [Cron scheduling](#id-5-schedule-the-pipeline-on-a-cron) | Run pipelines automatically on schedule | Promote notebooks to production workflows |
 | [Warm pools/resources](#id-6-kill-cold-starts-with-sagemaker-warm-pools--vertex-persistent-resources) | Eliminate cold starts in cloud environments | Reduce iteration time from minutes to seconds |
 | [Secret management](#id-7-centralize-secrets-tokens-db-creds-s3-keys) | Centralize credentials and tokens | Keep sensitive data out of code |
@@ -45,7 +45,7 @@ ZenML also provides `zenml-scoping` (architecture planning) and `zenml-pipeline-
 
 
 ## 1 Log rich metadata on every run
-**Why** -- instant lineage, reproducibility, and the raw material for all other dashboard analytics. Metadata is the foundation for experiment tracking, model governance, and comparative analysis.
+**Why** -- instant lineage, reproducibility, and the raw material for all other UI analytics. Metadata is the foundation for experiment tracking, model governance, and comparative analysis.
 
 ```python
 from zenml import log_metadata
@@ -53,7 +53,7 @@ from zenml import log_metadata
 # Basic metadata logging at step level - automatically attaches to current step
 log_metadata({"lr": 1e-3, "epochs": 10, "prompt": my_prompt})
 
-# Group related metadata in categories for better dashboard organization
+# Group related metadata in categories for better UI organization
 log_metadata({
     "training_params": {
         "learning_rate": 1e-3,
@@ -85,21 +85,20 @@ log_metadata({
 - Group related metadata using nested dictionaries
 - Use ZenML's special metadata types for standardized representation
 
-*Metadata becomes the foundation for the Experiment Comparison tool and other dashboard views.* (Learn more: [Metadata](https://docs.zenml.io/concepts/metadata), [Tracking Metrics with Metadata](https://docs.zenml.io/concepts/models#tracking-metrics-and-metadata))
+*Metadata becomes the foundation for the Experiment Comparison tool and other UI views.* (Learn more: [Metadata](https://docs.zenml.io/concepts/metadata), [Tracking Metrics with Metadata](https://docs.zenml.io/concepts/models#tracking-metrics-and-metadata))
 
 ## 2 Activate the **Experiment Comparison** view (ZenML Pro)
 
 **Why** -- side-by-side tables + parallel-coordinate plots of any numerical metadata help you quickly identify patterns, trends, and outliers across multiple runs. This visual analysis speeds up debugging and parameter tuning.
 
-**Setup** -- once you've logged metadata (see quick win #1) nothing else to do; open **Dashboard → Compare**.  
+**Setup** -- once you've logged metadata (see quick win #1) nothing else to do; open **Runs**, select two or more runs, then select **Compare**.  
 
 [![Experiment Comparison Video](../.gitbook/assets/experiment_comparison_video.png)](https://www.loom.com/share/693b2d829600492da7cd429766aeba6a)
 
 **Compare experiments at a glance:**
 - **Table View**: See all runs side-by-side with automatic change highlighting
 - **Parallel Coordinates Plot**: Visualize relationships between hyperparameters and metrics
-- **Filter & Sort**: Focus on specific runs or metrics that matter most
-- **CSV Export**: Download experiment data for further analysis (Pro tier)
+- **Filter**: Use **Find parameter** and **Differences only** to focus on the metrics that matter most
 
 **Practical uses:**
 - Compare metrics across model architectures or hyperparameter settings
@@ -163,7 +162,7 @@ def train_model(data):
 **Why** -- get immediate notifications when pipelines succeed or fail, enabling
 faster response times and improved collaboration. Alerter notifications ensure
 your team is always aware of critical model training status, data drift alerts,
-and deployment changes without constantly checking dashboards.
+and deployment changes without constantly checking the UI.
 
 {% hint style="info" %}
 ZenML supports multiple alerter flavors including Slack and Discord. The example below uses Slack, but the pattern is similar for other alerters.
@@ -627,13 +626,13 @@ Include:
 Provide only the HTML code without explanations. The HTML will be used with ZenML's HTMLString type.
 ```
 
-![HTML Report](../.gitbook/assets/htmlstring-visualization.gif)
+![HTML Report](../.gitbook/assets/htmlstring-visualization.png)
 
 
 **Key features**
 * **Rich formatting** - Full HTML/CSS support for beautiful reports
 * **Interactive elements** - Add charts, tables, and responsive design
-* **Easy sharing** - Reports appear directly in ZenML dashboard
+* **Easy sharing** - Reports appear directly in ZenML UI
 * **LLM assistance** - Generate complex visualizations with simple prompts
 * **No dependencies** - Works out of the box without extra libraries
 
@@ -643,7 +642,7 @@ Provide only the HTML code without explanations. The HTML will be used with ZenM
 * Build error analysis dashboards with filtering capabilities
 * Generate PDF-ready reports for stakeholder presentations
 
-Simply return an `HTMLString` from any step, and your visualization will automatically appear in the ZenML dashboard for that step's artifacts.
+Simply return an `HTMLString` from any step, and your visualization will automatically appear in the ZenML UI for that step's artifacts.
 
 Learn more: [Visualizations](https://docs.zenml.io/concepts/artifacts/visualizations)
 
