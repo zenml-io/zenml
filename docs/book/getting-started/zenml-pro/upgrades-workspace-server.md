@@ -19,7 +19,7 @@ For SaaS deployments, workspace servers can be upgraded in a self-service manner
 
 In hybrid or self-hosted deployments, you manage the Control Plane yourself.
 
-**Tip:** Always review the [release notes](https://docs.zenml.io/changelog/server-sdk) for workspace server updates before upgrading. For any issues or questions, contact ZenML Support.
+**Tip:** Always review the [release notes](https://docs.zenml.io/changelog/server-sdk) and the [Compatibility](https://docs.zenml.io/changelog/compatibility) page for workspace server updates before upgrading. For any issues or questions, contact ZenML Support.
 
 **Upgrade Process:**
 

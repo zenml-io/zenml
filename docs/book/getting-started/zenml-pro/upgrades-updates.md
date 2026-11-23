@@ -19,6 +19,7 @@ Always upgrade the Control Plane first, then upgrade Workspace Servers. This ens
 
 - For ZenML Pro Control Plane: Check available versions in the [ZenML Pro ArtifactHub repository](https://artifacthub.io/packages/helm/zenml-pro/zenml-pro)
 - For ZenML Pro Workspace Servers: Check available versions in the [ZenML OSS ArtifactHub repository](https://artifacthub.io/packages/helm/zenml/zenml) and review the [ZenML GitHub releases page](https://github.com/zenml-io/zenml/releases) for release notes and breaking changes
+- For your clients and snapshots: Check the [Compatibility](https://docs.zenml.io/changelog/compatibility) page to see which client versions work with the server version you are upgrading to.
 
 ### Backup Checklist
 

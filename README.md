@@ -34,6 +34,7 @@
     <a href="https://zenml.io/projects">Projects</a> •
     <a href="https://zenml.io/roadmap">Roadmap</a> •
     <a href="https://docs.zenml.io/changelog">Changelog</a> •
+    <a href="https://docs.zenml.io/changelog/compatibility">Compatibility</a> •
     <a href="https://github.com/zenml-io/zenml/issues">Report Bug</a> •
     <a href="https://zenml.io/pro">Sign up for ZenML Pro</a> •
     <a href="https://www.zenml.io/blog">Blog</a> •

@@ -228,7 +228,7 @@ if snapshots:
 #### Using the REST API:
 
 For this you'll need a URL for a ZenML server. For those with a ZenML Pro
-account, you can find the URL in the dashboard in the following location:
+account, you can find the URL under **Settings → Workspace → General** (field **URL**):
 
 ![Where to find the ZenML server URL](../.gitbook/assets/zenml-pro-server-url.png)
 
@@ -241,7 +241,7 @@ zenml status | grep "API:" | awk '{print $2}'
 {% hint style="warning" %}
 **Important: Use Workspace API, Not ZenML Pro API**
 
-Snapshots are triggered via your **Workspace API** (your individual workspace URL), not the ZenML Pro API (cloudapi.zenml.io). Make sure you're using the correct URL from your workspace dashboard.
+Snapshots are triggered via your **Workspace API** (your individual workspace URL), not the ZenML Pro API (cloudapi.zenml.io). Make sure you're using the correct URL from your workspace's UI.
 {% endhint %}
 
 The REST API is ideal for external system integration, allowing you to trigger pipelines from non-Python environments:
@@ -1030,7 +1030,7 @@ The best approach for triggering pipelines depends on your specific needs:
 | Approach | Best for | Availability |
 |---|---|---|
 | **[Pipeline Deployments](https://docs.zenml.io/how-to/deployment/deployment)** | Persistent HTTP services for real-time inference, agents, interactive APIs. Handles concurrent requests, offers custom endpoints, auth, and full lifecycle management. | OSS and Pro |
-| **[Snapshots](https://docs.zenml.io/concepts/snapshots)** | Batch-style pipeline runs triggered from the dashboard, SDK, CLI, or REST API. No persistent service needed. | Pro |
+| **[Snapshots](https://docs.zenml.io/concepts/snapshots)** | Batch-style pipeline runs triggered from the UI, SDK, CLI, or REST API. No persistent service needed. | Pro |
 | **Custom API** | Full control over triggering when you need to embed pipeline triggers within an existing application or framework. | OSS and Pro |
 
 For most teams looking to expose pipelines as HTTP services, **Pipeline Deployments** are the recommended starting point — they provide a managed deployment experience with multiple infrastructure backends (local, Docker, Kubernetes, cloud) out of the box.

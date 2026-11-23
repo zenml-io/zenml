@@ -171,6 +171,12 @@ install_integrations() {
         echo "maison<2" >> integration-requirements.txt
     fi
     
+    # TensorFlow <2.15 keeps these shared integration environments on NumPy 1.
+    # PyArrow 26 needs NumPy 2 but omits that requirement from its wheel metadata.
+    if [ "$python_version" = "3.10" ] || [ "$python_version" = "3.11" ]; then
+        echo "pyarrow<26" >> integration-requirements.txt
+    fi
+
     echo "-e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]" >> integration-requirements.txt
 
     # Build upgrade arguments based on UPGRADE_ALL flag

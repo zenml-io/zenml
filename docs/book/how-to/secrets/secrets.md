@@ -162,7 +162,7 @@ client.create_secret(
 {% endtabs %}
 
 {% hint style="warning" %}
-Currently, setting the private status is only available via the CLI and Python SDK. The dashboard UI does not yet support creating or modifying private secrets.
+Currently, setting the private status is only available via the CLI and Python SDK. The UI does not yet support creating or modifying private secrets.
 {% endhint %}
 
 ### Fetching secrets with the same name

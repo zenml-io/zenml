@@ -673,12 +673,13 @@ class DynamicPipelineRunner:
                         )
 
                     with self._lifecycle_lock:
-                        if (
+                        # If there was a failure already, we do not want to
+                        # start any new work no matter the execution mode.
+                        should_retry = (
                             remaining_retries > 0
                             and not self._failure_detected
-                        ):
-                            # If there was a failure already, we do not want to
-                            # start any new work no matter the execution mode.
+                        )
+                        if should_retry:
                             step = Step(
                                 spec=step_run.spec,
                                 config=step_run.config,
@@ -695,6 +696,13 @@ class DynamicPipelineRunner:
                                 invocation_id=invocation_id,
                                 future=execution_future,
                             )
+
+                    if not should_retry:
+                        # Nothing will retry the step, so its failure is
+                        # final. Otherwise, its future keeps waiting on a step
+                        # run that stays in `RETRYING` status.
+                        step_run = publish_failed_step_run(step_run.id)
+                        self._on_step_finished(step_run=step_run)
 
                 time.sleep(monitoring_delay)
 

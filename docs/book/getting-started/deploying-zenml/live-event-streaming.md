@@ -115,7 +115,7 @@ Authorization: Bearer <token>
 ```
 
 Consuming requires `READ` permission on the run (the same permission as
-viewing it in the dashboard). Publishing — covered on the
+viewing it in the UI). Publishing — covered on the
 [client SDK page](../../how-to/steps-pipelines/streaming_events.md) —
 requires `UPDATE`.
 

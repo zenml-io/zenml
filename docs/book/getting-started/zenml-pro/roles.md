@@ -26,7 +26,7 @@ ZenML Pro allows for flexible resource sharing across the platform:
 * Users can share resources (like stacks) with other users who aren't yet members of a workspace
 * When a resource is shared with a non-member user:
   * That user automatically gains limited access to the workspace (implicit membership)
-  * They can see the workspace in their dashboard and access the shared resource
+  * They can see the workspace in their UI and access the shared resource
   * However, they don't appear in the standard members list for the workspace
 * If a user with shared resources is later added as a full member of a workspace and then removed, they will lose access to all resources, including those explicitly shared with them
 
@@ -64,7 +64,7 @@ To assign organization roles:
 
 {% stepper %}
 {% step %}
-Navigate to the **Organization** **Settings** page
+Select **Settings** in the rail, then **People** under **Organization**
 {% endstep %}
 
 {% step %}
@@ -72,7 +72,7 @@ Click on the **Members** tab. Here you can update roles for existing members.
 {% endstep %}
 
 {% step %}
-Use the **Add members** button to add new members
+Use the **Invite** button to invite people. In **Invite Member**, find a user or type an email, pick a **Role** and select **Send Invite**.
 
 ![Screenshot showing the invite modal](.gitbook/assets/add_org_members.png)
 {% endstep %}
@@ -170,9 +170,9 @@ Note that project-level roles do not grant any permissions to stacks, as stacks 
 
 ZenML Pro allows you to create custom roles with fine-grained permissions to meet your specific team requirements:
 
-* **Organization Level**: Currently, you cannot create custom organization roles via the ZenML Pro dashboard. However, this is possible via the [ZenML Pro API](https://cloudapi.zenml.io/).
-* **Workspace Level**: You can create custom workspace roles via the Workspace Settings page. This allows you to define specific combinations of permissions tailored to your team's workflow.
-* **Project Level**: Custom project roles can be created through the Project Settings page, enabling precise control over project-specific permissions.
+* **Organization Level**: Currently, you cannot create custom organization roles via the ZenML Pro UI. However, this is possible via the [ZenML Pro API](https://cloudapi.zenml.io/).
+* **Workspace Level**: Create custom workspace roles under **Settings** > **Roles**. This allows you to define specific combinations of permissions tailored to your team's workflow.
+* **Project Level**: Create custom project roles under **Settings** > **Roles** as well, enabling precise control over project-specific permissions.
 
 ### When to Use Custom Roles
 

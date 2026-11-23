@@ -74,7 +74,7 @@ To upgrade the Control Plane in a self-hosted deployment:
    - Check pod status
    - Review logs
    - Test connectivity
-   - Access the dashboard
+   - Access the UI
 
 
 ## Rollback Procedures
