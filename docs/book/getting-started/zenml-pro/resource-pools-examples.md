@@ -11,8 +11,8 @@ ZenML Pro workload management scenarios. Each example explains the
 infrastructure being modeled, the access policies that apply to it, and the
 Resource Manager API JSON that corresponds to the UI configuration.
 
-Configure these objects in the ZenML Pro UI under **Organization Settings >
-Resource Pools** or **Workspace Settings > Resource Pools**. The JSON snippets
+Configure these objects in the ZenML Pro UI under **Settings** > **Workspace** >
+**Resource pools**. The JSON snippets
 use the Resource Manager REST API shape for teams that automate the same setup.
 
 ## How to read these examples

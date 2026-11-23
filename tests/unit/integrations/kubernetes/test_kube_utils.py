@@ -5,6 +5,7 @@ from typing import Any
 
 import pytest
 from kubernetes import client as k8s_client
+from kubernetes.client.rest import ApiException
 
 from zenml.integrations.kubernetes import kube_utils
 
@@ -240,6 +241,36 @@ def test_check_job_status_includes_pending_details_on_fail_fast() -> None:
         "(pod `step-job-pod`: container waiting reason: ImagePullBackOff, "
         "message=Back-off pulling image missing-image.)"
     )
+
+
+def _check_job_status_with_read_error(
+    status_code: int,
+) -> tuple[kube_utils.JobStatus, str | None]:
+    class BatchApi:
+        def read_namespaced_job(self, **_: Any) -> k8s_client.V1Job:
+            raise ApiException(status=status_code)
+
+    return kube_utils.check_job_status(
+        batch_api=BatchApi(),  # type: ignore[arg-type]
+        core_api=None,  # type: ignore[arg-type]
+        namespace="default",
+        job_name="step-job",
+        max_retries=0,
+    )
+
+
+def test_check_job_status_reports_deleted_job_as_not_found() -> None:
+    """Test that a job deleted by Kubernetes doesn't raise an exception."""
+    assert _check_job_status_with_read_error(404) == (
+        kube_utils.JobStatus.NOT_FOUND,
+        None,
+    )
+
+
+def test_check_job_status_raises_other_api_errors() -> None:
+    """Test that only a missing job is reported as `NOT_FOUND`."""
+    with pytest.raises(ApiException):
+        _check_job_status_with_read_error(403)
 
 
 @pytest.mark.parametrize("max_retries", [0, 1, 3])

@@ -55,7 +55,7 @@ Once configured, logs are automatically captured during pipeline execution.
 
 ### Viewing Logs
 
-You can view step logs in the ZenML dashboard or in your logging provider's UI. To retrieve them programmatically, use the Python SDK or REST API.
+You can view step logs in the ZenML UI or in your logging provider's UI. To retrieve them programmatically, use the Python SDK or REST API.
 
 #### Python SDK
 

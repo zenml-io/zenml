@@ -11,7 +11,7 @@ ZenML pipelines work the same for **classical ML**, **AI agents**, and **hybrid 
 Why ZenML pipelines?
 - **Reproducible & portable**: Run the same code locally or on the cloud by switching stacks.
 - **One approach for models and agents**: Steps, pipelines, and artifacts work for sklearn, classical ML, and LLMs alike.
-- **Observe by default**: Lineage and step metadata (e.g., latency, tokens, metrics) are tracked and visible in the dashboard.
+- **Observe by default**: Lineage and step metadata (e.g., latency, tokens, metrics) are tracked and visible in the UI.
 {% endhint %}
 
 {% hint style="info" %}
@@ -84,7 +84,7 @@ Then follow the guide in [`examples/deploying_agent`](https://github.com/zenml-i
 1. **Define your steps**: Use LLM APIs (OpenAI, Claude, etc.) to build reasoning steps
 2. **Deploy as HTTP service**: Turn your agent into a managed endpoint
 3. **Invoke and monitor**: Use the CLI, curl, or the embedded web UI to interact with your agent
-4. **Inspect traces**: View agent reasoning, tool calls, and metadata in the ZenML dashboard
+4. **Inspect traces**: View agent reasoning, tool calls, and metadata in the ZenML UI
 
 ### Example output
 
@@ -158,7 +158,7 @@ Then follow the guide in [`examples/deploying_ml_model`](https://github.com/zenm
 
 1. **Build your pipeline**: Data loading → preprocessing → training → evaluation
 2. **Deploy the model**: Serve your trained model as a real-time HTTP endpoint
-3. **Monitor performance**: Track predictions, latency, and data drift in the dashboard
+3. **Monitor performance**: Track predictions, latency, and data drift in the UI
 4. **Iterate**: Retrain and redeploy without code changes—just switch your orchestrator
 
 ### Example output
@@ -237,7 +237,7 @@ Then follow the guide in [`examples/agent_outer_loop`](https://github.com/zenml-
 1. **Define both components**: Classical ML classifier + AI agent steps
 2. **Wire them together**: Use the classifier output to influence agent behavior
 3. **Deploy as one service**: The entire hybrid system becomes a single endpoint
-4. **Monitor both**: Track ML metrics and agent traces in the same dashboard
+4. **Monitor both**: Track ML metrics and agent traces in the same UI
 
 ### Example output
 
@@ -289,15 +289,15 @@ zenml pipeline deploy pipelines.my_pipeline.my_pipeline --config deploy_config.y
 
 See [Deploying ZenML](deploying-zenml/README.md) for cloud setup details.
 
-### View the dashboard
+### View the UI
 
-Start the dashboard to explore your pipeline runs:
+Start the UI to explore your pipeline runs:
 
 ```bash
 zenml login
 ```
 
-In the dashboard, you'll see:
+In the UI, you'll see:
 - **Pipeline DAGs**: Visual representation of your steps and data flow
 - **Artifacts**: Versioned outputs from each step (models, reports, traces)
 - **Metadata**: Latency, tokens, metrics, or custom metadata you track

@@ -140,6 +140,7 @@ class JobStatus(enum.Enum):
     RUNNING = "Running"
     SUCCEEDED = "Succeeded"
     FAILED = "Failed"
+    NOT_FOUND = "NotFound"
 
 
 def is_inside_kubernetes() -> bool:
@@ -661,114 +662,6 @@ def delete_secret(
         name=secret_name,
         namespace=namespace,
     )
-
-
-def create_and_wait_for_pod_to_start(
-    core_api: k8s_client.CoreV1Api,
-    pod_display_name: str,
-    pod_name: str,
-    pod_manifest: k8s_client.V1Pod,
-    namespace: str,
-    startup_max_retries: int,
-    startup_failure_delay: float,
-    startup_failure_backoff: float,
-    startup_timeout: float,
-    api_request_timeout: Optional[int] = None,
-    max_retries: int = 3,
-) -> None:
-    """Create a pod and wait for it to reach a desired state.
-
-    Args:
-        core_api: Client of Core V1 API of Kubernetes API.
-        pod_display_name: The display name of the pod to use in logs.
-        pod_name: The name of the pod to create.
-        pod_manifest: The manifest of the pod to create.
-        namespace: The namespace in which to create the pod.
-        startup_max_retries: The maximum number of retries for the pod startup.
-        startup_failure_delay: The delay between retries for the pod startup.
-        startup_failure_backoff: The backoff factor for the pod startup.
-        startup_timeout: The maximum time to wait for the pod to start.
-        api_request_timeout: The request timeout in seconds.
-        max_retries: The maximum number of API request retries.
-
-    Raises:
-        TimeoutError: If the pod is still in a pending state after the maximum
-            wait time has elapsed.
-        Exception: If the pod fails to start after the maximum number of
-            retries.
-    """
-    retries = 0
-
-    while retries < startup_max_retries:
-        try:
-            # Create and run pod.
-            core_api.create_namespaced_pod(
-                namespace=namespace,
-                body=pod_manifest,
-            )
-            break
-        except Exception as e:
-            retries += 1
-            if retries < startup_max_retries:
-                logger.debug(f"The {pod_display_name} failed to start: {e}")
-                message = ""
-                try:
-                    if isinstance(e, ApiException) and e.body:
-                        exception_body = json.loads(e.body)
-                        message = exception_body.get("message", "")
-                except Exception:
-                    pass
-                logger.error(
-                    f"Failed to create {pod_display_name}. "
-                    f"Retrying in {startup_failure_delay} seconds..."
-                    "\nReason: " + message
-                    if message
-                    else ""
-                )
-                time.sleep(startup_failure_delay)
-                startup_failure_delay *= startup_failure_backoff
-            else:
-                logger.error(
-                    f"Failed to create {pod_display_name} after "
-                    f"{startup_max_retries} retries. Exiting."
-                )
-                raise
-
-    # Wait for pod to start
-    logger.info(f"Waiting for {pod_display_name} to start...")
-    max_wait = startup_timeout
-    total_wait: float = 0
-    delay = startup_failure_delay
-    while True:
-        pod = get_pod(
-            core_api=core_api,
-            pod_name=pod_name,
-            namespace=namespace,
-            api_request_timeout=api_request_timeout,
-            max_retries=max_retries,
-        )
-        if not pod or pod_is_not_pending(pod):
-            break
-        if total_wait >= max_wait:
-            # Have to delete the pending pod so it doesn't start running
-            # later on.
-            try:
-                core_api.delete_namespaced_pod(
-                    name=pod_name,
-                    namespace=namespace,
-                )
-            except Exception:
-                pass
-            raise TimeoutError(
-                f"The {pod_display_name} is still in a pending state "
-                f"after {total_wait} seconds. Exiting."
-            )
-
-        if total_wait + delay > max_wait:
-            delay = max_wait - total_wait
-        total_wait += delay
-        time.sleep(delay)
-        delay *= startup_failure_backoff
 
 
 def get_pod_owner_references(
@@ -1381,13 +1274,24 @@ def check_job_status(
     Returns:
         The status of the job and an optional status message. For failed jobs,
         this is the error message; for running jobs, this can contain pending
-        pod diagnostics.
+        pod diagnostics. `JobStatus.NOT_FOUND` says nothing about the outcome
+        of the job: Kubernetes also deletes jobs that finished successfully
+        once their `ttlSecondsAfterFinished` expires.
+
+    Raises:
+        ApiException: If reading the job fails for any reason other than the
+            job not existing.
     """
-    job: k8s_client.V1Job = retry_on_api_exception(
-        batch_api.read_namespaced_job,
-        api_request_timeout=api_request_timeout,
-        max_retries=max_retries,
-    )(name=job_name, namespace=namespace)
+    try:
+        job: k8s_client.V1Job = retry_on_api_exception(
+            batch_api.read_namespaced_job,
+            api_request_timeout=api_request_timeout,
+            max_retries=max_retries,
+        )(name=job_name, namespace=namespace)
+    except ApiException as e:
+        if e.status == 404:
+            return JobStatus.NOT_FOUND, None
+        raise
 
     if job.status.conditions:
         for condition in job.status.conditions:
