@@ -293,17 +293,24 @@ class ManagedModelStore:
                     .where(
                         col(Workspace.id) == UUID(int=0),
                         col(Workspace.transition_id) == drain_transition_id,
-                        col(Workspace.drain_requested).is_(True),
                         col(Workspace.admission_open).is_(False),
                     )
                     .values(updated=utc_now())
                 )
+                gate = session.get(Workspace, UUID(int=0))
                 if (
-                    request.action != "delete"
-                    or cast(CursorResult[Any], result).rowcount != 1
+                    cast(CursorResult[Any], result).rowcount != 1
+                    or gate is None
+                    or not (
+                        (request.action == "delete" and gate.drain_requested)
+                        or (
+                            request.action == "pause"
+                            and self._suspend_id(gate) == drain_transition_id
+                        )
+                    )
                 ):
                     raise IllegalOperationError(
-                        "Destructive disable no longer owns admission."
+                        "Workspace transition no longer owns admission."
                     )
             row = self._get_row(session, service_id)
             replay = self._replay(
@@ -372,10 +379,30 @@ class ManagedModelStore:
                         "Rollback revision does not belong to this service."
                     )
                 target = request.revision_id
-            if request.action in ("resume", "pause") and target is None:
+            if (
+                request.action in ("resume", "pause")
+                and target is None
+                and drain_transition_id is None
+            ):
                 raise EntityExistsError(
                     "Service has no successfully deployed revision."
                 )
+            if request.action == "pause" and drain_transition_id is not None:
+                prior = ManagedModelCheckpoint.model_validate_json(
+                    previous.checkpoint
+                )
+                if prior.phase == "submitting" or (
+                    prior.resource is not None
+                    and prior.resource
+                    not in [
+                        ManagedModelProviderResource.model_validate(value)
+                        for value in json.loads(row.resources).values()
+                    ]
+                    and previous.status != "succeeded"
+                ):
+                    raise EntityExistsError(
+                        "Resolve provider ownership before suspending."
+                    )
             checkpoint = "{}"
             available_at = None
             action: str = request.action
@@ -454,6 +481,9 @@ class ManagedModelStore:
         """Queue bounded periodic work through the same generation/lease fence."""
         now = utc_now()
         with Session(self.engine) as session:
+            gate = session.get(Workspace, UUID(int=0), with_for_update=True)
+            if gate and not gate.admission_open:
+                return
             rows = session.exec(
                 select(Service)
                 .join(
@@ -715,11 +745,16 @@ class ManagedModelStore:
             needs_cleanup = command.action == "close" or (
                 command.action == "reopen" and not gate.admission_open
             )
-            if needs_cleanup and not self._services_clean(session):
+            if command.action == "unsuspend" and not self._suspension_complete(
+                session, gate
+            ):
+                result.accepted = False
+                result.blocker = "Workspace suspension is incomplete."
+            elif needs_cleanup and not self._services_clean(session):
                 result.accepted = False
                 result.blocker = "Complete service, provider, execution and credential cleanup first."
             else:
-                gate.admission_open = command.action == "reopen"
+                gate.admission_open = command.action in ("reopen", "unsuspend")
                 gate.drain_requested = command.action == "drain"
                 gate.transition_id = (
                     None if gate.admission_open else command.id
@@ -783,27 +818,32 @@ class ManagedModelStore:
         Returns:
             Whether recorded service, credential and execution obligations are clear.
         """
+        return all(
+            ManagedModelStore._service_deleted(session, row)
+            for row in session.exec(select(Service)).all()
+        ) and ManagedModelStore._operations_settled(session)
+
+    @staticmethod
+    def _service_deleted(session: Session, row: Service) -> bool:
         from zenml.zen_stores.schemas.secret_schemas import SecretSchema
 
-        for row in session.exec(select(Service)).all():
-            service = row.to_model()
-            if (
-                service.state != "deleted"
-                or service.operation.status != "succeeded"
-                or json.loads(row.resources)
-                or row.inference_key_hash is not None
-            ):
-                return False
-            journal = json.loads(row.inference_credentials)
-            if (
-                journal.get("writing")
-                or journal.get("active")
-                or any(
-                    session.get(SecretSchema, UUID(identity)) is not None
-                    for identity in journal.get("owned", [])
-                )
-            ):
-                return False
+        service = row.to_model()
+        journal = json.loads(row.inference_credentials)
+        return (
+            service.state == "deleted"
+            and service.operation.status == "succeeded"
+            and not json.loads(row.resources)
+            and row.inference_key_hash is None
+            and not journal.get("writing")
+            and not journal.get("active")
+            and all(
+                session.get(SecretSchema, UUID(identity)) is None
+                for identity in journal.get("owned", [])
+            )
+        )
+
+    @staticmethod
+    def _operations_settled(session: Session) -> bool:
         return (
             session.exec(
                 select(Operation)
@@ -904,6 +944,46 @@ class ManagedModelStore:
                 else None
             )
 
+    @staticmethod
+    def _suspend_id(gate: Workspace) -> Optional[UUID]:
+        if gate.transition_id is not None and gate.command_receipt != "{}":
+            receipt = ManagedWorkspaceCommandResult.model_validate_json(
+                gate.command_receipt
+            )
+            if (
+                receipt.accepted
+                and receipt.command.action == "suspend"
+                and receipt.command.id == gate.transition_id
+            ):
+                return receipt.command.id
+        return None
+
+    def _suspension_complete(self, session: Session, gate: Workspace) -> bool:
+        identity = self._suspend_id(gate)
+        if not identity or gate.admission_open:
+            return False
+        for row in session.exec(select(Service)).all():
+            service = row.to_model()
+            if json.loads(row.inference_credentials).get("writing"):
+                return False
+            if self._service_deleted(session, row):
+                continue
+            operation = session.get(Operation, service.operation.id)
+            if not (
+                service.state == "paused"
+                and service.operation.status == "succeeded"
+                and operation
+                and operation.request_key.startswith(f"suspend-{identity}-")
+            ):
+                return False
+        return self._operations_settled(session)
+
+    def suspension_ready(self) -> bool:
+        """Check that all retained services completed this suspension's pause."""
+        with Session(self.engine) as session:
+            gate = session.get(Workspace, UUID(int=0))
+            return bool(gate and self._suspension_complete(session, gate))
+
     def cleanup_ready(self) -> bool:
         """Check that admission is closed and every service finished cleanup.
 
@@ -971,21 +1051,35 @@ class ManagedModelStore:
     def _schedule_drain(self) -> None:
         with Session(self.engine) as session:
             gate = session.get(Workspace, UUID(int=0))
-            if gate is None or gate.admission_open or not gate.drain_requested:
+            if gate is None or gate.admission_open:
                 return
-            services = [
-                row.to_model() for row in session.exec(select(Service)).all()
-            ]
+            suspend_id = self._suspend_id(gate)
+            if not gate.drain_requested and suspend_id is None:
+                return
+            services = []
+            for row in session.exec(select(Service)).all():
+                service = row.to_model()
+                if suspend_id:
+                    op = session.get(Operation, service.operation.id)
+                    if not op or op.status not in ("succeeded", "failed"):
+                        continue
+                    if op.status == "succeeded" and op.request_key.startswith(
+                        f"suspend-{suspend_id}-"
+                    ):
+                        continue
+                services.append(service)
         for service in services:
             if service.desired_state != "deleted":
                 try:
                     self._mutate(
                         service.id,
                         ManagedModelMutation(
-                            action="delete",
+                            action="pause" if suspend_id else "delete",
                             expected_generation=service.generation,
                         ),
-                        f"drain-{service.id}-{service.generation}",
+                        f"suspend-{suspend_id}-{service.id}-{service.generation}"
+                        if suspend_id
+                        else f"drain-{service.id}-{service.generation}",
                         drain_transition_id=gate.transition_id,
                     )
                 except EntityExistsError:
@@ -1061,6 +1155,11 @@ class ManagedModelStore:
                 row.inference_key_hash or "", supplied_hash
             ):
                 raise PermissionError("Invalid inference key.")
+            gate = session.get(Workspace, UUID(int=0))
+            if gate and not gate.admission_open:
+                raise IllegalOperationError(
+                    "Workspace inference admission is closed."
+                )
             service = row.to_model()
             resources = json.loads(row.resources)
             resource = resources.get(str(service.active_revision_id))

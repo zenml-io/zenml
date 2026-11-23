@@ -352,6 +352,7 @@ def get_managed_model_cleanup_status(
         command_generation=receipt.command.generation if receipt else None,
         workspace_id=server_config().get_external_server_id(),
         ready=zen_store().managed_models.cleanup_ready(),
+        suspended=zen_store().managed_models.suspension_ready(),
     )
 
 

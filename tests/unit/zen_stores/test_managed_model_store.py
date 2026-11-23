@@ -1128,3 +1128,43 @@ def test_adopting_open_workspace_preserves_services_but_cannot_bypass_drain(
     assert not store.apply_workspace_command(
         ManagedWorkspaceCommand(id=uuid4(), generation=3, action="reopen")
     ).accepted
+
+
+def test_workspace_suspension_preserves_selected_revision(serving_store):
+    """Only explicit resume restarts the preserved revision after reactivation."""
+    from zenml.managed_models.state import ManagedWorkspaceCommand
+
+    store, request = serving_store
+    service = store.create(request, "create")
+    lease = store.claim()
+    lease.service.active_revision_id = revision = lease.target_revision_id
+    lease.service.state = "ready"
+    lease.service.operation.status = "succeeded"
+    store.finish(lease, lease.service, {})
+    command = ManagedWorkspaceCommand(
+        id=uuid4(), generation=1, action="suspend"
+    )
+    assert store.apply_workspace_command(command).accepted
+    assert not store.suspension_ready()
+    lease = store.claim()
+    assert lease.service.operation.action == "pause"
+    lease.service.state = "paused"
+    lease.service.operation.status = "succeeded"
+    store.finish(lease, lease.service, {})
+    assert store.claim() is None
+    assert store.suspension_ready() and not store.cleanup_ready()
+    assert store.apply_workspace_command(
+        ManagedWorkspaceCommand(id=uuid4(), generation=2, action="unsuspend")
+    ).accepted
+    preserved = store.get(service.id)
+    assert (
+        preserved.active_revision_id == revision
+        and preserved.state == "paused"
+    )
+    store.mutate(
+        service.id,
+        ManagedModelMutation(
+            action="resume", expected_generation=preserved.generation
+        ),
+        "manual-resume",
+    )

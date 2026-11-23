@@ -92,6 +92,7 @@ class ManagedModelCleanupStatus(BaseModel):
 
     workspace_id: UUID
     ready: bool
+    suspended: bool = False
     command_id: Optional[UUID] = None
     command_generation: Optional[int] = None
 
@@ -120,7 +121,7 @@ class ManagedWorkspaceCommand(BaseModel):
     model_config = ConfigDict(extra="forbid")
     id: UUID
     generation: int = Field(ge=1)
-    action: Literal["close", "drain", "reopen"]
+    action: Literal["close", "drain", "reopen", "suspend", "unsuspend"]
 
 
 class ManagedWorkspaceCommandResult(BaseModel):
