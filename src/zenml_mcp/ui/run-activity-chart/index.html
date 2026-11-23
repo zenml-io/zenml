@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZenML Run Activity Chart</title>
+  <style>
+    /* ============================================================
+       ZenML Design Tokens (from react-component-library/tailwind)
+       ============================================================ */
+    :root {
+      /* Primary / brand */
+      --color-primary-50:  #eef2ff;
+      --color-primary-100: #e0e7ff;
+      --color-primary-400: #818cf8;
+      --color-primary-500: #6366f1;
+      --color-primary-600: #4f46e5;
+      --color-primary-700: #4338ca;
+
+      /* Success (green) */
+      --color-success-50:  #f0fdf4;
+      --color-success-100: #dcfce7;
+      --color-success-500: #22c55e;
+      --color-success-600: #16a34a;
+      --color-success-700: #15803d;
+
+      /* Error (red) */
+      --color-error-50:  #fef2f2;
+      --color-error-100: #fee2e2;
+      --color-error-500: #ef4444;
+      --color-error-600: #dc2626;
+      --color-error-700: #b91c1c;
+
+      /* Warning (amber) */
+      --color-warning-50:  #fffbeb;
+      --color-warning-100: #fef3c7;
+      --color-warning-500: #f59e0b;
+      --color-warning-600: #d97706;
+
+      /* Neutral */
+      --color-neutral-50:  #fafafa;
+      --color-neutral-100: #f5f5f5;
+      --color-neutral-200: #e5e5e5;
+      --color-neutral-300: #d4d4d4;
+      --color-neutral-400: #a3a3a3;
+      --color-neutral-500: #737373;
+      --color-neutral-600: #525252;
+      --color-neutral-700: #404040;
+      --color-neutral-800: #262626;
+      --color-neutral-900: #171717;
+
+      /* Blue */
+      --color-blue-50:  #eff6ff;
+      --color-blue-500: #3b82f6;
+
+      /* Theme */
+      --color-bg: #ffffff;
+      --color-surface: #fafafa;
+      --color-text: #171717;
+      --color-text-secondary: #525252;
+      --color-text-tertiary: #737373;
+      --color-border: #e5e5e5;
+      --color-border-light: #f5f5f5;
+
+      /* Typography */
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+
+      /* Spacing */
+      --radius: 8px;
+      --radius-sm: 6px;
+    }
+
+    /* Dark mode */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --color-bg: #0a0a0a;
+        --color-surface: #171717;
+        --color-text: #fafafa;
+        --color-text-secondary: #a3a3a3;
+        --color-text-tertiary: #737373;
+        --color-border: #262626;
+        --color-border-light: #1a1a1a;
+      }
+    }
+
+    /* ============================================================
+       Base Styles
+       ============================================================ */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-bg);
+      color: var(--color-text);
+      line-height: 1.5;
+      font-size: 14px;
+      padding: 8px;
+    }
+
+    /* ============================================================
+       Card Container
+       ============================================================ */
+    .card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    /* ============================================================
+       Header
+       ============================================================ */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--color-border-light);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .header-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    .header-subtitle {
+      font-size: 11px;
+      color: var(--color-text-tertiary);
+      margin-top: 0;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--color-primary-50);
+      color: var(--color-primary-700);
+    }
+
+    .legend {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 10px;
+      color: var(--color-text-tertiary);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+    }
+
+    .legend-dot.completed { background: var(--color-success-500); }
+    .legend-dot.failed    { background: var(--color-error-500); }
+    .legend-dot.other     { background: var(--color-warning-500); }
+
+    .btn-refresh {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--color-bg);
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .btn-refresh:hover {
+      background: var(--color-primary-50);
+      color: var(--color-primary-600);
+    }
+
+    .btn-refresh.spinning svg {
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ============================================================
+       Chart Area
+       ============================================================ */
+    .chart-container {
+      padding: 8px 12px 4px;
+      position: relative;
+    }
+
+    .chart-svg {
+      width: 100%;
+      height: 320px;
+      display: block;
+    }
+
+    /* Tooltip */
+    .tooltip {
+      position: absolute;
+      pointer-events: none;
+      background: var(--color-neutral-900);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      line-height: 1.4;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.15s;
+      z-index: 10;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .tooltip.visible { opacity: 1; }
+
+    .tooltip-date {
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .tooltip-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tooltip-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    /* ============================================================
+       Loading / Error States
+       ============================================================ */
+    .state-message {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+      text-align: center;
+      color: var(--color-text-secondary);
+      gap: 8px;
+    }
+
+    .state-message .spinner {
+      width: 24px;
+      height: 24px;
+      border: 3px solid var(--color-border);
+      border-top-color: var(--color-primary-500);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .state-message .error-icon {
+      font-size: 20px;
+    }
+
+    .state-message .retry-btn {
+      margin-top: 4px;
+      padding: 6px 14px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--color-bg);
+      color: var(--color-text);
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .state-message .retry-btn:hover {
+      background: var(--color-primary-50);
+      color: var(--color-primary-600);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-left">
+        <div class="logo">
+          <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 0C8.059 0 0 8.059 0 18s8.059 18 18 18 18-8.059 18-18S27.941 0 18 0z" fill="#6366F1"/>
+            <path d="M25.2 12.6l-5.4 3.12V9.48L25.2 12.6z" fill="#fff"/>
+            <path d="M19.8 15.72L14.4 18.84V12.6l5.4 3.12z" fill="#C7D2FE"/>
+            <path d="M25.2 23.4l-5.4 3.12v-6.24l5.4 3.12z" fill="#C7D2FE"/>
+            <path d="M19.8 26.52l-5.4 3.12v-6.24l5.4 3.12z" fill="#fff" opacity=".5"/>
+            <path d="M10.8 12.6l5.4 3.12-5.4 3.12V12.6z" fill="#fff" opacity=".7"/>
+          </svg>
+        </div>
+        <div>
+          <div class="header-title">Pipeline Runs</div>
+          <div class="header-subtitle">Last 30 days</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="legend" id="legend" style="display:none">
+          <div class="legend-item"><span class="legend-dot completed"></span> Completed</div>
+          <div class="legend-item"><span class="legend-dot failed"></span> Failed</div>
+          <div class="legend-item"><span class="legend-dot other"></span> Other</div>
+        </div>
+        <div class="badge" id="totalBadge" style="display:none">
+          <span id="totalCount">0</span> runs
+        </div>
+        <div class="badge" id="capWarning" style="display:none; background:var(--color-warning-50); color:var(--color-warning-600)">
+          Capped at 1000 runs
+        </div>
+        <button class="btn-refresh" id="refreshBtn" title="Refresh">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1.5 8a6.5 6.5 0 0 1 11.25-4.5M14.5 8a6.5 6.5 0 0 1-11.25 4.5"/>
+            <path d="M13 1v3.5h-3.5M3 15v-3.5h3.5"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Chart body -->
+    <div class="chart-container" id="chartContainer">
+      <div class="state-message" id="loadingState">
+        <div class="spinner"></div>
+        <span>Loading pipeline run data&hellip;</span>
+      </div>
+    </div>
+
+    <!-- Tooltip (positioned absolutely over chart) -->
+    <div class="tooltip" id="tooltip"></div>
+  </div>
+
+  <script type="module">
+    // =================================================================
+    // MCP App SDK
+    // =================================================================
+    import { App } from "https://unpkg.com/@modelcontextprotocol/ext-apps@1.0.1/app-with-deps";
+
+    const app = new App({ name: "ZenML Run Activity Chart", version: "1.0.0" });
+
+    // =================================================================
+    // Constants
+    // =================================================================
+    const DAYS = 30;
+    const STATUS_COMPLETED = new Set(["completed"]);
+    const STATUS_FAILED    = new Set(["failed"]);
+    // Everything else (running, initializing, etc.) is "other"
+
+    // Chart dimensions (SVG viewBox coordinates)
+    // NOTE: the SVG element has an explicit CSS height of 320px.
+    // The viewBox must have matching proportions so the bars fill
+    // the space (preserveAspectRatio="xMinYMin meet" scales to fit).
+    const CHART = {
+      width: 800,
+      height: 320,
+      padTop: 16,
+      padRight: 10,
+      padBottom: 32,
+      padLeft: 36,
+    };
+    const plotW = CHART.width - CHART.padLeft - CHART.padRight;
+    const plotH = CHART.height - CHART.padTop - CHART.padBottom;
+
+    // =================================================================
+    // DOM
+    // =================================================================
+    const $ = (id) => document.getElementById(id);
+    const chartContainer = $("chartContainer");
+    const loadingState = $("loadingState");
+    const tooltipEl = $("tooltip");
+    const totalBadge = $("totalBadge");
+    const totalCountEl = $("totalCount");
+    const legendEl = $("legend");
+    const refreshBtn = $("refreshBtn");
+    const capWarning = $("capWarning");
+
+    // =================================================================
+    // State
+    // =================================================================
+    let buckets = []; // [{ date, dateStr, completed, failed, other, total }]
+    let loading = true;
+    let error = null;
+    let grandTotal = 0;
+    let cappedAt1000 = false;
+
+    // =================================================================
+    // Data Fetching
+    // =================================================================
+    let serverToolCallsEnabled = true;
+    let consecutiveFailures = 0;
+    let lastToolErrorMessage = null;
+    const MAX_FAILURES = 3; // Disable after 3 consecutive failures
+
+    /** Parse an MCP tool result, preferring structuredContent over text. */
+    function parseToolResult(result) {
+      if (!result) return null;
+      // Prefer structured content (new MCP structured output format)
+      const structured = result.structuredContent ?? result.structured_content;
+      if (structured != null) return structured;
+      // Fall back to text content blocks
+      if (result.content && Array.isArray(result.content)) {
+        for (const c of result.content) {
+          if (c.type === "text") {
+            try { return JSON.parse(c.text); } catch { return c.text; }
+          }
+        }
+      }
+      return result;
+    }
+
+    /** Check if a parsed result is a structured error envelope. */
+    function isErrorEnvelope(data) {
+      return data && typeof data === "object"
+        && data.error && typeof data.error === "object"
+        && typeof data.error.tool === "string"
+        && typeof data.error.message === "string"
+        && typeof data.error.type === "string";
+    }
+
+    async function callServerToolSafe(toolName, args, timeoutMs = 15000) {
+      if (!serverToolCallsEnabled) return null;
+      lastToolErrorMessage = null;
+      let timeoutId;
+      try {
+        const result = await Promise.race([
+          app.callServerTool({ name: toolName, arguments: args }),
+          new Promise((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error("timeout")), timeoutMs);
+          }),
+        ]);
+        consecutiveFailures = 0; // Reset on success
+        const parsed = parseToolResult(result);
+        if (isErrorEnvelope(parsed)) {
+          lastToolErrorMessage = parsed.error.message;
+          console.warn(`[ZenML] Tool ${toolName} error:`, parsed.error.message);
+          return null;
+        }
+        return parsed;
+      } catch {
+        lastToolErrorMessage = "The tool call failed or timed out.";
+        consecutiveFailures++;
+        if (consecutiveFailures >= MAX_FAILURES) {
+          serverToolCallsEnabled = false;
+          console.warn("[ZenML] callServerTool disabled after repeated failures");
+        } else {
+          console.warn(`[ZenML] callServerTool failed (${consecutiveFailures}/${MAX_FAILURES})`);
+        }
+        return null;
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
+
+    /** Build the 30-day date range (YYYY-MM-DD strings). */
+    function buildDateRange() {
+      const dates = [];
+      const now = new Date();
+      const utcMidnight = new Date(Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate(),
+      ));
+      for (let i = DAYS - 1; i >= 0; i--) {
+        const d = new Date(utcMidnight);
+        d.setUTCDate(d.getUTCDate() - i);
+        dates.push(toDateStr(d));
+      }
+      return dates;
+    }
+
+    function toDateStr(d) {
+      return d.toISOString().slice(0, 10);
+    }
+
+    function extractStatus(run) {
+      const body = run.body || run;
+      return (body.status || run.status || "unknown").toLowerCase();
+    }
+
+    function extractCreatedDate(run) {
+      const body = run.body || run;
+      const meta = run.metadata || {};
+      const raw = body.created || meta.created || run.created;
+      if (!raw) return null;
+      const d = new Date(raw);
+      return isNaN(d.getTime()) ? null : toDateStr(d);
+    }
+
+    /** Fetch all runs within the 30-day window, paginating if needed. */
+    async function fetchRunData() {
+      loading = true;
+      error = null;
+      cappedAt1000 = false;
+      render();
+
+      const dateRange = buildDateRange();
+      const cutoffDate = dateRange[0]; // earliest date
+
+      // Accumulate runs from paginated requests
+      let allRuns = [];
+      let page = 1;
+      const pageSize = 100;
+      let keepGoing = true;
+
+      while (keepGoing) {
+        const data = await callServerToolSafe("zenml_list_resources", {
+          resource_type: "pipeline_run",
+          filters: { sort_by: "desc:created" },
+          size: pageSize,
+          page: page,
+        });
+
+        if (data == null) {
+          error = lastToolErrorMessage || (serverToolCallsEnabled
+            ? "Could not load pipeline run data. The request timed out or returned an error."
+            : "Could not load pipeline run data. Your MCP host may not support callServerTool yet.");
+          loading = false;
+          render();
+          return;
+        }
+
+        if (!data.items || data.items.length === 0) break;
+
+        for (const run of data.items) {
+          const dateStr = extractCreatedDate(run);
+          if (!dateStr) continue;
+          if (dateStr < cutoffDate) {
+            // We've gone past our 30-day window
+            keepGoing = false;
+            break;
+          }
+          allRuns.push(run);
+        }
+
+        // If this page was full, there might be more
+        if (data.items.length < pageSize) break;
+        page++;
+        // Safety: don't fetch more than 10 pages (1000 runs)
+        if (page > 10) {
+          cappedAt1000 = true;
+          break;
+        }
+      }
+
+      // Bucket by date
+      const countMap = {};
+      for (const ds of dateRange) {
+        countMap[ds] = { completed: 0, failed: 0, other: 0 };
+      }
+
+      for (const run of allRuns) {
+        const ds = extractCreatedDate(run);
+        if (!ds || !countMap[ds]) continue;
+        const status = extractStatus(run);
+        if (STATUS_COMPLETED.has(status)) {
+          countMap[ds].completed++;
+        } else if (STATUS_FAILED.has(status)) {
+          countMap[ds].failed++;
+        } else {
+          countMap[ds].other++;
+        }
+      }
+
+      buckets = dateRange.map(ds => {
+        const c = countMap[ds];
+        return {
+          dateStr: ds,
+          completed: c.completed,
+          failed: c.failed,
+          other: c.other,
+          total: c.completed + c.failed + c.other,
+        };
+      });
+
+      grandTotal = allRuns.length;
+      loading = false;
+      render();
+    }
+
+    // =================================================================
+    // Rendering
+    // =================================================================
+    function render() {
+      if (loading) {
+        loadingState.style.display = "";
+        totalBadge.style.display = "none";
+        legendEl.style.display = "none";
+        // Remove any previous error message so loading doesn't stack with errors.
+        const oldErrs = chartContainer.querySelectorAll(".state-message.error-msg");
+        oldErrs.forEach((node) => node.remove());
+        // Remove any existing SVG
+        const oldSvg = chartContainer.querySelector("svg");
+        if (oldSvg) oldSvg.remove();
+        return;
+      }
+
+      loadingState.style.display = "none";
+
+      if (error) {
+        // Remove previous error message and SVG, but keep #loadingState in the DOM
+        const oldErr = chartContainer.querySelector(".state-message.error-msg");
+        if (oldErr) oldErr.remove();
+        const oldSvg = chartContainer.querySelector("svg");
+        if (oldSvg) oldSvg.remove();
+
+        const msgEl = document.createElement("div");
+        msgEl.className = "state-message error-msg";
+        const icon = document.createElement("span");
+        icon.className = "error-icon";
+        icon.innerHTML = "&#9888;";
+        const span = document.createElement("span");
+        span.textContent = error; // textContent prevents XSS
+        const btn = document.createElement("button");
+        btn.className = "retry-btn";
+        btn.textContent = "Retry";
+        btn.addEventListener("click", () => {
+          serverToolCallsEnabled = true;
+          consecutiveFailures = 0;
+          fetchRunData();
+        });
+        msgEl.append(icon, span, btn);
+        chartContainer.appendChild(msgEl);
+        return;
+      }
+
+      // Clean up any previous error message
+      const oldErr = chartContainer.querySelector(".state-message.error-msg");
+      if (oldErr) oldErr.remove();
+
+      // Update header
+      totalBadge.style.display = "";
+      legendEl.style.display = "";
+      totalCountEl.textContent = grandTotal;
+      capWarning.style.display = cappedAt1000 ? "" : "none";
+
+      renderChart();
+    }
+
+    function renderChart() {
+      const maxCount = Math.max(1, ...buckets.map(b => b.total));
+
+      // Nice Y-axis ticks
+      const yTicks = computeYTicks(maxCount);
+      const yMax = yTicks[yTicks.length - 1] || maxCount;
+
+      // Bar geometry
+      const barGap = 2;
+      const barWidth = Math.max(4, (plotW - barGap * (DAYS - 1)) / DAYS);
+      const totalBarsWidth = barWidth * DAYS + barGap * (DAYS - 1);
+      const barOffsetX = (plotW - totalBarsWidth) / 2;
+
+      // Build SVG
+      let svg = `<svg class="chart-svg" viewBox="0 0 ${CHART.width} ${CHART.height}" preserveAspectRatio="xMinYMin meet" xmlns="http://www.w3.org/2000/svg">`;
+
+      // Grid lines
+      for (const tick of yTicks) {
+        const y = CHART.padTop + plotH - (tick / yMax) * plotH;
+        svg += `<line x1="${CHART.padLeft}" y1="${y}" x2="${CHART.width - CHART.padRight}" y2="${y}" stroke="var(--color-border)" stroke-dasharray="4 3" stroke-width="0.5"/>`;
+        svg += `<text x="${CHART.padLeft - 5}" y="${y + 3}" text-anchor="end" font-size="9" fill="var(--color-text-tertiary)" font-family="var(--font-sans)">${tick}</text>`;
+      }
+
+      // Zero baseline
+      const baselineY = CHART.padTop + plotH;
+      svg += `<line x1="${CHART.padLeft}" y1="${baselineY}" x2="${CHART.width - CHART.padRight}" y2="${baselineY}" stroke="var(--color-border)" stroke-width="0.5"/>`;
+
+      // Bars
+      for (let i = 0; i < buckets.length; i++) {
+        const b = buckets[i];
+        const x = CHART.padLeft + barOffsetX + i * (barWidth + barGap);
+
+        // Invisible hit area for hover
+        svg += `<rect class="bar-hit" data-idx="${i}" x="${x}" y="${CHART.padTop}" width="${barWidth}" height="${plotH}" fill="transparent" cursor="pointer"/>`;
+
+        if (b.total === 0) continue;
+
+        let currentY = baselineY;
+
+        // Completed (green) — bottom
+        if (b.completed > 0) {
+          const h = (b.completed / yMax) * plotH;
+          currentY -= h;
+          svg += `<rect x="${x}" y="${currentY}" width="${barWidth}" height="${h}" rx="1" fill="var(--color-success-500)" opacity="0.85" pointer-events="none"/>`;
+        }
+
+        // Other (amber) — middle
+        if (b.other > 0) {
+          const h = (b.other / yMax) * plotH;
+          currentY -= h;
+          svg += `<rect x="${x}" y="${currentY}" width="${barWidth}" height="${h}" rx="1" fill="var(--color-warning-500)" opacity="0.85" pointer-events="none"/>`;
+        }
+
+        // Failed (red) — top
+        if (b.failed > 0) {
+          const h = (b.failed / yMax) * plotH;
+          currentY -= h;
+          svg += `<rect x="${x}" y="${currentY}" width="${barWidth}" height="${h}" rx="1" fill="var(--color-error-500)" opacity="0.85" pointer-events="none"/>`;
+        }
+      }
+
+      // X-axis date labels (show ~6 evenly spaced)
+      const labelCount = 6;
+      const step = Math.max(1, Math.floor((DAYS - 1) / (labelCount - 1)));
+      for (let i = 0; i < DAYS; i += step) {
+        const b = buckets[i];
+        if (!b) continue;
+        const x = CHART.padLeft + barOffsetX + i * (barWidth + barGap) + barWidth / 2;
+        const label = formatShortDate(b.dateStr);
+        svg += `<text x="${x}" y="${baselineY + 14}" text-anchor="middle" font-size="9" fill="var(--color-text-tertiary)" font-family="var(--font-sans)">${label}</text>`;
+      }
+      // Always show last date
+      if ((DAYS - 1) % step !== 0) {
+        const b = buckets[DAYS - 1];
+        const x = CHART.padLeft + barOffsetX + (DAYS - 1) * (barWidth + barGap) + barWidth / 2;
+        svg += `<text x="${x}" y="${baselineY + 14}" text-anchor="middle" font-size="9" fill="var(--color-text-tertiary)" font-family="var(--font-sans)">${formatShortDate(b.dateStr)}</text>`;
+      }
+
+      // Hover highlight line (hidden by default, shown via JS)
+      svg += `<line id="hoverLine" x1="0" y1="${CHART.padTop}" x2="0" y2="${baselineY}" stroke="var(--color-primary-400)" stroke-width="0.75" stroke-dasharray="3 2" opacity="0"/>`;
+
+      svg += `</svg>`;
+
+      // Remove loading state, insert SVG
+      const oldSvg = chartContainer.querySelector("svg");
+      if (oldSvg) oldSvg.remove();
+      const oldErrs = chartContainer.querySelectorAll(".state-message.error-msg");
+      oldErrs.forEach((node) => node.remove());
+
+      chartContainer.insertAdjacentHTML("beforeend", svg);
+
+      // Attach hover events
+      attachHoverEvents();
+    }
+
+    function computeYTicks(maxVal) {
+      if (maxVal <= 0) return [0];
+      // Pick a nice step: 1, 2, 5, 10, 20, 50, ...
+      const rawStep = maxVal / 4;
+      const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+      const residual = rawStep / magnitude;
+      let niceStep;
+      if (residual <= 1.5) niceStep = 1 * magnitude;
+      else if (residual <= 3.5) niceStep = 2 * magnitude;
+      else if (residual <= 7.5) niceStep = 5 * magnitude;
+      else niceStep = 10 * magnitude;
+      niceStep = Math.max(1, Math.round(niceStep));
+
+      const ticks = [];
+      for (let v = 0; v <= maxVal + niceStep * 0.5; v += niceStep) {
+        ticks.push(v);
+        if (v >= maxVal) break;
+      }
+      // Ensure last tick >= maxVal
+      if (ticks[ticks.length - 1] < maxVal) {
+        ticks.push(ticks[ticks.length - 1] + niceStep);
+      }
+      return ticks;
+    }
+
+    function formatShortDate(dateStr) {
+      const d = new Date(dateStr + "T00:00:00");
+      return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    }
+
+    function formatFullDate(dateStr) {
+      const d = new Date(dateStr + "T00:00:00");
+      return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+    }
+
+    // =================================================================
+    // Hover / Tooltip
+    // =================================================================
+    function attachHoverEvents() {
+      const svgEl = chartContainer.querySelector("svg");
+      if (!svgEl) return;
+      const hoverLine = svgEl.querySelector("#hoverLine");
+      const hitAreas = svgEl.querySelectorAll(".bar-hit");
+
+      hitAreas.forEach((rect) => {
+        rect.addEventListener("mouseenter", (e) => {
+          const idx = parseInt(rect.dataset.idx, 10);
+          const b = buckets[idx];
+          if (!b) return;
+
+          // Position hover line
+          const x = parseFloat(rect.getAttribute("x")) + parseFloat(rect.getAttribute("width")) / 2;
+          hoverLine.setAttribute("x1", x);
+          hoverLine.setAttribute("x2", x);
+          hoverLine.setAttribute("opacity", "1");
+
+          // Build tooltip
+          let html = `<div class="tooltip-date">${formatFullDate(b.dateStr)}</div>`;
+          html += `<div class="tooltip-row"><strong>${b.total}</strong> total run${b.total !== 1 ? "s" : ""}</div>`;
+          if (b.completed > 0) {
+            html += `<div class="tooltip-row"><span class="tooltip-dot" style="background:var(--color-success-500)"></span>${b.completed} completed</div>`;
+          }
+          if (b.failed > 0) {
+            html += `<div class="tooltip-row"><span class="tooltip-dot" style="background:var(--color-error-500)"></span>${b.failed} failed</div>`;
+          }
+          if (b.other > 0) {
+            html += `<div class="tooltip-row"><span class="tooltip-dot" style="background:var(--color-warning-500)"></span>${b.other} other</div>`;
+          }
+          tooltipEl.innerHTML = html;
+          tooltipEl.classList.add("visible");
+
+          // Position tooltip near the bar
+          positionTooltip(rect);
+        });
+
+        rect.addEventListener("mouseleave", () => {
+          hoverLine.setAttribute("opacity", "0");
+          tooltipEl.classList.remove("visible");
+        });
+      });
+    }
+
+    function positionTooltip(rect) {
+      const svgEl = chartContainer.querySelector("svg");
+      if (!svgEl) return;
+      const svgRect = svgEl.getBoundingClientRect();
+      const barRect = rect.getBoundingClientRect();
+      const containerRect = chartContainer.closest(".card").getBoundingClientRect();
+
+      const tooltipW = tooltipEl.offsetWidth;
+
+
+      // Center horizontally on bar, offset up
+      let left = barRect.left + barRect.width / 2 - containerRect.left - tooltipW / 2;
+      let top = svgRect.top - containerRect.top + 8;
+
+      // Clamp to card bounds
+      left = Math.max(4, Math.min(left, containerRect.width - tooltipW - 4));
+      top = Math.max(4, top);
+
+      tooltipEl.style.left = left + "px";
+      tooltipEl.style.top = top + "px";
+    }
+
+    // =================================================================
+    // Event Listeners
+    // =================================================================
+    refreshBtn.addEventListener("click", () => {
+      refreshBtn.classList.add("spinning");
+      fetchRunData().finally(() => refreshBtn.classList.remove("spinning"));
+    });
+
+    // =================================================================
+    // MCP App Lifecycle
+    // =================================================================
+    let hasFetched = false;
+
+    app.ontoolresult = () => {
+      hasFetched = true;
+      fetchRunData();
+    };
+
+    app.onerror = (err) => {
+      const msg = err?.message || "An unexpected error occurred.";
+      if (msg.includes("unknown message ID")) {
+        console.warn("[ZenML] Ignoring stale message:", msg);
+        return;
+      }
+      error = msg.includes("Canceled")
+        ? "Connection was interrupted. Click Retry to reconnect."
+        : msg;
+      loading = false;
+      render();
+    };
+
+    // Apply host theme
+    app.onhostcontextchanged = (ctx) => {
+      if (ctx?.theme === "dark") {
+        document.documentElement.style.setProperty("--color-bg", "#0a0a0a");
+        document.documentElement.style.setProperty("--color-surface", "#171717");
+        document.documentElement.style.setProperty("--color-text", "#fafafa");
+        document.documentElement.style.setProperty("--color-text-secondary", "#a3a3a3");
+        document.documentElement.style.setProperty("--color-text-tertiary", "#737373");
+        document.documentElement.style.setProperty("--color-border", "#262626");
+        document.documentElement.style.setProperty("--color-border-light", "#1a1a1a");
+        document.documentElement.style.setProperty("--color-primary-50", "#1e1b4b");
+        document.documentElement.style.setProperty("--color-primary-100", "#312e81");
+        document.documentElement.style.setProperty("--color-primary-700", "#c7d2fe");
+      } else if (ctx?.theme === "light") {
+        document.documentElement.style.setProperty("--color-bg", "#ffffff");
+        document.documentElement.style.setProperty("--color-surface", "#fafafa");
+        document.documentElement.style.setProperty("--color-text", "#171717");
+        document.documentElement.style.setProperty("--color-text-secondary", "#525252");
+        document.documentElement.style.setProperty("--color-text-tertiary", "#737373");
+        document.documentElement.style.setProperty("--color-border", "#e5e5e5");
+        document.documentElement.style.setProperty("--color-border-light", "#f5f5f5");
+      }
+    };
+
+    // Connect and start (must await to complete handshake)
+    await app.connect();
+
+    // Kick off initial fetch (in case client opens the resource directly
+    // without going through the open_run_activity_chart tool).
+    if (!hasFetched) {
+      hasFetched = true;
+      fetchRunData();
+    }
+
+    // Fallback timeout
+    setTimeout(() => {
+      if (loading) {
+        loading = false;
+        error = "Could not load pipeline run data. The server tool call may have timed out.";
+        render();
+      }
+    }, 20000);
+  </script>
+</body>
+</html>
