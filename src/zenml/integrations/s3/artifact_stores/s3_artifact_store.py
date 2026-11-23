@@ -29,6 +29,7 @@ from typing import (
 
 import boto3
 import s3fs
+from botocore.config import Config
 from botocore.exceptions import ClientError
 from fsspec.asyn import FSTimeoutError, sync, sync_wrapper
 
@@ -564,6 +565,17 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
                         ):
                             version.delete()
 
+    def _get_config_kwargs(self) -> Optional[Dict[str, Any]]:
+        """Get the botocore `Config` keyword arguments.
+
+        Subclasses for S3-compatible providers can override this to extend
+        the configured values.
+
+        Returns:
+            The botocore `Config` keyword arguments, if any.
+        """
+        return self.config.config_kwargs
+
     def _build_boto3_kwargs(self) -> Dict[str, Any]:
         """Build boto3 kwargs by layering config overrides over connector credentials.
 
@@ -586,6 +598,13 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
             kwargs["aws_session_token"] = token
         if region is not None and "region_name" not in kwargs:
             kwargs["region_name"] = region
+
+        # Mirror `config_kwargs` (e.g. retries, timeouts) on the boto3 path,
+        # as it is already applied to the s3fs filesystem. An explicit
+        # `config` passed through `client_kwargs` takes precedence.
+        config_kwargs = self._get_config_kwargs()
+        if config_kwargs and "config" not in kwargs:
+            kwargs["config"] = Config(**config_kwargs)
 
         return kwargs
 
