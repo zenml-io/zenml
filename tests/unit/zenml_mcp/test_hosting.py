@@ -566,3 +566,33 @@ def test_start_up_does_not_retry_a_failed_sign_in(
 
     asyncio.run(check())
     assert auth.asked == 1
+
+
+class _Rotating(ZenMLAuth):
+    """Each renewal of a token gives the next one."""
+
+    async def token(self) -> Optional[str]:
+        return "T1"
+
+    async def renew(self, rejected: Optional[str]) -> str:
+        return {"T1": "T2", "T2": "T3"}[str(rejected)]
+
+
+def test_a_late_refusal_of_an_old_token_keeps_the_newer_one() -> None:
+    """A request refused on T1 after others moved to T3 doesn't bring T2 back."""
+    auth = _Rotating()
+    refused = httpx.Response(401)
+
+    async def run() -> str:
+        late = auth.async_auth_flow(httpx.Request("GET", SERVER_URL))
+        await late.__anext__()
+        for _ in range(2):
+            flow = auth.async_auth_flow(httpx.Request("GET", SERVER_URL))
+            await flow.__anext__()
+            await flow.asend(refused)
+        await late.asend(refused)
+        after = auth.async_auth_flow(httpx.Request("GET", SERVER_URL))
+        sent = await after.__anext__()
+        return sent.headers["Authorization"]
+
+    assert asyncio.run(run()) == "Bearer T3"

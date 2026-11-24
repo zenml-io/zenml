@@ -166,7 +166,8 @@ def _verify(store: RestZenStore) -> Union[bool, ssl.SSLContext]:
         False, or a context that trusts the CA bundle requests would use.
     """
     verify = store.session.verify
-    if verify is True:
+    # Requests reads them only for an HTTPS server.
+    if verify is True and store.url.startswith("https://"):
         verify = (
             os.environ.get("REQUESTS_CA_BUNDLE")
             or os.environ.get("CURL_CA_BUNDLE")
@@ -280,10 +281,11 @@ def _login(store: RestZenStore) -> "ZenMLAuth":
             self._failed: Optional[Tuple[Optional[str], Exception]] = None
 
         async def token(self) -> Optional[str]:
+            # Asked again each time, so an expired login shows; the store
+            # keeps a valid token without a request.
             async with self._lock:
-                if not self._known:
-                    self._current = await _owned(store, None, False)
-                    self._known = True
+                self._current = await _owned(store, None, False)
+                self._known = True
                 return self._current
 
         async def renew(self, rejected: Optional[str]) -> str:

@@ -182,7 +182,7 @@ def test_tls_trusts_the_ca_bundle_requests_would_use(
     )
     monkeypatch.setenv("REQUESTS_CA_BUNDLE", str(tmp_path / "ca.pem"))
     session = SimpleNamespace(verify=True)
-    store = SimpleNamespace(session=session)
+    store = SimpleNamespace(session=session, url="https://zenml.example")
     assert isinstance(mcp_cli._verify(store), ssl.SSLContext)  # type: ignore[arg-type]
     assert seen == [{"cafile": str(tmp_path / "ca.pem")}]
     session.verify = False
@@ -341,3 +341,28 @@ def test_a_missing_mcp_sdk_shows_the_install_hint(
     assert result.exit_code != 0
     assert "pip install 'zenml[mcp]'" in result.output
     assert "Traceback" not in result.output
+
+
+def test_a_ca_bundle_variable_is_ignored_for_an_http_server(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Requests ignores it there, so a stale one must not stop the command."""
+    monkeypatch.setenv("REQUESTS_CA_BUNDLE", "/nonexistent/ca.pem")
+    store = SimpleNamespace(
+        session=SimpleNamespace(verify=True), url="http://127.0.0.1:8237"
+    )
+    assert mcp_cli._verify(store) is True  # type: ignore[arg-type]
+
+
+def test_an_expired_login_shows_on_the_next_token_read() -> None:
+    """The stored login is asked each time, so a diagnosis sees expiry."""
+    store = _Store(tokens=["t1"])
+
+    async def read_twice() -> Any:
+        auth = mcp_cli._login(store)  # type: ignore[arg-type]
+        assert await auth.token() == "t1"
+        store.tokens.clear()
+        with pytest.raises(ZenMLAuthError):
+            await auth.token()
+
+    asyncio.run(read_twice())

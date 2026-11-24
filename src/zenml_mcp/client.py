@@ -250,14 +250,19 @@ class ZenMLAuth(httpx.Auth):
         # Free the connection first: the renewal may use the same pool.
         await response.aread()
         # A failed renewal leaves no token, so the next request asks again.
-        self._has_token = False
-        self._token = await self.renew(token)
-        self._has_token = True
-        request.headers["Authorization"] = f"Bearer {self._token}"
+        # A late refusal of an older token leaves a newer one in place.
+        if self._token == token:
+            self._has_token = False
+        renewed = await self.renew(token)
+        if not self._has_token or self._token == token:
+            self._token, self._has_token = renewed, True
+        request.headers["Authorization"] = f"Bearer {renewed}"
         response = yield request
         if response.status_code == 401:
             # Refused again: the next request renews instead of resending it.
-            self._refused, self._has_token = self._token, False
+            self._refused = renewed
+            if self._token == renewed:
+                self._has_token = False
 
 
 class BearerToken(ZenMLAuth):
