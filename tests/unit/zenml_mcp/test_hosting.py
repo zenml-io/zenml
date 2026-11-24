@@ -20,7 +20,9 @@ and a cache key per caller. The local server adds the start-up retry and
 """
 
 import asyncio
+import copy
 import json
+import logging
 from collections.abc import Sequence
 from typing import Any
 from urllib.parse import parse_qs, urlsplit
@@ -32,7 +34,7 @@ pytest.importorskip("mcp")
 
 from pydantic import ValidationError  # noqa: E402
 
-from tests.unit.zenml_mcp.replay import connected  # noqa: E402
+from tests.unit.zenml_mcp.replay import connected, golden  # noqa: E402
 from zenml_mcp import server  # noqa: E402
 from zenml_mcp.call import Asked, ZenMLCall  # noqa: E402
 from zenml_mcp.client import (  # noqa: E402
@@ -399,3 +401,44 @@ def test_a_view_loads_nothing_from_another_origin(uri: str) -> None:
     assert "const { App } = (() => {" in html
     assert "callOpenedIn(toolName, args)" in html
     assert "app.ontoolinput" in html
+
+
+def test_a_connector_update_keeps_its_stored_secrets_out_of_errors(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Without a secret page too, a resent stored secret never comes back.
+
+    An update without `configuration` resends the stored secrets, as
+    upstream does; a refusal that echoes one shows it to neither the model
+    nor the log.
+    """
+    caplog.set_level(logging.DEBUG)
+    connector = copy.deepcopy(
+        golden("generic_write.json")["entities"]["service_connector"]
+    )
+    stored = "-".join(("stored", "never", "shown"))
+    connector["metadata"]["configuration"]["password"] = stored
+    resent: list[Any] = []
+
+    def answer(request: httpx.Request) -> httpx.Response:
+        if request.url.path != f"/api/v1/service_connectors/{connector['id']}":
+            return httpx.Response(404, json={"detail": "Not Found"})
+        if request.method == "GET":
+            return httpx.Response(200, json=connector)
+        resent.append(json.loads(request.content))
+        detail = ["ValueError", f"Rejected {stored}"]
+        return httpx.Response(400, json={"detail": detail})
+
+    refused, _ = _run(
+        "zenml_update_resource",
+        {
+            "resource_type": "service_connector",
+            "resource_id": connector["id"],
+            "payload": {"description": "d"},
+        },
+        answer,
+    )
+    assert resent and resent[0]["configuration"]["password"] == stored
+    assert refused.structured_content["error"]["kind"] == "invalid_request"
+    assert stored not in json.dumps(refused.structured_content)
+    assert stored not in caplog.text

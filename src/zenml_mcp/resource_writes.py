@@ -1126,8 +1126,7 @@ def _without(
 ) -> ZenMLRestError:
     """The error without the stored secrets the write resent.
 
-    ZenML's answer can echo one, and a caller of a server with a secret
-    page never sees a secret.
+    ZenML's answer can echo one, and a caller never sees a stored secret.
 
     Args:
         error: ZenML's error.
@@ -1252,10 +1251,12 @@ async def mutate(
     tool = f"zenml_{operation}_resource"
     if (resource_type, operation) in through and resource_type == "webhook":
         return awaiting_user(call, tool, arguments, (WEBHOOK_SECRET,))
+    # Stored secrets a write sends again stay out of its errors, page or not.
+    request = replace(request, resent=[])
     if (resource_type, operation) in through:
         # The write is built as the page builds it, reads included; a
         # connector whose call needs no secret is then written directly.
-        request = replace(request, asking=[], resent=[])
+        request = replace(request, asking=[])
     reconciliation = (
         _reconciliation_by_name(request)
         if operation == "create"
