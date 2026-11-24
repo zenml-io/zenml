@@ -907,7 +907,7 @@ def _named_by_a_schema(
     """The payload without a flavor's `config_schema`.
 
     The schema names fields and holds none of their values, so its key names
-    are not checked for credentials (owner's decision, 2026-11-13).
+    are not checked for credentials.
 
     Args:
         resource_type: The catalogued type written.

@@ -218,8 +218,8 @@ def test_the_resource_catalog_matches_the_standalone_server(
     assert not seen, "describing the catalog contacted ZenML"
 
 
-# The server the diagnoses were recorded against, which they name.
-_RECORDED_URL = "https://ml.cloudinfra.zenml.io"
+# The server the diagnoses name; the recording's host is replaced by it.
+_RECORDED_URL = "https://zenml.example"
 
 
 class _PasswordLogin(ZenMLAuth):

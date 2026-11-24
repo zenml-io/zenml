@@ -335,7 +335,7 @@ def _start(
 def test_start_up_retries_once_after_a_network_stall(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """mcp-zenml #96: one retry when the server can't be reached."""
+    """zenml-io/mcp-zenml#96: one retry when the server can't be reached."""
     info, sent = _start([httpx.ConnectError("stall"), 200], monkeypatch)
     assert info == {"version": "0.99.0"} and len(sent) == 2
     failed, sent = _start(
@@ -475,3 +475,16 @@ def test_an_unsigned_client_asks_for_a_token_once() -> None:
 
     asyncio.run(read())
     assert auth.asked == 1
+
+
+def test_feedback_masks_a_credential_in_the_public_issue() -> None:
+    """A token the model quoted doesn't reach the drafted public issue."""
+    drafted, _ = _run(
+        "zenml_report_feedback",
+        {
+            "title": "Login fails",
+            "what_happened": "Sent Authorization: Bearer zenkey_s3cr3tvalue",
+            "proposed_fix": "Explain the refusal.",
+        },
+    )
+    assert "s3cr3tvalue" not in drafted["issue_url"]

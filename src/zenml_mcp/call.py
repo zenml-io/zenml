@@ -82,9 +82,11 @@ class ZenMLCall:
         client: The caller's client, built for this call.
         secret_page: Where the user types a write's secret. Without one, a
             secret in the arguments is sent to ZenML, as a local server does.
-        sensitive_write: Called before a write that starts runs or changes
-            which model version holds a stage, with what it does; it raises
-            to refuse the write.
+        sensitive_write: Called before a generic resource write that can
+            start runs (a pipeline trigger's) or changes which model version
+            holds a stage, with what it does; it raises to refuse the write.
+            The tools that start runs themselves don't call it: a host
+            restricts them by their annotations.
         read_only: Whether the host offers no write tool, so the resource
             catalog describes reads only.
     """

@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""mcp-zenml's `report_feedback` (#113), as `zenml_report_feedback`.
+"""mcp-zenml's `report_feedback` (zenml-io/mcp-zenml#113), as `zenml_report_feedback`.
 
 It sends nothing: it drafts a GitHub issue on zenml-io/zenml as a link that
 opens it pre-filled, for the user to read and submit.
@@ -26,7 +26,7 @@ from urllib.parse import quote, urlencode
 from mcp.types import ToolAnnotations
 
 from zenml_mcp.call import ZenMLCall
-from zenml_mcp.client import ZenMLBadRequest
+from zenml_mcp.client import ZenMLBadRequest, mask_credentials
 from zenml_mcp.registry import Tools
 
 FEEDBACK_ISSUE_URL = "https://github.com/zenml-io/zenml/issues/new"
@@ -156,7 +156,11 @@ def register(tools: Tools) -> None:
             raise ZenMLBadRequest(
                 "title, what_happened and proposed_fix must not be empty."
             )
-        body = _issue_body(what_happened, proposed_fix, tool_name)
+        # The issue is public: a credential the model quoted is masked.
+        body = mask_credentials(
+            _issue_body(what_happened, proposed_fix, tool_name)
+        )
+        title = mask_credentials(title)
         url, truncated = _prefilled_issue_url(title, body)
         note = (
             "Nothing has been sent. Show the user this link and ask them to "

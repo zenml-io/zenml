@@ -36,7 +36,6 @@ from tests.unit.zenml_mcp.replay import (  # noqa: E402
     golden,
     result_of,
 )
-from zenml_mcp import steps  # noqa: E402
 from zenml_mcp.call import ZenMLCall  # noqa: E402
 from zenml_mcp.client import (  # noqa: E402
     ZenMLAuth,

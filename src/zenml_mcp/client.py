@@ -309,7 +309,7 @@ def _error_detail(response: httpx.Response) -> str:
     detail = body.get("detail") if isinstance(body, dict) else body
     if isinstance(detail, list) and detail:
         parts = [
-            item.get("msg", "") if isinstance(item, dict) else str(item)
+            str(item.get("msg") or "") if isinstance(item, dict) else str(item)
             for item in detail
         ]
         return mask_credentials(": ".join(p for p in parts if p))[:500]

@@ -66,11 +66,11 @@ from zenml_mcp.runs import (
 
 STEP_LOGS_MAX_ENTRIES = 50_000
 # Following cursors stops at these limits and returns what it has. They are
-# checked between pages, so one more page can pass them. A page that runs into the
-# call deadline (`runtime.CALL_TIMEOUT_S`) loses what was read, so the time, counted
-# from the start of the call, leaves room for it. Cancelling a page instead could
-# cancel a login. The pod is shared and its memory is limited (1536Mi in the
-# deployed values), so the characters are limited too.
+# checked between pages, so one more page can pass them. A page that runs into a
+# host's call deadline loses what was read, so the time, counted from the start
+# of the call, leaves room for it. Cancelling a page instead could cancel a
+# login. A server that hosts these tools serves many callers in limited memory,
+# so the characters are limited too.
 STEP_LOGS_MAX_PAGES = 100
 STEP_LOGS_MAX_READ_CHARS = 20_000_000
 STEP_LOGS_READ_BUDGET_S = 60.0
