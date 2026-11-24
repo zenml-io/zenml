@@ -147,7 +147,10 @@ def register(tools: Tools) -> None:
                 you can (which tool, parameter or description to change, and how).
             tool_name: The tool the feedback is about, if it is about one tool.
         """  # noqa: DOC101, DOC103, DOC201, DOC501, DOC503
-        title = " ".join(title.split())[:_MAX_FEEDBACK_TITLE_LENGTH]
+        # The issue is public: a credential the model quoted is masked,
+        # before a cut could leave part of it unrecognized.
+        title = mask_credentials(" ".join(title.split()))
+        title = title[:_MAX_FEEDBACK_TITLE_LENGTH]
         what_happened, proposed_fix = (
             what_happened.strip(),
             proposed_fix.strip(),
@@ -156,11 +159,9 @@ def register(tools: Tools) -> None:
             raise ZenMLBadRequest(
                 "title, what_happened and proposed_fix must not be empty."
             )
-        # The issue is public: a credential the model quoted is masked.
         body = mask_credentials(
             _issue_body(what_happened, proposed_fix, tool_name)
         )
-        title = mask_credentials(title)
         url, truncated = _prefilled_issue_url(title, body)
         note = (
             "Nothing has been sent. Show the user this link and ask them to "

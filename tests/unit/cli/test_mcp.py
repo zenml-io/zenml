@@ -16,11 +16,14 @@
 import asyncio
 import importlib
 import ssl
+import sys
+import threading
 from types import SimpleNamespace
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Tuple
 
 import httpx
 import pytest
+import requests
 from click.testing import CliRunner
 
 pytest.importorskip("mcp")
@@ -56,6 +59,7 @@ class _Store:
         self.server_info = SimpleNamespace(auth_scheme=scheme)
         self.failure = failure
         self.forced = 0
+        self.signed_in = 0
 
     def get_or_generate_api_token(self) -> str:
         if self.failure is not None:
@@ -65,6 +69,7 @@ class _Store:
         return self.tokens[0]
 
     def authenticate(self, force: bool = False) -> None:
+        self.signed_in += 1
         if force:
             self.forced += 1
             self.tokens.pop(0)
@@ -184,19 +189,155 @@ def test_tls_trusts_the_ca_bundle_requests_would_use(
     assert mcp_cli._verify(store) is False  # type: ignore[arg-type]
 
 
-def test_an_unreachable_server_stops_the_command_with_a_short_error(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """No traceback and no server text when the store can't connect."""
+def _start(
+    monkeypatch: pytest.MonkeyPatch, failures: List[Exception]
+) -> Tuple[Any, int]:
+    """Run `zenml mcp` with a store whose first reads fail as given.
 
-    class Unreachable:
+    Args:
+        monkeypatch: Replaces the client and the retry's wait.
+        failures: What each attempt to build the store raises, in order.
+
+    Returns:
+        The command's result and how many times the store was built.
+    """
+    attempts = []
+
+    class Failing:
         @property
         def zen_store(self) -> Any:
-            raise RuntimeError("Error connecting to URL: s3cr3t-echo")
+            attempts.append(1)
+            raise failures[len(attempts) - 1]
 
-    monkeypatch.setattr(mcp_cli, "Client", Unreachable)
-    result = CliRunner().invoke(cli, ["mcp"])
+    monkeypatch.setattr(mcp_cli, "Client", Failing)
+    monkeypatch.setattr("zenml_mcp.server.START_RETRY_DELAY_S", 0.0)
+    return CliRunner().invoke(cli, ["mcp"]), len(attempts)
+
+
+def _wrapped(cause: Exception) -> RuntimeError:
+    """The store's error for a failed first read, as it raises it.
+
+    Args:
+        cause: What the read raised.
+
+    Returns:
+        The store's error, caused by `cause`.
+    """
+    try:
+        raise RuntimeError("Error connecting to URL: s3cr3t-echo") from cause
+    except RuntimeError as error:
+        return error
+
+
+def test_a_stalled_first_read_is_retried_once_then_reported_briefly(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """zenml-io/mcp-zenml#96, then a short error without the server's text."""
+    stall = _wrapped(requests.exceptions.ReadTimeout("body stalled"))
+    result, attempts = _start(monkeypatch, [stall, stall])
+    assert attempts == 2
     assert result.exit_code != 0
     assert "Couldn't reach the ZenML server (RuntimeError)" in result.output
     assert "s3cr3t-echo" not in result.output
+    assert "Traceback" not in result.output
+
+
+def test_an_answered_failure_is_not_retried(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A server that answered with an error isn't stalled: no retry."""
+    answered = _wrapped(requests.HTTPError("500 Server Error"))
+    result, attempts = _start(monkeypatch, [answered])
+    assert attempts == 1
+    assert "Connecting to the ZenML server failed" in result.output
+    assert "s3cr3t-echo" not in result.output
+
+
+def test_a_cancelled_renewal_keeps_one_sign_in_at_a_time() -> None:
+    """The lock stays held until the sign-in thread ends, cancelled or not."""
+    release = threading.Event()
+    running: List[int] = []
+    peak: List[int] = []
+
+    class Slow(_Store):
+        def authenticate(self, force: bool = False) -> None:
+            running.append(1)
+            peak.append(len(running))
+            release.wait(5)
+            super().authenticate(force)
+            running.pop()
+
+    store = Slow(tokens=["old", "new", "newer"])
+
+    async def run() -> None:
+        auth = mcp_cli._login(store)  # type: ignore[arg-type]
+        first = asyncio.ensure_future(auth.renew("old"))
+        await asyncio.sleep(0.05)
+        first.cancel()
+        second = asyncio.ensure_future(auth.renew("old"))
+        await asyncio.sleep(0.05)
+        release.set()
+        with pytest.raises(asyncio.CancelledError):
+            await first
+        await second
+
+    asyncio.run(run())
+    assert max(peak) == 1
+
+
+def test_requests_rejected_together_share_a_failed_renewal() -> None:
+    """One failed sign-in answers every request that waited on it."""
+    store = _Store(tokens=["old"])
+
+    def answer(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(401, json={"detail": "expired"})
+
+    errors = _get(store, answer, requests=4)
+    assert all(isinstance(error, ZenMLAuthError) for error in errors)
+    # One renewal: a re-read of the stored login, then a forced sign-in.
+    assert store.signed_in == 2
+
+
+def test_a_token_refused_after_renewal_is_not_sent_again() -> None:
+    """The next call renews instead of resending the refused token."""
+    store = _Store(tokens=["old", "new", "newer"])
+    sent: List[str] = []
+
+    def answer(request: httpx.Request) -> httpx.Response:
+        token = request.headers["Authorization"].removeprefix("Bearer ")
+        sent.append(token)
+        if token == "newer":
+            return httpx.Response(200, json={"ok": True})
+        return httpx.Response(401, json={"detail": "refused"})
+
+    async def run() -> List[Any]:
+        transport = httpx.MockTransport(answer)
+        async with httpx.AsyncClient(transport=transport) as http:
+            client = ZenMLRestClient(
+                store.url,
+                mcp_cli._login(store),  # type: ignore[arg-type]
+                http=http,
+                cache_key="k",
+            )
+            reads = []
+            for _ in range(2):
+                try:
+                    reads.append(await client.get("/info", what="Reading"))
+                except ZenMLAuthError as error:
+                    reads.append(error)
+            return reads
+
+    first, second = asyncio.run(run())
+    assert isinstance(first, ZenMLAuthError) and second == {"ok": True}
+    assert sent == ["old", "new", "newer"]
+
+
+def test_a_missing_mcp_sdk_shows_the_install_hint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Without the extra, the command says how to install it."""
+    monkeypatch.setitem(sys.modules, "zenml_mcp.server", None)
+    result = CliRunner().invoke(cli, ["mcp"])
+    assert result.exit_code != 0
+    assert "pip install 'zenml[mcp]'" in result.output
     assert "Traceback" not in result.output

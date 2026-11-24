@@ -23,6 +23,7 @@ import logging
 import traceback
 from typing import Any
 
+import httpx
 from mcp.server import MCPServer
 
 from zenml_mcp.call import ZenMLCall
@@ -211,7 +212,8 @@ async def check_server(client: ZenMLRestClient) -> dict[str, Any]:
     """Read the server's info and sign in, retrying once after a stall.
 
     Start-up only reads and signs in, so a retry is safe. Only a request
-    that got no answer is retried: a refusal or a server error is not.
+    that couldn't connect or got no answer in time is retried: a refusal,
+    a server error, or a failed sign-in is not.
 
     Args:
         client: The client to check.
@@ -225,7 +227,8 @@ async def check_server(client: ZenMLRestClient) -> dict[str, Any]:
     try:
         return await _signed_in_info(client)
     except ZenMLUnavailable as error:
-        if error.status is not None:
+        stalled = isinstance(error.__cause__, httpx.TransportError)
+        if error.status is not None or not stalled:
             raise
         logger.warning(
             "Reaching the ZenML server failed; retrying once in %.0f s.",

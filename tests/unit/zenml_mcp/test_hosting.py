@@ -488,3 +488,81 @@ def test_feedback_masks_a_credential_in_the_public_issue() -> None:
         },
     )
     assert "s3cr3tvalue" not in drafted["issue_url"]
+
+
+def test_a_stored_secret_cut_by_the_message_limit_is_masked_too(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A long refusal that cuts the echoed secret shows none of it."""
+    connector = copy.deepcopy(
+        golden("generic_write.json")["entities"]["service_connector"]
+    )
+    stored = "-".join(("stored", "never", "shown", "at", "all"))
+    connector["metadata"]["configuration"]["password"] = stored
+
+    def answer(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET":
+            return httpx.Response(200, json=connector)
+        # ZenML's detail is cut at 500 characters, inside the secret.
+        detail = ["ValueError", "x" * 470 + stored]
+        return httpx.Response(400, json={"detail": detail})
+
+    refused, _ = _run(
+        "zenml_update_resource",
+        {
+            "resource_type": "service_connector",
+            "resource_id": connector["id"],
+            "payload": {"description": "d"},
+        },
+        answer,
+    )
+    message = refused.structured_content["error"]["message"]
+    assert stored[:8] not in message
+
+
+def test_feedback_masks_a_title_before_cutting_it() -> None:
+    """A credential the length limit would cut is still masked."""
+    title = "t" * 180 + " https://user:pa55wordlong@host.example"
+    drafted, _ = _run(
+        "zenml_report_feedback",
+        {"title": title, "what_happened": "x", "proposed_fix": "y"},
+    )
+    query = parse_qs(urlsplit(drafted["issue_url"]).query)
+    assert "pa5" not in query["title"][0]
+
+
+class _FailedSignIn(ZenMLAuth):
+    """A sign-in the server answered with an error."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.asked = 0
+
+    async def token(self) -> Optional[str]:
+        self.asked += 1
+        raise ZenMLUnavailable("Signing in to ZenML failed (RuntimeError).")
+
+    async def renew(self, rejected: Optional[str]) -> str:
+        raise ZenMLUnavailable("not expected")
+
+
+def test_start_up_does_not_retry_a_failed_sign_in(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Only a request that got no answer is a stall worth retrying."""
+    monkeypatch.setattr(server, "START_RETRY_DELAY_S", 0.0)
+    auth = _FailedSignIn()
+
+    async def check() -> None:
+        transport = httpx.MockTransport(
+            lambda _: httpx.Response(200, json={"version": "0.99.0"})
+        )
+        async with httpx.AsyncClient(transport=transport) as http:
+            client = ZenMLRestClient(
+                SERVER_URL, auth, http=http, cache_key="k"
+            )
+            with pytest.raises(ZenMLUnavailable):
+                await server.check_server(client)
+
+    asyncio.run(check())
+    assert auth.asked == 1

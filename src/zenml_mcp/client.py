@@ -195,6 +195,8 @@ class ZenMLAuth(httpx.Auth):
         """Start with no token: the first request asks for one."""
         self._token: str | None = None
         self._has_token = False
+        # The last token ZenML refused even after a renewal: never sent again.
+        self._refused: str | None = None
 
     async def token(self) -> str | None:
         """The caller's current token.
@@ -233,10 +235,12 @@ class ZenMLAuth(httpx.Auth):
 
         Yields:
             The signed request, and once more after a 401.
-        """
+        """  # noqa: DOC201, DOC403
         if not self._has_token:
-            self._token = await self.token()
-            self._has_token = True
+            token = await self.token()
+            if token is not None and token == self._refused:
+                token = await self.renew(token)
+            self._token, self._has_token = token, True
         token = self._token
         if token is not None:
             request.headers["Authorization"] = f"Bearer {token}"
@@ -250,7 +254,10 @@ class ZenMLAuth(httpx.Auth):
         self._token = await self.renew(token)
         self._has_token = True
         request.headers["Authorization"] = f"Bearer {self._token}"
-        yield request
+        response = yield request
+        if response.status_code == 401:
+            # Refused again: the next request renews instead of resending it.
+            self._refused, self._has_token = self._token, False
 
 
 class BearerToken(ZenMLAuth):

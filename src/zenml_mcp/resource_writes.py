@@ -1127,6 +1127,8 @@ def _without(
     """The error without the stored secrets the write resent.
 
     ZenML's answer can echo one, and a caller never sees a stored secret.
+    The answer was cut to a length before it got here, so a cut secret's
+    start is masked too.
 
     Args:
         error: ZenML's error.
@@ -1141,6 +1143,14 @@ def _without(
     scrubbed = copy.copy(error)
     for value in values:
         scrubbed.message = scrubbed.message.replace(value, "***")
+        # The longest start of the secret the cut left, of 4 characters or
+        # more: shorter ones are too common to tell from other text.
+        for length in range(len(value) - 1, 3, -1):
+            if value[:length] in scrubbed.message:
+                scrubbed.message = scrubbed.message.replace(
+                    value[:length], "***"
+                )
+                break
     scrubbed.args = (scrubbed.message,)
     return scrubbed
 
