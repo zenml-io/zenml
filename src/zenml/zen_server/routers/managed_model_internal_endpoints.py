@@ -438,10 +438,12 @@ def sync_managed_workspace_transition(
         cloud = cloud_connection()
         if observation is not None:
             cloud.post(
-                "/managed_serving_commands/runtime-status",
+                "/managed_model_serving/runtime-status",
                 data=observation.model_dump(mode="json"),
             )
-        delivery = cloud.get("/managed_serving_commands", params=None).json()
+        delivery = cloud.get(
+            "/managed_model_serving/commands", params=None
+        ).json()
         if not isinstance(delivery, dict) or delivery.get(
             "workspace_id"
         ) != str(server_config().get_external_server_id()):
@@ -451,7 +453,8 @@ def sync_managed_workspace_transition(
         command = ManagedWorkspaceCommand.model_validate(delivery["command"])
         result = zen_store().managed_models.apply_workspace_command(command)
         cloud.post(
-            "/managed_serving_commands", data=result.model_dump(mode="json")
+            "/managed_model_serving/commands",
+            data=result.model_dump(mode="json"),
         )
         return result
     except Exception:

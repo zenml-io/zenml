@@ -10,6 +10,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
+
 from zenml.exceptions import IllegalOperationError
 from zenml.managed_models.state import (
     ManagedModelCheckpoint,
@@ -351,5 +352,5 @@ def test_transition_sync_scopes_commands_and_recovers_lost_ack(
     assert response.json() == receipt.model_dump(mode="json")
     assert response.headers["Cache-Control"] == "no-store"
     cloud.post.assert_called_with(
-        "/managed_serving_commands", data=receipt.model_dump(mode="json")
+        "/managed_model_serving/commands", data=receipt.model_dump(mode="json")
     )
