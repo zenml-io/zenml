@@ -141,6 +141,6 @@ jobs:
             - Use top-level comments for general observations or praise.
             - Use `gh pr comment` to post your review comment to the PR.
             Be constructive and helpful in your feedback.
-          claude_args: --allowed-tools "mcp__github_inline_comment__create_inline_comment,Bash(gh
+          claude_args: --permission-mode default --allowed-tools "mcp__github_inline_comment__create_inline_comment,Bash(gh
             issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh
             pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(bash scripts/format.sh:*)"
