@@ -182,13 +182,19 @@ class ZenMLAuth(httpx.Auth):
     writes too and keeps the request's body and `Idempotency-Key`. A host
     implements `token` and `renew`, and raises `ZenMLAuthError` when the
     caller's sign-in is refused and `ZenMLUnavailable` when it can't be
-    reached. A `token` of None sends the request unsigned, for a server that
-    runs without authentication, such as a local one; a 401 then signs in.
+    reached. A `token` of None sends the requests unsigned, for a server
+    that runs without authentication, such as a local one; a 401 then signs
+    in.
+
+    One instance serves all of a call's requests, several of them at once,
+    so several can be rejected together: `renew` must sign in once for them
+    and give the others the new token.
     """
 
     def __init__(self) -> None:
         """Start with no token: the first request asks for one."""
         self._token: str | None = None
+        self._has_token = False
 
     async def token(self) -> str | None:
         """The caller's current token.
@@ -228,8 +234,10 @@ class ZenMLAuth(httpx.Auth):
         Yields:
             The signed request, and once more after a 401.
         """
-        token = self._token or await self.token()
-        self._token = token
+        if not self._has_token:
+            self._token = await self.token()
+            self._has_token = True
+        token = self._token
         if token is not None:
             request.headers["Authorization"] = f"Bearer {token}"
         response = yield request
@@ -237,7 +245,10 @@ class ZenMLAuth(httpx.Auth):
             return
         # Free the connection first: the renewal may use the same pool.
         await response.aread()
+        # A failed renewal leaves no token, so the next request asks again.
+        self._has_token = False
         self._token = await self.renew(token)
+        self._has_token = True
         request.headers["Authorization"] = f"Bearer {self._token}"
         yield request
 

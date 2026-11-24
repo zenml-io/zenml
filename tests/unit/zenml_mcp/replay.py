@@ -98,7 +98,7 @@ async def connected(
             cache_key=uuid.uuid4().hex,
         )
         made = call(client) if call else ZenMLCall(client, read_only=read_only)
-        server = build_server(made, read_only=read_only)
+        server = build_server(made)
         async with Client(server) as mcp:
             yield mcp
 

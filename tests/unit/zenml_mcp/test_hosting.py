@@ -24,7 +24,7 @@ import copy
 import json
 import logging
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, Optional
 from urllib.parse import parse_qs, urlsplit
 
 import httpx
@@ -39,6 +39,7 @@ from zenml_mcp import server  # noqa: E402
 from zenml_mcp.call import Asked, ZenMLCall  # noqa: E402
 from zenml_mcp.client import (  # noqa: E402
     BearerToken,
+    ZenMLAuth,
     ZenMLRestClient,
     ZenMLUnavailable,
 )
@@ -442,3 +443,35 @@ def test_a_connector_update_keeps_its_stored_secrets_out_of_errors(
     assert refused.structured_content["error"]["kind"] == "invalid_request"
     assert stored not in json.dumps(refused.structured_content)
     assert stored not in caplog.text
+
+
+class _Counted(ZenMLAuth):
+    """No token, for a server without authentication; counts the asks."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.asked = 0
+
+    async def token(self) -> Optional[str]:
+        self.asked += 1
+        return None
+
+    async def renew(self, rejected: Optional[str]) -> str:
+        raise ZenMLUnavailable("not expected")
+
+
+def test_an_unsigned_client_asks_for_a_token_once() -> None:
+    """A None token is kept like any other, not asked for per request."""
+    auth = _Counted()
+
+    async def read() -> None:
+        transport = httpx.MockTransport(lambda _: httpx.Response(200, json={}))
+        async with httpx.AsyncClient(transport=transport) as http:
+            client = ZenMLRestClient(
+                SERVER_URL, auth, http=http, cache_key="k"
+            )
+            for _ in range(3):
+                await client.get("/info", what="Reading")
+
+    asyncio.run(read())
+    assert auth.asked == 1

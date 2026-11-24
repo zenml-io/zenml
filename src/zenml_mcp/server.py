@@ -107,19 +107,20 @@ def _listed(
     return run
 
 
-def build_server(call: ZenMLCall, *, read_only: bool = False) -> MCPServer:
+def build_server(call: ZenMLCall) -> MCPServer:
     """A server that runs every tool, resource and prompt with `call`.
+
+    With `call.read_only`, it offers only the tools that change nothing.
 
     Args:
         call: The client every tool uses, and the server's decisions.
-        read_only: Whether to offer only the tools that change nothing.
 
     Returns:
         The server, ready to run.
     """
     server = MCPServer(name="zenml", instructions=INSTRUCTIONS)
     for spec in TOOL_SPECS:
-        if read_only and spec.annotations.read_only_hint is not True:
+        if call.read_only and spec.annotations.read_only_hint is not True:
             continue
         server.add_tool(
             _tool(spec, call),
