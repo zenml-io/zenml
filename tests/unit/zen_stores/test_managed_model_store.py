@@ -1168,3 +1168,72 @@ def test_workspace_suspension_preserves_selected_revision(serving_store):
         ),
         "manual-resume",
     )
+
+
+def test_suspension_fences_expired_maintenance(serving_store, monkeypatch):
+    """A live maintenance lease finishes or expires before pause takes ownership."""
+    from zenml.managed_models.state import ManagedWorkspaceCommand
+    from zenml.utils.time_utils import utc_now
+
+    store, request = serving_store
+    service = store.create(request, "create")
+    create = store.claim()
+    create.service.active_revision_id = create.target_revision_id
+    create.service.state = "ready"
+    create.service.operation.status = "succeeded"
+    resource = ManagedModelProviderResource(
+        model_id="m", deployment_id="a", environment="production"
+    )
+    store.finish(
+        create, create.service, {str(create.target_revision_id): resource}
+    )
+    now = utc_now() + timedelta(minutes=11)
+    monkeypatch.setattr(
+        "zenml.zen_stores.managed_model_store.utc_now", lambda: now
+    )
+    maintenance = store.claim()
+    assert maintenance.service.operation.action == "reconcile"
+    store.checkpoint(
+        maintenance, ManagedModelCheckpoint(phase="access-refreshed")
+    )
+    assert store.apply_workspace_command(
+        ManagedWorkspaceCommand(id=uuid4(), generation=1, action="suspend")
+    ).accepted
+    assert store.claim() is None
+    now = maintenance.expires_at + timedelta(seconds=1)
+    pause = store.claim()
+    assert (
+        pause.service.operation.action == "pause"
+        and pause.resources == maintenance.resources
+    )
+    with pytest.raises(IllegalOperationError):
+        store.finish(maintenance, maintenance.service, {})
+    assert store.get(service.id).desired_state == "paused"
+
+
+def test_suspend_retries_legacy_uncertain_deletion_only_once(serving_store):
+    """An exhausted discovery window must remain available for operator resolution."""
+    from zenml.managed_models.state import ManagedWorkspaceCommand
+
+    store, request = serving_store
+    service = store.create(request, "create")
+    store.mutate(
+        service.id,
+        ManagedModelMutation(action="delete", expected_generation=1),
+        "delete",
+    )
+    lease = store.claim()
+    store.checkpoint(lease, ManagedModelCheckpoint(phase="submitting"))
+    lease.service.operation.status = "uncertain"
+    store.finish(lease, lease.service, {})
+    assert store.apply_workspace_command(
+        ManagedWorkspaceCommand(id=uuid4(), generation=1, action="suspend")
+    ).accepted
+    recovery = store.claim()
+    assert (
+        recovery.service.operation.action == "delete"
+        and recovery.checkpoint.discovery_started_at
+    )
+    recovery.service.operation.status = "uncertain"
+    store.finish(recovery, recovery.service, {})
+    assert store.claim() is None and not store.suspension_ready()

@@ -4,7 +4,7 @@ import hashlib
 import json
 import secrets
 from datetime import datetime, timedelta
-from typing import Any, List, Optional, cast
+from typing import Any, List, Literal, Optional, cast
 from uuid import UUID, uuid4
 
 from sqlalchemy import CursorResult, Engine, delete, func, or_, update
@@ -304,6 +304,14 @@ class ManagedModelStore:
                     or not (
                         (request.action == "delete" and gate.drain_requested)
                         or (
+                            request.action == "retry"
+                            and (
+                                gate.drain_requested
+                                or self._suspend_id(gate)
+                                == drain_transition_id
+                            )
+                        )
+                        or (
                             request.action == "pause"
                             and self._suspend_id(gate) == drain_transition_id
                         )
@@ -325,13 +333,46 @@ class ManagedModelStore:
                 .with_for_update()
                 .execution_options(populate_existing=True)
             ).one()
+            prior = ManagedModelCheckpoint.model_validate_json(
+                previous.checkpoint
+            )
+            if (
+                request.action == "retry"
+                and drain_transition_id is not None
+                and not (
+                    service.desired_state == "deleted"
+                    and self._needs_delete_discovery(previous)
+                )
+            ):
+                raise EntityExistsError(
+                    "Deletion discovery is already handled."
+                )
+
+            # These maintenance phases have no outstanding provider submission,
+            # promotion or prune to settle before inspecting and pausing all revisions.
+            suspend_maintenance = (
+                request.action == "pause"
+                and drain_transition_id is not None
+                and previous.action == "reconcile"
+                and prior.phase in ("pending", "access-refreshed", "complete")
+                and (
+                    previous.status == "pending"
+                    or (
+                        previous.status == "running"
+                        and previous.lease_expires_at is not None
+                        and previous.lease_expires_at <= utc_now()
+                    )
+                )
+            )
             busy = service.operation.status in (
                 "pending",
                 "running",
                 "uncertain",
             )
             if service.generation != request.expected_generation or (
-                busy and request.action not in ("delete", "retry")
+                busy
+                and request.action not in ("delete", "retry")
+                and not suspend_maintenance
             ):
                 raise EntityExistsError(
                     "Service changed or has unfinished work; inspect it before retrying."
@@ -388,9 +429,6 @@ class ManagedModelStore:
                     "Service has no successfully deployed revision."
                 )
             if request.action == "pause" and drain_transition_id is not None:
-                prior = ManagedModelCheckpoint.model_validate_json(
-                    previous.checkpoint
-                )
                 if prior.phase == "submitting" or (
                     prior.resource is not None
                     and prior.resource
@@ -403,6 +441,9 @@ class ManagedModelStore:
                     raise EntityExistsError(
                         "Resolve provider ownership before suspending."
                     )
+            if suspend_maintenance:
+                previous.status = "failed"
+                session.add(previous)
             checkpoint = "{}"
             available_at = None
             action: str = request.action
@@ -411,6 +452,11 @@ class ManagedModelStore:
             if request.action == "retry" or request.action == "delete":
                 recovery = ManagedModelCheckpoint.model_validate_json(
                     previous.checkpoint
+                )
+                recovery.discovery_started_at = (
+                    utc_now()
+                    if drain_transition_id and request.action == "retry"
+                    else None
                 )
                 recovery.resolved_at = None
                 recovery.attempts = 0
@@ -1048,6 +1094,19 @@ class ManagedModelStore:
                 "Managed serving is draining; new deployments and revisions are closed."
             )
 
+    @staticmethod
+    def _needs_delete_discovery(operation: Operation) -> bool:
+        """Identify legacy deletes that stopped before bounded discovery ran."""
+        if operation.action != "delete" or operation.status != "uncertain":
+            return False
+        checkpoint = ManagedModelCheckpoint.model_validate_json(
+            operation.checkpoint
+        )
+        return (
+            checkpoint.phase == "submitting"
+            and checkpoint.discovery_started_at is None
+        )
+
     def _schedule_drain(self) -> None:
         with Session(self.engine) as session:
             gate = session.get(Workspace, UUID(int=0))
@@ -1059,9 +1118,18 @@ class ManagedModelStore:
             services = []
             for row in session.exec(select(Service)).all():
                 service = row.to_model()
+                if service.desired_state == "deleted":
+                    if service.operation.status == "uncertain":
+                        op = session.get(Operation, service.operation.id)
+                        if op and self._needs_delete_discovery(op):
+                            services.append(service)
+                    continue
                 if suspend_id:
                     op = session.get(Operation, service.operation.id)
-                    if not op or op.status not in ("succeeded", "failed"):
+                    if not op or (
+                        op.status not in ("succeeded", "failed")
+                        and op.action != "reconcile"
+                    ):
                         continue
                     if op.status == "succeeded" and op.request_key.startswith(
                         f"suspend-{suspend_id}-"
@@ -1069,21 +1137,25 @@ class ManagedModelStore:
                         continue
                 services.append(service)
         for service in services:
-            if service.desired_state != "deleted":
-                try:
-                    self._mutate(
-                        service.id,
-                        ManagedModelMutation(
-                            action="pause" if suspend_id else "delete",
-                            expected_generation=service.generation,
-                        ),
-                        f"suspend-{suspend_id}-{service.id}-{service.generation}"
-                        if suspend_id
-                        else f"drain-{service.id}-{service.generation}",
-                        drain_transition_id=gate.transition_id,
-                    )
-                except EntityExistsError:
-                    continue
+            action: Literal["pause", "delete", "retry"]
+            if service.desired_state == "deleted":
+                action = "retry"
+            else:
+                action = "pause" if suspend_id else "delete"
+            try:
+                self._mutate(
+                    service.id,
+                    ManagedModelMutation(
+                        action=action,
+                        expected_generation=service.generation,
+                    ),
+                    f"suspend-{suspend_id}-{service.id}-{service.generation}"
+                    if suspend_id
+                    else f"drain-{service.id}-{service.generation}",
+                    drain_transition_id=gate.transition_id,
+                )
+            except EntityExistsError:
+                continue
 
     def get_revision_sources(
         self, service_id: UUID, revision_id: UUID
