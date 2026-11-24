@@ -21,6 +21,7 @@ import threading
 from types import SimpleNamespace
 from typing import Any, List, Optional, Tuple
 
+import anyio
 import httpx
 import pytest
 import requests
@@ -366,3 +367,45 @@ def test_an_expired_login_shows_on_the_next_token_read() -> None:
             await auth.token()
 
     asyncio.run(read_twice())
+
+
+def test_a_refused_connection_is_not_retried_again(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The store already retried connecting; only a stall gets one more."""
+    refused = _wrapped(requests.ConnectionError("connection refused"))
+    result, attempts = _start(monkeypatch, [refused])
+    assert attempts == 1
+    assert "Couldn't reach the ZenML server (RuntimeError)" in result.output
+
+
+def test_a_renewal_cancelled_by_its_task_group_waits_without_spinning(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """anyio repeats a cancellation; the wait for the sign-in holds it off."""
+    release = threading.Event()
+
+    class Slow(_Store):
+        def authenticate(self, force: bool = False) -> None:
+            release.wait(5)
+            super().authenticate(force)
+
+    waits: List[int] = []
+    wait = asyncio.wait
+
+    async def counted(*args: Any, **kwargs: Any) -> Any:
+        waits.append(1)
+        return await wait(*args, **kwargs)
+
+    monkeypatch.setattr(asyncio, "wait", counted)
+    store = Slow(tokens=["old", "new"])
+
+    async def run() -> None:
+        auth = mcp_cli._login(store)  # type: ignore[arg-type]
+        threading.Timer(0.3, release.set).start()
+        with anyio.move_on_after(0.05):
+            await auth.renew("old")
+
+    asyncio.run(run())
+    assert release.is_set()
+    assert len(waits) <= 2

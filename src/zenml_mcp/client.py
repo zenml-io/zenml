@@ -254,6 +254,9 @@ class ZenMLAuth(httpx.Auth):
         if self._token == token:
             self._has_token = False
         renewed = await self.renew(token)
+        if renewed == self._refused:
+            # Another request's renewal gave a token ZenML already refused.
+            renewed = await self.renew(renewed)
         if not self._has_token or self._token == token:
             self._token, self._has_token = renewed, True
         request.headers["Authorization"] = f"Bearer {renewed}"

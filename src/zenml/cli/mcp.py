@@ -19,10 +19,11 @@ import os
 import ssl
 import sys
 import time
-from typing import TYPE_CHECKING, Optional, Tuple, Union
+from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
 import click
 import requests
+import urllib3
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
@@ -78,26 +79,71 @@ def mcp(read_only: bool) -> None:
         cli_utils.error(error.message)
 
 
+def _causes(error: BaseException) -> List[BaseException]:
+    """An error and what it wraps, by cause or as its first argument.
+
+    Requests wraps urllib3's error as its first argument, not as a cause.
+
+    Args:
+        error: The error.
+
+    Returns:
+        The error, then each error it wraps.
+    """
+    found: List[BaseException] = []
+    seen: Optional[BaseException] = error
+    while seen is not None and seen not in found:
+        found.append(seen)
+        wrapped = seen.args[0] if seen.args else None
+        seen = seen.__cause__ or (
+            wrapped if isinstance(wrapped, BaseException) else None
+        )
+    return found
+
+
 def _no_answer(error: BaseException) -> bool:
     """Whether a request failed without an answer from the server.
 
     Args:
-        error: The error, with what caused it.
+        error: The error.
 
     Returns:
-        True when it, or what caused it, couldn't connect or timed out,
-        including while reading the answer's body.
+        True when it couldn't connect or timed out.
     """
-    seen: Optional[BaseException] = error
-    while seen is not None:
-        if isinstance(seen, requests.HTTPError):
-            return False
-        if isinstance(
-            seen, (requests.ConnectionError, requests.Timeout, ConnectionError)
-        ):
-            return True
-        seen = seen.__cause__
-    return False
+    return any(
+        isinstance(
+            cause,
+            (requests.ConnectionError, requests.Timeout, ConnectionError),
+        )
+        and not isinstance(cause, requests.HTTPError)
+        for cause in _causes(error)
+    )
+
+
+def _stalled(error: BaseException) -> bool:
+    """Whether a request connected, then stalled reading the answer.
+
+    The store already retried failed connections, so only a stall is worth
+    one more try.
+
+    Args:
+        error: The error.
+
+    Returns:
+        True for a read that timed out or broke off.
+    """
+    return any(
+        isinstance(
+            cause,
+            (
+                requests.ReadTimeout,
+                requests.exceptions.ChunkedEncodingError,
+                urllib3.exceptions.ReadTimeoutError,
+                urllib3.exceptions.ProtocolError,
+            ),
+        )
+        for cause in _causes(error)
+    )
 
 
 def _connected_store(retry_delay: float) -> RestZenStore:
@@ -124,7 +170,7 @@ def _connected_store(retry_delay: float) -> RestZenStore:
                 "login` and start the MCP server again."
             )
         except Exception as error:
-            if attempt == 1 and _no_answer(error):
+            if attempt == 1 and _stalled(error):
                 logger.warning(
                     "Reaching the ZenML server failed; retrying once in "
                     "%.0f s.",
@@ -330,17 +376,22 @@ async def _owned(
         asyncio.CancelledError: When the caller was cancelled, once the
             sign-in ended.
     """
+    import anyio
+
     work = asyncio.ensure_future(
         asyncio.to_thread(_sign_in, store, rejected, renew)
     )
     try:
         return await asyncio.shield(work)
     except asyncio.CancelledError:
-        while not work.done():
-            try:
-                await asyncio.wait([work])
-            except asyncio.CancelledError:
-                continue
+        # anyio, which the MCP SDK runs on, delivers a cancellation again at
+        # every wait; the shield holds it off until the sign-in ends.
+        with anyio.CancelScope(shield=True):
+            while not work.done():
+                try:
+                    await asyncio.wait([work])
+                except asyncio.CancelledError:
+                    continue
         if not work.cancelled():
             work.exception()
         raise

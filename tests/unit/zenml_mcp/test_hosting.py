@@ -596,3 +596,22 @@ def test_a_late_refusal_of_an_old_token_keeps_the_newer_one() -> None:
         return sent.headers["Authorization"]
 
     assert asyncio.run(run()) == "Bearer T3"
+
+
+def test_a_renewal_that_returns_a_refused_token_renews_again() -> None:
+    """A late refusal of T1 after T2 was refused moves on to T3."""
+    auth = _Rotating()
+    refused = httpx.Response(401)
+
+    async def run() -> str:
+        late = auth.async_auth_flow(httpx.Request("GET", SERVER_URL))
+        await late.__anext__()
+        first = auth.async_auth_flow(httpx.Request("GET", SERVER_URL))
+        await first.__anext__()
+        await first.asend(refused)
+        with pytest.raises(StopAsyncIteration):
+            await first.asend(refused)
+        retried = await late.asend(refused)
+        return retried.headers["Authorization"]
+
+    assert asyncio.run(run()) == "Bearer T3"
