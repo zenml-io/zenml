@@ -92,6 +92,9 @@ async def gather(*requests: Awaitable[Any]) -> list[Any]:
     Raises:
         Exception: The first request's failure, as it was raised.
     """  # noqa: DOC503
+    if not requests:
+        # `asyncio.wait` refuses an empty set, as a task group would not.
+        return []
     slots = asyncio.Semaphore(GATHER_LIMIT)
     tasks = [asyncio.ensure_future(_awaited(r, slots)) for r in requests]
     try:

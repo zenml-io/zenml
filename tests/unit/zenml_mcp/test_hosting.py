@@ -615,3 +615,30 @@ def test_a_renewal_that_returns_a_refused_token_renews_again() -> None:
         return retried.headers["Authorization"]
 
     assert asyncio.run(run()) == "Bearer T3"
+
+
+def test_a_pipeline_without_runs_is_described_with_none() -> None:
+    """No runs: an empty history, no latest run, nothing read per run."""
+    pipeline = copy.deepcopy(
+        golden("generic_read.json")["entities"]["pipeline"]
+    )
+
+    def answer(request: httpx.Request) -> httpx.Response:
+        path = request.url.path.removeprefix("/api/v1")
+        if path == f"/pipelines/{pipeline['id']}":
+            return httpx.Response(200, json=pipeline)
+        if path in {"/runs", "/pipeline_snapshots"}:
+            page = {"index": 1, "max_size": 20, "total_pages": 1, "total": 0}
+            return httpx.Response(200, json={**page, "items": []})
+        if path == "/info":
+            return httpx.Response(200, json={"version": "0.99.0"})
+        if path.startswith("/projects/"):
+            return httpx.Response(200, json={"name": "default"})
+        return httpx.Response(404, json={"detail": "Not Found"})
+
+    described, _ = _run(
+        "zenml_get_pipeline", {"pipeline": pipeline["id"]}, answer
+    )
+    assert described["runs"] == []
+    assert described["latest_run"] is None
+    assert described["step_health_runs"] == 0
