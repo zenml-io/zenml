@@ -27,7 +27,7 @@ import json
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass, field
 from functools import cached_property
-from typing import Any, Literal
+from typing import Any, Literal, Protocol
 
 from mcp.server.mcpserver.utilities.func_metadata import (
     ArgModelBase,
@@ -38,7 +38,23 @@ from mcp.types import CallToolResult, TextContent, ToolAnnotations
 from zenml_mcp.call import ZenMLCall
 from zenml_mcp.client import ZenMLRestError
 
-Handler = Callable[..., Awaitable[Any]]
+
+class Handler(Protocol):
+    """A tool's, resource's or prompt's function, listed by its name."""
+
+    __name__: str
+    __qualname__: str
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Awaitable[Any]:
+        """Run it.
+
+        Args:
+            *args: Its positional arguments.
+            **kwargs: Its keyword arguments.
+
+        Returns:
+            Its answer, once awaited.
+        """
 
 
 @dataclass(frozen=True)

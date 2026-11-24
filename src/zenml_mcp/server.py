@@ -142,7 +142,8 @@ def _listed(
         `run`, renamed.
     """
     functools.update_wrapper(run, handler, assigned=("__doc__",), updated=())
-    run.__signature__ = signature  # type: ignore[attr-defined]
+    # Function objects take any attribute; type checkers know only theirs.
+    setattr(run, "__signature__", signature)
     # The MCP SDK reads the types from the annotations, not the signature.
     run.__annotations__ = {
         parameter.name: parameter.annotation
