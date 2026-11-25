@@ -14,7 +14,7 @@
 
 
 from contextlib import ExitStack as does_not_raise
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Optional, Union
 from uuid import UUID, uuid4
 
@@ -33,12 +33,7 @@ from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import
     KubernetesOrchestratorSettings,
 )
 from zenml.integrations.kubernetes.orchestrators import KubernetesOrchestrator
-from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import (
-    MISSING_ORCHESTRATOR_JOB_GRACE_PERIOD,
-)
-from zenml.models import PipelineRunUpdate
 from zenml.stack import Stack
-from zenml.utils.time_utils import utc_now
 
 K8S_CONTEXT = "kubernetes_context"
 
@@ -246,12 +241,10 @@ def _fetch_run_status(
     mocker,
     jobs: Union[List[k8s_client.V1Job], Exception],
     status: ExecutionStatus = ExecutionStatus.RUNNING,
-    age: timedelta = MISSING_ORCHESTRATOR_JOB_GRACE_PERIOD
-    + timedelta(minutes=1),
     schedule: Optional[str] = None,
     root_run_id: Optional[UUID] = None,
     triggered_by_deployment: bool = False,
-):
+) -> Optional[ExecutionStatus]:
     """Fetch the status of a run whose job list returns the jobs or raises."""
     _patch_k8s_clients(mocker)
     list_jobs = mocker.patch(
@@ -263,7 +256,6 @@ def _fetch_run_status(
         list_jobs.return_value = k8s_client.V1JobList(items=jobs)
     run = mocker.Mock(
         status=status,
-        created=utc_now() - age,
         schedule=schedule,
         root_run_id=root_run_id,
         triggered_by_deployment=triggered_by_deployment,
@@ -281,23 +273,18 @@ def _fetch_run_status(
 )
 def test_fetch_status_fails_run_without_orchestrator_job(mocker, jobs, status):
     """A run without an orchestrator job can't finish anymore, so it fails."""
-    pipeline_status = _fetch_run_status(mocker, jobs=jobs, status=status)
-
-    assert isinstance(pipeline_status, PipelineRunUpdate)
-    assert pipeline_status.status == ExecutionStatus.FAILED
-    assert "no longer exists" in pipeline_status.status_reason
+    assert (
+        _fetch_run_status(mocker, jobs=jobs, status=status)
+        == ExecutionStatus.FAILED
+    )
 
 
 def test_fetch_status_stops_stopping_run_without_orchestrator_job(mocker):
-    """A stopping run without an orchestrator job stops.
-
-    No status reason is set, so the run keeps the reason of the stop request.
-    """
-    pipeline_status = _fetch_run_status(
-        mocker, jobs=[], status=ExecutionStatus.STOPPING
+    """A stopping run without an orchestrator job stops."""
+    assert (
+        _fetch_run_status(mocker, jobs=[], status=ExecutionStatus.STOPPING)
+        == ExecutionStatus.STOPPED
     )
-
-    assert pipeline_status == PipelineRunUpdate(status=ExecutionStatus.STOPPED)
 
 
 @pytest.mark.parametrize(
@@ -312,13 +299,6 @@ def test_fetch_status_stops_stopping_run_without_orchestrator_job(mocker):
         pytest.param({"schedule": "schedule"}, id="scheduled"),
         pytest.param({"root_run_id": uuid4()}, id="child_run"),
         pytest.param({"triggered_by_deployment": True}, id="deployment_run"),
-        pytest.param(
-            {
-                "age": MISSING_ORCHESTRATOR_JOB_GRACE_PERIOD
-                - timedelta(minutes=1)
-            },
-            id="within_grace_period",
-        ),
     ],
 )
 def test_fetch_status_keeps_status_of_run_without_orchestrator_job(

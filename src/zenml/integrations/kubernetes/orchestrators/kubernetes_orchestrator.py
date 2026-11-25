@@ -34,7 +34,6 @@ import json
 import os
 import socket
 from contextlib import contextmanager
-from datetime import timedelta
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -44,7 +43,6 @@ from typing import (
     Optional,
     Tuple,
     Type,
-    Union,
     cast,
 )
 from uuid import UUID
@@ -94,7 +92,7 @@ from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator_entrypo
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
-from zenml.models import PipelineRunUpdate, RunMetadataResource
+from zenml.models import RunMetadataResource
 from zenml.models.v2.core.schedule import ScheduleUpdate
 from zenml.orchestrators import (
     ContainerizedOrchestrator,
@@ -107,7 +105,6 @@ from zenml.step_operators.step_operator_entrypoint_configuration import (
     StepOperatorEntrypointConfiguration,
 )
 from zenml.utils.string_utils import random_hex_str
-from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
@@ -122,10 +119,6 @@ if TYPE_CHECKING:
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
-
-# Covers the time between submitting a run and its orchestrator Job showing up
-# in the Job list.
-MISSING_ORCHESTRATOR_JOB_GRACE_PERIOD = timedelta(minutes=10)
 
 
 class KubernetesOrchestrator(ContainerizedOrchestrator):
@@ -1346,8 +1339,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
     def fetch_status(
         self, run: "PipelineRunResponse", include_steps: bool = False
     ) -> Tuple[
-        Union[ExecutionStatus, PipelineRunUpdate, None],
-        Optional[Dict[str, ExecutionStatus]],
+        Optional[ExecutionStatus], Optional[Dict[str, ExecutionStatus]]
     ]:
         """Refreshes the status of a specific pipeline run.
 
@@ -1357,12 +1349,10 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
         Returns:
             A tuple of (pipeline_status, step_statuses).
-            If the orchestrator Job of the run no longer exists, pipeline_status
-            can be a run update that also sets the status reason.
             If include_steps is False, step_statuses will be None.
             If include_steps is True, step_statuses will be a dict (possibly empty).
         """
-        pipeline_status: Union[ExecutionStatus, PipelineRunUpdate, None] = None
+        pipeline_status = None
         include_run_status = not run.status.is_finished
         orchestrator_job_exists = False
 
@@ -1420,17 +1410,17 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 step_statuses[step_name] = execution_status
 
         if include_run_status and not orchestrator_job_exists:
-            pipeline_status = self._get_update_for_missing_orchestrator_job(
+            pipeline_status = self._get_status_for_missing_orchestrator_job(
                 run
             )
 
         return pipeline_status, step_statuses
 
     @staticmethod
-    def _get_update_for_missing_orchestrator_job(
+    def _get_status_for_missing_orchestrator_job(
         run: "PipelineRunResponse",
-    ) -> Optional[PipelineRunUpdate]:
-        """Gets the update for an unfinished run without an orchestrator Job.
+    ) -> Optional[ExecutionStatus]:
+        """Gets the status of an unfinished run without an orchestrator Job.
 
         The orchestrator Job can be gone because it was deleted, cleaned up
         after `ttl_seconds_after_finished`, or deleted by a synchronous client
@@ -1441,8 +1431,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             run: The run without an orchestrator Job.
 
         Returns:
-            The run update, or None if the run should keep its status.
+            The status of the run, or None if the run should keep its status.
         """
+        # A run only reaches these statuses once its orchestrator Job exists.
         # Initializing runs can still wait in a server queue before their Job
         # is created, and resuming runs are getting a new Job.
         if run.status not in {
@@ -1452,26 +1443,24 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         }:
             return None
 
-        run_age = utc_now(tz_aware=run.created) - run.created
-        if run_age < MISSING_ORCHESTRATOR_JOB_GRACE_PERIOD:
-            return None
-
         # These runs have no Job labeled with their ID: CronJobs create the Jobs
         # of scheduled runs without it, child runs of dynamic pipelines run in
         # the Job of their root run, and deployments run in their own process.
         if run.schedule or run.root_run_id or run.triggered_by_deployment:
             return None
 
-        if run.status == ExecutionStatus.STOPPING:
-            # The stop request stays the reason for the stopped status.
-            return PipelineRunUpdate(status=ExecutionStatus.STOPPED)
-
-        return PipelineRunUpdate(
-            status=ExecutionStatus.FAILED,
-            status_reason=(
-                "The Kubernetes orchestrator Job of this run no longer exists."
-            ),
+        status = (
+            ExecutionStatus.STOPPED
+            if run.status == ExecutionStatus.STOPPING
+            else ExecutionStatus.FAILED
         )
+        logger.warning(
+            "No orchestrator job found for pipeline run `%s`. The run can't "
+            "continue without it, so its status is set to `%s`.",
+            run.id,
+            status.value,
+        )
+        return status
 
     def _map_job_status_to_execution_status(
         self, job: k8s_client.V1Job

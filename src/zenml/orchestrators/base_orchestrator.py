@@ -25,7 +25,6 @@ from typing import (
     Optional,
     Tuple,
     Type,
-    Union,
     cast,
 )
 from uuid import UUID
@@ -63,7 +62,6 @@ if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
     from zenml.models import (
         PipelineRunResponse,
-        PipelineRunUpdate,
         PipelineSnapshotResponse,
         ResourceRequestResponse,
         ScheduleResponse,
@@ -891,8 +889,7 @@ class BaseOrchestrator(StackComponent, ABC):
     def fetch_status(
         self, run: "PipelineRunResponse", include_steps: bool = False
     ) -> Tuple[
-        Union[ExecutionStatus, "PipelineRunUpdate", None],
-        Optional[Dict[str, ExecutionStatus]],
+        Optional[ExecutionStatus], Optional[Dict[str, ExecutionStatus]]
     ]:
         """Refreshes the status of a specific pipeline run.
 
@@ -902,9 +899,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
         Returns:
             A tuple of the pipeline run status and an optional dictionary of
-            step statuses. Instead of the pipeline run status, an orchestrator
-            can return a run update to also set the reason for the status.
-            Only the status and status reason of that update are applied.
+            step statuses.
 
         Raises:
             NotImplementedError: If any orchestrator inheriting from the base

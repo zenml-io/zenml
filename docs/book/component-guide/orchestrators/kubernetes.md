@@ -150,8 +150,8 @@ zenml pipeline runs refresh <RUN_NAME_OR_ID>
 ZenML then looks up the orchestrator job of the run in Kubernetes. If the job
 has failed or completed, the run gets the same status. If the job no longer
 exists, for example because you deleted it or `ttl_seconds_after_finished`
-cleaned it up, a run submitted more than 10 minutes ago is marked as `failed`,
-or as `stopped` if it was being stopped. Runs that are initializing, paused, or
+cleaned it up, the run is marked as `failed`, or as `stopped` if it was being
+stopped. Runs that are initializing, paused, or
 resuming keep their status, and so do scheduled runs, runs of pipeline
 deployments, and child runs of dynamic pipelines. If ZenML can't reach the
 cluster, the run status doesn't change.
