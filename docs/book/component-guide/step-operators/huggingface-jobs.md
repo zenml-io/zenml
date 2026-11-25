@@ -47,7 +47,7 @@ zenml integration install huggingface
 
 ```shell
 zenml container-registry register dockerhub \
-    --flavor=default --uri=docker.io/<YOUR_DOCKERHUB_USERNAME>
+    --flavor=default --uri=index.docker.io/<YOUR_DOCKERHUB_USERNAME>
 ```
 
 Ensure the repository is set to **public** in Docker Hub settings — new repositories may default to private depending on your Docker Hub plan.
