@@ -365,7 +365,7 @@ def attach_trigger_to_snapshot(
     )
 
     # Validates and creates a runnable snapshot from the source snapshot + run configuration
-    _, stack, _ = validate_snapshot_for_server_execution(
+    _build, stack, _zenml_version = validate_snapshot_for_server_execution(
         snapshot=snapshot,
         run_configuration=run_configuration,
     )

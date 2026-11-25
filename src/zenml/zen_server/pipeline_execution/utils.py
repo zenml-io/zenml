@@ -52,9 +52,11 @@ from zenml.enums import (
 )
 from zenml.exceptions import IllegalOperationError, MaxConcurrentTasksError
 from zenml.logger import get_logger
+from zenml.model.model import Model
 from zenml.models import (
     CodeReferenceRequest,
     FlavorFilter,
+    ModelVersionFilter,
     PipelineBuildResponse,
     PipelineRunResponse,
     PipelineRunTriggerInfo,
@@ -1075,6 +1077,60 @@ def validate_snapshot_for_server_execution(
     return build, stack, build.zenml_version
 
 
+def _merge_model_configurations(
+    base: Optional[Model], override: Optional[Model]
+) -> Optional[Model]:
+    """Merge the model of a run configuration into the model of a snapshot.
+
+    A run configuration is merged recursively into the snapshot configuration
+    (see `snapshot_request_from_source_snapshot`), so fields that are not set
+    in the override keep the value they have in the snapshot.
+
+    Args:
+        base: The model configured in the snapshot.
+        override: The model configured in the run configuration.
+
+    Returns:
+        The model configuration that the run will use.
+    """
+    if override is None:
+        return base
+    if base is None:
+        return override
+    return pydantic_utils.update_model(base, override, exclude_none=True)
+
+
+def _model_version_exists(
+    project_id: UUID, model_name: str, version_name: str
+) -> bool:
+    """Check whether a model version with the given name exists.
+
+    The name is used as configured. Placeholders like `{date}` are only
+    resolved when the run starts, so a name that contains them does not match
+    an existing version.
+
+    Args:
+        project_id: The ID of the project that contains the model.
+        model_name: The name of the model.
+        version_name: The name of the model version.
+
+    Returns:
+        Whether the model version exists.
+    """
+    model_versions = zen_store().list_model_versions(
+        ModelVersionFilter(
+            project=project_id, model=model_name, name=version_name
+        )
+    )
+    # The filter values accept operators like `contains:`, so make sure that
+    # the names match exactly.
+    return any(
+        model_version.name == version_name
+        and model_version.model.name == model_name
+        for model_version in model_versions.items
+    )
+
+
 def verify_model_version_permissions_for_snapshot_run(
     snapshot: PipelineSnapshotResponse,
     run_configuration: Optional[PipelineRunConfiguration] = None,
@@ -1082,29 +1138,33 @@ def verify_model_version_permissions_for_snapshot_run(
     """Verify the permission to create model versions for a snapshot run.
 
     A run creates a new model version if a model is configured without a
-    version, or with a version name that is neither a number nor a stage.
-    Checking this when a trigger is attached surfaces a missing
-    `ModelVersion::CREATE` permission immediately instead of when the trigger
-    fires.
+    version, or with a version name that is neither a number, a stage nor the
+    name of an existing version. Checking this when a trigger is attached
+    surfaces a missing `ModelVersion::CREATE` permission immediately instead
+    of when the trigger fires.
 
     Args:
         snapshot: The snapshot that will be run.
         run_configuration: Optional run configuration overriding the snapshot
             configuration.
     """
-    pipeline_model = (
-        run_configuration.model if run_configuration else None
-    ) or snapshot.pipeline_configuration.model
     step_updates = (
         run_configuration.steps if run_configuration else None
     ) or {}
 
-    models = [pipeline_model]
+    models = [
+        _merge_model_configurations(
+            snapshot.pipeline_configuration.model,
+            run_configuration.model if run_configuration else None,
+        )
+    ]
     for invocation_id, step in snapshot.step_configurations.items():
         step_update = step_updates.get(invocation_id)
         models.append(
-            (step_update.model if step_update else None)
-            or step.step_config_overrides.model
+            _merge_model_configurations(
+                step.step_config_overrides.model,
+                step_update.model if step_update else None,
+            )
         )
 
     for model in models:
@@ -1112,7 +1172,13 @@ def verify_model_version_permissions_for_snapshot_run(
             continue
         version = str(model.version) if model.version is not None else None
         if version and (
-            version.isnumeric() or version in ModelStages.values()
+            version.isnumeric()
+            or version in ModelStages.values()
+            or _model_version_exists(
+                project_id=snapshot.project_id,
+                model_name=model.name,
+                version_name=version,
+            )
         ):
             continue
         verify_permission(
