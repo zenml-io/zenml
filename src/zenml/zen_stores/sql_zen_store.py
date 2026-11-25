@@ -16456,7 +16456,6 @@ class SqlZenStore(BaseZenStore):
             )
         return tag_schema
 
-    @track_decorator(AnalyticsEvent.CREATED_TAG)
     def create_tag(self, tag: TagRequest) -> TagResponse:
         """Creates a new tag.
 
