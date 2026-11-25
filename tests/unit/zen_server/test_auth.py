@@ -19,15 +19,19 @@ from uuid import uuid4
 
 import pytest
 
+from zenml.client import Client
+from zenml.config.server_config import ServerConfiguration
 from zenml.constants import (
+    ENV_ZENML_SERVER,
+    ENV_ZENML_SERVER_AUTH_SCHEME,
     LINUX_GID_CLAIM_KEY,
     LINUX_UID_CLAIM_KEY,
     ZENML_API_KEY_PREFIX,
     ZENML_PRO_API_KEY_PREFIX,
 )
 from zenml.enums import AuthScheme
-from zenml.exceptions import CredentialsNotValid
-from zenml.models import APIKeyInternalResponse, UserResponse
+from zenml.exceptions import CredentialsNotValid, IllegalOperationError
+from zenml.models import APIKeyInternalResponse, UserResponse, UserUpdate
 from zenml.models.v2.core.api_key import APIKeyResponseMetadata
 from zenml.models.v2.core.user import UserResponseMetadata
 from zenml.zen_server import auth
@@ -294,6 +298,62 @@ def test_external_authentication_synchronizes_oidc_claims(
     assert updates[0].oidc_claims == expected_claims
     assert "oidc_claims" in updates[0].model_fields_set
     assert updates[0].user_metadata is None
+
+
+def test_external_authentication_demotes_the_only_workspace_admin(
+    clean_client: Client, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An external role change takes effect even for the last local admin."""
+    store = clean_client.zen_store
+    admin = clean_client.active_user
+    monkeypatch.setenv(ENV_ZENML_SERVER, "true")
+    monkeypatch.setenv(ENV_ZENML_SERVER_AUTH_SCHEME, AuthScheme.EXTERNAL.value)
+    monkeypatch.setenv(
+        "ZENML_SERVER_EXTERNAL_LOGIN_URL", "https://example.com"
+    )
+    monkeypatch.setenv(
+        "ZENML_SERVER_EXTERNAL_USER_INFO_URL", "https://example.com/authorize"
+    )
+    config = ServerConfiguration.get_server_config()
+    monkeypatch.setattr(auth, "server_config", lambda: config)
+    monkeypatch.setattr(auth, "zen_store", lambda: store)
+
+    payload = {
+        "id": str(uuid4()),
+        "username": admin.name,
+        "email": "admin@example.com",
+        "is_superuser": True,
+    }
+    response = SimpleNamespace(status_code=200, json=lambda: payload)
+    monkeypatch.setattr(auth.requests, "get", lambda *args, **kwargs: response)
+
+    initial_user = auth.authenticate_external_user("external-token").user
+    assert initial_user.id == admin.id
+    assert initial_user.is_admin
+
+    payload["is_superuser"] = False
+    updated_user = auth.authenticate_external_user("external-token").user
+
+    assert updated_user.id == admin.id
+    assert updated_user.is_admin is False
+    assert store.get_user(admin.id).is_admin is False
+
+
+def test_standalone_server_protects_the_only_workspace_admin(
+    clean_client: Client, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Locally managed accounts still require at least one admin."""
+    store = clean_client.zen_store
+    admin = clean_client.active_user
+    monkeypatch.setenv(ENV_ZENML_SERVER, "true")
+    monkeypatch.setenv(
+        ENV_ZENML_SERVER_AUTH_SCHEME, AuthScheme.OAUTH2_PASSWORD_BEARER.value
+    )
+
+    with pytest.raises(IllegalOperationError, match="only admin account"):
+        store.update_user(admin.id, UserUpdate(is_admin=False))
+
+    assert store.get_user(admin.id).is_admin
 
 
 def test_authenticate_credentials_allows_local_service_account_token_for_external_auth(
