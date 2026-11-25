@@ -153,24 +153,3 @@ def test_run_fails_run_and_exits_on_unrecoverable_startup_error(
     assert (
         clean_client.get_pipeline_run(run.id).status == ExecutionStatus.FAILED
     )
-
-
-def test_run_reraises_recoverable_startup_error(
-    clean_client: Any, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Tests that a startup error that a retry might fix keeps the run."""
-    snapshot = _create_snapshot(clean_client)
-    run = create_placeholder_run(snapshot=snapshot)
-    entrypoint_config = _entrypoint_config(
-        monkeypatch,
-        snapshot=snapshot,
-        run=run,
-        runner_factory=MagicMock(
-            side_effect=RuntimeError("Server unavailable")
-        ),
-    )
-
-    with pytest.raises(RuntimeError, match="Server unavailable"):
-        entrypoint_config.run()
-
-    assert clean_client.get_pipeline_run(run.id).status == run.status

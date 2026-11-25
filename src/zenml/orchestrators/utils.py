@@ -365,24 +365,36 @@ def exit_on_unrecoverable_error(
 def _fail_unfinished_run(run_id: UUID, exception: BaseException) -> None:
     """Marks a pipeline run as failed unless it is stopping or finished.
 
+    If the run can't be fetched, it is failed anyway: the response that this
+    ZenML version can't parse might be the run itself, and the server refuses
+    to change the status of finished runs. Only a static run that is being
+    stopped at the same time would then end as failed instead of stopped.
+
     Args:
         run_id: The ID of the pipeline run.
         exception: The exception that the run failed with.
     """
+    status: Optional[ExecutionStatus] = None
     try:
-        run = Client().zen_store.get_run(run_id, hydrate=False)
-        if run.status in {
-            ExecutionStatus.INITIALIZING,
-            ExecutionStatus.PROVISIONING,
-            ExecutionStatus.RUNNING,
-            ExecutionStatus.RESUMING,
-        }:
-            publish_failed_pipeline_run(
-                run_id,
-                exception_info=exception_utils.collect_exception_information(
-                    exception
-                ),
-            )
+        status = Client().zen_store.get_run(run_id, hydrate=False).status
+    except Exception as e:
+        logger.warning("Failed to fetch pipeline run `%s`: %s", run_id, e)
+
+    if status is not None and status not in {
+        ExecutionStatus.INITIALIZING,
+        ExecutionStatus.PROVISIONING,
+        ExecutionStatus.RUNNING,
+        ExecutionStatus.RESUMING,
+    }:
+        return
+
+    try:
+        publish_failed_pipeline_run(
+            run_id,
+            exception_info=exception_utils.collect_exception_information(
+                exception
+            ),
+        )
     except Exception as e:
         logger.warning(
             "Failed to mark pipeline run `%s` as failed: %s", run_id, e

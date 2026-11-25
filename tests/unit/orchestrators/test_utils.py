@@ -356,13 +356,40 @@ def test_exit_on_unrecoverable_error_keeps_stopping_and_finished_runs(
     run_store.publish_failed.assert_not_called()
 
 
-def test_exit_on_unrecoverable_error_without_reachable_run(run_store):
-    """Tests that an unknown or unreachable run doesn't prevent the exit."""
+def test_exit_on_unrecoverable_error_without_run_id(run_store):
+    """Tests that a run that doesn't exist yet doesn't prevent the exit."""
     with pytest.raises(SystemExit):
         exit_on_unrecoverable_error(ImportError(), run_id=None)
-    run_store.get_run.assert_not_called()
 
-    run_store.get_run.side_effect = ConnectionError("Server unavailable")
-    with pytest.raises(SystemExit):
-        exit_on_unrecoverable_error(ImportError(), run_id=uuid4())
+    run_store.get_run.assert_not_called()
     run_store.publish_failed.assert_not_called()
+
+
+def test_exit_on_unrecoverable_error_fails_run_it_cannot_fetch(run_store):
+    """Tests that a run response this version can't parse still fails the run."""
+    run_id = uuid4()
+    run_store.get_run.side_effect = ValidationError.from_exception_data(
+        "PipelineRunResponse", []
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        exit_on_unrecoverable_error(ImportError(), run_id=run_id)
+
+    assert exc_info.value.code == UNRECOVERABLE_ORCHESTRATION_EXIT_CODE
+    run_store.publish_failed.assert_called_once()
+    assert run_store.publish_failed.call_args.args == (run_id,)
+
+
+def test_exit_on_unrecoverable_error_exits_if_failing_the_run_fails(
+    run_store,
+):
+    """Tests that an unreachable server doesn't prevent the exit."""
+    run_store.get_run.side_effect = ConnectionError("Server unavailable")
+    run_store.publish_failed.side_effect = ConnectionError(
+        "Server unavailable"
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        exit_on_unrecoverable_error(ImportError(), run_id=uuid4())
+
+    assert exc_info.value.code == UNRECOVERABLE_ORCHESTRATION_EXIT_CODE

@@ -62,6 +62,16 @@ class DynamicPipelineEntrypointConfiguration(BaseEntrypointConfiguration):
             args.extend([f"--{RUN_ID_OPTION}", str(run_id)])
         return args
 
+    @property
+    def run_id(self) -> Optional[UUID]:
+        """The ID of the pipeline run to execute.
+
+        Returns:
+            The run ID, or `None` if the runner should create the run.
+        """
+        run_id = self.entrypoint_args.get(RUN_ID_OPTION, None)
+        return UUID(run_id) if run_id else None
+
     def run(self) -> None:
         """Prepares the environment and runs the configured dynamic pipeline.
 
@@ -69,9 +79,6 @@ class DynamicPipelineEntrypointConfiguration(BaseEntrypointConfiguration):
             BaseException: If the pipeline run did not reach a terminal
                 status and retrying might help.
         """
-        run_id_option = self.entrypoint_args.get(RUN_ID_OPTION, None)
-        run_id = UUID(run_id_option) if run_id_option else None
-
         runner: Optional[DynamicPipelineRunner] = None
         try:
             snapshot = self.snapshot
@@ -82,7 +89,10 @@ class DynamicPipelineEntrypointConfiguration(BaseEntrypointConfiguration):
 
             self.prepare_code_environment()
 
-            run = Client().get_pipeline_run(run_id) if run_id else None
+            run = None
+            if run_id := self.run_id:
+                run = Client().get_pipeline_run(run_id)
+
             runner = DynamicPipelineRunner(snapshot=snapshot, run=run)
             runner.run_pipeline()
         except BaseException as e:
@@ -95,6 +105,6 @@ class DynamicPipelineEntrypointConfiguration(BaseEntrypointConfiguration):
                 sys.exit(UNRECOVERABLE_ORCHESTRATION_EXIT_CODE)
 
             exit_on_unrecoverable_error(
-                e, run_id=runner.run.id if runner else run_id
+                e, run_id=runner.run.id if runner else self.run_id
             )
             raise
