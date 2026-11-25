@@ -13479,7 +13479,7 @@ class SqlZenStore(BaseZenStore):
         session: Session,
         requested_status: Optional[ExecutionStatus] = None,
         status_reason: Optional[str] = None,
-    ) -> Tuple[bool, PipelineRunSchema, ExecutionStatus]:
+    ) -> Tuple[bool, PipelineRunSchema, ExecutionStatus, Optional[datetime]]:
         """Update a pipeline run status without committing the transaction.
 
         Args:
@@ -13490,7 +13490,8 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             A tuple containing whether the schema was updated, the updated
-            pipeline run schema and the previous status.
+            pipeline run schema, the previous status and the previous end
+            time.
         """
         pipeline_run = session.exec(
             select(PipelineRunSchema).where(
@@ -13498,11 +13499,12 @@ class SqlZenStore(BaseZenStore):
             )
         ).one()
         previous_status = ExecutionStatus(pipeline_run.status)
+        previous_end_time = pipeline_run.end_time
         did_update = pipeline_run.update_status(
             requested_status=requested_status, status_reason=status_reason
         )
         session.add(pipeline_run)
-        return did_update, pipeline_run, previous_status
+        return did_update, pipeline_run, previous_status, previous_end_time
 
     def _update_pipeline_run_status(
         self,
@@ -13522,7 +13524,7 @@ class SqlZenStore(BaseZenStore):
         # Make sure we start with a fresh transaction before locking the
         # pipeline run
         session.commit()
-        did_update, pipeline_run, previous_status = (
+        did_update, pipeline_run, previous_status, previous_end_time = (
             self._update_pipeline_run_status_no_commit(
                 pipeline_run_id=pipeline_run_id,
                 session=session,
@@ -13551,7 +13553,15 @@ class SqlZenStore(BaseZenStore):
                     )
                 )
 
-        if new_status.is_finished and pipeline_run.end_time:
+        # Finished runs keep receiving status updates, so only the update that
+        # ended the run counts. That is the one that finished it, or the one
+        # that set its end time for a run that failed while steps still ran.
+        # The status check covers runs created with an end time already set.
+        if (
+            new_status.is_finished
+            and pipeline_run.end_time
+            and (not previous_status.is_finished or previous_end_time is None)
+        ):
             if pipeline_run.start_time:
                 duration_time = pipeline_run.end_time - pipeline_run.start_time
                 duration_seconds = duration_time.total_seconds()
