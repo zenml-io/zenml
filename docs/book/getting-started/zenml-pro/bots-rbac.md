@@ -226,7 +226,7 @@ attachment requires `read` on the chat or automation it belongs to.
 
 Messages in Slack and on GitHub run as the ZenML Pro user who sent them. To
 use Bots from Slack or GitHub, link your Slack or GitHub account to your ZenML
-Pro account on the connections page of the ZenML Pro dashboard settings. Service
+Pro account on the connections page of the ZenML Pro UI settings. Service
 accounts cannot link an identity.
 
 The same permissions apply as in the UI:

@@ -173,8 +173,8 @@ zenml stack register local_with_remote_storage -o default -a cloud_artifact_stor
 ```
 {% endtab %}
 
-{% tab title="Dashboard" %}
-Register a new stack using the stack creation form in the ZenML dashboard.
+{% tab title="UI" %}
+Register a new stack using the stack creation form in the ZenML UI.
 {% endtab %}
 {% endtabs %}
 
@@ -204,14 +204,14 @@ zenml artifact version list --created="gte:$(date -v-15M '+%Y-%m-%d %H:%M:%S')"
 ```
 {% endtab %}
 
-{% tab title="Cloud Dashboard" %}
-[ZenML Pro](https://zenml.io/pro) features an [Artifact Control Plane](../starter-guide/manage-artifacts.md) to visualize artifact versions:
+{% tab title="Cloud UI" %}
+[ZenML Pro](https://zenml.io/pro) features an [**Artifacts** page](../starter-guide/manage-artifacts.md) to visualize artifact versions:
 
 <figure><img src="../../.gitbook/assets/dcp_artifacts_versions_list.png" alt=""><figcaption><p>See artifact versions in the cloud.</p></figcaption></figure>
 {% endtab %}
 {% endtabs %}
 
-You will notice above that some artifacts are stored locally, while others are stored in a remote storage location.
+The `uri` of each artifact version shows where it is stored: some artifacts are stored locally, while others are in remote storage.
 
 By connecting remote storage, you're taking a significant step towards building a collaborative and scalable MLOps workflow. Your artifacts are no longer tied to a single machine but are now part of a cloud-based ecosystem, ready to be shared and built upon.
 

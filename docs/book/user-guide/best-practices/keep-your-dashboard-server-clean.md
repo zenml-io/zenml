@@ -3,13 +3,13 @@ description: Learn how to keep your pipeline runs clean during development.
 icon: washing-machine
 ---
 
-# Keep Your Dashboard Clean
+# Keep Your UI Clean
 
 When developing pipelines, it's common to run and debug them multiple times. To avoid cluttering the server with these development runs, ZenML provides several options:
 
 ## Run locally
 
-One of the easiest ways to avoid cluttering a shared server / dashboard is to disconnect your client from the remote server and simply spin up a local server:
+One of the easiest ways to avoid cluttering a shared server / UI is to disconnect your client from the remote server and simply spin up a local server:
 
 ```bash
 zenml login --local
@@ -155,6 +155,6 @@ scratch on your local machine. This will:
 
 There is also a `--local` flag that you can set if you want to delete local files relating to the active stack. Note that `zenml clean` does not delete artifacts and pipelines on the server; it only deletes the local data and metadata.
 
-By utilizing these options, you can maintain a clean and organized pipeline dashboard, focusing on the runs that matter most for your project.
+By utilizing these options, you can maintain a clean and organized pipeline UI, focusing on the runs that matter most for your project.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

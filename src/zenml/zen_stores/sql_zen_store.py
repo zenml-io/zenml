@@ -13146,7 +13146,14 @@ class SqlZenStore(BaseZenStore):
                 ExecutionStatus.FAILED,
                 ExecutionStatus.CANCELLED,
             }:
-                can_retry = existing_step_run.is_retriable
+                # A step that is already `RETRYING` only fails again when the
+                # orchestrator decided not to retry it after all, so that
+                # failure is final.
+                can_retry = (
+                    existing_step_run.is_retriable
+                    and existing_step_run.status
+                    != ExecutionStatus.RETRYING.value
+                )
 
                 if can_retry:
                     run_status = ExecutionStatus(
@@ -13214,10 +13221,13 @@ class SqlZenStore(BaseZenStore):
                     session, existing_step_run.id
                 )
 
-            self._update_pipeline_run_status(
-                pipeline_run_id=existing_step_run.pipeline_run_id,
-                session=session,
-            )
+            if PipelineRunSchema.step_run_update_affects_status(
+                step_run_update
+            ):
+                self._update_pipeline_run_status(
+                    pipeline_run_id=existing_step_run.pipeline_run_id,
+                    session=session,
+                )
 
             # Add logs if specified
             if step_run_update.add_logs:

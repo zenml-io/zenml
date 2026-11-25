@@ -80,7 +80,7 @@ Some optional features may require you to whitelist ZenML to access specific res
 
 ## Getting Started
 
-Start by [booking a demo](https://www.zenml.io/book-your-demo) to get access to ZenML Pro SaaS. Once your account is set up, connect your cloud infrastructure by configuring an artifact store (S3, GCS, Azure Blob, etc.), setting up compute resources (AWS, GCP, Azure, or Kubernetes), and providing the necessary credentials via secrets. After that, you're ready to run your pipelines and monitor them through the dashboard.
+Start by [booking a demo](https://www.zenml.io/book-your-demo) to get access to ZenML Pro SaaS. Once your account is set up, connect your cloud infrastructure by configuring an artifact store (S3, GCS, Azure Blob, etc.), setting up compute resources (AWS, GCP, Azure, or Kubernetes), and providing the necessary credentials via secrets. After that, you're ready to run your pipelines and monitor them through the UI.
 
 ## Pricing & Support
 

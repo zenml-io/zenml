@@ -33,7 +33,7 @@ zenml project register <NAME>
 
 ### Updating a project
 
-You can change a project's unique name (shown as **Project ID** in the dashboard), display name, and description:
+You can change a project's unique name (shown as **Project ID** in the UI), display name, and description:
 
 ```bash
 zenml project update <CURRENT_NAME_OR_UUID> --name new-project-name --display-name "New Project Name"
@@ -99,11 +99,11 @@ To create a new project:
 {% step %}
 #### Navigate to Projects
 
-From your workspace dashboard, click on the **Projects** tab.
+From your workspace's UI, click on the **Projects** tab.
 {% endstep %}
 
 {% step %}
-#### Click "Add a New Project"
+#### Click "New project"
 
 In the project creation form, you'll need to provide:
 
