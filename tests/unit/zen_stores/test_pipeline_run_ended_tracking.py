@@ -40,6 +40,31 @@ def single_step_pipeline() -> None:
     noop_step()
 
 
+@step
+def producer_step() -> int:
+    """Step that produces a value.
+
+    Returns:
+        The value.
+    """
+    return 1
+
+
+@step
+def consumer_step(value: int) -> None:
+    """Step that consumes a value.
+
+    Args:
+        value: The value.
+    """
+
+
+@pipeline
+def two_step_pipeline() -> None:
+    """Pipeline with two dependent steps."""
+    consumer_step(producer_step())
+
+
 def _record_run_ended_events(
     monkeypatch: pytest.MonkeyPatch,
 ) -> List[Dict[str, Any]]:
@@ -138,3 +163,39 @@ def test_run_ended_is_sent_when_a_failed_run_gets_its_end_time(
 
     assert len(events) == 1
     assert events[0]["status"] == ExecutionStatus.FAILED
+
+
+@pytest.mark.parametrize(
+    "step_status", [ExecutionStatus.CACHED, ExecutionStatus.SKIPPED]
+)
+def test_run_ended_is_sent_once_for_runs_without_executed_steps(
+    clean_client: Client,
+    monkeypatch: pytest.MonkeyPatch,
+    step_status: ExecutionStatus,
+) -> None:
+    """A run whose steps are all cached or skipped sends the event once."""
+    cached = step_status == ExecutionStatus.CACHED
+    run_pipeline = two_step_pipeline.with_options(enable_cache=cached)
+    original_run = run_pipeline()
+    events = _record_run_ended_events(monkeypatch)
+
+    if cached:
+        run = run_pipeline()
+    else:
+        run = run_pipeline.replay(
+            pipeline_run=original_run.id, skip_successful_steps=True
+        )
+
+    run = clean_client.get_pipeline_run(run.id)
+    assert len(run.steps) == 2
+    assert {step.status for step in run.steps.values()} == {step_status}
+    assert run.status == ExecutionStatus.COMPLETED
+    assert len(events) == 1
+    assert events[0]["pipeline_run_id"] == run.id
+    assert events[0]["status"] == ExecutionStatus.COMPLETED
+
+    clean_client.zen_store.update_run(
+        run.id, PipelineRunUpdate(status=ExecutionStatus.COMPLETED)
+    )
+
+    assert len(events) == 1
