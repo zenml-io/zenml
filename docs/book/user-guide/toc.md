@@ -61,7 +61,7 @@
 ## Best practices
 
 * [5-minute Quick Wins](best-practices/quick-wins.md)
-* [Keep Your Dashboard Clean](best-practices/keep-your-dashboard-server-clean.md)
+* [Keep Your UI Clean](best-practices/keep-your-dashboard-server-clean.md)
 * [Configure Python environments](best-practices/configure-python-environments.md)
 * [Shared Components for  Teams](best-practices/shared-components-for-teams.md)
 * [Organizing Stacks Pipelines Models](tutorial/organizing-pipelines-and-models.md)
@@ -80,6 +80,7 @@
 * [Deploying ML Models](https://github.com/zenml-io/zenml/tree/main/examples/deploying_ml_model)
 * [Deploying Agents](https://github.com/zenml-io/zenml/tree/main/examples/deploying_agent)
 * [Agent examples](https://github.com/zenml-io/zenml/tree/main/examples/agent_framework_integrations/)
+* [Replay-based agent evals (Kitaru)](https://github.com/zenml-io/kitaru-template)
 * [End-to-End Batch Inference](https://github.com/zenml-io/zenml/tree/main/examples/e2e)
 * [ML classification](https://github.com/zenml-io/zenml-projects/tree/main/oncoclear)
 * [Computer Vision with YoloV8](https://github.com/zenml-io/zenml/tree/main/examples/computer_vision)

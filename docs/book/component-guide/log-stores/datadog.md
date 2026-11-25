@@ -4,7 +4,7 @@ description: Exporting logs to Datadog's log management platform.
 
 # Datadog Log Store
 
-The Datadog Log Store is a log store flavor that exports logs to [Datadog's log management platform](https://www.datadoghq.com/product/log-management/). It provides full integration with Datadog, including both log export and retrieval, enabling you to view pipeline logs directly in the ZenML dashboard.
+The Datadog Log Store is a log store flavor that exports logs to [Datadog's log management platform](https://www.datadoghq.com/product/log-management/). It provides full integration with Datadog, including both log export and retrieval, enabling you to view pipeline logs directly in the ZenML UI.
 
 ### When would you want to use it?
 
@@ -14,7 +14,7 @@ The Datadog Log Store is ideal when:
 - You need advanced log querying, filtering, and alerting capabilities
 - You want to correlate ML pipeline logs with other application metrics and traces
 - You need long-term log retention with Datadog's archiving features
-- You want to view logs both in the ZenML dashboard and Datadog's native interface
+- You want to view logs both in the ZenML UI and Datadog's native interface
 
 ### How it works
 
@@ -26,7 +26,7 @@ The Datadog Log Store extends the [OTEL Log Store](otel.md) with Datadog-specifi
 
 3. **Datadog export**: A custom `DatadogLogExporter` sends logs to Datadog's OTLP intake endpoint with proper attribute mapping for Datadog's log structure.
 
-4. **Log retrieval**: The log store uses Datadog's Logs Search API to fetch logs for display in the ZenML dashboard.
+4. **Log retrieval**: The log store uses Datadog's Logs Search API to fetch logs for display in the ZenML UI.
 
 #### ZenML-specific attributes
 
@@ -73,7 +73,7 @@ The Datadog Log Store comes built-in with ZenML. You need:
 2. **Application Key**: Navigate to **Organization Settings** → **Application Keys** in Datadog
 
 {% hint style="info" %}
-Both the API key and Application key are **required** to register a Datadog log store. The API key is used for log ingestion, while the Application key is used for log retrieval (displaying logs in the ZenML dashboard).
+Both the API key and Application key are **required** to register a Datadog log store. The API key is used for log ingestion, while the Application key is used for log retrieval (displaying logs in the ZenML UI).
 {% endhint %}
 
 ### How to use it
@@ -96,7 +96,7 @@ zenml log-store register datadog_logs \
 zenml stack register my_stack \
     -a my_artifact_store \
     -o default \
-    -ls datadog_logs \
+    --log_store datadog_logs \
     --set
 ```
 
@@ -149,9 +149,23 @@ Datadog has a maximum batch size limit of 1000 logs per request. The `max_export
 
 ### Viewing logs
 
-#### In ZenML Dashboard
+#### In ZenML UI
 
-Logs are automatically fetched from Datadog when viewing step details in the ZenML dashboard. The dashboard uses Datadog's Logs Search API to retrieve logs filtered by the step's log ID.
+Logs are automatically fetched from Datadog when viewing step details in the ZenML UI. The UI uses Datadog's Logs Search API to retrieve logs filtered by the step's log ID.
+
+#### Pagination and search
+
+Each fetch makes one Datadog search request for up to 1000 entries. By default, it starts with the newest entries and returns a `before` cursor for older entries. Set `start="oldest"` to begin with the oldest entries and receive an `after` cursor for newer entries. These cursors use Datadog's native next token. Entries within each page are ordered from oldest to newest. Follow the cursor until it is absent, even if a page contains fewer entries than requested.
+
+Continue by passing only the returned cursor. It retains the query, page size, and fixed time bounds. If omitted initially, `until` defaults to the current UTC time. Datadog may still index late-arriving events within the window.
+
+Cursors that fail ZenML validation or conflict with request parameters return `400`. To change the filters, direction, or page size, start a new request without a cursor.
+
+`search` matches text in Datadog's message field. Single terms use wildcard matching, while multiple words use phrase matching. Searches are limited to the configured service and log stream.
+
+Datadog's tokenization, case sensitivity, and punctuation rules apply, so matching can differ from a literal substring search. Exception details appended by ZenML to the displayed message are outside this search. See [Datadog's search syntax](https://docs.datadoghq.com/logs/explorer/search_syntax/) for details.
+
+Entry UUIDs are derived from Datadog's event IDs and remain stable across reads and log store instances. Use them to deduplicate overlapping pages.
 
 #### In Datadog
 
@@ -176,18 +190,22 @@ service:zenml @zenml.pipeline.run.name:<YOUR_RUN_NAME> @zenml.step.run.name:my_t
 3. Ensure the service name filter matches your configuration
 4. Allow a few minutes for logs to be indexed
 
-#### Logs not appearing in ZenML Dashboard
+#### Logs not appearing in ZenML UI
 
 1. Verify your Application key is correct
-2. Ensure the Application key has the `logs_read` scope
+2. Ensure the Application key has the `logs_read_data` permission
 3. Check that the Datadog site configuration matches
 
 #### Rate limiting
 
-If you're hitting Datadog's rate limits:
+If you're hitting Datadog's rate limits while writing logs:
 - Increase `schedule_delay_millis` to reduce export frequency
 - Decrease `max_export_batch_size` for more frequent, smaller batches
 - Consider log sampling for high-volume pipelines
+
+The Logs Search API has a separate rate limit for reads. HTTP `429` responses include `Retry-After` when Datadog provides a retry delay. Retry the original request and cursor after that delay.
+
+Connection failures and outages return `503`; other backend errors return `502`. Timeout or warning metadata indicating incomplete results also produces an error. Direct SDK fetches raise the corresponding log store exception.
 
 For more information and a full list of configurable attributes, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-log_stores.html#zenml.log_stores.datadog.datadog_log_store).
 

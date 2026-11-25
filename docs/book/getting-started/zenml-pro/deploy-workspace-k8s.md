@@ -17,6 +17,8 @@ layout:
 
 This guide provides step-by-step instructions for deploying ZenML Pro workspaces on Kubernetes using Helm and enrolling them in the ZenML Pro control plane.
 
+ZenML Pro workspace deployments use standard Kubernetes APIs and work on managed cloud clusters (EKS, GKE, AKS), enterprise platforms like Red Hat OpenShift and SUSE Rancher, and self-managed clusters on-premises or in your own cloud.
+
 
 ## Prerequisites
 
@@ -24,6 +26,7 @@ Before starting, make sure you go through the [general prerequisites for hybrid 
 
 **Infrastructure:**
 - Kubernetes cluster (1.24+)
+- If applicable: Red Hat OpenShift (4.20+)
 
 **Network:**
 - Load balancer, network gateway or Ingress controllers etc. 

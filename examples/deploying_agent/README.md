@@ -105,10 +105,16 @@ The pipeline orchestrates three steps:
 
 ```python
 @pipeline(settings={"docker": docker_settings}, enable_cache=False)
-def doc_analyzer(content=None, url=None, path=None, filename=None, document_type="text"):
-    document = ingest_document_step(content, url, path, filename, document_type)
-    analysis = analyze_document_step(document)          # OpenAI or deterministic fallback
-    render_analysis_report_step(analysis)               # HTML report for the dashboard
+def doc_analyzer(
+    content=None, url=None, path=None, filename=None, document_type="text"
+):
+    document = ingest_document_step(
+        content, url, path, filename, document_type
+    )
+    analysis = analyze_document_step(
+        document
+    )  # OpenAI or deterministic fallback
+    render_analysis_report_step(analysis)  # HTML report for the dashboard
     return analysis
 ```
 
@@ -192,6 +198,8 @@ examples/minimal_agent_production/
 
 This is the same **steps → pipeline → artifacts** pattern you use for classic ML, now applied to an LLM workflow. You get deployable endpoints, reproducibility, and dashboard artifacts without building a bespoke web service.
 
+Once the endpoint is live, ZenML gives you a run and its artifacts for every request. If the workflow grows past a single LLM call into an agent loop with tools and multiple turns, [Kitaru](https://docs.zenml.io/kitaru) — ZenML's sibling project for agents — is the other half: it records each agent run as a session you can replay against your real code with one thing changed, and diff the pair. It has adapters for PydanticAI, LangGraph and the OpenAI Agents SDK, and importers if you already send traces to Langfuse, LangSmith, Braintrust, Logfire or Arize Phoenix.
+
 ---
 
 **Want to learn more?**
@@ -199,5 +207,6 @@ This is the same **steps → pipeline → artifacts** pattern you use for classi
 - 📖 [Full ZenML Documentation](https://docs.zenml.io/)
 - 🔗 [ZenML Pipelines](https://docs.zenml.io/concepts/steps_and_pipelines)
 - 🚀 [Pipeline Deployments](https://docs.zenml.io/concepts/deployment)
+- 🔁 [Kitaru](https://docs.zenml.io/kitaru) — record and replay agent runs
 - 💬 [Join our Community](https://zenml.io/slack)
 - 🏢 [ZenML Pro](https://zenml.io/pro)

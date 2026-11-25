@@ -110,20 +110,22 @@ class BuildConfiguration(BaseModel):
             with open(self.settings.dockerfile, "rb") as f:
                 hash_.update(f.read())
 
-        if self.settings.parent_image and stack.container_registry:
-            digest = get_container_engine().get_image_repo_digest(
-                self.settings.parent_image,
-                container_registry=stack.container_registry,
-            )
+        if (
+            self.settings.parent_image
+            and stack.container_registry
+            and not self.settings.skip_build
+        ):
+            try:
+                digest = get_container_engine().get_image_repo_digest(
+                    image_name=self.settings.parent_image,
+                    container_registry=stack.container_registry,
+                )
+            except RuntimeError:
+                # No container engine available, we can't fetch the digest.
+                digest = None
+
             if digest:
                 hash_.update(digest.encode())
-            elif self.settings.skip_build:
-                # If the user has specified to skip the build, the image being
-                # used for the run is whatever they set for `parent_image`.
-                # In this case, the bevavior depends on the orchestrators image
-                # pull policy, and whether there is any caching involved. This
-                # is out of our control here, so we don't log any warning.
-                pass
             else:
                 logger.warning(
                     "Unable to fetch parent image digest for image `%s`. "

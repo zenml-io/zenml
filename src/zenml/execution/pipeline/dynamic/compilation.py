@@ -1,0 +1,373 @@
+#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Compilation helpers for dynamic pipelines."""
+
+import json
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
+
+from zenml import ExternalArtifact
+from zenml.client import Client
+from zenml.config.compiler import Compiler
+from zenml.config.constants import DOCKER_SETTINGS_KEY
+from zenml.config.step_configurations import (
+    Step,
+    StepConfiguration,
+    StepConfigurationUpdate,
+)
+from zenml.constants import (
+    ENV_ZENML_PARAMETER_SIZE_THRESHOLD,
+    handle_int_env_var,
+)
+from zenml.enums import StepRuntime
+from zenml.execution.pipeline.dynamic.inputs import (
+    await_step_inputs,
+    convert_to_keyword_arguments,
+)
+from zenml.execution.pipeline.dynamic.outputs import OutputArtifact
+from zenml.logger import get_logger
+from zenml.models import (
+    ArtifactVersionResponse,
+    CodeReferenceRequest,
+    PipelineSnapshotRequest,
+    PipelineSnapshotResponse,
+)
+from zenml.pipelines.dynamic.pipeline_definition import DynamicPipeline
+from zenml.steps import BaseStep
+from zenml.steps.entrypoint_function_utils import StepArtifact
+from zenml.steps.step_invocation import StepInvocation
+from zenml.steps.utils import OutputSignature
+from zenml.utils.json_utils import pydantic_encoder
+
+if TYPE_CHECKING:
+    from zenml.config import DockerSettings
+    from zenml.orchestrators import BaseOrchestrator
+
+
+logger = get_logger(__name__)
+
+
+def is_valid_parameter(
+    step: "BaseStep", name: str, value: Any, size_threshold: int
+) -> bool:
+    """Check whether a raw step input can be passed as a parameter.
+
+    Args:
+        step: The step that the input belongs to.
+        name: The name of the input.
+        value: The input value.
+        size_threshold: The maximum serialized parameter size in bytes. Zero
+            disables step parameters, a negative value disables the size check.
+
+    Returns:
+        Whether the input can be passed as a parameter.
+    """
+    if size_threshold == 0:
+        return False
+
+    try:
+        step.entrypoint_definition.validate_input(key=name, value=value)
+    except Exception:
+        return False
+
+    if size_threshold < 0:
+        return True
+
+    size = len(json.dumps(value, default=pydantic_encoder).encode())
+    return size <= size_threshold
+
+
+def compile_dynamic_step_invocation(
+    snapshot: "PipelineSnapshotResponse",
+    pipeline: "DynamicPipeline",
+    step: "BaseStep",
+    invocation_id: str,
+    inputs: Dict[str, Any],
+    upstream_steps: Set[str],
+    pipeline_docker_settings: "DockerSettings",
+    config: Optional[StepConfigurationUpdate] = None,
+) -> "Step":
+    """Compile a dynamic step invocation.
+
+    Args:
+        snapshot: The snapshot.
+        pipeline: The dynamic pipeline.
+        step: The step to compile.
+        invocation_id: The invocation ID of the step.
+        inputs: The awaited inputs for the step function.
+        upstream_steps: The upstream step invocation IDs.
+        pipeline_docker_settings: The Docker settings of the parent pipeline.
+        config: The configuration for the step.
+
+    Returns:
+        The compiled step.
+    """
+    size_threshold = handle_int_env_var(
+        ENV_ZENML_PARAMETER_SIZE_THRESHOLD, default=0
+    )
+
+    input_artifacts: Dict[str, Union[StepArtifact, List[StepArtifact]]] = {}
+    external_artifacts = {}
+    parameters: Dict[str, Any] = {}
+    for name, value in inputs.items():
+        if isinstance(value, OutputArtifact):
+            input_artifacts[name] = StepArtifact(
+                invocation_id=value.step_name,
+                output_name=value.output_name,
+                annotation=OutputSignature(resolved_annotation=Any),
+                pipeline=pipeline,
+                chunk_index=value.chunk_index,
+                chunk_size=value.chunk_size,
+            )
+        elif (
+            isinstance(value, Sequence)
+            and value
+            and all(isinstance(item, OutputArtifact) for item in value)
+        ):
+            input_artifacts[name] = [
+                StepArtifact(
+                    invocation_id=item.step_name,
+                    output_name=item.output_name,
+                    annotation=OutputSignature(resolved_annotation=Any),
+                    pipeline=pipeline,
+                    chunk_index=item.chunk_index,
+                    chunk_size=item.chunk_size,
+                )
+                for item in value
+            ]
+        elif isinstance(value, (ArtifactVersionResponse, ExternalArtifact)):
+            external_artifacts[name] = value
+        elif is_valid_parameter(
+            step=step, name=name, value=value, size_threshold=size_threshold
+        ):
+            parameters[name] = value
+        else:
+            external_artifacts[name] = ExternalArtifact(value=value)
+
+    if template := get_config_template(snapshot, step, pipeline):
+        logger.debug(
+            "Using config template `%s` for step `%s`",
+            template.spec.invocation_id,
+            invocation_id,
+        )
+        step._configuration = template.config.model_copy(
+            update={"template": template.spec.invocation_id}
+        )
+
+    default_parameters = {
+        key: value
+        for key, value in convert_to_keyword_arguments(
+            step.entrypoint, (), inputs, apply_defaults=True
+        ).items()
+        if key not in inputs and key not in step.configuration.parameters
+    }
+
+    step_invocation = StepInvocation(
+        id=invocation_id,
+        step=step,
+        input_artifacts=input_artifacts,
+        external_artifacts=external_artifacts,
+        default_parameters=default_parameters,
+        upstream_steps=upstream_steps,
+        pipeline=pipeline,
+        model_artifacts_or_metadata={},
+        client_lazy_loaders={},
+        parameters=parameters,
+    )
+
+    compiled_step = Compiler()._compile_step_invocation(
+        invocation=step_invocation,
+        stack=Client().active_stack,
+        step_config=config,
+        pipeline=pipeline,
+    )
+
+    if not compiled_step.config.docker_settings.skip_build:
+        if template:
+            if (
+                template.config.docker_settings
+                != compiled_step.config.docker_settings
+            ):
+                logger.warning(
+                    "Custom Docker settings specified for step %s will be "
+                    "ignored. The image built for template %s will be used "
+                    "instead.",
+                    invocation_id,
+                    template.spec.invocation_id,
+                )
+        elif compiled_step.config.docker_settings != pipeline_docker_settings:
+            logger.warning(
+                "Custom Docker settings specified for step %s will be "
+                "ignored. The image built for the pipeline will be used "
+                "instead.",
+                invocation_id,
+            )
+
+    return compiled_step
+
+
+def compile_child_pipeline(
+    pipeline: "DynamicPipeline",
+    args: Tuple[Any, ...],
+    kwargs: Dict[str, Any],
+    parent_snapshot: "PipelineSnapshotResponse",
+) -> "PipelineSnapshotResponse":
+    """Compile and persist a snapshot for a dynamic child pipeline run.
+
+    The child snapshot inherits the parent build/code context so child
+    execution runs in the same orchestration environment.
+
+    Args:
+        pipeline: The child dynamic pipeline
+        args: Positional arguments for the child pipeline.
+        kwargs: Keyword arguments for the child pipeline.
+        parent_snapshot: Snapshot of the parent dynamic run.
+
+    Raises:
+        RuntimeError: If the parent snapshot has no stack.
+
+    Returns:
+        The persisted child snapshot.
+    """
+    if parent_snapshot.stack is None:
+        raise RuntimeError(
+            "Cannot compile a child pipeline snapshot: parent snapshot has no "
+            "associated stack."
+        )
+
+    inputs = convert_to_keyword_arguments(
+        pipeline.entrypoint, tuple(args), kwargs
+    )
+    inputs = await_step_inputs(inputs)
+    pipeline.prepare(**inputs)
+
+    snapshot_base, _, _ = pipeline._compile()
+
+    code_reference = None
+    if parent_snapshot.code_reference:
+        code_reference = CodeReferenceRequest(
+            commit=parent_snapshot.code_reference.commit,
+            subdirectory=parent_snapshot.code_reference.subdirectory,
+            code_repository=parent_snapshot.code_reference.code_repository.id,
+        )
+
+    # The child pipeline will use the parent's build, so we simply copy the Docker
+    # settings from the parent snapshot.
+    snapshot_base.pipeline_configuration.settings[DOCKER_SETTINGS_KEY] = (
+        parent_snapshot.pipeline_configuration.docker_settings.model_copy()
+    )
+    for _, step_configuration in snapshot_base.step_configurations.items():
+        step_configuration.config.settings.pop(DOCKER_SETTINGS_KEY, None)
+        step_configuration.step_config_overrides.settings.pop(
+            DOCKER_SETTINGS_KEY, None
+        )
+
+    request = PipelineSnapshotRequest(
+        project=parent_snapshot.project_id,
+        stack=parent_snapshot.stack.id,
+        pipeline=pipeline.register().id,
+        build=parent_snapshot.build.id if parent_snapshot.build else None,
+        code_reference=code_reference,
+        code_path=parent_snapshot.code_path,
+        source_code=pipeline.source_code,
+        **snapshot_base.model_dump(),
+    )
+    return Client().zen_store.create_snapshot(snapshot=request)
+
+
+def get_step_runtime(
+    step_config: "StepConfiguration",
+    pipeline_docker_settings: "DockerSettings",
+    orchestrator: Optional["BaseOrchestrator"] = None,
+) -> Tuple[StepRuntime, Optional[str]]:
+    """Determine if a step should be run in process.
+
+    Args:
+        step_config: The step configuration.
+        pipeline_docker_settings: The Docker settings of the parent pipeline.
+        orchestrator: The orchestrator to use. If not provided, the
+            orchestrator will be inferred from the active stack.
+
+    Returns:
+        The runtime for the step and an optional warning describing why the
+        configured runtime was overridden.
+    """
+    if step_config.step_operator:
+        return StepRuntime.ISOLATED, None
+
+    if not orchestrator:
+        orchestrator = Client().active_stack.orchestrator
+
+    if not orchestrator.can_run_isolated_steps:
+        warning = None
+        if step_config.runtime == StepRuntime.ISOLATED:
+            warning = (
+                f"The {orchestrator.__class__.__name__} does not support "
+                "running steps in isolated runtimes. Running the step "
+                f"`{step_config.name}` in inline runtime instead."
+            )
+        return StepRuntime.INLINE, warning
+
+    if step_config.resource_settings.has_basic_resource_demands:
+        warning = None
+        if step_config.runtime == StepRuntime.INLINE:
+            warning = (
+                f"Specifying compute resource settings for step "
+                f"`{step_config.name}` requires an isolated runtime, but the "
+                "step was configured to run inline. Running the step in "
+                "isolated runtime instead."
+            )
+        return StepRuntime.ISOLATED, warning
+
+    runtime = step_config.runtime
+    if runtime is None:
+        if step_config.docker_settings != pipeline_docker_settings:
+            runtime = StepRuntime.ISOLATED
+        else:
+            runtime = StepRuntime.INLINE
+
+    return runtime, None
+
+
+def get_config_template(
+    snapshot: "PipelineSnapshotResponse",
+    step: "BaseStep",
+    pipeline: "DynamicPipeline",
+) -> Optional["Step"]:
+    """Get the config template for a step executed in a dynamic pipeline.
+
+    Args:
+        snapshot: The snapshot of the pipeline.
+        step: The step to get the config template for.
+        pipeline: The dynamic pipeline that the step is being executed in.
+
+    Returns:
+        The config template for the step.
+    """
+    for index, step_ in enumerate(pipeline.depends_on):
+        if step_._static_id == step._static_id:
+            break
+    else:
+        return None
+
+    return list(snapshot.step_configurations.values())[index]

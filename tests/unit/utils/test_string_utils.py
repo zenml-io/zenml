@@ -12,10 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import random
+import string
 from typing import List
 
+import pytest
 from pydantic import BaseModel
 
+from zenml.constants import ENV_ZENML_USE_GLOBAL_RANDOM_SEED
 from zenml.utils import string_utils
 
 
@@ -46,6 +50,33 @@ def test_random_str_is_random() -> None:
         new_str = string_utils.random_str(16)
         assert new_str not in lst
         lst.append(new_str)
+
+
+@pytest.mark.parametrize("length", [0, 1, 16])
+def test_random_str_length_and_characters(length: int) -> None:
+    """Test that random strings have the requested length and alphabet.
+
+    Args:
+        length: Requested string length.
+    """
+    value = string_utils.random_str(length)
+
+    assert len(value) == length
+    assert set(value) <= set(string.ascii_letters)
+
+
+def test_random_str_preserves_global_random_state() -> None:
+    """Test that generating a name leaves seeded application randomness intact."""
+    original_state = random.getstate()
+    try:
+        random.seed(42)
+        seeded_state = random.getstate()
+
+        string_utils.random_str(16)
+
+        assert random.getstate() == seeded_state
+    finally:
+        random.setstate(original_state)
 
 
 def test_string_substitution() -> None:
@@ -116,3 +147,48 @@ def test_string_substitution() -> None:
         {3: "value_suffix", "key_suffix": model_sub},
         set(["set_value_suffix", 4]),
     ]
+
+
+def test_format_name_template_does_not_mutate_substitutions() -> None:
+    """Check that format_name_template leaves the caller's dict untouched."""
+    substitutions = {"env": "prod"}
+
+    string_utils.format_name_template(
+        "run_{env}_{date}_{time}", substitutions=substitutions
+    )
+
+    assert substitutions == {"env": "prod"}
+
+
+def test_random_str_uses_given_alphabet() -> None:
+    """Check that random strings only use characters from their alphabet."""
+    assert set(string_utils.random_str(64, alphabet="ab")) <= {"a", "b"}
+    assert set(string_utils.random_hex_str(64)) <= set("0123456789abcdef")
+
+
+def test_random_str_ignores_global_seed_by_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Check that a global seed doesn't make random strings repeat."""
+    monkeypatch.delenv(ENV_ZENML_USE_GLOBAL_RANDOM_SEED, raising=False)
+
+    random.seed(42)
+    first = string_utils.random_str(16)
+    random.seed(42)
+    assert string_utils.random_str(16) != first
+
+
+def test_random_str_follows_global_seed_when_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Check that random_str is reproducible when users opt in."""
+    monkeypatch.setenv(ENV_ZENML_USE_GLOBAL_RANDOM_SEED, "true")
+
+    random.seed(42)
+    first = string_utils.random_str(16)
+    second = string_utils.random_str(16)
+
+    random.seed(42)
+    assert string_utils.random_str(16) == first
+    assert string_utils.random_str(16) == second
+    assert first != second

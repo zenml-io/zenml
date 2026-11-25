@@ -23,7 +23,7 @@ import re
 import shutil
 import subprocess
 import sys
-from functools import partial
+from functools import partial, wraps
 from typing import (
     IO,
     TYPE_CHECKING,
@@ -101,7 +101,7 @@ from zenml.models.v2.base.filter import FilterGenerator
 from zenml.services import BaseService
 from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig
-from zenml.utils import secret_utils
+from zenml.utils import requirements_utils, secret_utils
 from zenml.utils.json_utils import pydantic_encoder
 from zenml.utils.package_utils import requirement_installed
 from zenml.utils.time_utils import expires_in
@@ -206,8 +206,9 @@ def error(text: str) -> NoReturn:
     class StyledClickException(click.ClickException):
         def show(self, file: Optional[IO[Any]] = None) -> None:
             if file is None:
-                file = click.get_text_stream("stderr")
-            click.echo(self.message, file=file)
+                click.echo(self.message, err=True)
+            else:
+                click.echo(self.message, file=file)
 
     raise StyledClickException(message=error_prefix + error_message)
 
@@ -974,6 +975,7 @@ def prompt_configuration(
             else:
                 title = "Please enter a new value or press Enter to skip it"
 
+        value: Optional[str]
         while True:
             # Ask the user to enter a value for the attribute
             value = click.prompt(
@@ -1064,6 +1066,14 @@ def install_packages(
         command += ["--upgrade"]
 
     command += packages
+
+    # Keeps the installer from replacing dependencies of the installed ZenML
+    # with incompatible versions.
+    if (
+        zenml_requirement
+        := requirements_utils.get_installed_zenml_requirement()
+    ):
+        command.append(zenml_requirement)
 
     if not IS_DEBUG_ENV:
         quiet_flag = "-q" if use_uv else "-qqq"
@@ -1356,43 +1366,148 @@ def print_served_model_configuration(
     console.print(rich_table)
 
 
-def describe_pydantic_object(schema_json: Dict[str, Any]) -> None:
-    """Describes a Pydantic object based on the dict-representation of its schema.
+_JSON_SCHEMA_TYPE_TO_METAVAR: Dict[str, str] = {
+    "string": "TEXT",
+    "boolean": "BOOLEAN",
+    "integer": "INTEGER",
+    "number": "NUMBER",
+    "array": "LIST",
+    "object": "JSON",
+}
+
+
+def _resolve_schema_property_type(
+    prop_schema: Dict[str, Any],
+) -> str:
+    """Resolve a JSON-schema property to a simple type string.
+
+    Handles plain ``type``, ``anyOf`` (picks the first non-null
+    variant), and falls back to ``"object"``.  Used by both
+    ``describe_json_schema`` and
+    ``flavor_config_schema_click_help_dl`` so that type resolution
+    stays consistent.
 
     Args:
-        schema_json: str, represents the schema of a Pydantic object, which
-            can be obtained through BaseModelClass.schema_json()
+        prop_schema: Single property definition from a JSON schema.
+
+    Returns:
+        A lower-case type string such as ``"string"`` or
+        ``"object"``.
+    """
+    if "type" in prop_schema:
+        return str(prop_schema["type"])
+    if "enum" in prop_schema:
+        return "string"
+    if "anyOf" in prop_schema:
+        non_null = [
+            p.get("type", "object")
+            for p in prop_schema["anyOf"]
+            if p.get("type") != "null"
+        ]
+        if non_null:
+            return str(non_null[0])
+    return "object"
+
+
+def _iter_schema_properties(
+    schema_json: Dict[str, Any],
+) -> Iterator[Tuple[str, str, bool, str]]:
+    """Yield ``(name, type, is_required, description)`` for each non-ref property.
+
+    Provides a single iteration helper for walking a Pydantic / JSON
+    schema ``properties`` dict so that callers do not duplicate the
+    skip-``$ref`` / resolve-type / check-required logic.
+
+    Args:
+        schema_json: Top-level JSON schema dict (must contain a
+            ``properties`` key).
+
+    Yields:
+        Tuples of ``(property_name, resolved_type, is_required,
+        description)``.
+    """
+    required = set(schema_json.get("required", []))
+    for name, prop_schema in schema_json.get("properties", {}).items():
+        if "$ref" in prop_schema:
+            continue
+        prop_type = _resolve_schema_property_type(prop_schema)
+        desc = prop_schema.get("description", "") or ""
+        yield name, prop_type, name in required, desc
+
+
+def _type_to_metavar(prop_type: str) -> str:
+    """Map a resolved type string to a Click-style metavar.
+
+    Args:
+        prop_type: Type string as returned by
+            :func:`_resolve_schema_property_type`.
+
+    Returns:
+        A metavar such as ``TEXT``, ``BOOLEAN``, or ``JSON``.
+    """
+    return _JSON_SCHEMA_TYPE_TO_METAVAR.get(prop_type, "TEXT")
+
+
+def flavor_config_schema_click_help_dl(
+    flavor: "FlavorResponse",
+) -> List[Tuple[str, str]]:
+    """Build Click-style help rows from a flavor config JSON schema.
+
+    Matches how stack components accept configuration:
+    ``--field=value`` in ARGS, parallel to built-in Click options.
+
+    Args:
+        flavor: Registered flavor.
+
+    Returns:
+        Rows for :meth:`click.formatting.HelpFormatter.write_dl`.
+    """
+    rows: List[Tuple[str, str]] = []
+    for name, prop_type, is_required, desc in _iter_schema_properties(
+        flavor.config_schema
+    ):
+        metavar = _type_to_metavar(prop_type)
+        left = f"--{name} {metavar}"
+        if is_required:
+            desc = f"{desc} [required]" if desc else "[required]"
+        rows.append((left, desc.strip()))
+    return rows
+
+
+def describe_json_schema(
+    schema_json: Dict[str, Any],
+) -> None:
+    """Describe a JSON schema in a human-readable format.
+
+    Args:
+        schema_json: JSON schema dict, e.g. from
+            ``BaseModel.model_json_schema()``.
     """
     schema_title = schema_json["title"]
-    required = schema_json.get("required", [])
     description = schema_json.get("description", "")
-    properties = schema_json.get("properties", {})
 
     warning(f"Configuration class: {schema_title}\n", bold=True)
 
     if description:
         declare(f"{description}\n")
 
-    if properties:
-        warning("Properties", bold=True)
-        for prop, prop_schema in properties.items():
-            if "$ref" not in prop_schema.keys():
-                if "type" in prop_schema.keys():
-                    prop_type = prop_schema["type"]
-                elif "anyOf" in prop_schema.keys():
-                    prop_type = ", ".join(
-                        [p.get("type", "object") for p in prop_schema["anyOf"]]
-                    )
-                    prop_type = f"one of: {prop_type}"
-                else:
-                    prop_type = "object"
-                warning(
-                    f"{prop}, {prop_type}"
-                    f"{', REQUIRED' if prop in required else ''}"
-                )
+    properties = schema_json.get("properties", {})
+    if not properties:
+        return
 
-            if "description" in prop_schema:
-                declare(f"  {prop_schema['description']}", width=80)
+    warning("Properties", bold=True)
+    for name, prop_type, is_required, desc in _iter_schema_properties(
+        schema_json
+    ):
+        if "anyOf" in properties.get(name, {}):
+            prop_type = ", ".join(
+                p.get("type", "object") for p in properties[name]["anyOf"]
+            )
+            prop_type = f"one of: {prop_type}"
+        required_suffix = ", REQUIRED" if is_required else ""
+        warning(f"{name}, {prop_type}{required_suffix}")
+        if desc:
+            declare(f"  {desc}", width=80)
 
 
 def get_boolean_emoji(value: bool) -> str:
@@ -2487,11 +2602,11 @@ def pretty_print_deployment(
 
         declare(
             f"\n[bold]Endpoint URL:[/bold] [link]{deployment.url}[/link]",
-            no_wrap=True,
+            soft_wrap=True,
         )
         declare(
             f"[bold]Swagger URL:[/bold] [link]{deployment.url.rstrip('/')}/docs[/link]",
-            no_wrap=True,
+            soft_wrap=True,
         )
 
         # Auth key handling with proper security
@@ -2527,6 +2642,13 @@ def pretty_print_deployment(
         declare("[bold]CLI command example:[/bold]")
         console.print(cli_command)
 
+        declare("\n[bold]Asynchronous CLI command example:[/bold]")
+        console.print(f"{cli_command} --no-wait")
+        console.print(
+            "  [dim]Submit the run for background execution and return the "
+            "run ID immediately[/dim]"
+        )
+
         # cURL example
         declare("\n[bold]cURL example:[/bold]")
         curl_headers = []
@@ -2550,6 +2672,19 @@ def pretty_print_deployment(
   }}'"""
 
         console.print(curl_command)
+
+        declare("\n[bold]Asynchronous cURL example:[/bold]")
+        async_curl_command = f"""curl -X POST {deployment.url}/submit \\
+  {headers_str} \\
+  -d '{{
+    "parameters": {curl_params}
+  }}'"""
+
+        console.print(async_curl_command)
+        console.print(
+            "  [dim]Submit the run for background execution and return the "
+            "run ID immediately[/dim]"
+        )
 
     # JSON Schemas
     if show_schema:
@@ -2632,13 +2767,30 @@ def pretty_print_deployment(
     console.print("  [dim]Deprovision and delete this deployment[/dim]")
 
 
-def check_zenml_pro_project_availability() -> None:
-    """Check if the ZenML Pro project feature is available."""
+def warn_if_project_not_visible_on_oss(project_name: str) -> None:
+    """Warn if operating on a non-default project in OSS ZenML.
+
+    The OSS dashboard only supports the default project, so users should
+    know when they're working outside it.
+
+    Args:
+        project_name: The name of the project being operated on. No warning
+            is shown for the default project.
+    """
+    from zenml.constants import DEFAULT_PROJECT_NAME
+
+    if project_name == DEFAULT_PROJECT_NAME:
+        return
+
     client = Client()
     if not client.zen_store.get_store_info().is_pro_server():
         warning(
-            "The ZenML projects feature is available only on ZenML Pro. "
-            "Please visit https://zenml.io/pro to learn more."
+            f"The ZenML OSS dashboard only works with the default project "
+            f"('{DEFAULT_PROJECT_NAME}'). If you use any other projects "
+            f"such as ('{project_name}'), your pipelines will run, but you "
+            f"won't be able to view them in the OSS dashboard. "
+            f"To use multiple projects with full dashboard support, "
+            f"please visit https://zenml.io/pro to learn more."
         )
 
 
@@ -2649,8 +2801,8 @@ def print_page_info(page: "Page[Any]") -> None:
         page: The page object containing pagination information.
     """
     declare(
-        f"Page `({page.index}/{page.total_pages})`, "
-        f"`{page.total}` items found for the applied filters."
+        f"Page [cyan]({page.index}/{page.total_pages})[/cyan], "
+        f"[cyan]{page.total}[/cyan] items found for the applied filters."
     )
 
 
@@ -2767,6 +2919,35 @@ def _is_list_field(field_info: Any) -> bool:
     )
 
 
+def _get_click_option_default(default: Any, multiple: bool) -> Any:
+    """Get a Click-compatible option default.
+
+    Click requires defaults for `multiple=True` options to be list-like.
+
+    Args:
+        default: The original field default.
+        multiple: Whether the click option accepts multiple values.
+
+    Returns:
+        A normalized default value compatible with Click.
+    """
+    if not multiple:
+        return default
+
+    if default is None:
+        return ()
+
+    # str and bytes are Sequence; exclude them so a string/bytes default is
+    # not expanded into per-code-unit tuples for Click multiple options.
+    if isinstance(default, Sequence) and not isinstance(default, (str, bytes)):
+        return tuple(default)
+
+    # Scalar defaults are not valid for `multiple=True` options and
+    # accidentally forcing them into a singleton tuple can change filtering
+    # semantics. Use an empty default instead.
+    return ()
+
+
 def _get_response_columns_for_filter(
     filter_model: Type[BaseFilter],
 ) -> List[str]:
@@ -2832,7 +3013,7 @@ def list_options(
 
     This decorator generates click options from a FilterModel and adds standard
     output formatting options (--columns, --output). The decorated function
-    receives these as regular parameters - no magic interception!
+    receives these as regular parameters.
 
     The function should call print_page() to render results.
 
@@ -2858,15 +3039,28 @@ def list_options(
     def inner_decorator(func: F) -> F:
         options = []
         data_type_descriptors = set()
+        multi_value_fields: set[str] = set()
         for k, v in filter_model.model_fields.items():
             if k not in filter_model.CLI_EXCLUDE_FIELDS:
+                is_multiple = _is_list_field(v)
+
+                if is_multiple:
+                    multi_value_fields.add(k)
+
+                default_value = v.default
+
+                if k == "sort_by" and default_value == "created":
+                    default_value = "desc:created"
+
                 options.append(
                     click.option(
                         f"--{k}",
                         type=str,
-                        default=v.default,
+                        default=_get_click_option_default(
+                            default=default_value, multiple=is_multiple
+                        ),
                         required=False,
-                        multiple=_is_list_field(v),
+                        multiple=is_multiple,
                         help=create_filter_help_text(filter_model, k),
                     )
                 )
@@ -2908,9 +3102,45 @@ def list_options(
         )
 
         def wrapper(function: F) -> F:
+            """Wrap the function with the Click options.
+
+            Args:
+                function: The function to wrap.
+
+            Returns:
+                The wrapped function.
+            """
+
+            @wraps(function)
+            def normalized_function(*args: Any, **kwargs: Any) -> Any:
+                """Normalize Click tuples for multi-value filter options.
+
+                This is necessary because Click options for multi-value fields are
+                converted to tuples, and the client methods expect lists.
+
+                Args:
+                    args: The positional arguments.
+                    kwargs: The keyword arguments.
+
+                Returns:
+                    The wrapped function result.
+                """
+                for field_name in multi_value_fields:
+                    if field_name not in kwargs:
+                        continue
+                    value = kwargs[field_name]
+                    if isinstance(value, tuple):
+                        if not value:
+                            kwargs[field_name] = None
+                        elif len(value) == 1:
+                            kwargs[field_name] = value[0]
+                        else:
+                            kwargs[field_name] = list(value)
+                return function(*args, **kwargs)
+
             for option in reversed(options):
-                function = option(function)
-            return function
+                normalized_function = option(normalized_function)
+            return cast(F, normalized_function)
 
         func.__doc__ = (
             f"{func.__doc__} By default all filters are "
@@ -2985,7 +3215,7 @@ def get_parsed_labels(
     metadata_dict = {}
     for m in labels:
         try:
-            key, value = m.split("=")
+            key, value = m.split("=", maxsplit=1)
         except ValueError:
             if not allow_label_only:
                 raise ValueError(

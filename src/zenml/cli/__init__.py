@@ -199,13 +199,26 @@ type:
 zenml orchestrator list --sort_by "asc:name"
 ```
 
-For fields marked as being of type `TEXT` or `UUID`, you can use the `contains`,
-`startswith` and `endswith` keywords along with their particular identifier. For
-example, for the orchestrator `list` command, you can use the following filter
-to find all orchestrators that contain the string `sagemaker` in their name:
+For fields marked as being of type `TEXT` or `UUID`, you can use operators like
+`contains`, `notcontains`, `startswith`, `endswith`, `oneof` and `notoneof`
+along with their particular identifier. For example, for the orchestrator `list`
+command, you can use the following filter to find all orchestrators that contain
+the string `sagemaker` in their name:
 
 ```shell
 zenml orchestrator list --name "contains:sagemaker"
+```
+
+The `oneof` and `notoneof` operators expect a JSON list:
+
+```shell
+zenml pipeline runs list --status 'notoneof:["completed"]'
+```
+
+For nullable fields, use `isnull` and `isnotnull` without a value:
+
+```shell
+zenml pipeline runs list --end_time "isnull:"
 ```
 
 For fields marked as being of type `BOOL`, you can use the 'True' or 'False'
@@ -1832,6 +1845,27 @@ continue pruning and to ignore these errors, please add the `--ignore-errors`
 flag. Warning messages will still be output to the terminal during this
 process.
 
+Pipeline snapshots that have no name and are no longer referenced by any
+pipeline run, deployment, schedule, run template, trigger, or derived snapshot
+can be deleted once they are older than a given number of days:
+
+```bash
+zenml pipeline snapshot prune --older-than-days 90
+```
+
+The command reports how many snapshots it found and asks for confirmation
+before deleting them. Use `--dry-run` to only see the count and `--yes` to skip
+the confirmation. When connected to a ZenML server, the deletion runs in the
+background and the command prints a task ID that you can search the server
+logs for.
+
+All pruning commands are also available under a common `zenml prune` group:
+
+```bash
+zenml prune artifacts
+zenml prune snapshots --older-than-days 90
+```
+
 Each pipeline run that requires Docker images also stores a build which
 contains the image names used for this run. To list all builds, use:
 
@@ -2559,12 +2593,12 @@ from zenml.cli.config import *  # noqa
 from zenml.cli.deployment import *  # noqa
 from zenml.cli.downgrade import *  # noqa
 from zenml.cli.feature import *  # noqa
+from zenml.cli.hook_invocation import *  # noqa
 from zenml.cli.integration import *  # noqa
 from zenml.cli.login import *
 from zenml.cli.model import *  # noqa
 from zenml.cli.model_registry import *  # noqa
 from zenml.cli.pipeline import *  # noqa
-from zenml.cli.resource_pool import *  # noqa
 from zenml.cli.resource_request import *  # noqa
 from zenml.cli.secret import *  # noqa
 from zenml.cli.served_model import *  # noqa
@@ -2575,5 +2609,7 @@ from zenml.cli.stack import *  # noqa
 from zenml.cli.stack_components import *  # noqa
 from zenml.cli.user_management import *  # noqa
 from zenml.cli.project import *  # noqa
+from zenml.cli.prune import *  # noqa
 from zenml.cli.tag import *  # noqa
 from zenml.cli.trigger import *  # noqa
+from zenml.cli.webhook import *  # noqa

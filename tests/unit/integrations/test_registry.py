@@ -65,6 +65,25 @@ class _ImportErrorIntegration:
         return []
 
 
+class _TypeErrorIntegration:
+    """Mock integration whose activate() raises TypeError."""
+
+    NAME = "type_error_failing"
+    REQUIREMENTS: List[str] = []
+
+    @classmethod
+    def check_installation(cls) -> bool:
+        return True
+
+    @classmethod
+    def activate(cls) -> None:
+        raise TypeError("Subscripted generics cannot be used")
+
+    @classmethod
+    def flavors(cls) -> List[Type[Flavor]]:
+        return []
+
+
 def test_activate_integrations_continues_after_oserror(caplog):
     """A single integration raising OSError must not prevent others from activating."""
     _SucceedingIntegration.activated = False
@@ -102,6 +121,27 @@ def test_activate_integrations_continues_after_import_error(caplog):
     assert _SucceedingIntegration.activated is True
     assert any(
         "Failed to activate integration `import_failing`" in record.message
+        and record.levelno == logging.ERROR
+        for record in caplog.records
+    )
+
+
+def test_activate_integrations_continues_after_type_error(caplog):
+    """A single integration raising TypeError must not prevent others from activating."""
+    _SucceedingIntegration.activated = False
+    registry = IntegrationRegistry()
+    registry._initialized = True
+    registry._integrations = {
+        _TypeErrorIntegration.NAME: _TypeErrorIntegration,
+        _SucceedingIntegration.NAME: _SucceedingIntegration,
+    }
+
+    with caplog.at_level(logging.ERROR):
+        registry.activate_integrations()
+
+    assert _SucceedingIntegration.activated is True
+    assert any(
+        "Failed to activate integration `type_error_failing`" in record.message
         and record.levelno == logging.ERROR
         for record in caplog.records
     )

@@ -14,7 +14,7 @@ A materializer is a class that defines how a particular data type is:
 - **Saved**: Written to the artifact store
 - **Loaded**: Read from the artifact store
 - **Deserialized**: Converted back to Python objects
-- **Visualized**: Displayed in the ZenML dashboard
+- **Visualized**: Displayed in the ZenML UI
 - **Analyzed**: Metadata extraction for tracking and search
 
 Materializers act as the bridge between your Python code and the underlying storage system, ensuring that any artifact can be saved, loaded, and visualized correctly, regardless of the data type.
@@ -28,6 +28,54 @@ ZenML includes built-in materializers for many common data types:
 <table data-full-width="true"><thead><tr><th>Materializer</th><th>Handled Data Types</th><th>Storage Format</th></tr></thead><tbody><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.built_in_materializer">BuiltInMaterializer</a></td><td><code>bool</code>, <code>float</code>, <code>int</code>, <code>str</code>, <code>None</code></td><td><code>.json</code></td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.built_in_materializer">BytesInMaterializer</a></td><td><code>bytes</code></td><td><code>.txt</code></td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.built_in_materializer">BuiltInContainerMaterializer</a></td><td><code>dict</code>, <code>list</code>, <code>set</code>, <code>tuple</code></td><td>Directory</td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.numpy_materializer">NumpyMaterializer</a></td><td><code>np.ndarray</code></td><td><code>.npy</code></td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.pandas_materializer">PandasMaterializer</a></td><td><code>pd.DataFrame</code>, <code>pd.Series</code></td><td><code>.csv</code> (or <code>.gzip</code> if <code>parquet</code> is installed)</td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.pydantic_materializer">PydanticMaterializer</a></td><td><code>pydantic.BaseModel</code></td><td><code>.json</code></td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.dataclass_materializer">DataclassMaterializer</a></td><td>JSON-serializable Python <code>dataclass</code> types</td><td><code>.json</code></td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.service_materializer">ServiceMaterializer</a></td><td><code>zenml.services.service.BaseService</code></td><td><code>.json</code></td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.structured_string_materializer">StructuredStringMaterializer</a></td><td><code>zenml.types.CSVString</code>, <code>zenml.types.HTMLString</code>, <code>zenml.types.MarkdownString</code></td><td><code>.csv</code> / <code>.html</code> / <code>.md</code> (depending on type)</td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.path_materializer">PathMaterializer</a></td><td><code>pathlib.Path</code></td><td><code>.tar.gz</code> (directories) or direct copy (files)</td></tr></tbody></table>
 
 ZenML also provides a CloudpickleMaterializer that can handle any object by saving it with [cloudpickle](https://github.com/cloudpipe/cloudpickle). However, this is not production-ready because the resulting artifacts cannot be loaded when running with a different Python version. For production use, you should implement a custom materializer for your specific data types.
+
+{% hint style="warning" %}
+The `BuiltInContainerMaterializer` stores JSON-compatible containers as JSON.
+JSON has a smaller type system than Python, so Python-specific container
+details can be lost when nested inside JSON-serialized values. For example,
+nested tuples and sets are loaded back as lists. If your data needs strict
+structured type reconstruction, use a Pydantic model, a dataclass, or a custom
+materializer. Additionally, dicts with non-string keys are stored with
+additional metadata so key types are preserved instead of being coerced by
+JSON object key rules.
+
+When materialized through this metadata layout, `Counter` values are restored
+with their counts intact. `defaultdict` values load as regular dictionaries
+because their default factory cannot be reconstructed. Use a custom
+materializer if preserving a `defaultdict` default factory is required.
+{% endhint %}
+
+{% hint style="info" %}
+Pydantic artifacts created by current ZenML versions are stored in
+`data_v2.json`. ZenML can still load older Pydantic artifacts stored as
+`data.json` by ZenML `<= 0.94.2`, so existing runs remain readable after an
+upgrade.
+{% endhint %}
+
+### Dataclass artifacts
+
+The `DataclassMaterializer` handles JSON-serializable Python dataclasses
+without requiring you to write a custom materializer.
+
+```python
+from dataclasses import dataclass
+
+from zenml import step
+
+@dataclass
+class TrainingConfig:
+    learning_rate: float
+    epochs: int
+
+@step
+def make_config() -> TrainingConfig:
+    return TrainingConfig(learning_rate=0.01, epochs=10)
+```
+
+This works for dataclasses that Pydantic can serialize to JSON. If your
+dataclass contains objects such as open file handles, live model objects,
+database connections, or other arbitrary Python objects, use a custom
+materializer instead.
 
 ### Passing Files and Directories Between Steps
 
@@ -136,7 +184,7 @@ class MyClassMaterializer(BaseMaterializer):
             json.dump(data.to_dict(), f)
     
     def save_visualizations(self, data: MyClass) -> Dict[str, VisualizationType]:
-        """Generate visualizations for the dashboard."""
+        """Generate visualizations for the UI."""
         # Optional - generate visualizations
         vis_path = os.path.join(self.uri, "visualization.html")
         with self.artifact_store.open(vis_path, "w") as f:
@@ -230,7 +278,7 @@ When reading or writing files, always use `self.artifact_store.open()` rather th
 
 ### Visualization Support
 
-The `save_visualizations()` method allows you to create visualizations that will be shown in the ZenML dashboard. You can return multiple visualizations of different types:
+The `save_visualizations()` method allows you to create visualizations that will be shown in the ZenML UI. You can return multiple visualizations of different types:
 
 - `VisualizationType.HTML`: Embedded HTML content
 - `VisualizationType.MARKDOWN`: Markdown content
@@ -245,7 +293,7 @@ Some materializers support configuration via environment variables to customize 
 
 ### Metadata Extraction
 
-The `extract_metadata()` method allows you to extract key information about your artifact for indexing and searching. This metadata will be displayed alongside the artifact in the dashboard.
+The `extract_metadata()` method allows you to extract key information about your artifact for indexing and searching. This metadata will be displayed alongside the artifact in the UI.
 
 ### Temporary Files
 
@@ -406,7 +454,7 @@ When working with materializers:
 
 3. **Consider versioning** if your data structure might change over time.
 
-4. **Create visualizations** to help users understand your artifacts in the dashboard.
+4. **Create visualizations** to help users understand your artifacts in the UI.
 
 5. **Extract useful metadata** to make artifacts easier to find and understand.
 

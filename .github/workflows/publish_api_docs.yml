@@ -3,17 +3,19 @@ name: Publish SDK Docs
 on:
   push:
     branches: [release/**]
+env:
+  ZENML_DEBUG: 1
+  ZENML_LOGGING_VERBOSITY: debug
+  ZENML_ANALYTICS_OPT_IN: false
 jobs:
   publish:
     name: Build 🔨 and publish 📰 the api docs 📁 to gh-pages
     if: github.repository == 'zenml-io/zenml'
     runs-on: ubuntu-latest
     env:
-      ZENML_DEBUG: 1
-      ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 0  # fetch all commits/branches including gh-pages
       - name: Get the version from the github branch name
@@ -21,13 +23,8 @@ jobs:
         run: |
           BRANCH="${GITHUB_REF_NAME}"
           echo ::set-output name=VERSION::${BRANCH#release/}
-      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f  # v6.3.0
-        with:
-          node-version: '14'
-      - run: npm install
-      - run: npm install html-minifier -g
       - name: Set up Python 3.11
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
           python-version: '3.11'
       - name: Setup git user

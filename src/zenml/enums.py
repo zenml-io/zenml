@@ -142,6 +142,22 @@ class ExecutionStatus(StrEnum):
         return self in {ExecutionStatus.FAILED, ExecutionStatus.CANCELLED}
 
 
+class HookType(StrEnum):
+    """Hook types."""
+
+    RUN_START = "run_start"
+    RUN_SUCCESS = "run_success"
+    RUN_FAILURE = "run_failure"
+    RUN_END = "run_end"
+    RUN_PAUSE = "run_pause"
+    RUN_RESUME = "run_resume"
+    STEP_START = "step_start"
+    STEP_END = "step_end"
+    STEP_SUCCESS = "step_success"
+    STEP_FAILURE = "step_failure"
+    CUSTOM = "custom"
+
+
 class LoggingLevels(Enum):
     """Enum for logging levels."""
 
@@ -212,6 +228,7 @@ class StackComponentType(StrEnum):
     STEP_OPERATOR = "step_operator"
     MODEL_REGISTRY = "model_registry"
     DEPLOYER = "deployer"
+    SANDBOX = "sandbox"
 
     @property
     def plural(self) -> str:
@@ -224,6 +241,8 @@ class StackComponentType(StrEnum):
             return "container_registries"
         elif self == StackComponentType.MODEL_REGISTRY:
             return "model_registries"
+        elif self == StackComponentType.SANDBOX:
+            return "sandboxes"
 
         return f"{self.value}s"
 
@@ -238,6 +257,7 @@ class StackComponentType(StrEnum):
             StackComponentType.ALERTER,
             StackComponentType.EXPERIMENT_TRACKER,
             StackComponentType.STEP_OPERATOR,
+            StackComponentType.SANDBOX,
         }
 
 
@@ -361,6 +381,10 @@ class GenericFilterOps(StrEnum):
     STARTSWITH = "startswith"
     ENDSWITH = "endswith"
     ONEOF = "oneof"
+    NOT_ONEOF = "notoneof"
+    NOT_CONTAINS = "notcontains"
+    IS_NULL = "isnull"
+    IS_NOT_NULL = "isnotnull"
     GTE = "gte"
     GT = "gt"
     LTE = "lte"
@@ -546,6 +570,13 @@ class DatabaseBackupStrategy(StrEnum):
     CUSTOM = "custom"
 
 
+class SQLDatabaseAuthMode(StrEnum):
+    """Authentication modes supported by SQL ZenML stores."""
+
+    PASSWORD = "password"
+    AWS_RDS_IAM = "aws_rds_iam"
+
+
 class OnboardingStep(StrEnum):
     """All onboarding steps."""
 
@@ -645,6 +676,34 @@ class ResourceRequestStatus(StrEnum):
     CANCELLED = "cancelled"
     REJECTED = "rejected"
     RELEASED = "released"
+    EXPIRED = "expired"
+    NO_MATCHING_POOL = "no_matching_pool"
+
+
+class ResourcePoolScope(StrEnum):
+    """Ownership scopes for resource pools."""
+
+    GLOBAL = "global"
+    ORGANIZATION = "organization"
+    WORKSPACE = "workspace"
+
+
+class ResourceRequestRuntimeState(StrEnum):
+    """Owner-reported runtime states for resource requests."""
+
+    UNKNOWN = "unknown"
+    PENDING = "pending"
+    SUBMITTED = "submitted"
+    RUNNING = "running"
+    IDLE = "idle"
+
+
+class ResourceRequestReclaimTolerance(StrEnum):
+    """Caller tolerance for reclaiming lower-priority work on a request."""
+
+    NONE = "none"
+    COORDINATED = "coordinated"
+    ANY = "any"
 
 
 class TriggerType(StrEnum):
@@ -652,6 +711,7 @@ class TriggerType(StrEnum):
 
     SCHEDULE = "schedule"
     PLATFORM_EVENT = "platform_event"
+    WEBHOOK = "webhook"
 
 
 class TriggerFlavor(StrEnum):
@@ -659,6 +719,7 @@ class TriggerFlavor(StrEnum):
 
     NATIVE_SCHEDULE = "native schedule"
     PLATFORM_EVENT = "platform event"
+    WEBHOOK = "webhook"
 
 
 class TriggerRunConcurrency(StrEnum):
@@ -680,6 +741,7 @@ class SourceType(StrEnum):
 
     PIPELINE = "pipeline"
     PIPELINE_RUN = "pipeline_run"
+    PIPELINE_SNAPSHOT = "pipeline_snapshot"
 
 
 class PipelineEvent(DescribedValuesEnum):
@@ -720,7 +782,27 @@ class PipelineRunEvent(DescribedValuesEnum):
         }
 
 
+class PipelineSnapshotEvent(DescribedValuesEnum):
+    """Enum representing platform target events for pipeline snapshots."""
+
+    RUN_COMPLETED = "run_completed"
+    RUN_FAILED = "run_failed"
+
+    @classmethod
+    def value_description_index(cls) -> dict[str, str]:
+        """Helper utility to describe enum values.
+
+        Returns:
+            A dictionary with descriptions for each value.
+        """
+        return {
+            cls.RUN_COMPLETED: "A pipeline run of the source snapshot has completed successfully.",
+            cls.RUN_FAILED: "A pipeline run of the source snapshot has failed.",
+        }
+
+
 PLATFORM_EVENT_REGISTRY: dict[SourceType, type[DescribedValuesEnum]] = {
     SourceType.PIPELINE: PipelineEvent,
     SourceType.PIPELINE_RUN: PipelineRunEvent,
+    SourceType.PIPELINE_SNAPSHOT: PipelineSnapshotEvent,
 }

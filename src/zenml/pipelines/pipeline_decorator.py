@@ -19,6 +19,7 @@ from typing import (
     Callable,
     Dict,
     List,
+    Literal,
     Optional,
     TypeVar,
     Union,
@@ -34,6 +35,7 @@ if TYPE_CHECKING:
     from zenml.config.cache_policy import CachePolicyOrString
     from zenml.config.retry_config import StepRetryConfig
     from zenml.model.model import Model
+    from zenml.pipelines.dynamic.pipeline_definition import DynamicPipeline
     from zenml.pipelines.pipeline_definition import Pipeline
     from zenml.steps.base_step import BaseStep
     from zenml.types import HookSpecification, InitHookSpecification
@@ -52,7 +54,7 @@ def pipeline(_func: "F") -> "Pipeline": ...
 def pipeline(
     *,
     name: Optional[str] = None,
-    dynamic: Optional[bool] = None,
+    dynamic: Literal[True],
     depends_on: Optional[List["BaseStep"]] = None,
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
@@ -66,6 +68,76 @@ def pipeline(
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
+    on_start: Optional["HookSpecification"] = None,
+    on_end: Optional["HookSpecification"] = None,
+    on_pause: Optional["HookSpecification"] = None,
+    on_resume: Optional["HookSpecification"] = None,
+    on_init: Optional["InitHookSpecification"] = None,
+    on_init_kwargs: Optional[Dict[str, Any]] = None,
+    on_cleanup: Optional["HookSpecification"] = None,
+    model: Optional["Model"] = None,
+    retry: Optional["StepRetryConfig"] = None,
+    substitutions: Optional[Dict[str, str]] = None,
+    execution_mode: Optional["ExecutionMode"] = None,
+    cache_policy: Optional["CachePolicyOrString"] = None,
+) -> Callable[["F"], "DynamicPipeline"]: ...
+
+
+@overload
+def pipeline(
+    *,
+    name: Optional[str] = None,
+    dynamic: Literal[False] = False,
+    depends_on: Optional[List["BaseStep"]] = None,
+    enable_cache: Optional[bool] = None,
+    enable_artifact_metadata: Optional[bool] = None,
+    enable_step_logs: Optional[bool] = None,
+    enable_heartbeat: Optional[bool] = None,
+    environment: Optional[Dict[str, Any]] = None,
+    secrets: Optional[List[Union[UUID, str]]] = None,
+    enable_pipeline_logs: Optional[bool] = None,
+    settings: Optional[Dict[str, "SettingsOrDict"]] = None,
+    tags: Optional[List[Union[str, "Tag"]]] = None,
+    extra: Optional[Dict[str, Any]] = None,
+    on_failure: Optional["HookSpecification"] = None,
+    on_success: Optional["HookSpecification"] = None,
+    on_start: Optional["HookSpecification"] = None,
+    on_end: Optional["HookSpecification"] = None,
+    on_pause: Optional["HookSpecification"] = None,
+    on_resume: Optional["HookSpecification"] = None,
+    on_init: Optional["InitHookSpecification"] = None,
+    on_init_kwargs: Optional[Dict[str, Any]] = None,
+    on_cleanup: Optional["HookSpecification"] = None,
+    model: Optional["Model"] = None,
+    retry: Optional["StepRetryConfig"] = None,
+    substitutions: Optional[Dict[str, str]] = None,
+    execution_mode: Optional["ExecutionMode"] = None,
+    cache_policy: Optional["CachePolicyOrString"] = None,
+) -> Callable[["F"], "Pipeline"]: ...
+
+
+@overload
+def pipeline(
+    *,
+    name: Optional[str] = None,
+    dynamic: None = None,
+    depends_on: Optional[List["BaseStep"]] = None,
+    enable_cache: Optional[bool] = None,
+    enable_artifact_metadata: Optional[bool] = None,
+    enable_step_logs: Optional[bool] = None,
+    enable_heartbeat: Optional[bool] = None,
+    environment: Optional[Dict[str, Any]] = None,
+    secrets: Optional[List[Union[UUID, str]]] = None,
+    enable_pipeline_logs: Optional[bool] = None,
+    settings: Optional[Dict[str, "SettingsOrDict"]] = None,
+    tags: Optional[List[Union[str, "Tag"]]] = None,
+    extra: Optional[Dict[str, Any]] = None,
+    on_failure: Optional["HookSpecification"] = None,
+    on_success: Optional["HookSpecification"] = None,
+    on_start: Optional["HookSpecification"] = None,
+    on_end: Optional["HookSpecification"] = None,
+    on_pause: Optional["HookSpecification"] = None,
+    on_resume: Optional["HookSpecification"] = None,
     on_init: Optional["InitHookSpecification"] = None,
     on_init_kwargs: Optional[Dict[str, Any]] = None,
     on_cleanup: Optional["HookSpecification"] = None,
@@ -95,6 +167,10 @@ def pipeline(
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
+    on_start: Optional["HookSpecification"] = None,
+    on_end: Optional["HookSpecification"] = None,
+    on_pause: Optional["HookSpecification"] = None,
+    on_resume: Optional["HookSpecification"] = None,
     on_init: Optional["InitHookSpecification"] = None,
     on_init_kwargs: Optional[Dict[str, Any]] = None,
     on_cleanup: Optional["HookSpecification"] = None,
@@ -103,7 +179,12 @@ def pipeline(
     substitutions: Optional[Dict[str, str]] = None,
     execution_mode: Optional["ExecutionMode"] = None,
     cache_policy: Optional["CachePolicyOrString"] = None,
-) -> Union["Pipeline", Callable[["F"], "Pipeline"]]:
+) -> Union[
+    "Pipeline",
+    "DynamicPipeline",
+    Callable[["F"], "Pipeline"],
+    Callable[["F"], "DynamicPipeline"],
+]:
     """Decorator to create a pipeline.
 
     Args:
@@ -123,12 +204,26 @@ def pipeline(
         settings: Settings for this pipeline.
         tags: Tags to apply to runs of the pipeline.
         extra: Extra configurations for this pipeline.
-        on_failure: Callback function in event of failure of the step. Can be a
-            function with a single argument of type `BaseException`, or a source
-            path to such a function (e.g. `module.my_function`).
-        on_success: Callback function in event of success of the step. Can be a
-            function with no arguments, or a source path to such a function
-            (e.g. `module.my_function`).
+        on_failure: Hook run when the pipeline fails. A callable taking an
+            optional `BaseException`, or a source path to one. Static pipelines
+            propagate it to each step as a default. Dynamic pipelines run it
+            once at the run level.
+        on_success: Hook run when the pipeline succeeds. A no-arg callable, or
+            a source path to one. Static pipelines propagate it to each step
+            as a default. Dynamic pipelines run it once at the run level.
+        on_start: Hook run when the pipeline starts. A no-arg callable, or a
+            source path to one. Static pipelines propagate it to each step as
+            a default. Dynamic pipelines run it once at the run level.
+        on_end: Hook run when the pipeline ends. A callable taking an optional
+            `BaseException`, or a source path to one. Static pipelines
+            propagate it to each step as a default. Dynamic pipelines run it
+            once at the run level.
+        on_pause: Hook run when the run pauses. A no-arg callable, or a source
+            path to one. Static pipelines ignore it. Dynamic pipelines run it
+            once at the run level.
+        on_resume: Hook run when a paused run resumes. A no-arg callable, or a
+            source path to one. Static pipelines ignore it. Dynamic pipelines
+            run it once at the run level.
         on_init: Callback function to run on initialization of the pipeline. Can
             be a function with no arguments, or a source path to such a function
             (e.g. `module.my_function`) if the function returns a value, it will
@@ -148,7 +243,7 @@ def pipeline(
         A pipeline instance.
     """
 
-    def inner_decorator(func: "F") -> "Pipeline":
+    def inner_decorator(func: "F") -> Union["Pipeline", "DynamicPipeline"]:
         from zenml.pipelines.pipeline_definition import Pipeline
 
         PipelineClass = Pipeline
@@ -185,6 +280,10 @@ def pipeline(
             extra=extra,
             on_failure=on_failure,
             on_success=on_success,
+            on_start=on_start,
+            on_end=on_end,
+            on_pause=on_pause,
+            on_resume=on_resume,
             on_init=on_init,
             on_init_kwargs=on_init_kwargs,
             on_cleanup=on_cleanup,

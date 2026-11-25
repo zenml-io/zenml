@@ -14,14 +14,11 @@
 """OpenTelemetry log store implementation."""
 
 import logging
-from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 
-from opentelemetry.sdk._logs import (
-    Logger,
-    LoggerProvider,
-    LoggingHandler,
-)
+from opentelemetry._logs import Logger
+from opentelemetry.instrumentation.logging.handler import LoggingHandler
+from opentelemetry.sdk._logs import LoggerProvider
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.resources import Resource
 
@@ -35,9 +32,9 @@ from zenml.logger import get_logger
 from zenml.models import LogsResponse
 
 if TYPE_CHECKING:
-    from opentelemetry.sdk._logs.export import LogExporter
+    from opentelemetry.sdk._logs.export import LogRecordExporter
 
-    from zenml.utils.logging_utils import LogEntry
+    from zenml.models import LogsEntriesFilter, LogsEntriesResponse
 
 logger = get_logger(__name__)
 
@@ -127,7 +124,7 @@ class OtelLogStore(BaseLogStore):
         super().__init__(*args, **kwargs)
 
         self._resource: Optional["Resource"] = None
-        self._exporter: Optional["LogExporter"] = None
+        self._exporter: Optional["LogRecordExporter"] = None
         self._provider: Optional["LoggerProvider"] = None
         self._processor: Optional["OtelBatchLogRecordProcessor"] = None
         self._handler: Optional["LoggingHandler"] = None
@@ -164,7 +161,7 @@ class OtelLogStore(BaseLogStore):
             raise RuntimeError("OpenTelemetry log store is not initialized")
         return self._provider
 
-    def get_exporter(self) -> "LogExporter":
+    def get_exporter(self) -> "LogRecordExporter":
         """Get the Datadog log exporter.
 
         Returns:
@@ -247,12 +244,13 @@ class OtelLogStore(BaseLogStore):
             if self._handler is None:
                 raise RuntimeError("OpenTelemetry provider is not initialized")
 
-            emit_kwargs = self._handler._translate(record)
-            emit_kwargs["attributes"].update(origin.metadata)
+            otel_log_record = self._handler._translate(record)
+            merged_attrs = dict(otel_log_record.attributes or {})
+            merged_attrs.update(origin.metadata)
             if metadata:
-                emit_kwargs["attributes"].update(metadata)
-
-            origin.logger.emit(**emit_kwargs)
+                merged_attrs.update(metadata)
+            otel_log_record.attributes = merged_attrs
+            origin.logger.emit(otel_log_record)
 
     def _release_origin(
         self,
@@ -310,28 +308,30 @@ class OtelLogStore(BaseLogStore):
     def fetch(
         self,
         logs_model: "LogsResponse",
-        limit: int,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-    ) -> List["LogEntry"]:
-        """Fetch logs from the OpenTelemetry backend.
+        start: Optional[str] = None,
+        limit: Optional[int] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        filter_: Optional["LogsEntriesFilter"] = None,
+    ) -> "LogsEntriesResponse":
+        """Fetch log entries from an OpenTelemetry backend.
 
-        This method should be overridden by subclasses to implement
-        backend-specific log retrieval. The base implementation returns
-        an empty list.
+        OTLP does not support log retrieval. Subclasses must implement their
+        backend's query API.
 
         Args:
             logs_model: The logs model containing run and step metadata.
-            start_time: Filter logs after this time.
-            end_time: Filter logs before this time.
+            start: Initial end of the stream, chosen by the subclass if omitted.
             limit: Maximum number of log entries to return.
+            before: Cursor towards older entries, from a previous page.
+            after: Cursor towards newer entries, from a previous page.
+            filter_: Filters to apply while retrieving the entries.
 
         Returns:
-            A list of log entries.
+            Never returns.
 
         Raises:
-            NotImplementedError: Log fetching is not supported by the OTEL log
-                store.
+            NotImplementedError: Log retrieval is not supported by OTLP.
         """
         raise NotImplementedError(
             "Log fetching is not supported by the OTEL log store."

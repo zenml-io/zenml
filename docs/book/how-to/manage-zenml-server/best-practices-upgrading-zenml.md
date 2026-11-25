@@ -30,7 +30,7 @@ Whether you're OSS or Pro:
 > 🏢 **ZenML Pro** users: use **two workspaces** (e.g. `prod-workspace`, `staging-workspace`)  
 > 💻 **ZenML OSS** users: run **two ZenML servers** (same logic applies)
 
-![Diagram showing "Production" and "Staging" environments side by side. Arrows show pipelines running in production, while staging is used for upgrades only.](../../.gitbook/assets/upgrading_zenml_prod_staging_env.png)
+![Production and staging ZenML servers side by side](../../.gitbook/assets/upgrading_zenml_prod_staging_env.png)
 
 ## 🧱 Step #2: Mirror Your Stacks in Both Environments
 
@@ -46,7 +46,7 @@ At setup time:
 | Container registry  | `gcr.io/prod-images`     | `gcr.io/staging-images`   |
 
 
-![Diagram: Mirrored stacks pointing at separate staging infra](../../.gitbook/assets/upgrading_zenml_stacks_env.png)
+![Production and staging stacks side by side](../../.gitbook/assets/upgrading_zenml_stacks_env.png)
 
 {% hint style="info" %}
 * Point staging stacks to **staging variants** of your infra (e.g., a smaller K8s cluster, a test S3 bucket).
@@ -55,27 +55,20 @@ At setup time:
 
 ## 🛠️ Step #3: Use [GitOps](https://about.gitlab.com/topics/gitops/) to Manage Upgrades
 
-![Diagram: GitOps](../../.gitbook/assets/upgrading_zenml_gitops.png)
+![GitOps flow: PR to staging, upgrade, test, merge to main, upgrade production](../../.gitbook/assets/upgrading_zenml_gitops.png)
 
 Put your workspace configuration in a Git repository (Helm charts, Terraform, or the ZenML Pro API – pick your tool). Set up two long-lived branches:
 
 * `staging`  – auto-deploys to the **staging workspace**
 * `main`     – auto-deploys to **production**
 
-
-```mermaid
-flowchart LR
-    dev["PR → staging branch"] --> stg["CI/CD upgrades Staging workspace"]
-    stg --> tests["Run upgrade test suite"]
-    tests -->|✅| merge["Merge staging ➜ main"]
-    merge --> prod["CI/CD upgrades Production workspace"]
-```
-
 ZenML Pro users can call the [Workspace API](https://cloudapi.zenml.io/) from CI to bump the version. OSS users typically re-deploy the Helm chart/Docker image with the new tag.
 
 ## 🤝 Step #4: Run a test suite in staging
 
 After upgrading staging, assume things might break — this is normal and expected.
+
+Check the [Compatibility](https://docs.zenml.io/changelog/compatibility) page to see which client versions work with the server version you are upgrading to. Make sure your staging tests cover the exceptions it lists for your versions.
 
 At this point, the platform and data science / ML engineering teams should have mutually:
 

@@ -90,6 +90,14 @@ class RequestLimiter:
         self.limiter[requester] = self.limiter[requester][older_index:]
 
         if self.day_limit and len(self.limiter[requester]) > self.day_limit:
+            logger.warning(
+                "rate_limit.exceeded",
+                extra={
+                    "client_ip": requester,
+                    "limit_type": "daily",
+                    "limit": self.day_limit,
+                },
+            )
             raise HTTPException(
                 status_code=429, detail="Daily request limit exceeded."
             )
@@ -101,6 +109,14 @@ class RequestLimiter:
             ]
         )
         if self.minute_limit and minute_requests > self.minute_limit:
+            logger.warning(
+                "rate_limit.exceeded",
+                extra={
+                    "client_ip": requester,
+                    "limit_type": "minute",
+                    "limit": self.minute_limit,
+                },
+            )
             raise HTTPException(
                 status_code=429, detail="Minute request limit exceeded."
             )
@@ -119,7 +135,7 @@ class RequestLimiter:
     def _get_ipaddr(self, request: Request) -> str:
         """Returns the IP address for the current request.
 
-        Based on the X-Forwarded-For headers or client information.
+        Based on the client information provided by the ASGI server.
 
         Args:
             request: The request object.
@@ -127,13 +143,10 @@ class RequestLimiter:
         Returns:
             The ip address for the current request (or 127.0.0.1 if none found).
         """
-        if "X_FORWARDED_FOR" in request.headers:
-            return request.headers["X_FORWARDED_FOR"]
-        else:
-            if not request.client or not request.client.host:
-                return "127.0.0.1"
+        if not request.client or not request.client.host:
+            return "127.0.0.1"
 
-            return request.client.host
+        return request.client.host
 
     @contextmanager
     def limit_failed_requests(

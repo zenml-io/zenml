@@ -2,5 +2,6 @@
 set -x
 
 export ZENML_DEBUG=1
+export ZENML_LOGGING_VERBOSITY=debug
 export ZENML_ANALYTICS_OPT_IN=false
 typos .

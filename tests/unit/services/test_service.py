@@ -27,7 +27,7 @@ from zenml.services.service import ZENM_ENDPOINT_PREFIX
 
 
 # Create a concrete subclass of BaseService
-class TestService(BaseService):
+class ServiceForTesting(BaseService):
     """Test service class for testing BaseService."""
 
     SERVICE_TYPE = ServiceType(
@@ -57,10 +57,9 @@ class TestService(BaseService):
         return (f"log line {i}" for i in range(5))
 
 
-# Modify the base_service fixture to use the TestService subclass
 @pytest.fixture
 def base_service():
-    return TestService(
+    return ServiceForTesting(
         uuid=UUID("12345678-1234-5678-1234-567812345678"),
         admin_state=ServiceState.ACTIVE,
         config=ServiceConfig(name="test_service", param1="value1", param2=2),
@@ -76,7 +75,7 @@ def base_service():
 # Update the test_from_model to handle the case when service_source is missing
 def test_from_model(service_response):
     service = BaseService.from_model(service_response)
-    assert isinstance(service, TestService)
+    assert isinstance(service, ServiceForTesting)
     assert service.uuid == service_response.id
     assert service.admin_state == service_response.admin_state
     assert dict(service.config) == service_response.config

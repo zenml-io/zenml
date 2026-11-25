@@ -32,7 +32,7 @@ Please note that the `@pipeline` function in your code is **only ever called** i
 
 ## ZenML Server Environment
 
-The ZenML server environment is a FastAPI application managing pipelines and metadata. It includes the ZenML Dashboard and is accessed when you [deploy ZenML](https://docs.zenml.io/deploying-zenml/deploying-zenml). To manage dependencies, install them during [ZenML deployment](https://docs.zenml.io/deploying-zenml/deploying-zenml), but only if you have custom integrations, as most are built-in.
+The ZenML server environment is a FastAPI application managing pipelines and metadata. It includes the ZenML UI and is accessed when you [deploy ZenML](https://docs.zenml.io/deploying-zenml/deploying-zenml). To manage dependencies, install them during [ZenML deployment](https://docs.zenml.io/deploying-zenml/deploying-zenml), but only if you have custom integrations, as most are built-in.
 
 ## Execution Environments
 
@@ -74,7 +74,7 @@ requirements. We try to keep these dependency requirements ranges as wide as
 possible for the integrations developed by ZenML, but it is not always possible
 to make this work completely smoothly. Here is one of the known issues:
 
-* `click`: ZenML currently requires `click~=8.0.3` for its CLI. This is on account of another dependency of ZenML. Using versions of `click` in your own project that are greater than 8.0.3 may cause unanticipated behaviors.
+* `click`: ZenML pins Click to a tested range for CLI compatibility and security. If your project declares Click directly, ensure that its constraint overlaps with ZenML's current requirement in `pyproject.toml`.
 
 ### Manually bypassing ZenML's integration installation
 

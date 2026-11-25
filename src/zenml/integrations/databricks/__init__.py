@@ -13,14 +13,14 @@
 #  permissions and limitations under the License.
 """Initialization of the Databricks integration for ZenML."""
 
-from typing import List, Type, Optional
+from typing import List, Optional, Type
 
 from zenml.integrations.constants import DATABRICKS
-
 from zenml.integrations.integration import Integration
-from zenml.stack import Flavor
+from zenml.stack.flavor import Flavor
 
 DATABRICKS_ORCHESTRATOR_FLAVOR = "databricks"
+DATABRICKS_STEP_OPERATOR_FLAVOR = "databricks"
 DATABRICKS_MODEL_DEPLOYER_FLAVOR = "databricks"
 DATABRICKS_SERVICE_ARTIFACT = "databricks_deployment_service"
 
@@ -35,7 +35,9 @@ class DatabricksIntegration(Integration):
 
     @classmethod
     def get_requirements(
-        cls, target_os: Optional[str] = None, python_version: Optional[str] = None
+        cls,
+        target_os: Optional[str] = None,
+        python_version: Optional[str] = None,
     ) -> List[str]:
         """Method to get the requirements for the integration.
 
@@ -49,9 +51,15 @@ class DatabricksIntegration(Integration):
         from zenml.integrations.numpy import NumpyIntegration
         from zenml.integrations.pandas import PandasIntegration
 
-        return cls.REQUIREMENTS + \
-            NumpyIntegration.get_requirements(target_os=target_os, python_version=python_version) + \
-            PandasIntegration.get_requirements(target_os=target_os, python_version=python_version)
+        return (
+            cls.REQUIREMENTS
+            + NumpyIntegration.get_requirements(
+                target_os=target_os, python_version=python_version
+            )
+            + PandasIntegration.get_requirements(
+                target_os=target_os, python_version=python_version
+            )
+        )
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
@@ -61,11 +69,13 @@ class DatabricksIntegration(Integration):
             List of stack component flavors for this integration.
         """
         from zenml.integrations.databricks.flavors import (
-            DatabricksOrchestratorFlavor,
             DatabricksModelDeployerFlavor,
+            DatabricksOrchestratorFlavor,
+            DatabricksStepOperatorFlavor,
         )
 
         return [
             DatabricksOrchestratorFlavor,
+            DatabricksStepOperatorFlavor,
             DatabricksModelDeployerFlavor,
         ]

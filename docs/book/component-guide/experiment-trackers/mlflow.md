@@ -38,6 +38,12 @@ zenml experiment-tracker register mlflow_experiment_tracker --flavor=mlflow
 zenml stack register custom_stack -e mlflow_experiment_tracker ... --set
 ```
 
+{% hint style="warning" %}
+If you use the default local MLflow configuration without setting a `tracking_uri`, ZenML stores new MLflow tracking metadata in a SQLite database at `<LOCAL_ARTIFACT_STORE>/mlflow.db` and stores MLflow artifacts in `<LOCAL_ARTIFACT_STORE>/mlflow_artifacts`.
+
+Earlier ZenML versions used MLflow's file store at `<LOCAL_ARTIFACT_STORE>/mlruns` for this default local setup. Existing local runs in that directory are not migrated automatically and won't appear in the new default SQLite-backed MLflow UI. The files remain on disk and can still be inspected separately with MLflow's file-store backend.
+{% endhint %}
+
 * [Remote Experiment Tracking with MLflow Tracking Server](https://mlflow.org/docs/latest/tracking/tutorials/remote-server.html): This scenario assumes that you have already deployed an MLflow Tracking Server enabled with proxied artifact storage access. There is no restriction regarding what other types of components it can be combined with. This option requires [authentication-related parameters](mlflow.md#authentication-methods) to be configured for the MLflow Experiment Tracker.
 
 {% hint style="warning" %}
@@ -48,16 +54,27 @@ Due to a [critical severity vulnerability](https://github.com/advisories/GHSA-xg
 
 ### Authentication Methods
 
-You need to configure the following credentials for authentication to a remote MLflow tracking server:
+Remote MLflow tracking servers require a `tracking_uri` and exactly one authentication method. Set `tracking_uri` to the URL of a remote MLflow Tracking Server, or to `"databricks"` when using the MLflow Tracking Server managed by Databricks. You can also set `tracking_insecure_tls=True` to skip SSL certificate verification when connecting to the tracking server.
 
-* `tracking_uri`: The URL pointing to the MLflow tracking server. If using an MLflow Tracking Server managed by Databricks, then the value of this attribute should be `"databricks"`.
-* `tracking_username`: Username for authenticating with the MLflow tracking server.
-* `tracking_password`: Password for authenticating with the MLflow tracking server.
-* `tracking_token` (in place of `tracking_username` and `tracking_password`): Token for authenticating with the MLflow tracking server.
-* `tracking_insecure_tls` (optional): Set to skip verifying the MLflow tracking server SSL certificate.
-* `databricks_host`: The host of the Databricks workspace with the MLflow-managed server to connect to. This is only required if the `tracking_uri` value is set to `"databricks"`. More information: [Access the MLflow tracking server from outside Databricks](https://docs.databricks.com/applications/mlflow/access-hosted-tracking-server.html)
+The supported authentication methods are:
 
-Either `tracking_token` or `tracking_username` and `tracking_password` must be specified.
+* **Username/password:** set both `tracking_username` and `tracking_password`. Use this for tracking servers that accept basic authentication.
+* **Token:** set `tracking_token`. Use this for tracking servers that accept bearer token authentication.
+* **Databricks OAuth M2M:** set `tracking_uri="databricks"`, `databricks_host`, `databricks_client_id`, and `databricks_client_secret`. Use this for Databricks-managed MLflow with a service principal, as described in the section below.
+
+For Databricks-managed MLflow, `databricks_host` must be the Databricks workspace URL. The `databricks_client_id` and `databricks_client_secret` fields are only used for Databricks OAuth M2M authentication.
+
+#### Databricks OAuth M2M
+
+Databricks OAuth machine-to-machine (M2M) authentication authorizes unattended workloads, such as pipelines and automation scripts, to access Databricks resources as a service principal. See the Databricks documentation on [authorizing service principal access with OAuth](https://docs.databricks.com/aws/en/dev-tools/auth/oauth-m2m) for the full setup flow.
+
+For ZenML, the Databricks OAuth M2M values map to the MLflow experiment tracker configuration as follows:
+
+* Databricks workspace URL: `databricks_host`
+* Service principal application ID / client ID: `databricks_client_id`
+* Service principal OAuth secret: `databricks_client_secret`
+
+To get these values, create or select a service principal in your Databricks workspace, generate an OAuth secret for it, and copy the displayed client ID and secret value. Make sure the service principal has access to the workspace and to the MLflow experiment path you want to use.
 
 {% tabs %}
 {% tab title="Basic Authentication" %}
@@ -79,6 +96,28 @@ zenml experiment-tracker register mlflow_experiment_tracker --flavor=mlflow \
 # Register and set a stack with the new experiment tracker
 zenml stack register custom_stack -e mlflow_experiment_tracker ... --set
 ```
+{% endtab %}
+
+{% tab title="Databricks OAuth M2M" %}
+This option configures authentication to a Databricks-managed MLflow tracking server with a Databricks-managed service principal and OAuth M2M credentials.
+
+```shell
+# Create a secret with the Databricks service principal OAuth credentials
+zenml secret create databricks_oauth_secret \
+    --client_id=<CLIENT_ID> \
+    --client_secret=<CLIENT_SECRET>
+
+# Register the MLflow experiment tracker
+zenml experiment-tracker register mlflow_databricks --flavor=mlflow \
+    --tracking_uri=databricks \
+    --databricks_host=<DATABRICKS_WORKSPACE_URL> \
+    --databricks_client_id={{databricks_oauth_secret.client_id}} \
+    --databricks_client_secret={{databricks_oauth_secret.client_secret}}
+
+# Register and set a stack with the new experiment tracker
+zenml stack register custom_stack -e mlflow_databricks ... --set
+```
+
 {% endtab %}
 
 {% tab title="ZenML Secret (Recommended)" %}
@@ -165,7 +204,7 @@ def tf_trainer(
 ```
 
 {% hint style="info" %}
-Instead of hardcoding an experiment tracker name, you can also use the [Client](https://docs.zenml.io/reference/python-client) to dynamically use the experiment tracker of your active stack:
+Instead of hardcoding an experiment tracker name, you can also use the [Client](https://docs.zenml.io/sdk-reference/zenml/client) to dynamically use the experiment tracker of your active stack:
 
 ```python
 from zenml.client import Client
@@ -193,13 +232,17 @@ tracking_url = trainer_step.run_metadata["experiment_tracker_url"].value
 print(tracking_url)
 ```
 
-This will be the URL of the corresponding experiment in your deployed MLflow instance, or a link to the corresponding mlflow experiment file if you are using local MLflow.
+This will be the URL of the corresponding experiment in your deployed MLflow instance, or the local MLflow tracking URI if you are using ZenML's default local MLflow configuration.
 
 {% hint style="info" %}
-If you are using local MLflow, you can use the `mlflow ui` command to start MLflow at [`localhost:5000`](http://localhost:5000/) where you can then explore the UI in your browser.
+If you are using ZenML's default local MLflow configuration, the MLflow tracking metadata is stored in a SQLite database inside your active local artifact store, and MLflow artifacts are stored next to it. You can use the `mlflow ui` command to start MLflow at [`localhost:5000`](http://localhost:5000/) where you can then explore the UI in your browser.
+
+You can find the active artifact store path with `zenml artifact-store describe`.
 
 ```bash
-mlflow ui --backend-store-uri <TRACKING_URL>
+mlflow ui \
+  --backend-store-uri sqlite:///<PATH_TO_LOCAL_ARTIFACT_STORE>/mlflow.db \
+  --default-artifact-root file:<PATH_TO_LOCAL_ARTIFACT_STORE>/mlflow_artifacts
 ```
 {% endhint %}
 

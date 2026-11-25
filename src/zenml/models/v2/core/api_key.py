@@ -32,7 +32,12 @@ from zenml.models.v2.base.base import (
     BaseResponseResources,
     BaseUpdate,
 )
-from zenml.models.v2.base.filter import AnyQuery, BaseFilter
+from zenml.models.v2.base.filter import (
+    AnyQuery,
+    BaseFilter,
+    DatetimeFilterOption,
+    StringFilterOption,
+)
 from zenml.utils.string_utils import b64_decode, b64_encode
 from zenml.utils.time_utils import utc_now
 
@@ -288,6 +293,51 @@ class APIKeyInternalResponse(APIKeyResponse):
         default=None,
         title="The previous API key. Only set if the key was rotated.",
     )
+    key_generation: int = Field(
+        default=1,
+        title="The current API key generation.",
+    )
+
+    def is_previous_key_retained(self) -> bool:
+        """Check whether the previous API key generation is still retained.
+
+        Returns:
+            True if the previous key/generation is still in its retention
+            window.
+        """
+        if (
+            not self.active
+            or self.last_rotated is None
+            or self.retain_period_minutes <= 0
+            or self.key_generation <= 1
+        ):
+            return False
+
+        return utc_now(tz_aware=self.last_rotated) - self.last_rotated < (
+            timedelta(minutes=self.retain_period_minutes)
+        )
+
+    def is_token_generation_valid(
+        self, token_generation: Optional[int]
+    ) -> bool:
+        """Check whether an API-key-derived token generation is still valid.
+
+        Args:
+            token_generation: The API key generation embedded in the JWT.
+
+        Returns:
+            True if the token generation is still valid.
+        """
+        if token_generation is None:
+            return True
+
+        if token_generation == self.key_generation:
+            return True
+
+        return (
+            token_generation == self.key_generation - 1
+            and self.is_previous_key_retained()
+        )
 
     def verify_key(
         self,
@@ -314,19 +364,8 @@ class APIKeyInternalResponse(APIKeyResponse):
 
         # same for the previous key, if set and if it's still valid
         key_hash = None
-        if (
-            self.previous_key is not None
-            and self.last_rotated is not None
-            and self.active
-            and self.retain_period_minutes > 0
-        ):
-            # check if the previous key is still valid
-            if utc_now(
-                tz_aware=self.last_rotated
-            ) - self.last_rotated < timedelta(
-                minutes=self.retain_period_minutes
-            ):
-                key_hash = self.previous_key
+        if self.previous_key is not None and self.is_previous_key_retained():
+            key_hash = self.previous_key
         previous_result = context.verify(key, key_hash)
 
         return result or previous_result
@@ -346,16 +385,21 @@ class APIKeyFilter(BaseFilter):
         *BaseFilter.CLI_EXCLUDE_FIELDS,
         "service_account",
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *BaseFilter.API_SINGLE_INPUT_PARAMS,
+        "service_account",
+        "active",
+    ]
 
     service_account: Optional[UUID] = Field(
         default=None,
         description="The service account to scope this query to.",
     )
-    name: Optional[str] = Field(
+    name: StringFilterOption = Field(
         default=None,
         description="Name of the API key",
     )
-    description: Optional[str] = Field(
+    description: StringFilterOption = Field(
         default=None,
         title="Filter by the API key description.",
     )
@@ -364,12 +408,12 @@ class APIKeyFilter(BaseFilter):
         title="Whether the API key is active.",
         union_mode="left_to_right",
     )
-    last_login: Optional[Union[datetime, str]] = Field(
+    last_login: DatetimeFilterOption = Field(
         default=None,
         title="Time when the API key was last used to log in.",
         union_mode="left_to_right",
     )
-    last_rotated: Optional[Union[datetime, str]] = Field(
+    last_rotated: DatetimeFilterOption = Field(
         default=None,
         title="Time when the API key was last rotated.",
         union_mode="left_to_right",

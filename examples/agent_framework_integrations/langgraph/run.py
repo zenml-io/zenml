@@ -25,50 +25,44 @@ docker_settings = DockerSettings(
 def run_langgraph_agent(
     query: str,
 ) -> Annotated[Dict[str, Any], "agent_results"]:
-    """Execute the LangGraph ReAct agent and return results."""
-    try:
-        # LangGraph agents expect messages in a specific format
-        messages = [{"role": "user", "content": query}]
-        result = agent.invoke({"messages": messages})
+    """Execute the LangGraph ReAct agent and return results.
 
-        # Extract the response from the result
-        if "messages" in result and result["messages"]:
-            # Get the last message (assistant's response)
-            last_message = result["messages"][-1]
-            if hasattr(last_message, "content"):
-                response = last_message.content
-            else:
-                response = str(last_message)
+    Args:
+        query: Question for the agent.
+
+    Returns:
+        The query and generated response.
+    """
+    messages = [{"role": "user", "content": query}]
+    result = agent.invoke({"messages": messages})
+
+    if "messages" in result and result["messages"]:
+        last_message = result["messages"][-1]
+        if hasattr(last_message, "content"):
+            response = last_message.content
         else:
-            response = str(result)
+            response = str(last_message)
+    else:
+        response = str(result)
 
-        return {"query": query, "response": response, "status": "success"}
-    except Exception as e:
-        return {
-            "query": query,
-            "response": f"Agent error: {str(e)}",
-            "status": "error",
-        }
+    return {"query": query, "response": response}
 
 
 @step
 def format_langgraph_response(
     agent_data: Dict[str, Any],
 ) -> Annotated[str, "formatted_response"]:
-    """Format the LangGraph agent results into a readable summary."""
+    """Format the LangGraph agent results into a readable summary.
+
+    Args:
+        agent_data: Query and generated response.
+
+    Returns:
+        The formatted agent response.
+    """
     query = agent_data["query"]
     response = agent_data["response"]
-    status = agent_data["status"]
-
-    if status == "error":
-        formatted = f"""❌ LANGGRAPH AGENT ERROR
-{"=" * 40}
-
-Query: {query}
-Error: {response}
-"""
-    else:
-        formatted = f"""🤖 LANGGRAPH REACT AGENT RESPONSE
+    formatted = f"""🤖 LANGGRAPH REACT AGENT RESPONSE
 {"=" * 40}
 
 Query: {query}

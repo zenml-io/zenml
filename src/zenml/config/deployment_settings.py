@@ -38,6 +38,7 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 DEFAULT_DEPLOYMENT_APP_THREAD_POOL_SIZE = 40
+DEFAULT_DEPLOYMENT_APP_ASYNC_EXECUTION_THREAD_POOL_SIZE = 40
 
 DEFAULT_DEPLOYMENT_APP_SECURE_HEADERS_HSTS = (
     "max-age=63072000; includeSubdomains"
@@ -494,6 +495,7 @@ DEFAULT_DEPLOYMENT_APP_API_URL_PATH = ""
 DEFAULT_DEPLOYMENT_APP_DOCS_URL_PATH = "/docs"
 DEFAULT_DEPLOYMENT_APP_REDOC_URL_PATH = "/redoc"
 DEFAULT_DEPLOYMENT_APP_INVOKE_URL_PATH = "/invoke"
+DEFAULT_DEPLOYMENT_APP_SUBMIT_URL_PATH = "/submit"
 DEFAULT_DEPLOYMENT_APP_HEALTH_URL_PATH = "/health"
 DEFAULT_DEPLOYMENT_APP_INFO_URL_PATH = "/info"
 DEFAULT_DEPLOYMENT_APP_METRICS_URL_PATH = "/metrics"
@@ -510,10 +512,11 @@ class DeploymentDefaultEndpoints(IntFlag):
     INFO = auto()
     METRICS = auto()
     DASHBOARD = auto()
+    SUBMIT = auto()
 
     DOC = DOCS | REDOC
-    API = INVOKE | HEALTH | INFO | METRICS
-    ALL = DOCS | REDOC | INVOKE | HEALTH | INFO | METRICS | DASHBOARD
+    API = INVOKE | SUBMIT | HEALTH | INFO | METRICS
+    ALL = DOCS | REDOC | INVOKE | SUBMIT | HEALTH | INFO | METRICS | DASHBOARD
 
 
 class DeploymentDefaultMiddleware(IntFlag):
@@ -542,7 +545,8 @@ class DeploymentSettings(BaseSettings):
     `app_version` and `app_kwargs`
     * the URL paths for the various built-in endpoints: `root_url_path`,
     `api_url_path`, `docs_url_path`, `redoc_url_path`, `invoke_url_path`,
-    `health_url_path`, `info_url_path` and `metrics_url_path`
+    `submit_url_path`, `health_url_path`, `info_url_path` and
+    `metrics_url_path`
     * the location of dashboard static files can be provided to replace the
     default UI that is included with the deployment ASGI application:
     `dashboard_files_path`
@@ -550,7 +554,7 @@ class DeploymentSettings(BaseSettings):
     `include_default_endpoints` and `include_default_middleware`
     * the CORS configuration: `cors`
     * the secure headers configuration: `secure_headers`
-    * the thread pool size: `thread_pool_size`
+    * the thread pool sizes: `thread_pool_size` and `async_execution_thread_pool_size`
     * custom application startup and shutdown hooks: `startup_hook_source`,
     `shutdown_hook_source`, `startup_hook_kwargs` and `shutdown_hook_kwargs`
     * uvicorn server configuration: `uvicorn_host`, `uvicorn_port`,
@@ -602,6 +606,7 @@ class DeploymentSettings(BaseSettings):
         redoc_url_path: URL path for the Redoc documentation endpoint.
         api_url_path: URL path for the API endpoints.
         invoke_url_path: URL path for the API invoke endpoint.
+        submit_url_path: URL path for the API submit endpoint.
         health_url_path: URL path for the API health check endpoint.
         info_url_path: URL path for the API info endpoint.
         metrics_url_path: URL path for the API metrics endpoint.
@@ -617,6 +622,8 @@ class DeploymentSettings(BaseSettings):
         cors: Configuration for CORS.
         secure_headers: Configuration for secure headers.
         thread_pool_size: Size of the thread pool for the ASGI application.
+        async_execution_thread_pool_size: Size of the thread pool for async pipeline
+            executions.
 
         startup_hook: Custom startup hook for the ASGI application.
         shutdown_hook: Custom shutdown hook for the ASGI application.
@@ -671,6 +678,7 @@ class DeploymentSettings(BaseSettings):
     docs_url_path: str = DEFAULT_DEPLOYMENT_APP_DOCS_URL_PATH
     redoc_url_path: str = DEFAULT_DEPLOYMENT_APP_REDOC_URL_PATH
     invoke_url_path: str = DEFAULT_DEPLOYMENT_APP_INVOKE_URL_PATH
+    submit_url_path: str = DEFAULT_DEPLOYMENT_APP_SUBMIT_URL_PATH
     health_url_path: str = DEFAULT_DEPLOYMENT_APP_HEALTH_URL_PATH
     info_url_path: str = DEFAULT_DEPLOYMENT_APP_INFO_URL_PATH
     metrics_url_path: str = DEFAULT_DEPLOYMENT_APP_METRICS_URL_PATH
@@ -680,6 +688,9 @@ class DeploymentSettings(BaseSettings):
     secure_headers: SecureHeadersConfig = SecureHeadersConfig()
 
     thread_pool_size: int = DEFAULT_DEPLOYMENT_APP_THREAD_POOL_SIZE
+    async_execution_thread_pool_size: int = (
+        DEFAULT_DEPLOYMENT_APP_ASYNC_EXECUTION_THREAD_POOL_SIZE
+    )
 
     startup_hook: Optional[SourceOrObjectField] = None
     shutdown_hook: Optional[SourceOrObjectField] = None

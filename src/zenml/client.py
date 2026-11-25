@@ -62,13 +62,13 @@ from zenml.constants import (
     handle_bool_env_var,
 )
 from zenml.enums import (
-    ArtifactType,
     ColorVariants,
     CuratedVisualizationSize,
-    DeploymentStatus,
     LogicalOperators,
     ModelStages,
     OAuthDeviceStatus,
+    ResourceRequestReclaimTolerance,
+    ResourceRequestStatus,
     RunWaitConditionResolution,
     ServiceState,
     SorterOps,
@@ -92,6 +92,7 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
+    TRIGGER_RETURN_TYPE_UNION,
     APIKeyFilter,
     APIKeyRequest,
     APIKeyResponse,
@@ -119,6 +120,8 @@ from zenml.models import (
     DeploymentResponse,
     FlavorFilter,
     FlavorResponse,
+    HookInvocationFilter,
+    HookInvocationResponse,
     ModelFilter,
     ModelRequest,
     ModelResponse,
@@ -142,6 +145,8 @@ from zenml.models import (
     PipelineRunFilter,
     PipelineRunResponse,
     PipelineSnapshotFilter,
+    PipelineSnapshotPruneRequest,
+    PipelineSnapshotPruneResponse,
     PipelineSnapshotResponse,
     PipelineSnapshotRunRequest,
     PipelineSnapshotUpdate,
@@ -152,14 +157,8 @@ from zenml.models import (
     ProjectRequest,
     ProjectResponse,
     ProjectUpdate,
-    ResourcePoolFilter,
-    ResourcePoolRequest,
-    ResourcePoolResponse,
-    ResourcePoolSubjectPolicyFilter,
-    ResourcePoolSubjectPolicyRequest,
-    ResourcePoolSubjectPolicyResponse,
-    ResourcePoolSubjectPolicyUpdate,
-    ResourcePoolUpdate,
+    ResourceRequestFilter,
+    ResourceRequestResponse,
     RunMetadataRequest,
     RunMetadataResource,
     RunTemplateFilter,
@@ -215,12 +214,31 @@ from zenml.models import (
     UserRequest,
     UserResponse,
     UserUpdate,
+    WebhookCreateResponse,
+    WebhookFilter,
+    WebhookRequest,
+    WebhookResponse,
+    WebhookRotateSecretRequest,
+    WebhookSecretResponse,
+    WebhookTriggerRequest,
+    WebhookTriggerResponse,
+    WebhookTriggerUpdate,
+    WebhookUpdate,
+)
+from zenml.models.v2.base.filter import (
+    DatetimeFilterOption,
+    EnumFilterOption,
+    FloatFilterOption,
+    IntegerFilterOption,
+    StringFilterOption,
+    UUIDFilterOption,
 )
 from zenml.utils import dict_utils, io_utils, source_utils, tag_utils
 from zenml.utils.dict_utils import dict_to_bytes
 from zenml.utils.filesync_model import FileSyncModel
 from zenml.utils.pagination_utils import depaginate
 from zenml.utils.uuid_utils import is_valid_uuid
+from zenml.webhooks import WebhookConfiguration, get_webhook_provider
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
@@ -837,13 +855,13 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        external_user_id: Optional[str] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        full_name: Optional[str] = None,
-        email: Optional[str] = None,
+        id: UUIDFilterOption = None,
+        external_user_id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        full_name: StringFilterOption = None,
+        email: StringFilterOption = None,
         active: Optional[bool] = None,
         email_opted_in: Optional[bool] = None,
         hydrate: bool = False,
@@ -1004,6 +1022,7 @@ class Client(metaclass=ClientMetaClass):
         name: str,
         description: str,
         display_name: Optional[str] = None,
+        project_metadata: Optional[Dict[str, Any]] = None,
     ) -> ProjectResponse:
         """Create a new project.
 
@@ -1011,6 +1030,7 @@ class Client(metaclass=ClientMetaClass):
             name: Name of the project.
             description: Description of the project.
             display_name: Display name of the project.
+            project_metadata: Metadata associated with the project.
 
         Returns:
             The created project.
@@ -1020,6 +1040,7 @@ class Client(metaclass=ClientMetaClass):
                 name=name,
                 description=description,
                 display_name=display_name or "",
+                project_metadata=project_metadata,
             )
         )
 
@@ -1056,11 +1077,11 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        display_name: Optional[str] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        display_name: StringFilterOption = None,
         hydrate: bool = False,
     ) -> Page[ProjectResponse]:
         """List all projects.
@@ -1102,14 +1123,20 @@ class Client(metaclass=ClientMetaClass):
         new_name: Optional[str] = None,
         new_display_name: Optional[str] = None,
         new_description: Optional[str] = None,
+        project_metadata: Optional[Dict[str, Any]] = None,
     ) -> ProjectResponse:
         """Update a project.
 
         Args:
-            name_id_or_prefix: Name, ID or prefix of the project to update.
-            new_name: New name of the project.
-            new_display_name: New display name of the project.
-            new_description: New description of the project.
+            name_id_or_prefix: Current name or ID of the project to update, or
+                None to update the active project.
+            new_name: New unique name of the project. The project UUID and its
+                associated resources are preserved.
+            new_display_name: New display name of the project. An empty string
+                clears the display name.
+            new_description: New description of the project. An empty string
+                clears the description.
+            project_metadata: New metadata for the project.
 
         Returns:
             The updated project.
@@ -1117,16 +1144,28 @@ class Client(metaclass=ClientMetaClass):
         project = self.get_project(
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
-        project_update = ProjectUpdate(
-            name=new_name or project.name,
-            display_name=new_display_name or project.display_name,
+        project_update = ProjectUpdate.model_validate(
+            {
+                field: value
+                for field, value in {
+                    "name": new_name,
+                    "display_name": new_display_name,
+                    "description": new_description,
+                    "project_metadata": project_metadata,
+                }.items()
+                if value is not None
+            }
         )
-        if new_description:
-            project_update.description = new_description
-        return self.zen_store.update_project(
+        updated_project = self.zen_store.update_project(
             project_id=project.id,
             project_update=project_update,
         )
+        if self._active_project and self._active_project.id == project.id:
+            self._active_project = updated_project
+        if self._config and self._config.active_project_id == project.id:
+            self._config.set_active_project(updated_project)
+        GlobalConfiguration().refresh_active_project(updated_project)
+        return updated_project
 
     def delete_project(self, name_id_or_prefix: str) -> None:
         """Delete a project.
@@ -1190,11 +1229,11 @@ class Client(metaclass=ClientMetaClass):
         if project.name != DEFAULT_PROJECT_NAME:
             if not self.zen_store.get_store_info().is_pro_server():
                 logger.warning(
-                    f"You are running with a non-default project "
-                    f"'{project.name}'. The ZenML project feature is "
-                    "available only in ZenML Pro. Pipelines, pipeline runs and "
-                    "artifacts produced in this project will not be "
-                    "accessible through the dashboard. Please visit "
+                    f"The ZenML OSS dashboard only works with the default "
+                    f"project ('{DEFAULT_PROJECT_NAME}'). You are currently "
+                    f"working with project '{project.name}', so your pipelines "
+                    f"won't be visible in the OSS dashboard. To use multiple "
+                    f"projects with full dashboard support, please visit "
                     "https://zenml.io/pro to learn more."
                 )
         return project
@@ -1298,14 +1337,14 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        component_id: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        component: Optional[Union[UUID, str]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        description: StringFilterOption = None,
+        component_id: UUIDFilterOption = None,
+        user: UUIDFilterOption = None,
+        component: UUIDFilterOption = None,
         hydrate: bool = False,
     ) -> Page[StackResponse]:
         """Lists all stacks.
@@ -1769,20 +1808,20 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[datetime] = None,
-        updated: Optional[datetime] = None,
-        type: Optional[str] = None,
-        flavor: Optional[str] = None,
-        user: Optional[Union[UUID, str]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        type: StringFilterOption = None,
+        flavor: StringFilterOption = None,
+        user: UUIDFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
         running: Optional[bool] = None,
-        service_name: Optional[str] = None,
-        pipeline_name: Optional[str] = None,
-        pipeline_run_id: Optional[str] = None,
-        pipeline_step_name: Optional[str] = None,
-        model_version_id: Optional[Union[str, UUID]] = None,
+        service_name: StringFilterOption = None,
+        pipeline_name: StringFilterOption = None,
+        pipeline_run_id: UUIDFilterOption = None,
+        pipeline_step_name: StringFilterOption = None,
+        model_version_id: UUIDFilterOption = None,
         config: Optional[Dict[str, Any]] = None,
     ) -> Page[ServiceResponse]:
         """List all services.
@@ -1987,15 +2026,15 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[datetime] = None,
-        updated: Optional[datetime] = None,
-        name: Optional[str] = None,
-        flavor: Optional[str] = None,
-        type: Optional[str] = None,
-        connector_id: Optional[Union[str, UUID]] = None,
-        stack_id: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        flavor: StringFilterOption = None,
+        type: StringFilterOption = None,
+        connector_id: UUIDFilterOption = None,
+        stack_id: UUIDFilterOption = None,
+        user: UUIDFilterOption = None,
         hydrate: bool = False,
     ) -> Page[ComponentResponse]:
         """Lists all registered stack components.
@@ -2261,235 +2300,70 @@ class Client(metaclass=ClientMetaClass):
             component.name,
         )
 
-    # -------------------------------- Resource Pools --------------------------
-
-    def create_resource_pool(
-        self,
-        name: str,
-        capacity: Dict[str, int],
-        description: Optional[str] = None,
-    ) -> ResourcePoolResponse:
-        """Create a resource pool.
+    def get_resource_request(
+        self, resource_request_id: UUID, hydrate: bool = True
+    ) -> ResourceRequestResponse:
+        """Get a resource request by ID.
 
         Args:
-            name: The name of the resource pool.
-            capacity: The capacity of the resource pool.
-            description: The description of the resource pool.
-
-        Returns:
-            The created resource pool.
-        """
-        request = ResourcePoolRequest(
-            name=name,
-            description=description,
-            capacity=capacity,
-        )
-        return self.zen_store.create_resource_pool(resource_pool=request)
-
-    def get_resource_pool(
-        self,
-        name_id_or_prefix: Union[str, UUID],
-        allow_name_prefix_match: bool = True,
-        hydrate: bool = True,
-    ) -> ResourcePoolResponse:
-        """Get a resource pool.
-
-        Args:
-            name_id_or_prefix: The name, id or prefix of the resource pool to
-                get.
-            allow_name_prefix_match: If True, allow matching by name prefix.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The resource pool.
-        """
-        return self._get_entity_by_id_or_name_or_prefix(
-            get_method=self.zen_store.get_resource_pool,
-            list_method=self.list_resource_pools,
-            name_id_or_prefix=name_id_or_prefix,
-            allow_name_prefix_match=allow_name_prefix_match,
-            hydrate=hydrate,
-        )
-
-    def list_resource_pools(
-        self,
-        sort_by: str = "created",
-        page: int = PAGINATION_STARTING_PAGE,
-        size: int = PAGE_SIZE_DEFAULT,
-        logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[datetime] = None,
-        updated: Optional[datetime] = None,
-        name: Optional[str] = None,
-        user: Optional[Union[UUID, str]] = None,
-        hydrate: bool = False,
-    ) -> Page[ResourcePoolResponse]:
-        """Lists resource pools.
-
-        Args:
-            sort_by: The column to sort by
-            page: The page of items
-            size: The maximum size of all pages
-            logical_operator: Which logical operator to use [and, or]
-            id: Use the id of resource pool to filter by.
-            created: Filter by creation time.
-            updated: Filter by last updated time.
-            name: The name of the resource pool to filter by.
-            user: The ID of name of the user to filter by.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A page of resource pools.
-        """
-        filter_model = ResourcePoolFilter(
-            page=page,
-            size=size,
-            sort_by=sort_by,
-            logical_operator=logical_operator,
-            id=id,
-            name=name,
-            created=created,
-            updated=updated,
-            user=user,
-        )
-
-        return self.zen_store.list_resource_pools(
-            filter_model=filter_model, hydrate=hydrate
-        )
-
-    def update_resource_pool(
-        self,
-        name_id_or_prefix: Union[UUID, str],
-        description: Optional[str] = None,
-        capacity: Optional[Dict[str, int]] = None,
-    ) -> ResourcePoolResponse:
-        """Update a resource pool.
-
-        Args:
-            name_id_or_prefix: The name, id or prefix of the resource pool to
-                update.
-            description: The new description of the resource pool.
-            capacity: The new capacity of the resource pool. Setting a value to
-                0 will remove the resource from the pool.
-
-        Returns:
-            The updated resource pool.
-        """
-        resource_pool = self.get_resource_pool(
-            name_id_or_prefix=name_id_or_prefix,
-            allow_name_prefix_match=False,
-        )
-
-        update_model = ResourcePoolUpdate(
-            description=description,
-            capacity=capacity,
-        )
-
-        return self.zen_store.update_resource_pool(
-            resource_pool_id=resource_pool.id,
-            update=update_model,
-        )
-
-    def delete_resource_pool(
-        self,
-        name_id_or_prefix: Union[str, UUID],
-    ) -> None:
-        """Delete a resource pool.
-
-        Args:
-            name_id_or_prefix: The name, id or prefix of the resource pool to
-                delete.
-        """
-        resource_pool = self.get_resource_pool(
-            name_id_or_prefix=name_id_or_prefix,
-            allow_name_prefix_match=False,
-        )
-        self.zen_store.delete_resource_pool(resource_pool_id=resource_pool.id)
-
-    def create_resource_pool_subject_policy(
-        self,
-        component_id: UUID,
-        pool_id: UUID,
-        priority: int,
-        reserved: Optional[Dict[str, int]] = None,
-        limit: Optional[Dict[str, int]] = None,
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Create a resource pool subject policy.
-
-        Args:
-            component_id: The component ID this policy applies to.
-            pool_id: The pool ID this policy belongs to.
-            priority: The policy priority.
-            reserved: Optional reserved resources by key.
-            limit: Optional resource limits by key.
-
-        Returns:
-            The created policy.
-        """
-        request = ResourcePoolSubjectPolicyRequest(
-            component_id=component_id,
-            pool_id=pool_id,
-            priority=priority,
-            reserved=reserved,
-            limit=limit,
-        )
-        return self.zen_store.create_resource_pool_subject_policy(
-            policy=request
-        )
-
-    def get_resource_pool_subject_policy(
-        self, policy_id: UUID, hydrate: bool = True
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Get a resource pool subject policy by ID.
-
-        Args:
-            policy_id: The ID of the policy to fetch.
+            resource_request_id: The resource request ID.
             hydrate: Whether to include metadata in the response.
 
         Returns:
-            The requested policy.
+            The requested resource request.
         """
-        return self.zen_store.get_resource_pool_subject_policy(
-            policy_id=policy_id, hydrate=hydrate
+        return self.zen_store.get_resource_request(
+            resource_request_id=resource_request_id,
+            hydrate=hydrate,
         )
 
-    def list_resource_pool_subject_policies(
+    def list_resource_requests(
         self,
         sort_by: str = "created",
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[datetime] = None,
-        updated: Optional[datetime] = None,
-        user: Optional[Union[UUID, str]] = None,
-        pool_id: Optional[Union[UUID, str]] = None,
-        component_id: Optional[Union[UUID, str]] = None,
-        priority: Optional[Union[int, str]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        user: UUIDFilterOption = None,
+        reclaim_tolerance: Optional[
+            Union[ResourceRequestReclaimTolerance, str]
+        ] = None,
+        component_id: UUIDFilterOption = None,
+        step_run_id: UUIDFilterOption = None,
+        preemption_initiated_by_id: UUIDFilterOption = None,
+        status: Optional[Union[ResourceRequestStatus, str]] = None,
+        pipeline_run_id: UUIDFilterOption = None,
+        pool_id: UUIDFilterOption = None,
+        project: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
-    ) -> Page[ResourcePoolSubjectPolicyResponse]:
-        """List resource pool subject policies.
+    ) -> Page[ResourceRequestResponse]:
+        """List resource requests.
 
         Args:
             sort_by: The column to sort by.
             page: The page of items.
             size: The maximum size of all pages.
             logical_operator: Which logical operator to use.
-            id: Filter by policy ID.
+            id: Filter by request ID.
             created: Filter by creation time.
             updated: Filter by last update time.
             user: Filter by user name/ID.
+            reclaim_tolerance: Filter by reclaim tolerance.
+            component_id: Filter by stack component name/ID.
+            step_run_id: Filter by step run name/ID.
+            preemption_initiated_by_id: Filter by preempting request ID.
+            status: Filter by lifecycle status.
+            pipeline_run_id: Filter by pipeline run name/ID.
             pool_id: Filter by resource pool name/ID.
-            component_id: Filter by component name/ID.
-            priority: Filter by priority.
-            hydrate: Whether to include metadata in the response.
+            project: The project name/ID to filter by.
+            hydrate: Whether to include related resources in the response.
 
         Returns:
-            A page of matching policies.
+            A page of matching resource requests.
         """
-        filter_model = ResourcePoolSubjectPolicyFilter(
+        filter_model = ResourceRequestFilter(
             page=page,
             size=size,
             sort_by=sort_by,
@@ -2498,46 +2372,19 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             user=user,
-            pool_id=pool_id,
+            reclaim_tolerance=reclaim_tolerance,
             component_id=component_id,
-            priority=priority,
+            step_run_id=step_run_id,
+            preemption_initiated_by_id=preemption_initiated_by_id,
+            status=status,
+            pipeline_run_id=pipeline_run_id,
+            pool_id=pool_id,
+            project=project or self.active_project.id,
         )
-        return self.zen_store.list_resource_pool_subject_policies(
-            filter_model=filter_model, hydrate=hydrate
+        return self.zen_store.list_resource_requests(
+            filter_model=filter_model,
+            hydrate=hydrate,
         )
-
-    def update_resource_pool_subject_policy(
-        self,
-        policy_id: UUID,
-        priority: Optional[int] = None,
-        reserved: Optional[Dict[str, int]] = None,
-        limit: Optional[Dict[str, int]] = None,
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Update a resource pool subject policy.
-
-        Args:
-            policy_id: The policy ID.
-            priority: Updated priority.
-            reserved: Updated reserved resources by key.
-            limit: Updated limits by key.
-
-        Returns:
-            The updated policy.
-        """
-        update = ResourcePoolSubjectPolicyUpdate(
-            priority=priority, reserved=reserved, limit=limit
-        )
-        return self.zen_store.update_resource_pool_subject_policy(
-            policy_id=policy_id, update=update
-        )
-
-    def delete_resource_pool_subject_policy(self, policy_id: UUID) -> None:
-        """Delete a resource pool subject policy.
-
-        Args:
-            policy_id: The policy ID.
-        """
-        self.zen_store.delete_resource_pool_subject_policy(policy_id=policy_id)
 
     # --------------------------------- Flavors --------------------------------
 
@@ -2560,9 +2407,9 @@ class Client(metaclass=ClientMetaClass):
         """
         from zenml.stack.flavor import validate_flavor_source
 
-        flavor = validate_flavor_source(
+        _, flavor = validate_flavor_source(
             source=source, component_type=component_type
-        )()
+        )
 
         if len(flavor.config_schema) > TEXT_FIELD_MAX_LENGTH:
             raise ValueError(
@@ -2607,14 +2454,14 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[datetime] = None,
-        updated: Optional[datetime] = None,
-        name: Optional[str] = None,
-        display_name: Optional[str] = None,
-        type: Optional[str] = None,
-        integration: Optional[str] = None,
-        user: Optional[Union[UUID, str]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        display_name: StringFilterOption = None,
+        type: StringFilterOption = None,
+        integration: StringFilterOption = None,
+        user: UUIDFilterOption = None,
         hydrate: bool = False,
     ) -> Page[FlavorResponse]:
         """Fetches all the flavor models.
@@ -2731,16 +2578,15 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
         latest_run_status: Optional[str] = None,
         latest_run_user: Optional[Union[UUID, str]] = None,
         project: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        tag: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        user: UUIDFilterOption = None,
+        tags: StringFilterOption = None,
         hydrate: bool = False,
     ) -> Page[PipelineResponse]:
         """List all pipelines.
@@ -2760,7 +2606,6 @@ class Client(metaclass=ClientMetaClass):
                 executed the latest run.
             project: The project name/ID to filter by.
             user: The name/ID of the user to filter by.
-            tag: Tag to filter by.
             tags: Tags to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
@@ -2781,7 +2626,6 @@ class Client(metaclass=ClientMetaClass):
             latest_run_user=latest_run_user,
             project=project or self.active_project.id,
             user=user,
-            tag=tag,
             tags=tags,
         )
         return self.zen_store.list_pipelines(
@@ -2854,15 +2698,12 @@ class Client(metaclass=ClientMetaClass):
             ZenKeyError: If multiple builds were found that match the given
                 id or prefix.
         """
-        from zenml.utils.uuid_utils import is_valid_uuid
+        from zenml.utils.uuid_utils import is_valid_uuid, to_uuid
 
         # First interpret as full UUID
         if is_valid_uuid(id_or_prefix):
-            if not isinstance(id_or_prefix, UUID):
-                id_or_prefix = UUID(id_or_prefix, version=4)
-
             return self.zen_store.get_build(
-                id_or_prefix,
+                to_uuid(id_or_prefix),
                 hydrate=hydrate,
             )
 
@@ -2903,21 +2744,21 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        pipeline_id: Optional[Union[str, UUID]] = None,
-        stack_id: Optional[Union[str, UUID]] = None,
-        container_registry_id: Optional[Union[UUID, str]] = None,
+        user: UUIDFilterOption = None,
+        pipeline_id: UUIDFilterOption = None,
+        stack_id: UUIDFilterOption = None,
+        container_registry_id: UUIDFilterOption = None,
         is_local: Optional[bool] = None,
         contains_code: Optional[bool] = None,
-        zenml_version: Optional[str] = None,
-        python_version: Optional[str] = None,
-        checksum: Optional[str] = None,
-        stack_checksum: Optional[str] = None,
-        duration: Optional[Union[int, str]] = None,
+        zenml_version: StringFilterOption = None,
+        python_version: StringFilterOption = None,
+        checksum: StringFilterOption = None,
+        stack_checksum: StringFilterOption = None,
+        duration: IntegerFilterOption = None,
         hydrate: bool = False,
     ) -> Page[PipelineBuildResponse]:
         """List all builds.
@@ -3106,23 +2947,22 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        name: Optional[str] = None,
+        user: UUIDFilterOption = None,
+        name: StringFilterOption = None,
         named_only: Optional[bool] = True,
-        pipeline: Optional[Union[str, UUID]] = None,
-        stack: Optional[Union[str, UUID]] = None,
-        build_id: Optional[Union[str, UUID]] = None,
-        schedule_id: Optional[Union[str, UUID]] = None,
-        source_snapshot_id: Optional[Union[str, UUID]] = None,
+        pipeline: UUIDFilterOption = None,
+        stack: UUIDFilterOption = None,
+        build_id: UUIDFilterOption = None,
+        schedule_id: UUIDFilterOption = None,
+        source_snapshot_id: UUIDFilterOption = None,
         runnable: Optional[bool] = None,
         deployable: Optional[bool] = None,
         deployed: Optional[bool] = None,
-        tag: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        tags: StringFilterOption = None,
         hydrate: bool = False,
         trigger_id: UUID | None = None,
     ) -> Page[PipelineSnapshotResponse]:
@@ -3149,7 +2989,6 @@ class Client(metaclass=ClientMetaClass):
             runnable: Whether the snapshot is runnable.
             deployable: Whether the snapshot is deployable.
             deployed: Whether the snapshot is deployed.
-            tag: Filter by tag.
             tags: Filter by tags.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
@@ -3178,7 +3017,6 @@ class Client(metaclass=ClientMetaClass):
             runnable=runnable,
             deployable=deployable,
             deployed=deployed,
-            tag=tag,
             tags=tags,
             trigger_id=trigger_id,
         )
@@ -3246,6 +3084,41 @@ class Client(metaclass=ClientMetaClass):
             hydrate=False,
         )
         self.zen_store.delete_snapshot(snapshot_id=snapshot.id)
+
+    def prune_snapshots(
+        self,
+        older_than: datetime,
+        apply: bool = False,
+        project: Optional[Union[str, UUID]] = None,
+    ) -> PipelineSnapshotPruneResponse:
+        """Delete old unused snapshots.
+
+        A snapshot is unused if it has no name and no pipeline run,
+        deployment, schedule, run template, trigger, or derived snapshot
+        references it. When connected to a ZenML server, the deletion is
+        scheduled as a background task: the returned task ID is attached to
+        the server log records it emits and no count is returned.
+
+        Args:
+            older_than: Only snapshots created before this point in time are
+                pruned.
+            apply: Whether to delete the eligible snapshots. If false, they
+                are only counted.
+            project: The project name/ID to prune snapshots in. Defaults to
+                the active project.
+
+        Returns:
+            The number of eligible or deleted snapshots, or the ID of the
+            background task deleting them.
+        """
+        project_id = (
+            self.get_project(project).id if project else self.active_project.id
+        )
+        return self.zen_store.prune_snapshots(
+            PipelineSnapshotPruneRequest(
+                project=project_id, older_than=older_than, apply=apply
+            )
+        )
 
     @_fail_for_sql_zen_store
     def trigger_pipeline(
@@ -3568,19 +3441,18 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        snapshot_id: Optional[Union[str, UUID]] = None,
-        deployer_id: Optional[Union[str, UUID]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        snapshot_id: UUIDFilterOption = None,
+        deployer_id: UUIDFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
-        status: Optional[DeploymentStatus] = None,
-        url: Optional[str] = None,
-        user: Optional[Union[UUID, str]] = None,
-        pipeline: Optional[Union[UUID, str]] = None,
-        tag: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        status: StringFilterOption = None,
+        url: StringFilterOption = None,
+        user: UUIDFilterOption = None,
+        pipeline: UUIDFilterOption = None,
+        tags: StringFilterOption = None,
         hydrate: bool = False,
     ) -> Page[DeploymentResponse]:
         """List deployments.
@@ -3601,7 +3473,6 @@ class Client(metaclass=ClientMetaClass):
             url: The url of the deployment to filter by.
             user: Filter by user name/ID.
             pipeline: Filter by pipeline name/ID.
-            tag: Tag to filter by.
             tags: Tags to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
@@ -3626,7 +3497,6 @@ class Client(metaclass=ClientMetaClass):
                 status=status,
                 url=url,
                 pipeline=pipeline,
-                tag=tag,
                 tags=tags,
             ),
             hydrate=hydrate,
@@ -4049,20 +3919,19 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        id: Optional[Union[UUID, str]] = None,
-        name: Optional[str] = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        id: UUIDFilterOption = None,
+        name: StringFilterOption = None,
         hidden: Optional[bool] = False,
-        tag: Optional[str] = None,
         project: Optional[Union[str, UUID]] = None,
-        pipeline_id: Optional[Union[str, UUID]] = None,
-        build_id: Optional[Union[str, UUID]] = None,
-        stack_id: Optional[Union[str, UUID]] = None,
-        code_repository_id: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        pipeline: Optional[Union[UUID, str]] = None,
-        stack: Optional[Union[UUID, str]] = None,
+        pipeline_id: UUIDFilterOption = None,
+        build_id: UUIDFilterOption = None,
+        stack_id: UUIDFilterOption = None,
+        code_repository_id: UUIDFilterOption = None,
+        user: UUIDFilterOption = None,
+        pipeline: UUIDFilterOption = None,
+        stack: UUIDFilterOption = None,
         hydrate: bool = False,
     ) -> Page[RunTemplateResponse]:
         """Get a page of run templates.
@@ -4077,7 +3946,6 @@ class Client(metaclass=ClientMetaClass):
             id: Filter by run template ID.
             name: Filter by run template name.
             hidden: Filter by run template hidden status.
-            tag: Filter by run template tags.
             project: Filter by project name/ID.
             pipeline_id: Filter by pipeline ID.
             build_id: Filter by build ID.
@@ -4102,7 +3970,6 @@ class Client(metaclass=ClientMetaClass):
             id=id,
             name=name,
             hidden=hidden,
-            tag=tag,
             project=project or self.active_project.id,
             pipeline_id=pipeline_id,
             build_id=build_id,
@@ -4192,6 +4059,40 @@ class Client(metaclass=ClientMetaClass):
         self.zen_store.delete_run_template(template_id=template_id)
 
     # ------------------------------- Triggers ---------------------------------
+
+    def list_snapshot_triggers(
+        self,
+        snapshot_id: UUID,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        project: Optional[Union[str, UUID]] = None,
+        hydrate: bool = False,
+    ) -> Page[TRIGGER_RETURN_TYPE_UNION]:
+        """List triggers attached to a snapshot.
+
+        Args:
+            snapshot_id: The ID of the snapshot.
+            sort_by: The column to sort by.
+            page: The page of items.
+            size: The maximum size of all pages.
+            project: The project name or ID to filter by.
+            hydrate: Whether to include metadata fields in the response.
+
+        Returns:
+            A page of triggers attached to the snapshot.
+        """
+        return self.zen_store.list_triggers(
+            triggers_filter_model=TriggerFilter(
+                project=project or self.active_project.id,
+                snapshot_id=str(snapshot_id),
+                is_archived=False,
+                sort_by=sort_by,
+                page=page,
+                size=size,
+            ),
+            hydrate=hydrate,
+        )
 
     def create_schedule_trigger(
         self,
@@ -4389,19 +4290,21 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        user: str | UUID | None = None,
-        project: UUID | str | None = None,
-        id: UUID | str | None = None,
-        created: datetime | None = None,
-        updated: datetime | None = None,
-        name: str | None = None,
+        user: UUIDFilterOption = None,
+        project: Optional[Union[str, UUID]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
         active: bool | None = None,
-        concurrency: str | None = None,
+        concurrency: EnumFilterOption[TriggerRunConcurrency] = None,
         is_archived: bool = False,
-        flavor: TriggerFlavor | None = None,
-        next_occurrence: datetime | None = None,
-        pipeline_id: str | UUID | None = None,
-        snapshot_id: str | UUID | None = None,
+        flavor: EnumFilterOption[
+            TriggerFlavor
+        ] = TriggerFlavor.NATIVE_SCHEDULE,
+        next_occurrence: DatetimeFilterOption = None,
+        pipeline_id: UUIDFilterOption = None,
+        snapshot_id: UUIDFilterOption = None,
         hydrate: bool = True,
     ) -> Page[ScheduleTriggerResponse]:
         """List schedule triggers.
@@ -4430,6 +4333,20 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A Page of ScheduleTriggerResponse objects.
         """
+        pipeline_ids = None
+        if pipeline_id is not None:
+            if isinstance(pipeline_id, list):
+                pipeline_ids = [str(p) for p in pipeline_id]
+            else:
+                pipeline_ids = [str(pipeline_id)]
+
+        snapshot_ids = None
+        if snapshot_id is not None:
+            if isinstance(snapshot_id, list):
+                snapshot_ids = [str(s) for s in snapshot_id]
+            else:
+                snapshot_ids = [str(snapshot_id)]
+
         return self.zen_store.list_triggers(  # type: ignore[return-value]
             triggers_filter_model=TriggerFilter(
                 project=project or self.active_project.id,
@@ -4439,9 +4356,7 @@ class Client(metaclass=ClientMetaClass):
                 updated=updated,
                 name=name,
                 active=active,
-                concurrency=TriggerRunConcurrency(concurrency)
-                if concurrency
-                else None,
+                concurrency=concurrency,
                 is_archived=is_archived,
                 flavor=flavor,
                 type=TriggerType.SCHEDULE,
@@ -4450,8 +4365,8 @@ class Client(metaclass=ClientMetaClass):
                 size=size,
                 logical_operator=logical_operator,
                 next_occurrence=next_occurrence,
-                pipeline_id=str(pipeline_id) if pipeline_id else None,
-                snapshot_id=str(snapshot_id) if snapshot_id else None,
+                pipeline_id=pipeline_ids,
+                snapshot_id=snapshot_ids,
             ),
             hydrate=hydrate,
         )
@@ -4622,17 +4537,18 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        user: str | UUID | None = None,
-        project: UUID | str | None = None,
-        id: UUID | str | None = None,
-        created: datetime | None = None,
-        updated: datetime | None = None,
-        name: str | None = None,
+        user: UUIDFilterOption = None,
+        project: Optional[Union[str, UUID]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
         active: bool | None = None,
-        concurrency: str | None = None,
+        concurrency: EnumFilterOption[TriggerRunConcurrency] = None,
         is_archived: bool = False,
-        pipeline_id: str | UUID | None = None,
-        snapshot_id: str | UUID | None = None,
+        flavor: EnumFilterOption[TriggerFlavor] = TriggerFlavor.PLATFORM_EVENT,
+        pipeline_id: UUIDFilterOption = None,
+        snapshot_id: UUIDFilterOption = None,
         hydrate: bool = True,
     ) -> Page[PlatformEventTriggerResponse]:
         """List platform event triggers.
@@ -4651,6 +4567,7 @@ class Client(metaclass=ClientMetaClass):
             active: The active status of the trigger.
             concurrency: The concurrency of the trigger.
             is_archived: The archived status of the trigger.
+            flavor: The flavor of the trigger.
             pipeline_id: Filter triggers by pipeline with attached snapshots.
             snapshot_id: Filter triggers by attached snapshot.
             hydrate: Flag deciding whether to hydrate the output model(s)
@@ -4659,6 +4576,20 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A Page of PlatformEventTriggerResponse objects.
         """
+        pipeline_ids = None
+        if pipeline_id:
+            if isinstance(pipeline_id, list):
+                pipeline_ids = [str(p) for p in pipeline_id]
+            else:
+                pipeline_ids = [str(pipeline_id)]
+
+        snapshot_ids = None
+        if snapshot_id:
+            if isinstance(snapshot_id, list):
+                snapshot_ids = [str(s) for s in snapshot_id]
+            else:
+                snapshot_ids = [str(snapshot_id)]
+
         return self.zen_store.list_triggers(  # type: ignore[return-value]
             triggers_filter_model=TriggerFilter(
                 project=project or self.active_project.id,
@@ -4668,19 +4599,255 @@ class Client(metaclass=ClientMetaClass):
                 updated=updated,
                 name=name,
                 active=active,
-                concurrency=TriggerRunConcurrency(concurrency)
-                if concurrency
-                else None,
+                concurrency=concurrency,
                 is_archived=is_archived,
-                flavor=TriggerFlavor.PLATFORM_EVENT,
+                flavor=flavor,
                 type=TriggerType.PLATFORM_EVENT,
                 sort_by=sort_by,
                 page=page,
                 size=size,
                 logical_operator=logical_operator,
                 next_occurrence=None,
-                pipeline_id=str(pipeline_id) if pipeline_id else None,
-                snapshot_id=str(snapshot_id) if snapshot_id else None,
+                pipeline_id=pipeline_ids,
+                snapshot_id=snapshot_ids,
+            ),
+            hydrate=hydrate,
+        )
+
+    def create_webhook_trigger(
+        self,
+        name: str,
+        webhook: str | UUID,
+        configuration: Mapping[str, Any] | WebhookConfiguration,
+        project_id: str | UUID | None = None,
+        active: bool = True,
+        concurrency: TriggerRunConcurrency = TriggerRunConcurrency.SKIP,
+    ) -> WebhookTriggerResponse:
+        """Create a webhook trigger.
+
+        Args:
+            name: The trigger name.
+            webhook: The owning webhook name, ID, or ID prefix.
+            configuration: The complete provider trigger configuration.
+            project_id: The project ID.
+            active: Whether the trigger should be active.
+            concurrency: The trigger run concurrency behavior.
+
+        Returns:
+            The created webhook trigger.
+
+        """
+        webhook_model = self.get_webhook(webhook, project=project_id)
+        validated_configuration = get_webhook_provider(
+            webhook_model.webhook_type
+        ).validate_configuration(configuration)
+
+        trigger = self.zen_store.create_trigger(
+            trigger=WebhookTriggerRequest(
+                project=project_id or self.active_project.id,
+                name=name,
+                flavor=TriggerFlavor.WEBHOOK,
+                active=active,
+                concurrency=concurrency,
+                webhook_id=webhook_model.id,
+                configuration=validated_configuration.model_dump(mode="json"),
+            )
+        )
+        assert isinstance(trigger, WebhookTriggerResponse)
+        return trigger
+
+    def update_webhook_trigger(
+        self,
+        trigger_name_id_or_prefix: Union[str, UUID],
+        name: str | None = None,
+        active: bool | None = None,
+        concurrency: TriggerRunConcurrency | None = None,
+        configuration: Mapping[str, Any] | WebhookConfiguration | None = None,
+    ) -> WebhookTriggerResponse:
+        """Update a webhook trigger.
+
+        Args:
+            trigger_name_id_or_prefix: The trigger name, ID, or ID prefix.
+            name: The new trigger name.
+            active: The new active state.
+            concurrency: The new trigger run concurrency behavior.
+            configuration: Complete replacement configuration. If omitted,
+                the existing configuration is preserved.
+
+        Returns:
+            The updated webhook trigger.
+
+        """
+        trigger = self.get_webhook_trigger(
+            trigger_name_id_or_prefix=trigger_name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+        validated_configuration = trigger.configuration
+        if configuration is not None:
+            webhook_model = self.get_webhook(cast(UUID, trigger.webhook_id))
+            validated_configuration = (
+                get_webhook_provider(webhook_model.webhook_type)
+                .validate_configuration(configuration)
+                .model_dump(mode="json")
+            )
+
+        response = self.zen_store.update_trigger(
+            trigger_id=trigger.id,
+            trigger_update=WebhookTriggerUpdate(
+                name=name if name is not None else trigger.name,
+                active=active if active is not None else trigger.active,
+                concurrency=(
+                    concurrency
+                    if concurrency is not None
+                    else trigger.concurrency
+                ),
+                configuration=validated_configuration,
+            ),
+        )
+        assert isinstance(response, WebhookTriggerResponse)
+        return response
+
+    def get_webhook_trigger(
+        self,
+        trigger_name_id_or_prefix: Union[str, UUID],
+        allow_name_prefix_match: bool = True,
+        project: Optional[Union[str, UUID]] = None,
+        hydrate: bool = True,
+        is_archived: bool = False,
+    ) -> WebhookTriggerResponse:
+        """Retrieve a webhook trigger by name, ID, or prefix.
+
+        Args:
+            trigger_name_id_or_prefix: The trigger name, ID, or ID prefix.
+            allow_name_prefix_match: Whether to allow name prefix matching.
+            project: The project name or ID.
+            hydrate: Whether to hydrate the response.
+            is_archived: Whether to search archived triggers.
+
+        Returns:
+            The webhook trigger.
+
+        Raises:
+            ValueError: If the resolved trigger has an incompatible type.
+        """
+
+        def _get_webhook_trigger_by_id(
+            trigger_id: UUID, hydrate: bool = True
+        ) -> WebhookTriggerResponse:
+            trigger = self.zen_store.get_trigger(
+                trigger_id=trigger_id,
+                hydrate=hydrate,
+            )
+            if (
+                not isinstance(trigger, WebhookTriggerResponse)
+                or trigger.is_archived != is_archived
+            ):
+                raise KeyError(
+                    f"No webhook trigger found for ID `{trigger_id}`."
+                )
+            return trigger
+
+        list_method = cast(
+            Callable[..., Page[WebhookTriggerResponse]],
+            functools.partial(
+                self.list_webhook_triggers,
+                is_archived=is_archived,
+            ),
+        )
+        trigger = self._get_entity_by_id_or_name_or_prefix(
+            get_method=_get_webhook_trigger_by_id,
+            list_method=list_method,
+            name_id_or_prefix=trigger_name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
+            project=project,
+            hydrate=hydrate,
+        )
+        if not isinstance(trigger, WebhookTriggerResponse):
+            raise ValueError(
+                f"Found trigger {trigger.id} of incompatible type "
+                f"(expected {TriggerType.WEBHOOK})."
+            )
+        return trigger
+
+    def list_webhook_triggers(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        user: UUIDFilterOption = None,
+        project: Optional[Union[str, UUID]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        active: bool | None = None,
+        concurrency: EnumFilterOption[TriggerRunConcurrency] = None,
+        is_archived: bool = False,
+        webhook_id: UUIDFilterOption = None,
+        pipeline_id: UUIDFilterOption = None,
+        snapshot_id: UUIDFilterOption = None,
+        hydrate: bool = True,
+    ) -> Page[WebhookTriggerResponse]:
+        """List webhook triggers.
+
+        Args:
+            sort_by: The column to sort by.
+            page: The page of items.
+            size: The maximum page size.
+            logical_operator: The operator used to combine filters.
+            user: Filter by creating user.
+            project: Filter by project name or ID.
+            id: Filter by trigger ID.
+            created: Filter by creation time.
+            updated: Filter by update time.
+            name: Filter by trigger name.
+            active: Filter by active state.
+            concurrency: Filter by concurrency behavior.
+            is_archived: Filter by archived state.
+            webhook_id: Filter by webhook ID.
+            pipeline_id: Filter by pipeline with attached snapshots.
+            snapshot_id: Filter by attached snapshot.
+            hydrate: Whether to hydrate responses.
+
+        Returns:
+            A page of webhook triggers.
+        """
+        pipeline_ids = None
+        if pipeline_id is not None:
+            pipeline_ids = (
+                [str(value) for value in pipeline_id]
+                if isinstance(pipeline_id, list)
+                else [str(pipeline_id)]
+            )
+        snapshot_ids = None
+        if snapshot_id is not None:
+            snapshot_ids = (
+                [str(value) for value in snapshot_id]
+                if isinstance(snapshot_id, list)
+                else [str(snapshot_id)]
+            )
+
+        return self.zen_store.list_triggers(  # type: ignore[return-value]
+            triggers_filter_model=TriggerFilter(
+                project=project or self.active_project.id,
+                user=user,
+                id=id,
+                created=created,
+                updated=updated,
+                name=name,
+                active=active,
+                concurrency=concurrency,
+                is_archived=is_archived,
+                flavor=TriggerFlavor.WEBHOOK,
+                type=TriggerType.WEBHOOK,
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                logical_operator=logical_operator,
+                webhook_id=webhook_id,
+                pipeline_id=pipeline_ids,
+                snapshot_id=snapshot_ids,
             ),
             hydrate=hydrate,
         )
@@ -4811,22 +4978,22 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        pipeline_id: Optional[Union[str, UUID]] = None,
-        orchestrator_id: Optional[Union[str, UUID]] = None,
+        user: UUIDFilterOption = None,
+        pipeline_id: UUIDFilterOption = None,
+        orchestrator_id: UUIDFilterOption = None,
         active: Optional[Union[str, bool]] = None,
-        cron_expression: Optional[str] = None,
-        start_time: Optional[Union[datetime, str]] = None,
-        end_time: Optional[Union[datetime, str]] = None,
-        interval_second: Optional[int] = None,
+        cron_expression: StringFilterOption = None,
+        start_time: DatetimeFilterOption = None,
+        end_time: DatetimeFilterOption = None,
+        interval_second: FloatFilterOption = None,
         catchup: Optional[Union[str, bool]] = None,
         hydrate: bool = False,
-        run_once_start_time: Optional[Union[datetime, str]] = None,
+        run_once_start_time: DatetimeFilterOption = None,
         is_archived: bool | None = False,
     ) -> Page[ScheduleResponse]:
         """List schedules.
@@ -5112,43 +5279,45 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
-        pipeline_id: Optional[Union[str, UUID]] = None,
-        pipeline_name: Optional[str] = None,
-        stack_id: Optional[Union[str, UUID]] = None,
-        schedule_id: Optional[Union[str, UUID]] = None,
-        build_id: Optional[Union[str, UUID]] = None,
-        snapshot_id: Optional[Union[str, UUID]] = None,
-        code_repository_id: Optional[Union[str, UUID]] = None,
-        template_id: Optional[Union[str, UUID]] = None,
-        source_snapshot_id: Optional[Union[str, UUID]] = None,
-        model_version_id: Optional[Union[str, UUID]] = None,
-        linked_to_model_version_id: Optional[Union[str, UUID]] = None,
-        orchestrator_run_id: Optional[str] = None,
-        status: Optional[str] = None,
-        index: Optional[int] = None,
-        start_time: Optional[Union[datetime, str]] = None,
-        end_time: Optional[Union[datetime, str]] = None,
+        pipeline_id: UUIDFilterOption = None,
+        pipeline_name: StringFilterOption = None,
+        stack_id: UUIDFilterOption = None,
+        schedule_id: UUIDFilterOption = None,
+        build_id: UUIDFilterOption = None,
+        snapshot_id: UUIDFilterOption = None,
+        code_repository_id: UUIDFilterOption = None,
+        template_id: UUIDFilterOption = None,
+        source_snapshot_id: UUIDFilterOption = None,
+        model_version_id: UUIDFilterOption = None,
+        linked_to_model_version_id: UUIDFilterOption = None,
+        orchestrator_run_id: StringFilterOption = None,
+        status: StringFilterOption = None,
+        index: IntegerFilterOption = None,
+        start_time: DatetimeFilterOption = None,
+        end_time: DatetimeFilterOption = None,
         templatable: Optional[bool] = None,
-        tag: Optional[str] = None,
-        tags: Optional[List[str]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        run_metadata: Optional[List[str]] = None,
-        pipeline: Optional[Union[UUID, str]] = None,
-        code_repository: Optional[Union[UUID, str]] = None,
-        model: Optional[Union[UUID, str]] = None,
-        stack: Optional[Union[UUID, str]] = None,
-        stack_component: Optional[Union[UUID, str]] = None,
+        tags: StringFilterOption = None,
+        user: UUIDFilterOption = None,
+        run_metadata: StringFilterOption = None,
+        pipeline: UUIDFilterOption = None,
+        code_repository: UUIDFilterOption = None,
+        model: UUIDFilterOption = None,
+        stack: UUIDFilterOption = None,
+        stack_component: UUIDFilterOption = None,
         in_progress: Optional[bool] = None,
         hydrate: bool = False,
         include_full_metadata: bool = False,
-        triggered_by_step_run_id: Optional[Union[UUID, str]] = None,
-        triggered_by_deployment_id: Optional[Union[UUID, str]] = None,
-        trigger_id: UUID | str | None = None,
+        triggered_by_step_run_id: UUIDFilterOption = None,
+        triggered_by_deployment_id: UUIDFilterOption = None,
+        trigger_id: UUIDFilterOption = None,
+        parent_run_id: UUIDFilterOption = None,
+        root_runs_only: Optional[bool] = None,
+        triggered_by_deployment: Optional[bool] = None,
     ) -> Page[PipelineRunResponse]:
         """List all pipeline runs.
 
@@ -5184,7 +5353,6 @@ class Client(metaclass=ClientMetaClass):
             start_time: The start_time for the pipeline run
             end_time: The end_time for the pipeline run
             templatable: If the runs should be templatable or not.
-            tag: Tag to filter by.
             tags: Tags to filter by.
             user: The name/ID of the user to filter by.
             run_metadata: The run_metadata of the run to filter by.
@@ -5203,6 +5371,10 @@ class Client(metaclass=ClientMetaClass):
             triggered_by_deployment_id: The ID of the deployment that triggered
                 the pipeline run.
             trigger_id: The ID of the trigger that generated this run.
+            parent_run_id: The parent run ID for nested child pipeline runs.
+            root_runs_only: Whether to include only root runs. Ignored if False.
+            triggered_by_deployment: If True, only return deployment runs. If
+                False, exclude them. Not applied if unset.
 
         Returns:
             A page with Pipeline Runs fitting the filter description
@@ -5233,7 +5405,6 @@ class Client(metaclass=ClientMetaClass):
             index=index,
             start_time=start_time,
             end_time=end_time,
-            tag=tag,
             tags=tags,
             user=user,
             run_metadata=run_metadata,
@@ -5247,6 +5418,9 @@ class Client(metaclass=ClientMetaClass):
             triggered_by_step_run_id=triggered_by_step_run_id,
             triggered_by_deployment_id=triggered_by_deployment_id,
             trigger_id=trigger_id,
+            parent_run_id=parent_run_id,
+            root_runs_only=root_runs_only,
+            triggered_by_deployment=triggered_by_deployment,
         )
         return self.zen_store.list_runs(
             runs_filter_model=runs_filter_model,
@@ -5280,19 +5454,19 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        resolved_by: Optional[Union[UUID, str]] = None,
-        resolved_at: Optional[Union[datetime, str]] = None,
-        resolution: Optional[str] = None,
-        pipeline_run: Optional[Union[str, UUID]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        resolved_by: UUIDFilterOption = None,
+        resolved_at: DatetimeFilterOption = None,
+        resolution: StringFilterOption = None,
+        pipeline_run: UUIDFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        run_metadata: Optional[List[str]] = None,
-        status: Optional[str] = None,
-        type: Optional[str] = None,
+        user: UUIDFilterOption = None,
+        run_metadata: StringFilterOption = None,
+        status: StringFilterOption = None,
+        type: StringFilterOption = None,
         hydrate: bool = False,
     ) -> Page[RunWaitConditionResponse]:
         """List run wait conditions.
@@ -5399,26 +5573,27 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        cache_key: Optional[str] = None,
-        cache_expires_at: Optional[Union[datetime, str]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        cache_key: StringFilterOption = None,
+        cache_expires_at: DatetimeFilterOption = None,
         cache_expired: Optional[bool] = None,
-        code_hash: Optional[str] = None,
-        status: Optional[str] = None,
-        start_time: Optional[Union[datetime, str]] = None,
-        end_time: Optional[Union[datetime, str]] = None,
-        pipeline_run_id: Optional[Union[str, UUID]] = None,
-        snapshot_id: Optional[Union[str, UUID]] = None,
-        original_step_run_id: Optional[Union[str, UUID]] = None,
+        code_hash: StringFilterOption = None,
+        status: StringFilterOption = None,
+        start_time: DatetimeFilterOption = None,
+        end_time: DatetimeFilterOption = None,
+        pipeline_run_id: UUIDFilterOption = None,
+        snapshot_id: UUIDFilterOption = None,
+        original_step_run_id: UUIDFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        model_version_id: Optional[Union[str, UUID]] = None,
-        model: Optional[Union[UUID, str]] = None,
-        run_metadata: Optional[List[str]] = None,
+        user: UUIDFilterOption = None,
+        model_version_id: UUIDFilterOption = None,
+        model: UUIDFilterOption = None,
+        run_metadata: StringFilterOption = None,
         exclude_retried: Optional[bool] = None,
+        version: IntegerFilterOption = None,
         hydrate: bool = False,
     ) -> Page[StepRunResponse]:
         """List all pipelines.
@@ -5450,6 +5625,7 @@ class Client(metaclass=ClientMetaClass):
             status: The status of the step run.
             run_metadata: Filter by run metadata.
             exclude_retried: Whether to exclude retried step runs.
+            version: The version of the step run to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -5481,11 +5657,108 @@ class Client(metaclass=ClientMetaClass):
             model=model,
             run_metadata=run_metadata,
             exclude_retried=exclude_retried,
+            version=version,
         )
         return self.zen_store.list_run_steps(
             step_run_filter_model=step_run_filter_model,
             hydrate=hydrate,
         )
+
+    def get_hook_invocation(
+        self,
+        hook_invocation_id: UUID,
+        hydrate: bool = True,
+    ) -> HookInvocationResponse:
+        """Get a hook invocation by ID.
+
+        Args:
+            hook_invocation_id: The ID of the hook invocation to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The hook invocation.
+        """
+        return self.zen_store.get_hook_invocation(
+            hook_invocation_id,
+            hydrate=hydrate,
+        )
+
+    def list_hook_invocations(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        pipeline_run_id: UUIDFilterOption = None,
+        step_run_id: UUIDFilterOption = None,
+        hook_type: StringFilterOption = None,
+        name: StringFilterOption = None,
+        status: StringFilterOption = None,
+        start_time: DatetimeFilterOption = None,
+        end_time: DatetimeFilterOption = None,
+        project: UUIDFilterOption = None,
+        user: UUIDFilterOption = None,
+        hydrate: bool = False,
+    ) -> Page[HookInvocationResponse]:
+        """List all hook invocations matching the given filter criteria.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of hook invocations to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            pipeline_run_id: The id of the pipeline run to filter by.
+            step_run_id: The id of the step run to filter by.
+            hook_type: The type of the hook invocation to filter by.
+            name: The name of the hook invocation to filter by.
+            status: The status of the hook invocation to filter by.
+            start_time: The start time of the hook invocation to filter by.
+            end_time: The end time of the hook invocation to filter by.
+            project: The project name/ID to filter by.
+            user: Filter by user name/ID.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of hook invocations matching the filter description.
+        """
+        hook_invocation_filter_model = HookInvocationFilter(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            pipeline_run_id=pipeline_run_id,
+            step_run_id=step_run_id,
+            hook_type=hook_type,
+            name=name,
+            status=status,
+            start_time=start_time,
+            end_time=end_time,
+            project=project or self.active_project.id,
+            user=user,
+        )
+        return self.zen_store.list_hook_invocations(
+            hook_invocation_filter_model=hook_invocation_filter_model,
+            hydrate=hydrate,
+        )
+
+    def delete_hook_invocation(self, hook_invocation_id: UUID) -> None:
+        """Delete a hook invocation.
+
+        Args:
+            hook_invocation_id: The ID of the hook invocation to delete.
+        """
+        self.zen_store.delete_hook_invocation(hook_invocation_id)
 
     def update_step_run(
         self,
@@ -5540,16 +5813,15 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
         has_custom_name: Optional[bool] = None,
-        user: Optional[Union[UUID, str]] = None,
+        user: UUIDFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
-        tag: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        tags: StringFilterOption = None,
     ) -> Page[ArtifactResponse]:
         """Get a list of artifacts.
 
@@ -5567,7 +5839,6 @@ class Client(metaclass=ClientMetaClass):
             project: The project name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
-            tag: Filter artifacts by tag.
             tags: Tags to filter by.
 
         Returns:
@@ -5583,7 +5854,6 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             name=name,
             has_custom_name=has_custom_name,
-            tag=tag,
             tags=tags,
             user=user,
             project=project or self.active_project.id,
@@ -5740,28 +6010,27 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        artifact: Optional[Union[str, UUID]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        artifact: UUIDFilterOption = None,
         name: Optional[str] = None,
-        version: Optional[Union[str, int]] = None,
-        version_number: Optional[int] = None,
-        artifact_store_id: Optional[Union[str, UUID]] = None,
-        type: Optional[Union[ArtifactType, str]] = None,
-        data_type: Optional[str] = None,
-        uri: Optional[str] = None,
-        materializer: Optional[str] = None,
+        version: IntegerFilterOption = None,
+        version_number: IntegerFilterOption = None,
+        artifact_store_id: UUIDFilterOption = None,
+        type: StringFilterOption = None,
+        data_type: StringFilterOption = None,
+        uri: StringFilterOption = None,
+        materializer: StringFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
-        model_version_id: Optional[Union[str, UUID]] = None,
+        model_version_id: UUIDFilterOption = None,
         only_unused: Optional[bool] = False,
         has_custom_name: Optional[bool] = None,
-        user: Optional[Union[UUID, str]] = None,
-        model: Optional[Union[UUID, str]] = None,
-        pipeline_run: Optional[Union[UUID, str]] = None,
-        run_metadata: Optional[List[str]] = None,
-        tag: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        user: UUIDFilterOption = None,
+        model: UUIDFilterOption = None,
+        pipeline_run: UUIDFilterOption = None,
+        run_metadata: StringFilterOption = None,
+        tags: StringFilterOption = None,
         hydrate: bool = False,
     ) -> Page[ArtifactVersionResponse]:
         """Get a list of artifact versions.
@@ -5788,7 +6057,6 @@ class Client(metaclass=ClientMetaClass):
             only_unused: Only return artifact versions that are not used in
                 any pipeline runs.
             has_custom_name: Filter artifacts with/without custom names.
-            tag: A tag to filter by.
             tags: Tags to filter by.
             user: Filter by user name or ID.
             model: Filter by model name or ID.
@@ -5803,6 +6071,12 @@ class Client(metaclass=ClientMetaClass):
         if name:
             artifact = name
 
+        if version:
+            if isinstance(version, list):
+                version = [str(v) for v in version]
+            else:
+                version = [str(version)]
+
         artifact_version_filter_model = ArtifactVersionFilter(
             sort_by=sort_by,
             page=page,
@@ -5812,7 +6086,7 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             artifact=artifact,
-            version=str(version) if version else None,
+            version=version,
             version_number=version_number,
             artifact_store_id=artifact_store_id,
             type=type,
@@ -5823,7 +6097,6 @@ class Client(metaclass=ClientMetaClass):
             model_version_id=model_version_id,
             only_unused=only_unused,
             has_custom_name=has_custom_name,
-            tag=tag,
             tags=tags,
             user=user,
             model=model,
@@ -5877,6 +6150,7 @@ class Client(metaclass=ClientMetaClass):
         delete_metadata: bool = True,
         delete_from_artifact_store: bool = False,
         project: Optional[Union[str, UUID]] = None,
+        server_side: bool = False,
     ) -> None:
         """Delete an artifact version.
 
@@ -5890,45 +6164,78 @@ class Client(metaclass=ClientMetaClass):
             delete_metadata: If True, delete the metadata of the artifact
                 version from the database.
             delete_from_artifact_store: If True, delete the artifact object
-                    itself from the artifact store.
+                itself from the artifact store.
             project: The project name/ID to filter by.
+            server_side: If True, let the server delete the artifact data
+                instead of using the local stack.
         """
         artifact_version = self.get_artifact_version(
             name_id_or_prefix=name_id_or_prefix,
             version=version,
             project=project,
         )
-        if delete_from_artifact_store:
+        if delete_from_artifact_store and not server_side:
             self._delete_artifact_from_artifact_store(
                 artifact_version=artifact_version
             )
-        if delete_metadata:
-            self._delete_artifact_version(artifact_version=artifact_version)
+        if delete_metadata or (server_side and delete_from_artifact_store):
+            self._delete_artifact_version(
+                artifact_version=artifact_version,
+                delete_metadata=delete_metadata,
+                delete_from_artifact_store=(
+                    delete_from_artifact_store and server_side
+                ),
+            )
 
     def _delete_artifact_version(
-        self, artifact_version: ArtifactVersionResponse
+        self,
+        artifact_version: ArtifactVersionResponse,
+        delete_metadata: bool = True,
+        delete_from_artifact_store: bool = False,
     ) -> None:
-        """Delete the metadata of an artifact version from the database.
+        """Delete artifact version metadata and/or server-side data.
 
         Args:
             artifact_version: The artifact version to delete.
+            delete_metadata: Whether to delete the artifact version metadata.
+            delete_from_artifact_store: Whether the server should also delete
+                the artifact data from the artifact store.
 
         Raises:
             ValueError: If the artifact version is still used in any runs.
+            TypeError: If server-side artifact data deletion is requested
+                without a REST store.
         """
-        if artifact_version not in depaginate(
-            self.list_artifact_versions, only_unused=True
-        ):
-            raise ValueError(
-                "The metadata of artifact versions that are used in runs "
-                "cannot be deleted. Please delete all runs that use this "
-                "artifact first."
+        if delete_metadata:
+            unused_versions = self.list_artifact_versions(
+                id=artifact_version.id, only_unused=True, size=1
             )
-        self.zen_store.delete_artifact_version(artifact_version.id)
-        logger.info(
-            f"Deleted version '{artifact_version.version}' of artifact "
-            f"'{artifact_version.artifact.name}'."
-        )
+            if not unused_versions.items:
+                raise ValueError(
+                    "The metadata of artifact versions that are used in runs "
+                    "cannot be deleted. Please delete all runs that use this "
+                    "artifact first."
+                )
+        if delete_from_artifact_store:
+            from zenml.zen_stores.rest_zen_store import RestZenStore
+
+            if not isinstance(self.zen_store, RestZenStore):
+                raise TypeError(
+                    "Server-side artifact data deletion is only supported "
+                    "when connected to a ZenML server through the REST API."
+                )
+            self.zen_store.delete_artifact_version_server_side(
+                artifact_version.id,
+                delete_metadata=delete_metadata,
+                delete_from_artifact_store=delete_from_artifact_store,
+            )
+        elif delete_metadata:
+            self.zen_store.delete_artifact_version(artifact_version.id)
+        if delete_metadata:
+            logger.info(
+                f"Deleted version '{artifact_version.version}' of artifact "
+                f"'{artifact_version.artifact.name}'."
+            )
 
     def _delete_artifact_from_artifact_store(
         self, artifact_version: ArtifactVersionResponse
@@ -6203,12 +6510,12 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[datetime] = None,
-        updated: Optional[datetime] = None,
-        name: Optional[str] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
         private: Optional[bool] = None,
-        user: Optional[Union[UUID, str]] = None,
+        user: UUIDFilterOption = None,
         hydrate: bool = False,
     ) -> Page[SecretResponse]:
         """Fetches all the secret models.
@@ -6563,12 +6870,12 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
+        user: UUIDFilterOption = None,
         hydrate: bool = False,
     ) -> Page[CodeRepositoryResponse]:
         """List all code repositories.
@@ -6674,6 +6981,222 @@ class Client(metaclass=ClientMetaClass):
             project=project,
         )
         self.zen_store.delete_code_repository(code_repository_id=repo.id)
+
+    # ------------------------------ Webhooks ------------------------------
+
+    @_fail_for_sql_zen_store
+    def create_webhook(
+        self,
+        name: str,
+        webhook_type: str,
+        active: bool = True,
+        secret: str | None = None,
+    ) -> WebhookCreateResponse:
+        """Create a webhook in the active project.
+
+        Args:
+            name: The webhook name.
+            webhook_type: The webhook provider type.
+            active: Whether the webhook accepts events immediately.
+            secret: An optional signing secret.
+
+        Returns:
+            The created webhook and any generated signing secret.
+        """
+        return self.zen_store.create_webhook(
+            WebhookRequest(
+                project=self.active_project.id,
+                name=name,
+                webhook_type=webhook_type,
+                active=active,
+                secret=secret,
+            )
+        )
+
+    @_fail_for_sql_zen_store
+    def get_webhook(
+        self,
+        name_id_or_prefix: str | UUID,
+        allow_name_prefix_match: bool = True,
+        project: str | UUID | None = None,
+        hydrate: bool = True,
+    ) -> WebhookResponse:
+        """Get a webhook by name, ID, or prefix.
+
+        Args:
+            name_id_or_prefix: The webhook name, ID, or ID prefix.
+            allow_name_prefix_match: Whether to allow name prefix matching.
+            project: The project name or ID.
+            hydrate: Whether to include intake statistics.
+
+        Returns:
+            The webhook.
+        """
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_webhook,
+            list_method=self.list_webhooks,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
+            hydrate=hydrate,
+            project=project,
+        )
+
+    @_fail_for_sql_zen_store
+    def list_webhooks(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        project: str | UUID | None = None,
+        user: UUIDFilterOption = None,
+        webhook_type: StringFilterOption = None,
+        active: bool | None = None,
+        hydrate: bool = False,
+    ) -> Page[WebhookResponse]:
+        """List webhooks.
+
+        Args:
+            sort_by: The field used to sort results.
+            page: The page index.
+            size: The maximum page size.
+            logical_operator: The operator used to combine filters.
+            id: Filter by webhook ID.
+            created: Filter by creation time.
+            updated: Filter by update time.
+            name: Filter by webhook name.
+            project: Filter by project name or ID.
+            user: Filter by creating user.
+            webhook_type: Filter by webhook provider type.
+            active: Filter by active state.
+            hydrate: Whether to include intake statistics.
+
+        Returns:
+            A page of webhooks.
+        """
+        filter_model = WebhookFilter(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            name=name,
+            project=project or self.active_project.id,
+            user=user,
+            webhook_type=webhook_type,
+            active=active,
+        )
+        return self.zen_store.list_webhooks(
+            filter_model=filter_model, hydrate=hydrate
+        )
+
+    @_fail_for_sql_zen_store
+    def update_webhook(
+        self,
+        name_id_or_prefix: str | UUID,
+        name: str | None = None,
+        active: bool | None = None,
+        project: str | UUID | None = None,
+    ) -> WebhookResponse:
+        """Update a webhook.
+
+        Args:
+            name_id_or_prefix: The webhook name, ID, or ID prefix.
+            name: The new webhook name.
+            active: The new active state.
+            project: The project name or ID.
+
+        Returns:
+            The updated webhook.
+        """
+        if is_valid_uuid(name_id_or_prefix):
+            webhook_id = (
+                UUID(name_id_or_prefix)
+                if isinstance(name_id_or_prefix, str)
+                else name_id_or_prefix
+            )
+        else:
+            webhook_id = self.get_webhook(
+                name_id_or_prefix=name_id_or_prefix,
+                allow_name_prefix_match=False,
+                project=project,
+            ).id
+        return self.zen_store.update_webhook(
+            webhook_id=webhook_id,
+            update=WebhookUpdate(name=name, active=active),
+        )
+
+    @_fail_for_sql_zen_store
+    def delete_webhook(
+        self,
+        name_id_or_prefix: str | UUID,
+        project: str | UUID | None = None,
+    ) -> None:
+        """Delete a webhook.
+
+        Args:
+            name_id_or_prefix: The webhook name, ID, or ID prefix.
+            project: The project name or ID.
+        """
+        webhook = self.get_webhook(
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+            project=project,
+        )
+        self.zen_store.delete_webhook(webhook.id)
+
+    @_fail_for_sql_zen_store
+    def rotate_webhook_secret(
+        self,
+        name_id_or_prefix: str | UUID,
+        secret: str | None = None,
+        project: str | UUID | None = None,
+    ) -> WebhookSecretResponse:
+        """Rotate a webhook signing secret.
+
+        Args:
+            name_id_or_prefix: The webhook name, ID, or ID prefix.
+            secret: An optional direct replacement secret.
+            project: The project name or ID.
+
+        Returns:
+            The newly active signing secret.
+        """
+        webhook = self.get_webhook(
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+            project=project,
+        )
+        return self.zen_store.rotate_webhook_secret(
+            webhook_id=webhook.id,
+            request=WebhookRotateSecretRequest(secret=secret),
+        )
+
+    @_fail_for_sql_zen_store
+    def get_raw_webhook_event(
+        self,
+        webhook_id: UUID,
+        delivery_id: str,
+    ) -> Dict[str, Any]:
+        """Get a retained raw webhook event payload.
+
+        Args:
+            webhook_id: The exact webhook ID.
+            delivery_id: The provider or ZenML delivery ID.
+
+        Returns:
+            The extensible raw webhook event payload.
+        """
+        return self.zen_store.get_raw_webhook_event(
+            webhook_id=webhook_id,
+            delivery_id=delivery_id,
+        )
 
     # --------------------------- Service Connectors ---------------------------
 
@@ -6933,15 +7456,15 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[datetime] = None,
-        updated: Optional[datetime] = None,
-        name: Optional[str] = None,
-        connector_type: Optional[str] = None,
-        auth_method: Optional[str] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        connector_type: StringFilterOption = None,
+        auth_method: StringFilterOption = None,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-        user: Optional[Union[UUID, str]] = None,
+        user: UUIDFilterOption = None,
         labels: Optional[Dict[str, Optional[str]]] = None,
         hydrate: bool = False,
         expand_secrets: bool = False,
@@ -7442,7 +7965,7 @@ class Client(metaclass=ClientMetaClass):
 
     def list_service_connector_resources(
         self,
-        connector_type: Optional[str] = None,
+        connector_type: StringFilterOption = None,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
     ) -> List[ServiceConnectorResourcesModel]:
@@ -7669,15 +8192,14 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        id: Optional[Union[UUID, str]] = None,
-        user: Optional[Union[UUID, str]] = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        id: UUIDFilterOption = None,
+        user: UUIDFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
-        tag: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        tags: StringFilterOption = None,
     ) -> Page[ModelResponse]:
         """Get models by filter from Model Control Plane.
 
@@ -7694,7 +8216,6 @@ class Client(metaclass=ClientMetaClass):
             project: The project name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
-            tag: The tag of the model to filter by.
             tags: Tags to filter by.
 
         Returns:
@@ -7709,7 +8230,6 @@ class Client(metaclass=ClientMetaClass):
             logical_operator=logical_operator,
             created=created,
             updated=updated,
-            tag=tag,
             tags=tags,
             user=user,
             project=project or self.active_project.id,
@@ -7897,23 +8417,22 @@ class Client(metaclass=ClientMetaClass):
 
     def list_model_versions(
         self,
-        model: Optional[Union[str, UUID]] = None,
+        model: UUIDFilterOption = None,
         model_name_or_id: Optional[Union[str, UUID]] = None,
         sort_by: str = "number",
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        id: Optional[Union[UUID, str]] = None,
-        number: Optional[int] = None,
-        stage: Optional[Union[str, ModelStages]] = None,
-        run_metadata: Optional[List[str]] = None,
-        user: Optional[Union[UUID, str]] = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        id: UUIDFilterOption = None,
+        number: IntegerFilterOption = None,
+        stage: EnumFilterOption[ModelStages] = None,
+        run_metadata: StringFilterOption = None,
+        user: UUIDFilterOption = None,
         hydrate: bool = False,
-        tag: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        tags: StringFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
     ) -> Page[ModelVersionResponse]:
         """Get model versions by filter from Model Control Plane.
@@ -7936,7 +8455,6 @@ class Client(metaclass=ClientMetaClass):
             user: Filter by user name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
-            tag: The tag to filter by.
             tags: Tags to filter by.
             project: The project name/ID to filter by.
 
@@ -7968,7 +8486,6 @@ class Client(metaclass=ClientMetaClass):
             number=number,
             stage=stage,
             run_metadata=run_metadata,
-            tag=tag,
             tags=tags,
             user=user,
             model=model,
@@ -8040,16 +8557,16 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        model_version_id: Optional[Union[UUID, str]] = None,
-        artifact_version_id: Optional[Union[UUID, str]] = None,
-        artifact_name: Optional[str] = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        model_version_id: UUIDFilterOption = None,
+        artifact_version_id: UUIDFilterOption = None,
+        artifact_name: StringFilterOption = None,
         only_data_artifacts: Optional[bool] = None,
         only_model_artifacts: Optional[bool] = None,
         only_deployment_artifacts: Optional[bool] = None,
         has_custom_name: Optional[bool] = None,
-        user: Optional[Union[UUID, str]] = None,
+        user: UUIDFilterOption = None,
         hydrate: bool = False,
     ) -> Page[ModelVersionArtifactResponse]:
         """Get model version to artifact links by filter in Model Control Plane.
@@ -8152,12 +8669,12 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        model_version_id: Optional[Union[UUID, str]] = None,
-        pipeline_run_id: Optional[Union[UUID, str]] = None,
-        pipeline_run_name: Optional[str] = None,
-        user: Optional[Union[UUID, str]] = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        model_version_id: UUIDFilterOption = None,
+        pipeline_run_id: UUIDFilterOption = None,
+        pipeline_run_name: StringFilterOption = None,
+        user: UUIDFilterOption = None,
         hydrate: bool = False,
     ) -> Page[ModelVersionPipelineRunResponse]:
         """Get all model version to pipeline run links by filter.
@@ -8203,16 +8720,16 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        expires: Optional[Union[datetime, str]] = None,
-        client_id: Union[UUID, str, None] = None,
-        status: Union[OAuthDeviceStatus, str, None] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        expires: DatetimeFilterOption = None,
+        client_id: UUIDFilterOption = None,
+        status: EnumFilterOption[OAuthDeviceStatus] = None,
         trusted_device: Union[bool, str, None] = None,
-        user: Optional[Union[UUID, str]] = None,
-        failed_auth_attempts: Union[int, str, None] = None,
-        last_login: Optional[Union[datetime, str, None]] = None,
+        user: UUIDFilterOption = None,
+        failed_auth_attempts: IntegerFilterOption = None,
+        last_login: DatetimeFilterOption = None,
         hydrate: bool = False,
     ) -> Page[OAuthDeviceResponse]:
         """List all authorized devices.
@@ -8373,13 +8890,15 @@ class Client(metaclass=ClientMetaClass):
             ZenKeyError: If there is more than one entity with that name
                 or id prefix.
         """
-        from zenml.utils.uuid_utils import is_valid_uuid
+        from zenml.utils.uuid_utils import is_valid_uuid, to_uuid
 
         entity_label = get_method.__name__.replace("get_", "") + "s"
 
         # First interpret as full UUID
         if is_valid_uuid(name_id_or_prefix):
-            return get_method(name_id_or_prefix, hydrate=hydrate, **kwargs)
+            return get_method(
+                to_uuid(name_id_or_prefix), hydrate=hydrate, **kwargs
+            )
 
         # If not a UUID, try to find by name
         assert not isinstance(name_id_or_prefix, UUID)
@@ -8436,7 +8955,7 @@ class Client(metaclass=ClientMetaClass):
         project: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
     ) -> "AnyResponse":
-        from zenml.utils.uuid_utils import is_valid_uuid
+        from zenml.utils.uuid_utils import is_valid_uuid, to_uuid
 
         entity_label = get_method.__name__.replace("get_", "") + "s"
 
@@ -8447,10 +8966,7 @@ class Client(metaclass=ClientMetaClass):
                     f"{entity_label}. Ignoring the version and fetching the "
                     f"{entity_label} by ID."
                 )
-            if not isinstance(name_id_or_prefix, UUID):
-                name_id_or_prefix = UUID(name_id_or_prefix, version=4)
-
-            return get_method(name_id_or_prefix, hydrate=hydrate)
+            return get_method(to_uuid(name_id_or_prefix), hydrate=hydrate)
 
         assert not isinstance(name_id_or_prefix, UUID)
         list_kwargs: Dict[str, Any] = dict(
@@ -8471,10 +8987,14 @@ class Client(metaclass=ClientMetaClass):
             # or fallback to the latest if not given
             return exact_name_matches.items[0]
 
-        partial_id_matches = list_method(
-            id=f"startswith:{name_id_or_prefix}",
-            hydrate=hydrate,
-        )
+        partial_id_list_kwargs: Dict[str, Any] = {
+            "id": f"startswith:{name_id_or_prefix}",
+            "hydrate": hydrate,
+        }
+        if project:
+            partial_id_list_kwargs["project"] = project
+
+        partial_id_matches = list_method(**partial_id_list_kwargs)
         if partial_id_matches.total == 1:
             if version:
                 logger.warning(
@@ -8530,23 +9050,36 @@ class Client(metaclass=ClientMetaClass):
                 or name.
         """
         list_method_args: Dict[str, Any] = {
-            "logical_operator": LogicalOperators.OR,
             "id": f"startswith:{partial_id_or_name}",
             "hydrate": hydrate,
             **kwargs,
         }
-        if allow_name_prefix_match:
-            list_method_args["name"] = f"startswith:{partial_id_or_name}"
-        scope = ""
+
         if project:
-            scope = f"in project {project} "
             list_method_args["project"] = project
 
-        entity = list_method(**list_method_args)
+        matching_entities: Dict[UUID, AnyResponse] = {}
 
-        # If only a single entity is found, return it.
-        if entity.total == 1:
-            return entity.items[0]
+        id_prefix_matches = list_method(**list_method_args)
+        for item in id_prefix_matches.items:
+            matching_entities[item.id] = item
+
+        if allow_name_prefix_match:
+            name_method_args: Dict[str, Any] = {
+                "name": f"startswith:{partial_id_or_name}",
+                "hydrate": hydrate,
+                **kwargs,
+            }
+            if project:
+                name_method_args["project"] = project
+
+            name_prefix_matches = list_method(**name_method_args)
+
+            for item in name_prefix_matches.items:
+                matching_entities[item.id] = item
+
+        if len(matching_entities) == 1:
+            return next(iter(matching_entities.values()))
 
         irregular_plurals = {"code_repository": "code_repositories"}
         entity_label = irregular_plurals.get(
@@ -8557,24 +9090,30 @@ class Client(metaclass=ClientMetaClass):
         prefix_description = (
             "a name/ID prefix" if allow_name_prefix_match else "an ID prefix"
         )
+
+        scope = ""
+        if project:
+            scope = f"in project {project} "
+
         # If no entity is found, raise an error.
-        if entity.total == 0:
+        if len(matching_entities) == 0:
             raise KeyError(
-                f"No {entity_label} have been found{scope} that have "
+                f"No {entity_label} have been found {scope} that have "
                 f"{prefix_description} that matches the provided string "
                 f"'{partial_id_or_name}'."
             )
 
         # If more than one entity is found, raise an error.
         ambiguous_entities: List[str] = []
-        for model in entity.items:
+        for model in matching_entities.values():
             model_name = getattr(model, "name", None)
             if model_name:
                 ambiguous_entities.append(f"{model_name}: {model.id}")
             else:
                 ambiguous_entities.append(str(model.id))
+
         raise ZenKeyError(
-            f"{entity.total} {entity_label} have been found{scope} that have "
+            f"{len(matching_entities)} {entity_label} have been found {scope} that have "
             f"{prefix_description} that matches the provided "
             f"string '{partial_id_or_name}':\n"
             f"{ambiguous_entities}.\n"
@@ -8643,12 +9182,12 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        external_user_id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        id: UUIDFilterOption = None,
+        external_user_id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        description: StringFilterOption = None,
         active: Optional[bool] = None,
         hydrate: bool = False,
     ) -> Page[ServiceAccountResponse]:
@@ -8812,14 +9351,14 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        description: StringFilterOption = None,
         active: Optional[bool] = None,
-        last_login: Optional[Union[datetime, str]] = None,
-        last_rotated: Optional[Union[datetime, str]] = None,
+        last_login: DatetimeFilterOption = None,
+        last_rotated: DatetimeFilterOption = None,
         hydrate: bool = False,
     ) -> Page[APIKeyResponse]:
         """List all API keys.
@@ -9131,14 +9670,14 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        color: Optional[Union[str, ColorVariants]] = None,
+        id: UUIDFilterOption = None,
+        user: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        color: EnumFilterOption[ColorVariants] = None,
         exclusive: Optional[bool] = None,
-        resource_type: Optional[Union[str, TaggableResourceTypes]] = None,
+        resource_type: EnumFilterOption[TaggableResourceTypes] = None,
         hydrate: bool = False,
     ) -> Page[TagResponse]:
         """Get tags by filter.
@@ -9153,9 +9692,9 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation.
             updated: Use the last updated date for filtering.
             name: The name of the tag.
-            color: The color of the tag.
+            color: Filter by tag color (enum, string wire value, or list).
             exclusive: Flag indicating whether the tag is exclusive.
-            resource_type: Filter tags associated with a specific resource type.
+            resource_type: Filter by resource type (enum, string wire value, or list).
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 

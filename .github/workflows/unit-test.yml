@@ -31,18 +31,30 @@ on:
         type: number
         required: false
         default: 3
+      shards:
+        description: JSON list with one entry per shard the tests are split into.
+          Example '[1, 2, 3]'
+        type: string
+        required: false
+        default: '[1]'
+      lanes:
+        description: Number of test processes to run side by side in each shard, to
+          use CPU cores a single process leaves idle. Example 2
+        type: string
+        required: false
+        default: '1'
   workflow_dispatch:
     inputs:
       os:
         description: OS
         type: choice
-        options: [ubuntu-latest, macos-13, windows-latest]
+        options: [ubuntu-latest, macos-latest, windows-latest]
         required: false
         default: ubuntu-latest
       python-version:
         description: Python version
         type: choice
-        options: ['3.10', '3.11', '3.12', '3.13']
+        options: ['3.10', '3.11', '3.12', '3.13', '3.14']
         required: false
         default: '3.11'
       enable_tmate:
@@ -51,6 +63,11 @@ on:
         options: [no, on-failure, always, before-tests]
         required: false
         default: 'no'
+      install_integrations:
+        description: Install ZenML integrations
+        type: string
+        required: false
+        default: 'yes'
       git-ref:
         description: Git branch or ref
         type: string
@@ -61,35 +78,85 @@ on:
         type: number
         required: false
         default: 3
+      shards:
+        description: JSON list with one entry per shard the tests are split into.
+          Example '[1, 2, 3]'
+        type: string
+        required: false
+        default: '[1]'
+      lanes:
+        description: Number of test processes to run side by side in each shard, to
+          use CPU cores a single process leaves idle. Example 2
+        type: string
+        required: false
+        default: '1'
+env:
+  ZENML_DEBUG: 1
+  ZENML_LOGGING_VERBOSITY: debug
+  ZENML_ANALYTICS_OPT_IN: false
 jobs:
   unit-test:
     name: unit-test
     runs-on: ${{ inputs.os }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(inputs.shards) }}
     env:
-      ZENML_DEBUG: 1
-      ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
       UV_HTTP_TIMEOUT: 600
       OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
       PYTEST_RERUNS: ${{ inputs.reruns }}
-    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.11') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.12') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.13') }}
+    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.11') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.12') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.13') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.14') }}
     defaults:
       run:
         shell: bash
     steps:
-      - name: Free disk space (Ubuntu)
-        if: inputs.os == 'ubuntu-latest'
+      - name: Safeguard macOS certificate trust
+        if: runner.os == 'macOS'
+        shell: bash
         run: |
-          set -euxo pipefail
-          echo "Before cleanup:"
-          df -h
-          sudo rm -rf /usr/share/dotnet || true
-          sudo rm -rf /usr/local/lib/android || true
-          sudo rm -rf /opt/ghc || true
-          sudo rm -rf /opt/hostedtoolcache/CodeQL || true
-          sudo docker image prune --all --force || true
-          echo "After cleanup:"
-          df -h
+          set -euo pipefail
+          # Temporary mitigation for actions/runner-images#15228, before any checkout/download.
+          blocked_roots='emSign ECC Root CA - G3|emSign ECC Root CA - C3|emSign Root CA - C1|AAA Certificate Services'
+          filtered=$(mktemp)
+          trap 'rm -f "$filtered"' EXIT
+          test -f /etc/ssl/cert.pem
+          for bundle in /etc/ssl/cert.pem /opt/homebrew/etc/ca-certificates/cert.pem /usr/local/etc/ca-certificates/cert.pem; do
+            [ -f "$bundle" ] || continue
+            openssl crl2pkcs7 -nocrl -certfile "$bundle" |
+              openssl pkcs7 -print_certs |
+              awk -v blocked="$blocked_roots" '/^subject=/{skip=($0 ~ blocked)} !skip' > "$filtered"
+            grep -q -- '-----BEGIN CERTIFICATE-----' "$filtered"
+            subjects=$(openssl crl2pkcs7 -nocrl -certfile "$filtered" | openssl pkcs7 -print_certs -noout)
+            if grep -Eq "$blocked_roots" <<< "$subjects"; then
+              echo "::error::Affected certificate roots remain in $bundle"
+              exit 1
+            fi
+            sudo cp "$filtered" "$bundle"
+          done
+          # pip/uv/Requests/Git may otherwise use their own, older CA bundles.
+          for variable in SSL_CERT_FILE CURL_CA_BUNDLE GIT_SSL_CAINFO PIP_CERT REQUESTS_CA_BUNDLE; do
+            export "$variable=/etc/ssl/cert.pem"
+            echo "$variable=/etc/ssl/cert.pem" >> "$GITHUB_ENV"
+          done
+          # Older Intel images can fall back to Apple's trust database even after filtering.
+          for client in /usr/bin/curl "$(command -v curl)"; do
+            "$client" --fail --silent --show-error --connect-timeout 10 --max-time 30 --output /dev/null https://github.com/
+            for host in dv-g3b-noct-emudhra.we-have-a-problem.com dv-g3b-aaa-noct-emudhra.we-have-a-problem.com; do
+              if "$client" --silent --connect-timeout 10 --max-time 30 --output /dev/null "https://$host/"; then
+                echo "::error::$client still trusts a compromised certificate chain ($host)"
+                exit 1
+              else
+                curl_status=$?
+                if [ "$curl_status" -ne 60 ]; then
+                  echo "::error::Certificate probe failed for a reason other than certificate rejection (curl $curl_status)"
+                  exit 1
+                fi
+              fi
+            done
+          done
       - name: Set uv cache + temp dirs (/opt)
         if: inputs.os == 'ubuntu-latest'
         run: |
@@ -100,24 +167,17 @@ jobs:
           echo "TMP=/opt/tmp" >> "$GITHUB_ENV"
           echo "TEMP=/opt/tmp" >> "$GITHUB_ENV"
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           repository: ${{ github.repository }}
           ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0  # Fetch all history for all branches and tags
-      - name: Restore uv cache
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
-        with:
-          path: ${{ inputs.os == 'ubuntu-latest' && '/opt/uv-cache' || '~/.cache/uv' }}
-          key: |
-            uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
-          restore-keys: |
-            uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
+      - name: Free disk space
+        uses: $/.github/actions/free_disk_space
       - name: Install libomp
         if: ${{ inputs.os == 'macos-latest' || inputs.os == 'macos-13' }}
         run: brew install libomp
       - name: Setup environment
-        uses: ./.github/actions/setup_environment
+        uses: $/.github/actions/setup_environment
         with:
           cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
           python-version: ${{ inputs.python-version }}
@@ -125,16 +185,17 @@ jobs:
           install_integrations: ${{ inputs.install_integrations }}
       - name: Setup tmate session before tests
         if: ${{ inputs.enable_tmate == 'before-tests' }}
-        uses: mxschmitt/action-tmate@c0afd6f790e3a5564914980036ebf83216678101  # v3.23
+        uses: mxschmitt/action-tmate@35b54afac29c97fb54faba5b513f8fbd1882f113  # v3.24
       - name: Run unit tests
         run: |
-          bash scripts/test-coverage-xml.sh unit
+          bash scripts/test-coverage-xml.sh unit default "${SHARD_COUNT}" "${SHARD}"
         env:
-          ZENML_ANALYTICS_OPT_IN: false
-          ZENML_DEBUG: true
+          SHARD_COUNT: ${{ strategy.job-total }}
+          SHARD: ${{ matrix.shard }}
+          TEST_LANES: ${{ inputs.lanes }}
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
-        uses: mxschmitt/action-tmate@c0afd6f790e3a5564914980036ebf83216678101  # v3.23
+        uses: mxschmitt/action-tmate@35b54afac29c97fb54faba5b513f8fbd1882f113  # v3.24
       - name: Verify Python Env unaffected
         run: |-
           zenml integration list

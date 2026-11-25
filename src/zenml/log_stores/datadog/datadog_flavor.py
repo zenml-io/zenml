@@ -25,6 +25,7 @@ from zenml.utils.secret_utils import PlainSerializedSecretStr
 
 # Datadog API limits: https://docs.datadoghq.com/api/latest/logs/
 DATADOG_MAX_BATCH_SIZE = 1000
+DATADOG_MAX_PAGE_SIZE = 1000
 
 
 class DatadogLogStoreConfig(OtelLogStoreConfig):

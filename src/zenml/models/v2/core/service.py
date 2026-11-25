@@ -22,7 +22,6 @@ from typing import (
     List,
     Optional,
     TypeVar,
-    Union,
 )
 from uuid import UUID
 
@@ -31,6 +30,10 @@ from pydantic import ConfigDict, Field
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ServiceState
 from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import (
+    StringFilterOption,
+    UUIDFilterOption,
+)
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -405,16 +408,35 @@ class ServiceResponse(
 class ServiceFilter(ProjectScopedFilter):
     """Model to enable advanced filtering of services."""
 
-    name: Optional[str] = Field(
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
+        "running",
+        "config",
+    ]
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
+        "flavor",
+        "type",
+        "pipeline_step_name",
+        "running",
+        "pipeline_name",
+    ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
+        "config",
+        "running",
+    ]
+
+    name: StringFilterOption = Field(
         default=None,
         description="Name of the service. Use this to filter services by "
         "their name.",
     )
-    type: Optional[str] = Field(
+    type: StringFilterOption = Field(
         default=None,
         description="Type of the service. Filter services by their type.",
     )
-    flavor: Optional[str] = Field(
+    flavor: StringFilterOption = Field(
         default=None,
         description="Flavor of the service. Use this to filter services by "
         "their flavor.",
@@ -424,23 +446,23 @@ class ServiceFilter(ProjectScopedFilter):
         description="Config of the service. Use this to filter services by "
         "their config.",
     )
-    pipeline_name: Optional[str] = Field(
+    pipeline_name: StringFilterOption = Field(
         default=None,
         description="Pipeline name responsible for deploying the service",
     )
-    pipeline_step_name: Optional[str] = Field(
+    pipeline_step_name: StringFilterOption = Field(
         default=None,
         description="Pipeline step name responsible for deploying the service",
     )
     running: Optional[bool] = Field(
         default=None, description="Whether the service is running"
     )
-    model_version_id: Optional[Union[UUID, str]] = Field(
+    model_version_id: UUIDFilterOption = Field(
         default=None,
         description="By the model version this service is attached to.",
         union_mode="left_to_right",
     )
-    pipeline_run_id: Optional[Union[UUID, str]] = Field(
+    pipeline_run_id: UUIDFilterOption = Field(
         default=None,
         description="By the pipeline run this service is attached to.",
         union_mode="left_to_right",
@@ -469,18 +491,3 @@ class ServiceFilter(ProjectScopedFilter):
             flavor: The flavor of the service.
         """
         self.flavor = flavor
-
-    # Artifact name and type are not DB fields and need to be handled separately
-    FILTER_EXCLUDE_FIELDS = [
-        *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
-        "running",
-        "config",
-    ]
-    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
-        "flavor",
-        "type",
-        "pipeline_step_name",
-        "running",
-        "pipeline_name",
-    ]

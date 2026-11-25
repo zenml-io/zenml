@@ -13,7 +13,20 @@
 #  permissions and limitations under the License.
 
 
-from zenml.config.step_configurations import InputSpec, StepSpec
+from zenml.config.pipeline_configurations import PipelineConfiguration
+from zenml.config.step_configurations import (
+    InputSpec,
+    Step,
+    StepConfiguration,
+    StepSpec,
+)
+
+_HOOK_SOURCES = {
+    "start_hook_source": "module.on_start",
+    "end_hook_source": "module.on_end",
+    "success_hook_source": "module.on_success",
+    "failure_hook_source": "module.on_failure",
+}
 
 
 def test_step_spec_source_equality():
@@ -114,3 +127,73 @@ def test_step_spec_parameter_spec_equality():
         upstream_steps=[],
         parameter_spec={},
     )
+
+
+def test_apply_pipeline_configuration_propagates_hook_sources():
+    """Tests that pipeline hook sources propagate to a step config."""
+    pipeline_config = PipelineConfiguration(name="pipeline", **_HOOK_SOURCES)
+
+    merged = StepConfiguration(name="step").apply_pipeline_configuration(
+        pipeline_config, exclude_hook_sources=False
+    )
+
+    for field, import_path in _HOOK_SOURCES.items():
+        assert getattr(merged, field).import_path == import_path
+
+
+def test_from_dict_propagates_hook_sources():
+    """Tests that hook sources propagate when reconstructing a step."""
+    pipeline_config = PipelineConfiguration(name="pipeline", **_HOOK_SOURCES)
+
+    step = Step.from_dict(
+        data={
+            "spec": StepSpec(source="module.step", upstream_steps=[]),
+            "step_config_overrides": {"name": "step"},
+        },
+        pipeline_configuration=pipeline_config,
+        exclude_hook_sources=False,
+    )
+
+    for field, import_path in _HOOK_SOURCES.items():
+        assert getattr(step.config, field).import_path == import_path
+
+
+def test_apply_pipeline_configuration_excludes_hook_sources():
+    """Tests that hook sources are not propagated when excluded."""
+    pipeline_config = PipelineConfiguration(name="pipeline", **_HOOK_SOURCES)
+
+    merged = StepConfiguration(name="step").apply_pipeline_configuration(
+        pipeline_config, exclude_hook_sources=True
+    )
+
+    for field in _HOOK_SOURCES:
+        assert getattr(merged, field) is None
+
+
+def test_apply_pipeline_configuration_exclude_keeps_step_own_hooks():
+    """Tests that a step keeps its own hook sources when pipeline ones are excluded."""
+    pipeline_config = PipelineConfiguration(name="pipeline", **_HOOK_SOURCES)
+
+    merged = StepConfiguration(
+        name="step", start_hook_source="module.step_on_start"
+    ).apply_pipeline_configuration(pipeline_config, exclude_hook_sources=True)
+
+    assert merged.start_hook_source.import_path == "module.step_on_start"
+    assert merged.end_hook_source is None
+
+
+def test_from_dict_excludes_hook_sources():
+    """Tests that hook sources are not propagated when reconstructing with exclude."""
+    pipeline_config = PipelineConfiguration(name="pipeline", **_HOOK_SOURCES)
+
+    step = Step.from_dict(
+        data={
+            "spec": StepSpec(source="module.step", upstream_steps=[]),
+            "step_config_overrides": {"name": "step"},
+        },
+        pipeline_configuration=pipeline_config,
+        exclude_hook_sources=True,
+    )
+
+    for field in _HOOK_SOURCES:
+        assert getattr(step.config, field) is None

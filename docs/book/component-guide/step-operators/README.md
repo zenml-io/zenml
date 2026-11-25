@@ -22,11 +22,14 @@ Step operators to execute steps on one of the big cloud providers are provided b
 | Step Operator                      | Flavor       | Integration  | Dynamic Pipelines | Notes                                                                    |
 | ---------------------------------- | ------------ | ------------ | ----------------- | ------------------------------------------------------------------------ |
 | [AzureML](azureml.md)              | `azureml`    | `azure`      | ✅                 | Uses AzureML to execute steps                                            |
+| [Baseten](baseten.md)              | `baseten`    | `baseten`    | ✅                 | Uses Baseten training jobs, incl. multi-node, to execute steps          |
+| [Databricks](databricks.md)        | `databricks` | `databricks` | ✅                 | Uses Databricks one-time jobs to execute selected steps                  |
 | [Hugging Face Jobs](huggingface-jobs.md) | `huggingface-jobs` | `huggingface` | ✅          | Uses Hugging Face Jobs to execute steps                                  |
 | [Kubernetes](kubernetes.md)        | `kubernetes` | `kubernetes` | ✅                 | Uses Kubernetes Pods to execute steps                                    |
 | [Modal](modal.md)                  | `modal`      | `modal`      | ✅                 | Uses Modal to execute steps                                              |
 | [SageMaker](sagemaker.md)          | `sagemaker`  | `aws`        | ✅                 | Uses SageMaker to execute steps                                          |
 | [Run:AI](runai.md)                 | `runai`      | `runai`      | ✅                 | Uses Run:AI to execute steps                                             |
+| [SSH](ssh.md)                      | `ssh`        | `ssh`        | ❌                 | Runs steps on a remote host via SSH + Docker                             |
 | [Spark](spark-kubernetes.md)       | `spark`      | `spark`      | ❌                 | Uses Spark on Kubernetes to execute steps in a distributed manner        |
 | [Vertex](vertex.md)                | `vertex`     | `gcp`        | ✅                 | Uses Vertex AI to execute steps                                          |
 | [Custom Implementation](custom.md) | _custom_     |              |                   | Extend the step operator abstraction and provide your own implementation |

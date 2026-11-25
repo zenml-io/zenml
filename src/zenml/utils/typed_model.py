@@ -14,57 +14,16 @@
 """Utility classes for adding type information to Pydantic models."""
 
 import json
-from typing import Any, Dict, Tuple, Type, cast
+from typing import Any, Dict
 
-from pydantic import BaseModel, Field
-
-# TODO: Investigate if we can solve this import a different way.
-from pydantic._internal._model_construction import ModelMetaclass
+from pydantic import BaseModel
+from pydantic.fields import FieldInfo
 from typing_extensions import Literal
 
 from zenml.utils import source_utils
 
 
-class BaseTypedModelMeta(ModelMetaclass):
-    """Metaclass responsible for adding type information to Pydantic models."""
-
-    def __new__(
-        mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
-    ) -> "BaseTypedModelMeta":
-        """Creates a Pydantic BaseModel class.
-
-        This includes a hidden attribute that reflects the full class
-        identifier.
-
-        Args:
-            name: The name of the class.
-            bases: The base classes of the class.
-            dct: The class dictionary.
-
-        Returns:
-            A Pydantic BaseModel class that includes a hidden attribute that
-            reflects the full class identifier.
-
-        Raises:
-            TypeError: If the class is not a Pydantic BaseModel class.
-        """
-        if "type" in dct:
-            raise TypeError(
-                "`type` is a reserved attribute name for BaseTypedModel "
-                "subclasses"
-            )
-        type_name = f"{dct['__module__']}.{dct['__qualname__']}"
-        type_ann = Literal[type_name]  # type: ignore[valid-type]
-        type = Field(type_name)
-        dct.setdefault("__annotations__", dict())["type"] = type_ann
-        dct["type"] = type
-        cls = cast(
-            Type["BaseTypedModel"], super().__new__(mcs, name, bases, dct)
-        )
-        return cls
-
-
-class BaseTypedModel(BaseModel, metaclass=BaseTypedModelMeta):
+class BaseTypedModel(BaseModel):
     """Typed Pydantic model base class.
 
     Use this class as a base class instead of BaseModel to automatically
@@ -100,6 +59,33 @@ class BaseTypedModel(BaseModel, metaclass=BaseTypedModelMeta):
     assert isinstance(new_matrix.choice, RedPill)
     ```
     """
+
+    type: str = "zenml.utils.typed_model.BaseTypedModel"
+
+    @classmethod
+    def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
+        """Upgrade `type` to a Literal of the subclass's fully-qualified path.
+
+        Args:
+            **kwargs: Extra keyword arguments passed to the class definition.
+
+        Raises:
+            TypeError: If the subclass tries to declare `type` itself.
+        """
+        super().__pydantic_init_subclass__(**kwargs)
+
+        if "type" in cls.__dict__.get("__annotations__", {}):
+            raise TypeError(
+                "`type` is a reserved attribute name for BaseTypedModel "
+                "subclasses"
+            )
+
+        type_name = f"{cls.__module__}.{cls.__qualname__}"
+        cls.model_fields["type"] = FieldInfo(
+            annotation=Literal[type_name],  # type: ignore[arg-type]
+            default=type_name,
+        )
+        cls.model_rebuild(force=True)
 
     @classmethod
     def from_dict(

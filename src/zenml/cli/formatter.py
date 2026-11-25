@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Helper functions to format output for CLI."""
 
-from typing import Dict, Iterable, Iterator, Optional, Sequence, Tuple
+from typing import Dict, Iterable, Iterator, Optional, Tuple
 
 from click import formatting
 from click._compat import term_len
@@ -75,7 +75,7 @@ class ZenFormatter(formatting.HelpFormatter):
 
     def write_dl(
         self,
-        rows: Sequence[Tuple[str, ...]],
+        rows: Iterable[Tuple[str, ...]],
         col_max: int = 30,
         col_spacing: int = 2,
     ) -> None:

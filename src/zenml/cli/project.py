@@ -21,9 +21,9 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     OutputFormat,
-    check_zenml_pro_project_availability,
     is_sorted_or_filtered,
     list_options,
+    warn_if_project_not_visible_on_oss,
 )
 from zenml.client import Client
 from zenml.console import console
@@ -56,7 +56,6 @@ def list_projects(
         output_format: Format for output (table/json/yaml/csv/tsv).
         **kwargs: Keyword arguments to filter the list of projects.
     """
-    check_zenml_pro_project_availability()
     client = Client()
     with console.status("Listing projects...\n"):
         projects = client.list_projects(**kwargs, hydrate=True)
@@ -68,7 +67,7 @@ def list_projects(
             if active_project_id not in {p.id for p in projects.items}:
                 projects.items.insert(0, client.active_project)
             projects.items.sort(key=lambda p: p.id != active_project_id)
-        except Exception:
+        except RuntimeError:
             active_project_id = None
     else:
         active_project_id = None
@@ -119,7 +118,6 @@ def register_project(
         display_name: The display name of the project.
         set_default: Whether to set the project as the default project.
     """
-    check_zenml_pro_project_availability()
     client = Client()
     with console.status("Creating project...\n"):
         try:
@@ -146,6 +144,7 @@ def register_project(
         cli_utils.success(
             f"✔ The default project has been set to {project.name}"
         )
+    warn_if_project_not_visible_on_oss(project_name=project_name)
 
 
 @project.command("set")
@@ -163,7 +162,6 @@ def set_project(project_name_or_id: str, default: bool = False) -> None:
         project_name_or_id: The name or ID of the project to set as active.
         default: Whether to set the project as the default project.
     """
-    check_zenml_pro_project_availability()
     client = Client()
     with console.status("Setting project...\n"):
         try:
@@ -182,6 +180,7 @@ def set_project(project_name_or_id: str, default: bool = False) -> None:
         cli_utils.declare(
             f"The default project has been set to {project.name}"
         )
+    warn_if_project_not_visible_on_oss(project_name=project_name_or_id)
 
 
 @project.command("describe")
@@ -192,7 +191,6 @@ def describe_project(project_name_or_id: Optional[str] = None) -> None:
     Args:
         project_name_or_id: The name or ID of the project to set as active.
     """
-    check_zenml_pro_project_availability()
     client = Client()
     if not project_name_or_id:
         active_project = client.active_project
@@ -208,6 +206,67 @@ def describe_project(project_name_or_id: Optional[str] = None) -> None:
             cli_utils.print_pydantic_models(
                 [project_], exclude_columns=["created", "updated"]
             )
+            warn_if_project_not_visible_on_oss(project_name=project_name_or_id)
+
+
+@project.command("update")
+@click.argument("project_name_or_id", type=str, required=True)
+@click.option(
+    "--name",
+    type=str,
+    default=None,
+    help="New unique project name used by the CLI and SDK. Existing URLs using "
+    "the old name may stop working.",
+)
+@click.option(
+    "--display-name",
+    type=str,
+    default=None,
+    help="New display name of the project.",
+)
+@click.option(
+    "--description",
+    type=str,
+    default=None,
+    help="New description of the project. Pass an empty string to clear it.",
+)
+def update_project(
+    project_name_or_id: str,
+    name: Optional[str] = None,
+    display_name: Optional[str] = None,
+    description: Optional[str] = None,
+) -> None:
+    """Update a project's name, display name, or description.
+
+    Args:
+        project_name_or_id: The current name or ID of the project to update.
+        name: New unique name of the project.
+        display_name: New display name of the project.
+        description: New description of the project.
+
+    Raises:
+        click.UsageError: If no update options are provided.
+    """
+    if name is None and display_name is None and description is None:
+        raise click.UsageError(
+            "Provide at least one of --name, --display-name, or --description."
+        )
+
+    client = Client()
+    with console.status("Updating project...\n"):
+        try:
+            updated_project = client.update_project(
+                name_id_or_prefix=project_name_or_id,
+                new_name=name,
+                new_display_name=display_name,
+                new_description=description,
+            )
+        except Exception as e:
+            cli_utils.exception(e)
+        else:
+            cli_utils.success(
+                f"Project '{updated_project.name}' updated successfully."
+            )
 
 
 @project.command("delete")
@@ -218,7 +277,6 @@ def delete_project(project_name_or_id: str) -> None:
     Args:
         project_name_or_id: The name or ID of the project to delete.
     """
-    check_zenml_pro_project_availability()
     client = Client()
     with console.status("Deleting project...\n"):
         try:

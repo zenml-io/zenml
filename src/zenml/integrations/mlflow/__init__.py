@@ -16,15 +16,13 @@
 The MLflow integrations currently enables you to use MLflow tracking as a
 convenient way to visualize your experiment runs within the MLflow UI.
 """
-from packaging import version
-from typing import List, Type, Optional
+
+from typing import List, Optional, Type
 
 from zenml.integrations.constants import MLFLOW
 from zenml.integrations.integration import Integration
-from zenml.stack import Flavor
-import sys
-
 from zenml.logger import get_logger
+from zenml.stack import Flavor
 
 MLFLOW_MODEL_DEPLOYER_FLAVOR = "mlflow"
 MLFLOW_MODEL_EXPERIMENT_TRACKER_FLAVOR = "mlflow"
@@ -39,7 +37,6 @@ class MlflowIntegration(Integration):
     NAME = MLFLOW
 
     REQUIREMENTS_IGNORED_ON_UNINSTALL = [
-        "python-rapidjson",
         "pydantic",
         "numpy",
         "pandas",
@@ -47,7 +44,9 @@ class MlflowIntegration(Integration):
 
     @classmethod
     def get_requirements(
-        cls, target_os: Optional[str] = None, python_version: Optional[str] = None
+        cls,
+        target_os: Optional[str] = None,
+        python_version: Optional[str] = None,
     ) -> List[str]:
         """Method to get the requirements for the integration.
 
@@ -60,15 +59,19 @@ class MlflowIntegration(Integration):
         """
         from zenml.integrations.numpy import NumpyIntegration
         from zenml.integrations.pandas import PandasIntegration
-        
-        reqs = [
-            "mlflow>=2.1.1,<4",
-            # TODO: remove this requirement once rapidjson is fixed
-            "python-rapidjson<1.15",
-        ]
 
-        reqs.extend(NumpyIntegration.get_requirements(target_os=target_os, python_version=python_version))
-        reqs.extend(PandasIntegration.get_requirements(target_os=target_os, python_version=python_version))
+        reqs = ["mlflow>=2.1.1,<4"]
+
+        reqs.extend(
+            NumpyIntegration.get_requirements(
+                target_os=target_os, python_version=python_version
+            )
+        )
+        reqs.extend(
+            PandasIntegration.get_requirements(
+                target_os=target_os, python_version=python_version
+            )
+        )
         return reqs
 
     @classmethod
@@ -94,4 +97,3 @@ class MlflowIntegration(Integration):
             MLFlowExperimentTrackerFlavor,
             MLFlowModelRegistryFlavor,
         ]
-

@@ -91,6 +91,7 @@ def test_next_occurrence_for_cron_standard_scenarios() -> None:
             base=case["base"],
         )
 
+        assert isinstance(result, dt.datetime), case["name"]
         assert result == case["expected"], case["name"]
         _assert_naive(result)
 

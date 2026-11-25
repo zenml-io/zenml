@@ -106,9 +106,7 @@ def upgrade() -> None:
 
     with op.batch_alter_table("step_run", schema=None) as batch_op:
         batch_op.add_column(
-            sa.Column(
-                "deployment_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
+            sa.Column("deployment_id", sa.Uuid(), nullable=True)
         )
 
         batch_op.create_foreign_key(

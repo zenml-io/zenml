@@ -73,11 +73,13 @@ class BaseDatabaseBackupEngine(ABC):
             The SQLAlchemy engine.
         """
         url = self.url._replace(database=database)
-        return create_engine(
+        engine = create_engine(
             url=url,
             connect_args=self.connect_args,
             **self.engine_args,
         )
+        self.config.configure_engine_auth(engine)
+        return engine
 
     @property
     def engine(self) -> Engine:

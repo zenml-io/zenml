@@ -23,13 +23,17 @@ from typing import (
     Optional,
     Type,
     TypeVar,
-    Union,
 )
 from uuid import UUID
 
 from pydantic import Field
 
 from zenml.models.v2.base.base import BaseZenModel
+from zenml.models.v2.base.filter import (
+    IntegerFilterOption,
+    StringFilterOption,
+    UUIDFilterOption,
+)
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -484,18 +488,23 @@ class PipelineBuildFilter(ProjectScopedFilter):
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         "container_registry_id",
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
+        "is_local",
+        "contains_code",
+    ]
 
-    pipeline_id: Optional[Union[UUID, str]] = Field(
+    pipeline_id: UUIDFilterOption = Field(
         description="Pipeline associated with the pipeline build.",
         default=None,
         union_mode="left_to_right",
     )
-    stack_id: Optional[Union[UUID, str]] = Field(
+    stack_id: UUIDFilterOption = Field(
         description="Stack associated with the pipeline build.",
         default=None,
         union_mode="left_to_right",
     )
-    container_registry_id: Optional[Union[UUID, str]] = Field(
+    container_registry_id: UUIDFilterOption = Field(
         description="Container registry associated with the pipeline build.",
         default=None,
         union_mode="left_to_right",
@@ -509,19 +518,19 @@ class PipelineBuildFilter(ProjectScopedFilter):
         description="Whether any image of the build contains user code.",
         default=None,
     )
-    zenml_version: Optional[str] = Field(
+    zenml_version: StringFilterOption = Field(
         description="The version of ZenML used for this build.", default=None
     )
-    python_version: Optional[str] = Field(
+    python_version: StringFilterOption = Field(
         description="The Python version used for this build.", default=None
     )
-    checksum: Optional[str] = Field(
+    checksum: StringFilterOption = Field(
         description="The build checksum.", default=None
     )
-    stack_checksum: Optional[str] = Field(
+    stack_checksum: StringFilterOption = Field(
         description="The stack checksum.", default=None
     )
-    duration: Optional[Union[int, str]] = Field(
+    duration: IntegerFilterOption = Field(
         description="The duration of the build in seconds.", default=None
     )
 
@@ -550,14 +559,26 @@ class PipelineBuildFilter(ProjectScopedFilter):
         )
 
         if self.container_registry_id:
-            container_registry_filter = and_(
-                PipelineBuildSchema.stack_id == StackSchema.id,
-                StackSchema.id == StackCompositionSchema.stack_id,
-                StackCompositionSchema.component_id == StackComponentSchema.id,
-                StackComponentSchema.type
-                == StackComponentType.CONTAINER_REGISTRY.value,
-                StackComponentSchema.id == self.container_registry_id,
+            container_registry_filters = (
+                self.container_registry_id
+                if isinstance(self.container_registry_id, list)
+                else [self.container_registry_id]
             )
-            custom_filters.append(container_registry_filter)
+            for container_registry_filter in container_registry_filters:
+                custom_filters.append(
+                    and_(
+                        PipelineBuildSchema.stack_id == StackSchema.id,
+                        StackSchema.id == StackCompositionSchema.stack_id,
+                        StackCompositionSchema.component_id
+                        == StackComponentSchema.id,
+                        StackComponentSchema.type
+                        == StackComponentType.CONTAINER_REGISTRY.value,
+                        self.generate_custom_query_conditions_for_column(
+                            value=container_registry_filter,
+                            table=StackComponentSchema,
+                            column="id",
+                        ),
+                    )
+                )
 
         return custom_filters

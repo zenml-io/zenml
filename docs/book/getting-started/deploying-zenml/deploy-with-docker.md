@@ -39,7 +39,11 @@ The following environment variables can be passed to the container:
 * **ZENML\_STORE\_SSL\_CERT**: This can be set to a client SSL certificate required to connect to the MySQL database service. Only valid when `ZENML_STORE_URL` points to a MySQL database that uses SSL-secured connections and requires client SSL certificates. The variable can be set either to the path where the certificate file is mounted inside the container or to the certificate contents themselves. This variable also requires `ZENML_STORE_SSL_KEY` to be set.
 * **ZENML\_STORE\_SSL\_KEY**: This can be set to a client SSL private key required to connect to the MySQL database service. Only valid when `ZENML_STORE_URL` points to a MySQL database that uses SSL-secured connections and requires client SSL certificates. The variable can be set either to the path where the certificate file is mounted inside the container or to the certificate contents themselves. This variable also requires `ZENML_STORE_SSL_CERT` to be set.
 * **ZENML\_STORE\_SSL\_VERIFY\_SERVER\_CERT**: This boolean variable controls whether the SSL certificate in use by the MySQL server is verified. Only valid when `ZENML_STORE_URL` points to a MySQL database that uses SSL-secured connections. Defaults to `False`.
-* **ZENML\_LOGGING\_VERBOSITY**: Use this variable to control the verbosity of logs inside the container. It can be set to one of the following values: `NOTSET`, `ERROR`, `WARN`, `INFO` (default), `DEBUG` or `CRITICAL`.
+* **ZENML\_LOGGING\_VERBOSITY**: Controls the verbosity of server logs inside the container. It can be set to `NOTSET`, `ERROR`, `WARN`, `INFO` (default), `DEBUG`, or `CRITICAL`.
+* **ZENML\_CONSOLE\_LOGGING\_FORMAT**: Controls the server container stdout/stderr log format. Set it to `console` (default) for structured text output, `json` for JSON formatted logs, or a valid Python `%`-style logging format string for custom console output. `ZENML_LOGGING_FORMAT` is still accepted as a deprecated alias.
+* **ZENML\_LOGGING\_COLORS\_DISABLED**: Set this to `true` to disable ANSI color output in console logs. Colors are enabled by default.
+* **ZENML\_SERVER\_OTEL\_EXPORTER\_OTLP\_ENDPOINT**: Set this to the base OTLP/HTTP endpoint of an OpenTelemetry-compatible backend to export ZenML server traces, metrics, and logs. The standard `OTEL_EXPORTER_OTLP_ENDPOINT` variable is also supported as a fallback. ZenML appends `/v1/traces`, `/v1/metrics`, and `/v1/logs` for each signal unless you set per-signal endpoint variables such as `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`, `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`, and `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT`, or their matching `ZENML_SERVER_OTEL_EXPORTER_OTLP_<SIGNAL>_ENDPOINT` names. If no base or per-signal endpoint is set, server OpenTelemetry instrumentation is disabled. The server logs export to the OTel backend is independent of `ZENML_CONSOLE_LOGGING_FORMAT`: logs are exported as OTLP records with structured attributes derived from the underlying log record, not as console-formatted text or JSON.
+* **ZENML\_SERVER\_OTEL\_SERVICE\_NAME**: The service name reported in OpenTelemetry resource attributes for server traces, metrics, and logs. The standard `OTEL_SERVICE_NAME` variable is also supported as a fallback. Defaults to `zenml-server` for self-hosted deployments, or to the ZenML Pro workspace name for cloud deployments when not explicitly set.
 * **ZENML\_STORE\_BACKUP\_STRATEGY**: This variable controls the database backup strategy used by the ZenML server. See the [Database backup and recovery](deploy-with-docker.md#database-backup-and-recovery) section for more details about this feature and other related environment variables. Defaults to `in-memory`.
 * **ZENML\_SERVER\_RATE\_LIMIT\_ENABLED**: This variable controls the rate limiting for ZenML API (currently only for the `LOGIN` endpoint). It is disabled by default, so set it to `1` only if you need to enable rate limiting. To determine unique users a `X_FORWARDED_FOR` header or `request.client.host` is used, so before enabling this make sure that your network configuration is associating proper information with your clients in order to avoid disruptions for legitimate requests.
 * **ZENML\_SERVER\_LOGIN\_RATE\_LIMIT\_MINUTE**: If rate limiting is enabled, this variable controls how many requests will be allowed to query the login endpoint in a one minute interval. Set it to a desired integer value; defaults to `5`.
@@ -264,7 +268,7 @@ The following secure headers environment variables are supported:
 * **ZENML\_SERVER\_SECURE\_HEADERS\_HSTS**: The `Strict-Transport-Security` HTTP header value. The default value is `max-age=63072000; includeSubDomains`.
 * **ZENML\_SERVER\_SECURE\_HEADERS\_XFO**: The `X-Frame-Options` HTTP header value. The default value is `SAMEORIGIN`.
 * **ZENML\_SERVER\_SECURE\_HEADERS\_CONTENT**: The `X-Content-Type-Options` HTTP header value. The default value is `nosniff`.
-* **ZENML\_SERVER\_SECURE\_HEADERS\_CSP**: The `Content-Security-Policy` HTTP header value. This is by default set to a strict CSP policy that only allows content from the origins required by the ZenML dashboard. NOTE: customizing this header is discouraged, as it may cause the ZenML dashboard to malfunction.
+* **ZENML\_SERVER\_SECURE\_HEADERS\_CSP**: The `Content-Security-Policy` HTTP header value. This is by default set to a strict CSP policy that only allows content from the origins required by the ZenML UI. NOTE: customizing this header is discouraged, as it may cause the ZenML UI to malfunction.
 * **ZENML\_SERVER\_SECURE\_HEADERS\_REFERRER**: The `Referrer-Policy` HTTP header value. The default value is `no-referrer-when-downgrade`.
 * **ZENML\_SERVER\_SECURE\_HEADERS\_CACHE**: The `Cache-Control` HTTP header value. The default value is `no-store, no-cache, must-revalidate`.
 * **ZENML\_SERVER\_SECURE\_HEADERS\_PERMISSIONS**: The `Permissions-Policy` HTTP header value. The default value is `accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()`.
@@ -287,7 +291,7 @@ docker run -it -d -p 8080:8080 --name zenml zenmldocker/zenml-server
 
 The above command will start a containerized ZenML server running on your machine that uses a temporary SQLite database file stored in the container. Temporary means that the database and all its contents (stacks, pipelines, pipeline runs, etc.) will be lost when the container is removed with `docker rm`.
 
-You need to visit the ZenML dashboard at `http://localhost:8080` and activate the server by creating an initial admin user account. You can then connect your client to the server with the web login flow:
+You need to visit the ZenML UI at `http://localhost:8080` and activate the server by creating an initial admin user account. You can then connect your client to the server with the web login flow:
 
 ```shell
 $ zenml login http://localhost:8080
@@ -367,7 +371,7 @@ docker run -it -d -p 8080:8080 --name zenml \
     zenmldocker/zenml-server
 ```
 
-You need to visit the ZenML dashboard at `http://localhost:8080` and activate the server by creating an initial admin user account. You can then connect your client to the server with the web login flow:
+You need to visit the ZenML UI at `http://localhost:8080` and activate the server by creating an initial admin user account. You can then connect your client to the server with the web login flow:
 
 ```shell
 zenml login http://localhost:8080
@@ -441,7 +445,7 @@ or, if you need to use a different filename or path:
 docker compose -f /path/to/docker-compose.yml -p zenml up -d
 ```
 
-You need to visit the ZenML dashboard at `http://localhost:8080` to activate the server by creating an initial admin account. You can then connect your client to the server with the web login flow:
+You need to visit the ZenML UI at `http://localhost:8080` to activate the server by creating an initial admin account. You can then connect your client to the server with the web login flow:
 
 ```shell
 zenml login http://localhost:8080
@@ -502,7 +506,7 @@ docker run -it -d -p 8080:8080 --name zenml \
 
 ## Troubleshooting
 
-You can check the logs of the container to verify if the server is up and, depending on where you have deployed it, you can also access the dashboard at a `localhost` port (if running locally) or through some other service that exposes your container to the internet.
+You can check the logs of the container to verify if the server is up and, depending on where you have deployed it, you can also access the UI at a `localhost` port (if running locally) or through some other service that exposes your container to the internet.
 
 ### CLI Docker deployments
 

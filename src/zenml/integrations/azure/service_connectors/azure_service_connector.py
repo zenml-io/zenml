@@ -1222,7 +1222,8 @@ class AzureServiceConnector(ServiceConnector):
                 accounts = [
                     account
                     for account in accounts
-                    if self._get_resource_group(account.id)
+                    if account.id
+                    and self._get_resource_group(account.id)
                     == self.config.resource_group
                 ]
                 if not accounts:
@@ -1371,7 +1372,8 @@ class AzureServiceConnector(ServiceConnector):
                 registries = [
                     registry
                     for registry in registries
-                    if self._get_resource_group(registry.id)
+                    if registry.id
+                    and self._get_resource_group(registry.id)
                     == self.config.resource_group
                 ]
 
@@ -1388,7 +1390,7 @@ class AzureServiceConnector(ServiceConnector):
             container_registries = {
                 registry.name: self._get_resource_group(registry.id)
                 for registry in registries
-                if registry.name
+                if registry.name and registry.id
             }
 
             if registry_name:
@@ -1774,8 +1776,21 @@ class AzureServiceConnector(ServiceConnector):
                                 resource_group, registry_name
                             )
                         )
+                        passwords = registry_credentials.passwords
+                        if (
+                            not registry_credentials.username
+                            or not passwords
+                            or not passwords[0].value
+                        ):
+                            raise AuthorizationException(
+                                f"failed to list admin credentials for Azure "
+                                f"Container Registry '{registry_name}' in "
+                                f"resource group '{resource_group}'. Make sure "
+                                f"the registry is configured with an admin "
+                                f"account."
+                            )
                         username = registry_credentials.username
-                        password = registry_credentials.passwords[0].value
+                        password = passwords[0].value
                     except AzureError as e:
                         raise AuthorizationException(
                             f"failed to list admin credentials for Azure Container "

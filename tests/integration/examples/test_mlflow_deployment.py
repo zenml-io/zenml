@@ -27,7 +27,9 @@ from zenml.enums import ExecutionStatus
     platform.system() == "Darwin",
     reason="It hangs forever now. Need to investigate.",  # TODO: investigate this
 )
-def test_example(request: pytest.FixtureRequest) -> None:
+def test_example(
+    request: pytest.FixtureRequest, isolated_mlflow_environment: None
+) -> None:
     """Runs the mlflow_deployment example."""
     with run_example(
         request=request,

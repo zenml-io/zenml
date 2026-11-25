@@ -66,6 +66,7 @@ def step_7(input_from_4: str) -> str:
     """Step 7 - depends on step 4."""
     context = get_step_context()
     assert context.pipeline_run.in_progress is True
+    assert context.pipeline_run.end_time is None
     return "step_7_output"
 
 
@@ -251,8 +252,16 @@ def test_execution_mode_continue_on_failure(clean_client):
     assert run.steps["step_3"].status == ExecutionStatus.COMPLETED
     assert run.steps["step_4"].status == ExecutionStatus.COMPLETED
     assert run.steps["step_6"].status == ExecutionStatus.COMPLETED
-    # Step 7 is critical because it checks whether the
-    # in progress flag was set correctly, even though step 2 failed.
+    # Step 7 is critical because it checks whether the in progress flag
+    # and end time were set correctly, even though step 2 failed.
     assert run.steps["step_7"].status == ExecutionStatus.COMPLETED
     assert "step_5" not in run.steps
     assert "step_8" not in run.steps
+
+    assert run.end_time is not None
+    step_end_times = [
+        step_run.end_time
+        for step_run in run.steps.values()
+        if step_run.end_time is not None
+    ]
+    assert all(run.end_time >= end_time for end_time in step_end_times)

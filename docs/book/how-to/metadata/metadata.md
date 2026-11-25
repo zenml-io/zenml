@@ -7,7 +7,7 @@ icon: square-info
 
 Metadata in ZenML provides critical context to your ML workflows, allowing you to track additional information about your steps, runs, artifacts, and models. This enhanced traceability helps you better understand, compare, and reproduce your experiments.
 
-![Metadata in the dashboard](../../.gitbook/assets/metadata-in-dashboard.png)
+![Metadata in the UI](../../.gitbook/assets/metadata-in-dashboard.png)
 
 Metadata is any additional contextual information you want to associate with your ML workflow components. In ZenML, you can attach metadata to:
 
@@ -16,7 +16,7 @@ Metadata is any additional contextual information you want to associate with you
 * **Artifacts**: Document data characteristics, source information, or processing details
 * **Models**: Capture evaluation results, hyperparameters, or deployment information
 
-ZenML makes it easy to log and retrieve this information through a simple interface, and visualizes it in the dashboard for quick analysis.
+ZenML makes it easy to log and retrieve this information through a simple interface, and visualizes it in the UI for quick analysis.
 
 ## Logging Metadata
 
@@ -350,11 +350,11 @@ log_metadata(
 )
 ```
 
-These special types ensure metadata is logged in a consistent and interpretable manner, and they receive special treatment in the ZenML dashboard.
+These special types ensure metadata is logged in a consistent and interpretable manner, and they receive special treatment in the ZenML UI.
 
-## Organizing Metadata in the Dashboard
+## Organizing Metadata in the UI
 
-To improve visualization in the ZenML dashboard, you can group metadata into logical sections by passing a dictionary of dictionaries:
+To improve visualization in the ZenML UI, you can group metadata into logical sections by passing a dictionary of dictionaries:
 
 ```python
 from zenml import log_metadata
@@ -362,12 +362,12 @@ from zenml.metadata.metadata_types import StorageSize
 
 log_metadata(
     metadata={
-        "model_metrics": {  # First card in the dashboard
+        "model_metrics": {  # First card in the UI
             "accuracy": 0.95,
             "precision": 0.92,
             "recall": 0.90
         },
-        "data_details": {   # Second card in the dashboard
+        "data_details": {   # Second card in the UI
             "dataset_size": StorageSize(1500000),
             "feature_columns": ["age", "income", "score"]
         }
@@ -377,7 +377,7 @@ log_metadata(
 )
 ```
 
-In the ZenML dashboard, "model\_metrics" and "data\_details" will appear as separate cards, each containing their respective key-value pairs, making it easier to navigate and interpret the metadata.
+In the ZenML UI, "model\_metrics" and "data\_details" will appear as separate cards, each containing their respective key-value pairs, making it easier to navigate and interpret the metadata.
 
 ## Visualizing and Comparing Metadata (Pro)
 
@@ -391,13 +391,13 @@ The metadata comparison tool is a [ZenML Pro](https://zenml.io/pro)-only feature
 
 ### Comparison Views
 
-The Experiment Comparison tool offers two complementary views for analyzing your pipeline metadata:
+The **Compare runs** page shows two complementary views of your pipeline metadata on one page:
 
-1. **Table View**: Compare metadata across runs with automatic change tracking
+1. A table: Compare metadata across runs with automatic change tracking
 
 ![Table View](../../.gitbook/assets/table-view.png)
 
-2. **Parallel Coordinates Plot**: Visualize relationships between different metrics
+2. A parallel coordinates chart, above the table: Visualize relationships between different metrics
 
 ![Parallel Coordinates](../../../book/.gitbook/assets/coordinates-view.png)
 
@@ -442,7 +442,7 @@ The `StepContext` object is your handle to the *current* pipeline/step run while
 
 It is available:
 - Inside functions decorated with `@step` (during execution, not composition time).
-- Inside step hooks like `on_failure` / `on_success`.
+- Inside step hooks like `on_failure` / `on_success` (see [Hooks](../steps-pipelines/hooks.md)).
 - Inside materializers triggered by a step’s `save` / `load`.
 - Calling `get_step_context()` elsewhere raises `RuntimeError`.
 
@@ -587,7 +587,7 @@ def my_pipeline():
 To make the most of ZenML's metadata capabilities:
 
 1. **Use consistent keys**: Define standard metadata keys for your organization to ensure consistency
-2. **Group related metadata**: Use nested dictionaries to create logical groupings in the dashboard
+2. **Group related metadata**: Use nested dictionaries to create logical groupings in the UI
 3. **Leverage special types**: Use ZenML's special metadata types for standardized representation
 4. **Log relevant information**: Focus on metadata that aids reproducibility, understanding, and decision-making
 5. **Consider automation**: Set up automatic metadata logging for standard metrics and information

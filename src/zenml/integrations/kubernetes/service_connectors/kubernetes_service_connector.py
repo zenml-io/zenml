@@ -533,7 +533,9 @@ class KubernetesServiceConnector(ServiceConnector):
                 ).decode("utf-8")
                 if kube_config.key_file
                 else None,
-                cluster_name=kube_config.host.strip("https://").split(":")[0],
+                cluster_name=kube_config.host.removeprefix("https://")
+                .removeprefix("http://")
+                .split(":")[0],
                 insecure=kube_config.verify_ssl is False,
             )
 

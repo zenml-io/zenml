@@ -33,6 +33,12 @@ from zenml.enums import ArtifactType, ModelStages
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import (
+    EnumFilterOption,
+    IntegerFilterOption,
+    StringFilterOption,
+    UUIDFilterOption,
+)
 from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
@@ -665,26 +671,29 @@ class ModelVersionFilter(
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
         *RunMetadataFilterMixin.CLI_EXCLUDE_FIELDS,
     ]
-    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
-        *ProjectScopedFilter.API_MULTI_INPUT_PARAMS,
-        *TaggableFilter.API_MULTI_INPUT_PARAMS,
-        *RunMetadataFilterMixin.API_MULTI_INPUT_PARAMS,
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
+        *TaggableFilter.API_SINGLE_INPUT_PARAMS,
+        *RunMetadataFilterMixin.API_SINGLE_INPUT_PARAMS,
     ]
 
-    name: Optional[str] = Field(
+    name: StringFilterOption = Field(
         default=None,
         description="The name of the Model Version",
     )
-    number: Optional[int] = Field(
+    number: IntegerFilterOption = Field(
         default=None,
         description="The number of the Model Version",
     )
-    stage: Optional[Union[str, ModelStages]] = Field(
+    # TODO: By doing this we are changing the union order, is this a problem?
+    # This may have always been cast to a string anyway, perhaps we can use
+    # a StringFilterOption instead?
+    stage: EnumFilterOption[ModelStages] = Field(
         description="The model version stage",
         default=None,
         union_mode="left_to_right",
     )
-    model: Optional[Union[str, UUID]] = Field(
+    model: UUIDFilterOption = Field(
         default=None,
         description="The name or ID of the model which the search is scoped "
         "to. This field must always be set and is always applied in addition "
@@ -714,12 +723,17 @@ class ModelVersionFilter(
         custom_filters = super().get_custom_filters(table)
 
         if self.model:
-            model_filter = and_(
-                ModelVersionSchema.model_id == ModelSchema.id,  # type: ignore[arg-type]
-                self.generate_name_or_id_query_conditions(
-                    value=self.model, table=ModelSchema
-                ),
+            model_filters = (
+                self.model if isinstance(self.model, list) else [self.model]
             )
-            custom_filters.append(model_filter)
+            for model_filter in model_filters:
+                custom_filters.append(
+                    and_(
+                        ModelVersionSchema.model_id == ModelSchema.id,  # type: ignore[arg-type]
+                        self.generate_name_or_id_query_conditions(
+                            value=model_filter, table=ModelSchema
+                        ),
+                    )
+                )
 
         return custom_filters

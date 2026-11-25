@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Type
 from uuid import uuid4
 
 from zenml.enums import ExecutionMode
+from zenml.execution.context import setup_execution_context
 from zenml.logger import get_logger
 from zenml.orchestrators import (
     BaseOrchestrator,
@@ -108,63 +109,66 @@ class LocalOrchestrator(BaseOrchestrator):
         self.run_init_hook(snapshot=snapshot)
 
         # Run each step
-        for step_name, step in snapshot.step_configurations.items():
-            if (
-                execution_mode == ExecutionMode.STOP_ON_FAILURE
-                and failed_steps
-            ):
-                logger.warning(
-                    "Skipping step %s due to the failed step(s): %s (Execution mode %s)",
-                    step_name,
-                    ", ".join(failed_steps),
-                    execution_mode,
-                )
-                skipped_steps.append(step_name)
-                continue
+        with setup_execution_context():
+            for step_name, step in snapshot.step_configurations.items():
+                if (
+                    execution_mode == ExecutionMode.STOP_ON_FAILURE
+                    and failed_steps
+                ):
+                    logger.warning(
+                        "Skipping step %s due to the failed step(s): %s (Execution mode %s)",
+                        step_name,
+                        ", ".join(failed_steps),
+                        execution_mode,
+                    )
+                    skipped_steps.append(step_name)
+                    continue
 
-            if failed_upstream_steps := [
-                fs for fs in failed_steps if fs in step.spec.upstream_steps
-            ]:
-                logger.warning(
-                    "Skipping step %s due to failure in upstream step(s): %s (Execution mode %s)",
-                    step_name,
-                    ", ".join(failed_upstream_steps),
-                    execution_mode,
-                )
-                skipped_steps.append(step_name)
-                continue
+                if failed_upstream_steps := [
+                    fs for fs in failed_steps if fs in step.spec.upstream_steps
+                ]:
+                    logger.warning(
+                        "Skipping step %s due to failure in upstream step(s): %s (Execution mode %s)",
+                        step_name,
+                        ", ".join(failed_upstream_steps),
+                        execution_mode,
+                    )
+                    skipped_steps.append(step_name)
+                    continue
 
-            if skipped_upstream_steps := [
-                fs for fs in skipped_steps if fs in step.spec.upstream_steps
-            ]:
-                logger.warning(
-                    "Skipping step %s due to the skipped upstream step(s) %s (Execution mode %s)",
-                    step_name,
-                    ", ".join(skipped_upstream_steps),
-                    execution_mode,
-                )
-                skipped_steps.append(step_name)
-                continue
+                if skipped_upstream_steps := [
+                    fs
+                    for fs in skipped_steps
+                    if fs in step.spec.upstream_steps
+                ]:
+                    logger.warning(
+                        "Skipping step %s due to the skipped upstream step(s) %s (Execution mode %s)",
+                        step_name,
+                        ", ".join(skipped_upstream_steps),
+                        execution_mode,
+                    )
+                    skipped_steps.append(step_name)
+                    continue
 
-            if self.requires_resources_in_orchestration_environment(step):
-                logger.warning(
-                    "Specifying step resources is not supported for the local "
-                    "orchestrator, ignoring resource configuration for "
-                    "step %s.",
-                    step_name,
-                )
+                if self.requires_resources_in_orchestration_environment(step):
+                    logger.warning(
+                        "Specifying step resources is not supported for the local "
+                        "orchestrator, ignoring resource configuration for "
+                        "step %s.",
+                        step_name,
+                    )
 
-            step_environment = step_environments[step_name]
-            try:
-                with temporary_environment(step_environment):
-                    self.run_step(step=step)
-            except Exception as e:
-                failed_steps.append(step_name)
-                logger.exception("Step %s failed.", step_name)
+                step_environment = step_environments[step_name]
+                try:
+                    with temporary_environment(step_environment):
+                        self.run_step(step=step)
+                except Exception as e:
+                    failed_steps.append(step_name)
+                    logger.exception("Step %s failed.", step_name)
 
-                if execution_mode == ExecutionMode.FAIL_FAST:
-                    step_exception = e
-                    break
+                    if execution_mode == ExecutionMode.FAIL_FAST:
+                        step_exception = e
+                        break
 
         self.run_cleanup_hook(snapshot=snapshot)
 

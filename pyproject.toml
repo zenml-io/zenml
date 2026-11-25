@@ -10,20 +10,22 @@ build-backend = "uv_build"
 # NOTE: when a version is filtered out, uv does NOT mention it — resolution
 # just fails with "no compatible version found". Keep this in mind when debugging.
 exclude-newer = "3 days"
+# Don't exclude our own package which is installed in some CI jobs.
+exclude-newer-package = { zenml = false }
 
 [tool.uv.build-backend]
 module-name = ["zenml", "zenml_cli"]
 
 [project]
 name = "zenml"
-version = "0.94.3"
+version = "0.99.0"
 description = "ZenML: MLOps for Reliable AI: from Classical AI to Agents."
 authors = [{name = "ZenML GmbH", email = "info@zenml.io"}]
 readme = "README.md"
 license = "Apache-2.0"
 keywords = ["machine learning", "production", "pipeline", "mlops", "devops", "ai", "agents", "agentic workflows"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Intended Audience :: System Administrators",
@@ -33,28 +35,36 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: System :: Distributed Computing",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
 ]
-requires-python = ">=3.10,<3.14"
+requires-python = ">=3.10,<3.15"
 
 dependencies = [
     "asgiref~=3.10.0",
-    "click>=8.0.1,<=8.2.1",
+    # Not imported by ZenML; it arrives through docker -> requests. The floor
+    # makes upgrading ZenML also upgrade certifi, because older bundles trust
+    # the compromised emSign ECC Root CA - G3 (GHSA-6q48-6c7w-9gw2).
+    "certifi>=2026.10.19",
+    "click>=8.3.3,<=8.5.0",
     "cloudpickle>=2.0.0",
     "distro>=1.6.0,<2.0.0",
     "docker~=7.1.0",
     "gitpython>=3.1.18,<4.0.0",
     "jsonref",
-    "opentelemetry-sdk==1.38.0",
+    "opentelemetry-instrumentation-logging==0.66b1",
+    "opentelemetry-sdk==1.45.1",
     "packaging>=24.1",
     "psutil>=5.0.0",
     "pydantic>=2.0,<=2.12.5",
+    "pydantic-settings>=2.0.0,<3.0.0",
     "python-dateutil>=2.8.1,<3.0.0",
     "pyyaml>=6.0.1",
     "rich>=12.0.0", # Make sure to keep the version aligned with our `jupyter` extra
     "setuptools>=70.0.0",
+    "structlog>=25.5.0",    # using stuctlog for adding context to logs
 ]
 
 [project.urls]
@@ -74,17 +84,15 @@ local = [
     "pymysql>=1.1.1,~=1.1.0",
     "sqlalchemy>=2.0.0,<3.0.0",
     "sqlalchemy_utils",
-    "sqlmodel==0.0.18",
+    "sqlmodel==0.0.38",
     "jsonschema>=4.0.0",
 ]
 server = [
     "zenml[local,native-schedules]",  # Includes all the DB dependencies
-    "fastapi>=0.100,<=0.115.8",
+    "fastapi>=0.138.0,<0.139.0",
     "uvicorn[standard]>=0.17.5",
     "python-multipart~=0.0.9",
-    "pyjwt[crypto]==2.7.*",
-    "fastapi-utils",
-    "orjson~=3.10.0",
+    "pyjwt[crypto]==2.15.1",
     "Jinja2",
     "ipinfo>=4.4.3",
     "secure~=1.0.1",
@@ -93,15 +101,24 @@ server = [
     "croniter>=6.0.0",
     "cachetools>=5.3.0,<8.0.0",
 ]
+otel = [
+    # Install otel dependencies to enable OpenTelemetry instrumentation in server processes
+    "opentelemetry-exporter-otlp-proto-http>=1.45.1,<1.46.0",
+    "opentelemetry-instrumentation-fastapi>=0.66b1,<0.67b0",
+    "opentelemetry-instrumentation-requests>=0.66b1,<0.67b0",
+    "opentelemetry-instrumentation-sqlalchemy>=0.66b1,<0.67b0",
+]
+server-streaming = ["redis>=7.1.0,<8.0.0"]
 jupyter = ["rich[jupyter]>=12.0.0"]
 templates = ["copier>=8.1.0", "jinja2-time>=0.2.0,<0.3.0", "ruff>=0.1.7", "pyyaml-include<2.0"]
 terraform = ["python-terraform"]
 secrets-aws = ["boto3>=1.16.0"]
+aws-rds-iam = ["boto3>=1.16.0"]
 secrets-gcp = ["google-cloud-secret-manager>=2.12.5"]
 secrets-azure = ["azure-identity>=1.4.0", "azure-keyvault-secrets>=4.0.0"]
 secrets-hashicorp = ["hvac>=0.11.2"]
 s3fs = ["s3fs>=2022.11.0,!=2025.3.1"]
-gcsfs = ["gcsfs>=2022.11.0"]
+gcsfs = ["gcsfs>=2022.11.0,<=2024.12.0"]
 adlfs = ["adlfs>=2021.10.0"]
 connectors-kubernetes = ["kubernetes>=18.20.0"]
 connectors-aws = ["boto3>=1.16.0", "kubernetes>=18.20.0", "aws-profile-manager>=0.5.0"]
@@ -116,7 +133,7 @@ connectors-azure = [
     "azure-mgmt-containerservice>=20.0.0",
     "azure-mgmt-containerregistry>=10.0.0",
     "azure-mgmt-storage>=20.0.0",
-    "azure-storage-blob>=12.0.0",
+    "azure-storage-blob>=12.17.0,<13.0.0",
     "azure-mgmt-resource>=21.0.0,<25.0.0",
     "kubernetes>=18.20.0",
     "requests>=2.27.11,<3.0.0",
@@ -132,33 +149,39 @@ vertex = [
     "google-cloud-pipeline-components>=2.19.0",
 ]
 azureml = [
-    "azure-ai-ml==1.23.1",
+    "azure-ai-ml>=1.23.1,<2.0.0",
 ]
 dev = [
     "bandit>=1.7.5,<2.0.0",
     "ruff>=0.1.7",
     "yamlfix>=1.16.0",
     "zizmor>=1.0.0",
-    "coverage[toml]>=5.5,<6.0.0",
-    "pytest>=7.4.0,<8.0.0",
-    "mypy==1.18.1",
+    "coverage[toml]>=7.6.1,<8.0.0",
+    "pytest>=9.0.3,<10.0.0",
+    # starlette's TestClient imports httpx on 0.46.0 through 1.1.x and httpx2
+    # on 1.2.0 and newer.
+    "httpx>=0.23.0,<1.0.0",
+    "httpx2>=2.5.0,<3.0.0",
+    "beautifulsoup4>=4.12.0,<5.0.0",
+    "mypy==1.18.2",
     "pre-commit",
     "pyment>=0.3.3,<0.4.0",
     "tox>=3.24.3",
     "hypothesis>=6.43.1",
     "typing-extensions>=3.7.4",
-    "pydoclint>=0.8.3",
+    "pydoclint==0.10.1",
     "pytest-randomly>=3.10.1,<4.0.0",
     "pytest-mock>=3.6.1,<4.0.0",
     "pytest-clarity>=1.0.1,<2.0.0",
     "pytest-instafail>=0.5.0",
-    "pytest-rerunfailures>=13.0,<14.0.0",
-    "pytest-split>=0.10.0,<0.11.0",
+    "pytest-rerunfailures>=16.1,<17.0.0",
+    "pytest-split>=0.11.0,<0.12.0",
     "mkdocs>=1.6.1,<2.0.0",
-    "mkdocs-material==9.6.8",
+    "mkdocs-material==9.7.7",
     "mkdocs-awesome-pages-plugin>=2.10.1,<3.0.0",
     "mkdocstrings[python]>=0.28.1,<1.0.0",
     "mkdocstrings-python",
+    "pymdown-extensions<12.2",
     "mkdocs-autorefs>=1.4.0,<2.0.0",
     "mike>=1.1.2,<2.0.0",
     "maison<2.0",
@@ -193,6 +216,7 @@ testpaths = "tests"
 xfail_strict = true
 norecursedirs = [
     "tests/integration/examples/*", # ignore example folders
+    ".hypothesis",
 ]
 
 [tool.coverage.run]
@@ -299,12 +323,11 @@ arg-type-hints-in-docstring = false
 arg-type-hints-in-signature = true
 check-return-types = false
 check-yield-types = false
+skip-checking-short-docstrings = false
 allow-init-docstring = true
 check-class-attributes = false
 check-arg-order = false
 omit-stars-when-documenting-varargs = true
-baseline = "pydoclint-baseline.txt"
-auto-regenerate-baseline = true
 
 [tool.bandit]
 skips = ["B615"]
@@ -334,6 +357,7 @@ module = [
     "tensorflow.*",
     "apache_beam.*",
     "pandas.*",
+    "pyarrow.*",
     "distro.*",
     "analytics.*",
     "absl.*",
@@ -363,6 +387,9 @@ module = [
     "azureml.*",
     "google.*",
     "google_cloud_pipeline_components.*",
+    "great_expectations.*",
+    "evidently.*",
+    "nltk.*",
     "neuralprophet.*",
     "lightgbm.*",
     "scipy.*",
@@ -409,9 +436,22 @@ module = [
     "mlx.*",
     "runai",
     "runai.*",
+    "truss.*",
+    "truss_train.*",
+    "typesafe_sdk",
+    "typesafe_sdk.*",
     "jsonref",
 ]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["zenml.integrations.great_expectations.*"]
+warn_unused_ignores = false
+disallow_subclassing_any = false
+
+[[tool.mypy.overrides]]
+module = ["zenml.integrations.evidently.*"]
+warn_unused_ignores = false
 
 [[tool.mypy.overrides]]
 module = ["mlx.core.*"]  # workaround for failing mypy stub parsing (mlx==0.29.4 version)

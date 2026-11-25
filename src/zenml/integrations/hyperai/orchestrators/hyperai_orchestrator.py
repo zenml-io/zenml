@@ -20,7 +20,6 @@ from shlex import quote
 from typing import IO, TYPE_CHECKING, Any, Dict, Optional, Type, cast
 
 import paramiko
-import yaml
 
 from zenml.config.base_settings import BaseSettings
 from zenml.entrypoints import StepEntrypointConfiguration
@@ -31,6 +30,7 @@ from zenml.integrations.hyperai.flavors.hyperai_orchestrator_flavor import (
 )
 from zenml.logger import get_logger
 from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
+from zenml.orchestrators.utils import dump_compose_yaml
 from zenml.stack import Stack, StackValidator
 
 if TYPE_CHECKING:
@@ -202,6 +202,13 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             HyperAIServiceConnector,
         )
 
+        logger.warning(
+            "The HyperAI orchestrator is deprecated in favor of the generic "
+            "`ssh` orchestrator, which runs pipelines over SSH + Docker on "
+            "any host and additionally supports dynamic pipelines. Register "
+            "one with `zenml orchestrator register ... --flavor=ssh`."
+        )
+
         compose_definition: Dict[str, Any] = {"version": "3", "services": {}}
         snapshot_id = snapshot.id
 
@@ -286,7 +293,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                         }
                     )
 
-        compose_definition_yaml: str = yaml.dump(compose_definition)
+        compose_definition_yaml: str = dump_compose_yaml(compose_definition)
 
         # Connect to configured HyperAI instance
         logger.info(

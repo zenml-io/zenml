@@ -14,7 +14,12 @@ metadata:
 spec:
   type: {{ settings.service_type }}
   selector:
-    app: {{ name }}
+    # Select on the deployment-id and managed-by labels used by the
+    # Deployment's matchLabels, not the `app` label which can be
+    # overwritten by user-supplied `labels` or `pod_settings.labels`
+    # on the pod template and leave the Service with no endpoints.
+    managed-by: zenml
+    zenml-deployment-id: {{ labels.get('zenml-deployment-id') | tojson }}
   ports:
     - port: {{ settings.service_port }}
       targetPort: {{ settings.service_port }}

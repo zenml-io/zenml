@@ -41,15 +41,24 @@ docker_settings = DockerSettings(
 
 @step
 def run_openai_agent(query: str) -> Annotated[Dict[str, Any], "agent_results"]:
-    """Execute the OpenAI Agents SDK agent and return results."""
-    try:
-        import json
-        import subprocess
-        import sys
-        import tempfile
+    """Execute the OpenAI Agents SDK agent and return results.
 
-        # Create a standalone script to run the agent in a separate process
-        agent_script = '''
+    Args:
+        query: Question for the agent.
+
+    Returns:
+        The query and generated response.
+
+    Raises:
+        RuntimeError: If the agent subprocess fails.
+    """
+    import json
+    import subprocess
+    import sys
+    import tempfile
+
+    # Create a standalone script to run the agent in a separate process
+    agent_script = '''
 import asyncio
 import sys
 import json
@@ -75,9 +84,7 @@ def main():
 
     try:
         response = loop.run_until_complete(run_agent(query))
-        print(json.dumps({"success": True, "response": response}))
-    except Exception as e:
-        print(json.dumps({"success": False, "error": str(e)}))
+        print(json.dumps({"response": response}))
     finally:
         loop.close()
 
@@ -85,90 +92,57 @@ if __name__ == "__main__":
     main()
 '''
 
-        # Write the script to a temporary file
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".py", delete=False
-        ) as f:
-            f.write(agent_script)
-            script_path = f.name
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".py", delete=False
+    ) as f:
+        f.write(agent_script)
+        script_path = f.name
 
-        try:
-            # Determine the correct working directory
-            import os
+    try:
+        current_file_dir = os.path.dirname(os.path.abspath(__file__))
+        work_dir = (
+            "/app/code" if os.path.exists("/app/code") else current_file_dir
+        )
 
-            current_file_dir = os.path.dirname(os.path.abspath(__file__))
-            work_dir = (
-                "/app/code"
-                if os.path.exists("/app/code")
-                else current_file_dir
-            )
+        result = subprocess.run(
+            [sys.executable, script_path, query],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            cwd=work_dir,
+            env={**os.environ, "PYTHONPATH": work_dir},
+        )
+        if result.returncode != 0:
+            error = result.stderr.strip() or "OpenAI agent subprocess failed."
+            raise RuntimeError(error)
 
-            # Run the agent in a separate process
-            result = subprocess.run(
-                [sys.executable, script_path, query],
-                capture_output=True,
-                text=True,
-                timeout=60,
-                cwd=work_dir,
-                env={**os.environ, "PYTHONPATH": work_dir},
-            )
-
-            if result.returncode == 0:
-                # Parse the JSON output
-                output_data = json.loads(result.stdout.strip())
-                if output_data.get("success"):
-                    return {
-                        "query": query,
-                        "response": output_data["response"],
-                        "status": "success",
-                    }
-                else:
-                    return {
-                        "query": query,
-                        "response": f"Agent error: {output_data.get('error', 'Unknown error')}",
-                        "status": "error",
-                    }
-            else:
-                return {
-                    "query": query,
-                    "response": f"Process error: {result.stderr}",
-                    "status": "error",
-                }
-        finally:
-            # Clean up the temporary file
-            import os
-
-            try:
-                os.unlink(script_path)
-            except Exception:
-                pass
-
-    except Exception as e:
+        output_data = json.loads(result.stdout.strip())
         return {
             "query": query,
-            "response": f"Agent error: {str(e)}",
-            "status": "error",
+            "response": output_data["response"],
         }
+    finally:
+        try:
+            os.unlink(script_path)
+        except OSError:
+            pass
 
 
 @step
 def format_openai_response(
     agent_data: Dict[str, Any],
 ) -> Annotated[str, "formatted_response"]:
-    """Format the OpenAI Agents SDK results into a readable summary."""
+    """Format the OpenAI Agents SDK results into a readable summary.
+
+    Args:
+        agent_data: Query and generated response.
+
+    Returns:
+        The formatted agent response.
+    """
     query = agent_data["query"]
     response = agent_data["response"]
-    status = agent_data["status"]
-
-    if status == "error":
-        formatted = f"""❌ OPENAI AGENTS SDK ERROR
-{"=" * 40}
-
-Query: {query}
-Error: {response}
-"""
-    else:
-        formatted = f"""🤖 OPENAI AGENTS SDK RESPONSE
+    formatted = f"""🤖 OPENAI AGENTS SDK RESPONSE
 {"=" * 40}
 
 Query: {query}

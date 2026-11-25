@@ -2,8 +2,7 @@
 name: release-prepare
 on:
   push:
-    branches:
-      - "misc/prepare-release-*"
+    branches: [misc/prepare-release-*]
 env:
   ZENML_ANALYTICS_OPT_IN: false
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -25,7 +24,7 @@ jobs:
       # Check out main to get the old version
       - name: Checkout code
         id: checkout-code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           ref: main
       # Configure Git
@@ -47,7 +46,7 @@ jobs:
     steps:
       # Check out the code
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       # Configure Git
       - name: Configure git
         shell: bash
@@ -63,7 +62,7 @@ jobs:
           NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION: ${{ needs.fetch-versions.outputs.new_version }}
       # Set up Python
       - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
           python-version: '3.12'
       # Install ZenML
@@ -110,25 +109,6 @@ jobs:
         env:
           NEEDS_FETCH_VERSIONS_OUTPUTS_OLD_VERSION: ${{ needs.fetch-versions.outputs.old_version }}
           NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION: ${{ needs.fetch-versions.outputs.new_version }}
-      # Generate and append release notes
-      - name: Generate release notes
-        # Only run this part once when the release branch is created
-        if: ${{ github.event.created }}
-        run: |
-          RELEASE_NOTES=$(gh api repos/${{ github.repository }}/releases/generate-notes -F tag_name=${NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION} -F target_commitish=${{ github.sha }} -F previous_tag_name=${NEEDS_FETCH_VERSIONS_OUTPUTS_OLD_VERSION} | jq -r '.body')
-          {
-          head -n 1 RELEASE_NOTES.md
-          echo ""
-          echo "# ${NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION}"
-          echo ""
-          echo "$RELEASE_NOTES"
-          echo ""
-          tail -n +2 RELEASE_NOTES.md
-          } > RELEASE_NOTES.md.new && mv RELEASE_NOTES.md.new RELEASE_NOTES.md
-          git add RELEASE_NOTES.md
-        env:
-          NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION: ${{ needs.fetch-versions.outputs.new_version }}
-          NEEDS_FETCH_VERSIONS_OUTPUTS_OLD_VERSION: ${{ needs.fetch-versions.outputs.old_version }}
       # Push the changes
       - name: Push the changes
         run: |
@@ -158,12 +138,16 @@ jobs:
     steps:
       # Check out the prepare-release branch
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Include latest dashboard
+        env:
+          ZENML_UI_RELEASE_TOKEN: ${{ secrets.ZENML_UI_RELEASE_TOKEN }}
+        run: bash scripts/install-dashboard.sh
       # Sign in to Google
-      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093  # v3.0.0
         with:
           credentials_json: ${{ secrets.GCP_CLOUDBUILD_SERVICE_ACCOUNT }}
-      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db  # v3.0.1
         with:
           project_id: ${{ secrets.GCP_CLOUDBUILD_PROJECT }}
       # Submit the Cloudbuild job
@@ -184,10 +168,10 @@ jobs:
     steps:
       # Check out the code
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       # Setting up Python
       - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
           python-version: '3.12'
       # Install requests
@@ -198,8 +182,7 @@ jobs:
       # Deactivate and redeploy the tenant
       - name: Run tenant management script
         env:
-          CLOUD_STAGING_CLIENT_ID: ${{ secrets.CLOUD_STAGING_CLIENT_ID }}
-          CLOUD_STAGING_CLIENT_SECRET: ${{ secrets.CLOUD_STAGING_CLIENT_SECRET }}
+          ZENML_PRO_API_KEY: ${{ secrets.ZENML_PRO_STAGING_RELEASE_API_KEY }}
           RELEASE_TENANT_ID: ${{ secrets.RELEASE_TENANT_ID }}
           ZENML_NEW_VERSION: ${{ needs.fetch-versions.outputs.new_version }}
         run: python scripts/redeploy-release-prep-tenant.py
@@ -235,9 +218,9 @@ jobs:
       - name: Reload Docker
         run: sudo systemctl restart docker
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
           python-version: '3.12'
       - name: Install ZenML

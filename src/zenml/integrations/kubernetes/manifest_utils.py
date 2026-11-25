@@ -26,6 +26,7 @@ from zenml.constants import ENV_ZENML_ENABLE_REPO_INIT_WARNINGS
 from zenml.integrations.airflow.orchestrators.dag_generator import (
     ENV_ZENML_LOCAL_STORES_PATH,
 )
+from zenml.integrations.kubernetes.constants import MULTI_POD_MAIN_PORT
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
 from zenml.utils import string_utils
@@ -108,6 +109,9 @@ def build_pod_manifest(
     mount_local_stores: bool = False,
     owner_references: Optional[List[k8s_client.V1OwnerReference]] = None,
     termination_grace_period_seconds: Optional[int] = 30,
+    run_as_user: Optional[int] = None,
+    run_as_group: Optional[int] = None,
+    annotations: Optional[Dict[str, str]] = None,
 ) -> k8s_client.V1Pod:
     """Build a Kubernetes pod manifest for a ZenML run or step.
 
@@ -128,6 +132,9 @@ def build_pod_manifest(
         owner_references: List of owner references for the pod.
         termination_grace_period_seconds: The amount of seconds to wait for a
             pod to shutdown gracefully.
+        run_as_user: User ID to apply to the pod and all containers.
+        run_as_group: Group ID to apply to the pod and all containers.
+        annotations: Annotations to add to the pod, overriding pod settings.
 
     Returns:
         Pod manifest.
@@ -186,8 +193,10 @@ def build_pod_manifest(
         owner_references=owner_references,
     )
 
-    if pod_settings and pod_settings.annotations:
-        pod_metadata.annotations = pod_settings.annotations
+    pod_annotations = pod_settings.annotations.copy() if pod_settings else {}
+    pod_annotations.update(annotations or {})
+    if pod_annotations:
+        pod_metadata.annotations = pod_annotations
 
     pod_manifest = k8s_client.V1Pod(
         kind="Pod",
@@ -198,6 +207,83 @@ def build_pod_manifest(
 
     if mount_local_stores:
         add_local_stores_mount(pod_spec)
+
+    if run_as_user is not None and (
+        not isinstance(run_as_user, int)
+        or isinstance(run_as_user, bool)
+        or run_as_user <= 0
+    ):
+        logger.warning(
+            "Ignoring invalid OIDC Linux UID: expected a positive integer."
+        )
+        run_as_user = None
+
+    if run_as_group is not None and (
+        not isinstance(run_as_group, int)
+        or isinstance(run_as_group, bool)
+        or run_as_group <= 0
+    ):
+        logger.warning(
+            "Ignoring invalid OIDC Linux GID: expected a positive integer."
+        )
+        run_as_group = None
+
+    if run_as_user is not None or run_as_group is not None:
+        pod_security_context: Dict[str, int] = {}
+        if run_as_user is not None:
+            pod_security_context["runAsUser"] = run_as_user
+        if run_as_group is not None:
+            pod_security_context["runAsGroup"] = run_as_group
+
+        if isinstance(pod_spec.security_context, dict):
+            pod_spec.security_context.update(pod_security_context)
+        elif isinstance(
+            pod_spec.security_context, k8s_client.V1PodSecurityContext
+        ):
+            if run_as_user is not None:
+                pod_spec.security_context.run_as_user = run_as_user
+            if run_as_group is not None:
+                pod_spec.security_context.run_as_group = run_as_group
+        else:
+            pod_spec.security_context = k8s_client.V1PodSecurityContext(
+                run_as_user=run_as_user,
+                run_as_group=run_as_group,
+            )
+
+        containers: List[Any] = list(pod_spec.containers)
+        containers.extend(pod_spec.init_containers or [])
+        containers.extend(pod_spec.ephemeral_containers or [])
+        for container in containers:
+            if isinstance(container, dict):
+                container_security_context = container.setdefault(
+                    "securityContext", {}
+                )
+            else:
+                container_security_context = container.security_context
+
+            container_security_context_update: Dict[str, int] = {}
+            if run_as_user is not None:
+                container_security_context_update["runAsUser"] = run_as_user
+            if run_as_group is not None:
+                container_security_context_update["runAsGroup"] = run_as_group
+
+            if isinstance(container_security_context, dict):
+                container_security_context.update(
+                    container_security_context_update
+                )
+            else:
+                container_security_context = (
+                    container_security_context
+                    or k8s_client.V1SecurityContext()
+                )
+                if run_as_user is not None:
+                    container_security_context.run_as_user = run_as_user
+                if run_as_group is not None:
+                    container_security_context.run_as_group = run_as_group
+                if isinstance(container, dict):
+                    container["securityContext"] = container_security_context
+                else:
+                    container.security_context = container_security_context
 
     return pod_manifest
 
@@ -253,6 +339,9 @@ def add_pod_settings(
                 container.security_context = (
                     settings.container_security_context
                 )
+
+        if settings.image_pull_policy:
+            container.image_pull_policy = settings.image_pull_policy
 
     if settings.volumes:
         if pod_spec.volumes:
@@ -428,6 +517,7 @@ def build_job_manifest(
     active_deadline_seconds: Optional[int] = None,
     pod_failure_policy: Optional[Dict[str, Any]] = None,
     owner_references: Optional[List[k8s_client.V1OwnerReference]] = None,
+    pod_count: int = 1,
 ) -> k8s_client.V1Job:
     """Build a Kubernetes job manifest.
 
@@ -441,6 +531,8 @@ def build_job_manifest(
         active_deadline_seconds: The active deadline seconds for the job.
         pod_failure_policy: The pod failure policy for the job.
         owner_references: The owner references for the job.
+        pod_count: The number of pods to run in parallel. Values above 1
+            turn the job into an indexed multi-pod job.
 
     Returns:
         The Kubernetes job manifest.
@@ -448,11 +540,17 @@ def build_job_manifest(
     job_spec = k8s_client.V1JobSpec(
         template=pod_template,
         backoff_limit=backoff_limit,
-        parallelism=1,
+        parallelism=pod_count,
         ttl_seconds_after_finished=ttl_seconds_after_finished,
         active_deadline_seconds=active_deadline_seconds,
         pod_failure_policy=pod_failure_policy,
     )
+    if pod_count > 1:
+        job_spec.completions = pod_count
+        job_spec.completion_mode = "Indexed"
+        # The subdomain ties the pod hostnames to the headless service of
+        # the same name for stable per-pod DNS.
+        pod_template.spec.subdomain = job_name
 
     job_metadata = k8s_client.V1ObjectMeta(
         name=job_name,
@@ -462,6 +560,49 @@ def build_job_manifest(
     )
 
     return k8s_client.V1Job(spec=job_spec, metadata=job_metadata)
+
+
+def build_headless_service_manifest(
+    job: k8s_client.V1Job,
+) -> k8s_client.V1Service:
+    """Headless discovery service for the pods of a multi-pod job.
+
+    The service is owned by the job, so Kubernetes garbage collection
+    removes it with the job on TTL expiry, cancellation or deletion.
+
+    Args:
+        job: The created job.
+
+    Returns:
+        The service manifest.
+    """
+    job_name = job.metadata.name
+    return k8s_client.V1Service(
+        metadata=k8s_client.V1ObjectMeta(
+            name=job_name,
+            labels=job.metadata.labels,
+            owner_references=[
+                k8s_client.V1OwnerReference(
+                    api_version="batch/v1",
+                    kind="Job",
+                    name=job_name,
+                    uid=job.metadata.uid,
+                    controller=False,
+                    block_owner_deletion=False,
+                )
+            ],
+        ),
+        spec=k8s_client.V1ServiceSpec(
+            cluster_ip="None",
+            # Kubernetes labels every pod of a job with job-name.
+            selector={"job-name": job_name},
+            ports=[
+                k8s_client.V1ServicePort(name="main", port=MULTI_POD_MAIN_PORT)
+            ],
+            # Pods must be resolvable during startup, before readiness.
+            publish_not_ready_addresses=True,
+        ),
+    )
 
 
 def job_template_manifest_from_job(

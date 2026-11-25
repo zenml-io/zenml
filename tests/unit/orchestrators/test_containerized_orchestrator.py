@@ -157,6 +157,45 @@ def test_builds_with_custom_docker_settings_for_all_steps():
     assert step_2_build.settings == custom_step_2_settings
 
 
+def test_builds_with_skipped_pipeline_build():
+    """Tests that the generic pipeline image is included if the pipeline
+    Docker settings specify to skip the build, even if all steps specify
+    their custom Docker settings."""
+    orchestrator = _get_orchestrator()
+    pipeline_settings = DockerSettings(
+        skip_build=True, parent_image="parent_image"
+    )
+    custom_step_1_settings = DockerSettings(
+        requirements=["step_1_requirements"]
+    )
+    snapshot = PipelineSnapshotBase(
+        run_name_template="",
+        pipeline_configuration={
+            "name": "pipeline",
+            "settings": {"docker": pipeline_settings},
+        },
+        step_configurations={
+            "step_1": _get_step(
+                name="step_1", docker_settings=custom_step_1_settings
+            ),
+        },
+        client_version="0.12.3",
+        server_version="0.12.3",
+    )
+
+    builds = orchestrator.get_docker_builds(snapshot=snapshot)
+    assert len(builds) == 2
+    step_1_build = builds[0]
+    assert step_1_build.key == "orchestrator"
+    assert step_1_build.step_name == "step_1"
+    assert step_1_build.settings == custom_step_1_settings
+
+    pipeline_build = builds[1]
+    assert pipeline_build.key == "orchestrator"
+    assert pipeline_build.step_name is None
+    assert pipeline_build.settings == pipeline_settings
+
+
 def test_getting_image_from_snapshot(
     sample_snapshot_response_model, sample_build_response_model
 ):

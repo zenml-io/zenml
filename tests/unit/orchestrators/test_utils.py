@@ -11,16 +11,109 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import random
+from types import SimpleNamespace
 from unittest import mock
+from uuid import uuid4
 
 import pytest
+import yaml
 
+from zenml.constants import ENV_ZENML_USE_GLOBAL_RANDOM_SEED
 from zenml.enums import StackComponentType
 from zenml.orchestrators.utils import (
+    dump_compose_yaml,
+    get_config_environment_vars,
     get_orchestrator_run_name,
+    get_step_entrypoint_command,
     is_setting_enabled,
     register_artifact_store_filesystem,
 )
+
+
+def _compose_interpolate(yaml_text: str) -> str:
+    """Mimic Docker Compose's literal-``$`` handling: ``$$`` collapses to ``$``.
+
+    Compose interpolates ``$VAR``/``${VAR}`` against the environment and treats
+    ``$$`` as an escaped literal ``$``. This models only the escape collapse,
+    which is enough to prove that a serialized value round-trips verbatim.
+    """
+    return yaml_text.replace("$$", "$")
+
+
+def test_dump_compose_yaml_escapes_dollar_signs():
+    """Every ``$`` is escaped so Compose does not interpolate our values."""
+    compose = {
+        "services": {
+            "step": {
+                "environment": {
+                    "LITERAL_DOLLAR": "cost$$100",
+                    "UNSET_REFERENCE": "abc$UNSET",
+                    "HARD_FAIL_REFERENCE": "x${MISSING:?boom}y",
+                },
+                "volumes": ["/srv/$DATA:/data"],
+            }
+        }
+    }
+
+    dumped = dump_compose_yaml(compose)
+
+    # No lone "$" survives: each original "$" became "$$".
+    assert "$" in dumped
+    assert "$" not in dumped.replace("$$", "")
+
+    # After Compose collapses "$$" -> "$", the parsed values are byte-identical
+    # to the originals: no interpolation, no truncation, no mangling.
+    recovered = yaml.safe_load(_compose_interpolate(dumped))
+    service = recovered["services"]["step"]
+    assert service["environment"] == compose["services"]["step"]["environment"]
+    assert service["volumes"] == compose["services"]["step"]["volumes"]
+
+
+def test_dump_compose_yaml_no_dollar_is_unchanged_content():
+    """A definition without ``$`` round-trips to identical parsed content."""
+    compose = {"services": {"s": {"image": "img:latest", "environment": {}}}}
+    assert yaml.safe_load(dump_compose_yaml(compose)) == compose
+
+
+class _FakeEntrypointConfig:
+    """Fake entrypoint configuration class for testing."""
+
+    @classmethod
+    def get_entrypoint_command(cls):
+        return ["python", "-m", "zenml.entrypoint"]
+
+    @classmethod
+    def get_entrypoint_arguments(cls, step_name, snapshot_id, step_run_id):
+        return ["--step", step_name]
+
+
+def test_get_step_entrypoint_command_for_command_step():
+    """Tests that the helper returns the custom command for a command step."""
+    config = SimpleNamespace(command=["python", "train.py"])
+    command, args = get_step_entrypoint_command(
+        invocation_id="train",
+        config=config,
+        entrypoint_config_class=_FakeEntrypointConfig,
+        snapshot_id=uuid4(),
+        step_run_id=uuid4(),
+    )
+    assert command == ["python", "train.py"]
+    assert args == []
+
+
+def test_get_step_entrypoint_command_for_regular_step():
+    """Tests that the helper returns the ZenML entrypoint for a regular step."""
+    config = SimpleNamespace(command=None)
+    command, args = get_step_entrypoint_command(
+        invocation_id="train",
+        config=config,
+        entrypoint_config_class=_FakeEntrypointConfig,
+        snapshot_id=uuid4(),
+        step_run_id=uuid4(),
+    )
+    assert command == ["python", "-m", "zenml.entrypoint"]
+    assert args == ["--step", "train"]
 
 
 def test_is_setting_enabled():
@@ -145,3 +238,33 @@ def test_get_orchestrator_run_name():
 
     with pytest.raises(ValueError):
         get_orchestrator_run_name(pipeline_name, max_length=7)
+
+
+@pytest.mark.parametrize(
+    "env_value, names_repeat", [("false", False), ("true", True)]
+)
+def test_get_orchestrator_run_name_global_seed(
+    monkeypatch: pytest.MonkeyPatch, env_value: str, names_repeat: bool
+) -> None:
+    """Tests that run names only repeat for a repeated seed when users opt in."""
+    monkeypatch.setenv(ENV_ZENML_USE_GLOBAL_RANDOM_SEED, env_value)
+
+    random.seed(42)
+    first = get_orchestrator_run_name("pipeline")
+    random.seed(42)
+    second = get_orchestrator_run_name("pipeline")
+
+    assert (first == second) is names_repeat
+
+
+def test_get_config_environment_vars_forwards_global_seed_setting(
+    clean_client, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Tests that the global seed setting reaches the run environment."""
+    monkeypatch.delenv(ENV_ZENML_USE_GLOBAL_RANDOM_SEED, raising=False)
+    environment, _ = get_config_environment_vars()
+    assert ENV_ZENML_USE_GLOBAL_RANDOM_SEED not in environment
+
+    monkeypatch.setenv(ENV_ZENML_USE_GLOBAL_RANDOM_SEED, "true")
+    environment, _ = get_config_environment_vars()
+    assert environment[ENV_ZENML_USE_GLOBAL_RANDOM_SEED] == "true"

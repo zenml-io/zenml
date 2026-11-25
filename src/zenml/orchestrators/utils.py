@@ -14,9 +14,11 @@
 """Utility functions for the orchestrator."""
 
 import os
-import random
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
+import shlex
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 from uuid import UUID
+
+import yaml
 
 from zenml.client import Client
 from zenml.config.global_config import (
@@ -29,16 +31,22 @@ from zenml.constants import (
     ENV_ZENML_PIPELINE_RUN_API_TOKEN_EXPIRATION,
     ENV_ZENML_SERVER,
     ENV_ZENML_STORE_PREFIX,
+    ENV_ZENML_USE_GLOBAL_RANDOM_SEED,
     ZENML_PIPELINE_RUN_API_TOKEN_EXPIRATION,
 )
 from zenml.enums import APITokenType, AuthScheme, StackComponentType, StoreType
 from zenml.logger import get_logger
 from zenml.stack import StackComponent
+from zenml.utils.string_utils import random_hex_str
 
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+    from zenml.config.step_configurations import StepConfiguration
+    from zenml.entrypoints.step_entrypoint_configuration import (
+        StepEntrypointConfiguration,
+    )
 
 
 def get_orchestrator_run_name(
@@ -73,7 +81,7 @@ def get_orchestrator_run_name(
         suffix_length = min(32, max(8, max_length - len(pipeline_name)))
         pipeline_name = pipeline_name[: (max_length - suffix_length)]
 
-    suffix = "".join(random.choices("0123456789abcdef", k=suffix_length))
+    suffix = random_hex_str(suffix_length)
 
     return f"{pipeline_name}{suffix}"
 
@@ -225,7 +233,88 @@ def get_config_environment_vars(
         Client().active_project.id
     )
 
+    # Names generated in the orchestration environment (e.g. Kubernetes step
+    # jobs) should follow the same setting as the client that submitted them.
+    if (
+        use_global_seed := os.getenv(ENV_ZENML_USE_GLOBAL_RANDOM_SEED)
+    ) is not None:
+        environment_vars[ENV_ZENML_USE_GLOBAL_RANDOM_SEED] = use_global_seed
+
     return environment_vars, secrets
+
+
+def get_step_entrypoint_command(
+    invocation_id: str,
+    config: "StepConfiguration",
+    entrypoint_config_class: Type["StepEntrypointConfiguration"],
+    snapshot_id: UUID,
+    **entrypoint_config_kwargs: Any,
+) -> Tuple[List[str], List[str]]:
+    """Gets the entrypoint command to run a step.
+
+    Args:
+        invocation_id: The invocation ID of the step to run.
+        config: The configuration of the step to run.
+        entrypoint_config_class: The entrypoint configuration class used to
+            build the ZenML step entrypoint command.
+        snapshot_id: The snapshot ID to pass to the entrypoint configuration
+            class.
+        **entrypoint_config_kwargs: Additional keyword arguments to pass to the
+            entrypoint configuration class.
+
+    Returns:
+        A tuple containing command and args.
+    """
+    if config.command is not None:
+        return config.command, []
+
+    return (
+        entrypoint_config_class.get_entrypoint_command(),
+        entrypoint_config_class.get_entrypoint_arguments(
+            step_name=invocation_id,
+            snapshot_id=snapshot_id,
+            **entrypoint_config_kwargs,
+        ),
+    )
+
+
+def shell_join(command: List[str]) -> str:
+    """Joins command tokens into a single shell-escaped string.
+
+    Use this when a backend flattens an entrypoint command into a string that
+    a shell later re-splits. Command step commands can contain spaces, quotes
+    and newlines that a plain space join would corrupt.
+
+    Args:
+        command: The command tokens to join.
+
+    Returns:
+        The command tokens joined into a single shell-escaped string.
+    """
+    return shlex.join(command)
+
+
+def dump_compose_yaml(compose: dict[str, Any]) -> str:
+    """Serialize a Docker Compose definition to YAML safe for ``compose up``.
+
+    Docker Compose interpolates variables (``$VAR``, ``${VAR}``) across the
+    whole file before creating containers, using ``$$`` as the literal-``$``
+    escape. ZenML generates Compose files from already-resolved values (step
+    environments, secrets, bind-mount paths), none of which are meant to be
+    interpolated. Left unescaped, a ``$`` in such a value is silently mangled
+    (``a$$b`` reaching the container as ``a$b``) or, for forms like
+    ``${X:?}``, aborts ``compose up``. Escaping every ``$`` in the document
+    makes each value round-trip verbatim, mirroring what Compose's own
+    serializer emits.
+
+    Args:
+        compose: The Docker Compose definition.
+
+    Returns:
+        YAML text ready to write to a ``docker-compose.yml``.
+    """
+    yaml_text: str = yaml.dump(compose, sort_keys=False)
+    return yaml_text.replace("$", "$$")
 
 
 class register_artifact_store_filesystem:

@@ -14,23 +14,51 @@
 """Run:AI step operator implementation."""
 
 import random
+import re
 import time
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+    cast,
+)
 
+from pydantic import BaseModel
 from runai.models.annotation import Annotation
+from runai.models.config_map_instance import ConfigMapInstance
 from runai.models.environment_variable import EnvironmentVariable
+from runai.models.exposed_url import ExposedUrl
 from runai.models.extended_resource import ExtendedResource
+from runai.models.host_path_instance import HostPathInstance
 from runai.models.image_pull_secret import ImagePullSecret
 from runai.models.label import Label
+from runai.models.nfs_instance import NfsInstance
+from runai.models.port import Port
+from runai.models.pvc_instance import PvcInstance
+from runai.models.s3_instance import S3Instance
+from runai.models.secret_instance2 import SecretInstance2
 from runai.models.superset_spec_all_of_compute import SupersetSpecAllOfCompute
+from runai.models.superset_spec_all_of_security import (
+    SupersetSpecAllOfSecurity,
+)
+from runai.models.superset_spec_all_of_storage import SupersetSpecAllOfStorage
 from runai.models.toleration import Toleration
 from runai.models.training_creation_request import TrainingCreationRequest
 from runai.models.training_spec_spec import TrainingSpecSpec
 
+from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.integrations.kubernetes.constants import (
+    WORKSPACE_USER_ID_ANNOTATION_KEY,
+)
 from zenml.integrations.runai.client.runai_client import (
     RunAIClient,
     RunAIClientError,
@@ -49,6 +77,7 @@ from zenml.integrations.runai.flavors.runai_step_operator_flavor import (
 )
 from zenml.logger import get_logger
 from zenml.orchestrators.publish_utils import publish_step_run_metadata
+from zenml.orchestrators.utils import shell_join
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 
@@ -61,6 +90,8 @@ logger = get_logger(__name__)
 RUNAI_STEP_OPERATOR_DOCKER_IMAGE_KEY = "runai_step_operator"
 RUNAI_WORKLOAD_ID_METADATA_KEY = "workload_id"
 RUNAI_WORKLOAD_NAME_METADATA_KEY = "workload_name"
+
+T = TypeVar("T")
 
 
 class RunAIStepOperator(BaseStepOperator):
@@ -197,8 +228,7 @@ class RunAIStepOperator(BaseStepOperator):
                 environment.
 
         Raises:
-            RunAIClientError: If building the Run:AI training request fails.
-            RuntimeError: If workload submission fails.
+            RuntimeError: If building or submitting the Run:AI training request fails.
         """
         settings = cast(RunAIStepOperatorSettings, self.get_settings(info))
 
@@ -208,49 +238,20 @@ class RunAIStepOperator(BaseStepOperator):
 
         workload_name = self._build_workload_name(info)
 
-        compute = self._build_compute_spec(settings)
-
-        env_vars = self._build_environment_variables(environment)
-
-        image_pull_secrets = self._build_image_pull_secrets()
-
-        command, args = self._build_command_and_args(entrypoint_command)
-
-        tolerations_list = self._build_tolerations(settings)
-        labels_list = self._build_labels(settings)
-        annotations_list = self._build_annotations(settings)
-
         try:
-            training_request = TrainingCreationRequest(
-                name=workload_name,
+            training_request = self._build_training_request(
+                settings=settings,
+                image=image,
+                workload_name=workload_name,
                 project_id=project_id,
                 cluster_id=cluster_id,
-                spec=TrainingSpecSpec(
-                    image=image,
-                    command=command,
-                    compute=compute,
-                    environment_variables=env_vars,
-                    args=args,
-                    image_pull_secrets=image_pull_secrets,
-                    node_pools=settings.node_pools,
-                    node_type=settings.node_type,
-                    preemptibility=settings.preemptibility,
-                    priority_class=settings.priority_class,
-                    tolerations=tolerations_list,
-                    backoff_limit=settings.backoff_limit,
-                    termination_grace_period_seconds=(
-                        settings.termination_grace_period_seconds
-                    ),
-                    terminate_after_preemption=settings.terminate_after_preemption,
-                    working_dir=settings.working_dir,
-                    labels=labels_list,
-                    annotations=annotations_list,
-                ),
+                entrypoint_command=entrypoint_command,
+                environment=environment,
             )
-        except Exception as exc:
-            raise RunAIClientError(
-                "Failed to build Run:AI training request "
-                f"({type(exc).__name__}): {exc}"
+        except ValueError as exc:
+            raise RuntimeError(
+                f"Failed to build Run:AI training request for step "
+                f"'{info.pipeline_step_name}': {exc}"
             ) from exc
 
         info.force_write_logs()
@@ -283,6 +284,73 @@ class RunAIStepOperator(BaseStepOperator):
         )
         info.step_run.run_metadata[RUNAI_WORKLOAD_NAME_METADATA_KEY] = (
             result.workload_name
+        )
+
+    def _build_training_request(
+        self,
+        settings: RunAIStepOperatorSettings,
+        image: str,
+        workload_name: str,
+        project_id: str,
+        cluster_id: str,
+        entrypoint_command: List[str],
+        environment: Dict[str, str],
+    ) -> TrainingCreationRequest:
+        """Build a Run:AI training workload creation request.
+
+        Args:
+            settings: The step operator settings.
+            image: Docker image to run.
+            workload_name: Run:AI workload name.
+            project_id: Run:AI project ID.
+            cluster_id: Run:AI cluster ID.
+            entrypoint_command: The ZenML step entrypoint command.
+            environment: Environment variables for the workload.
+
+        Returns:
+            The Run:AI training creation request.
+        """
+        command, args = self._build_command_and_args(entrypoint_command)
+        return TrainingCreationRequest(
+            name=workload_name,
+            project_id=project_id,
+            cluster_id=cluster_id,
+            template_id=settings.workload_template_id,
+            spec=TrainingSpecSpec(
+                image=image,
+                command=command,
+                compute=self._build_compute_spec(settings),
+                environment_variables=(
+                    self._build_environment_variables(environment)
+                ),
+                args=args,
+                image_pull_secrets=self._build_image_pull_secrets(),
+                node_pools=settings.node_pools,
+                node_type=settings.node_type,
+                preemptibility=settings.preemptibility,
+                priority_class=settings.priority_class,
+                tolerations=self._build_instances(
+                    settings.tolerations, Toleration
+                ),
+                backoff_limit=settings.backoff_limit,
+                termination_grace_period_seconds=(
+                    settings.termination_grace_period_seconds
+                ),
+                terminate_after_preemption=(
+                    settings.terminate_after_preemption
+                ),
+                working_dir=settings.working_dir,
+                labels=self._build_labels(settings),
+                annotations=self._build_annotations(settings),
+                storage=self._build_storage(settings),
+                security=self._build_security_context(settings),
+                ports=self._build_instances(settings.ports, Port),
+                exposed_urls=self._build_instances(
+                    settings.external_urls, ExposedUrl
+                ),
+                parallelism=settings.parallelism,
+                completions=settings.completions,
+            ),
         )
 
     def _get_workload_id(self, step_run: "StepRunResponse") -> str:
@@ -413,8 +481,6 @@ class RunAIStepOperator(BaseStepOperator):
         Returns:
             A sanitized string with only lowercase alphanumeric chars and hyphens.
         """
-        import re
-
         sanitized = name.lower()
         sanitized = re.sub(r"[^a-z0-9-]", "-", sanitized)
         sanitized = re.sub(r"-+", "-", sanitized)
@@ -465,22 +531,18 @@ class RunAIStepOperator(BaseStepOperator):
         Returns:
             Tuple of (command, args) as strings. The args value is None when
             there are no extra tokens.
-
-        Raises:
-            ValueError: If entrypoint_command format is invalid.
         """
-        if len(entrypoint_command) < 3:
-            raise ValueError(
-                f"Expected entrypoint command with at least 3 elements "
-                f"(e.g., ['python', '-m', 'module_name']), but got "
-                f"{len(entrypoint_command)} elements: {entrypoint_command}"
-            )
+        if len(entrypoint_command) > 3:
+            command_tokens = entrypoint_command[:3]
+            args_tokens = entrypoint_command[3:]
+        else:
+            # For command steps, the entrypoint command can be of arbitrary
+            # length. We treat it as a single command with no arguments.
+            command_tokens = entrypoint_command
+            args_tokens = []
 
-        command_tokens = entrypoint_command[:3]
-        args_tokens = entrypoint_command[3:]
-
-        command = " ".join(command_tokens)
-        args = " ".join(args_tokens) if args_tokens else None
+        command = shell_join(command_tokens)
+        args = shell_join(args_tokens) if args_tokens else None
         return command, args
 
     def _build_environment_variables(
@@ -536,6 +598,94 @@ class RunAIStepOperator(BaseStepOperator):
             extended_resources=extended_resources_list,
         )
 
+    @staticmethod
+    def _build_instances(
+        items: Optional[Sequence[BaseModel]], sdk_cls: Type[T]
+    ) -> Optional[List[T]]:
+        """Convert a list of Pydantic settings objects into SDK instances.
+
+        Returns None for empty/missing input so the SDK omits the field
+        entirely rather than serializing an empty list.
+
+        Args:
+            items: The settings objects to convert.
+            sdk_cls: The Run:AI SDK class to instantiate for each item.
+
+        Returns:
+            A list of SDK instances, or None when no items were provided.
+        """
+        if not items:
+            return None
+        return [
+            sdk_cls(**item.model_dump(exclude_none=True)) for item in items
+        ]
+
+    def _build_storage(
+        self, settings: RunAIStepOperatorSettings
+    ) -> Optional[SupersetSpecAllOfStorage]:
+        """Build storage settings for the Run:AI workload.
+
+        Args:
+            settings: The step operator settings.
+
+        Returns:
+            Run:AI storage settings, or None when no mounts are configured.
+        """
+        config_map_volume = self._build_instances(
+            settings.config_map_mounts, ConfigMapInstance
+        )
+        host_path = self._build_instances(
+            settings.host_path_mounts, HostPathInstance
+        )
+        nfs = self._build_instances(settings.nfs_mounts, NfsInstance)
+        pvc = self._build_instances(settings.pvc_mounts, PvcInstance)
+        s3 = self._build_instances(settings.s3_mounts, S3Instance)
+        secret_volume = self._build_instances(
+            settings.secret_mounts, SecretInstance2
+        )
+
+        if not any(
+            [config_map_volume, host_path, nfs, pvc, s3, secret_volume]
+        ):
+            return None
+
+        return SupersetSpecAllOfStorage(
+            config_map_volume=config_map_volume,
+            host_path=host_path,
+            nfs=nfs,
+            pvc=pvc,
+            s3=s3,
+            secret_volume=secret_volume,
+        )
+
+    def _build_security_context(
+        self, settings: RunAIStepOperatorSettings
+    ) -> Optional[SupersetSpecAllOfSecurity]:
+        """Build security settings for the Run:AI workload.
+
+        Run:AI expects supplemental_groups as a semicolon-separated string,
+        so we serialize the typed list before forwarding to the SDK.
+
+        Args:
+            settings: The step operator settings.
+
+        Returns:
+            Run:AI security settings, or None when no security context is set.
+        """
+        if not settings.security_context:
+            return None
+
+        security_kwargs = settings.security_context.model_dump(
+            exclude_none=True
+        )
+        supplemental_groups = security_kwargs.get("supplemental_groups")
+        if supplemental_groups is not None:
+            security_kwargs["supplemental_groups"] = ";".join(
+                str(group) for group in supplemental_groups
+            )
+
+        return SupersetSpecAllOfSecurity(**security_kwargs)
+
     def _build_image_pull_secrets(
         self,
     ) -> Optional[List[ImagePullSecret]]:
@@ -558,35 +708,6 @@ class RunAIStepOperator(BaseStepOperator):
             )
         ]
 
-    def _build_tolerations(
-        self, settings: RunAIStepOperatorSettings
-    ) -> Optional[List[Toleration]]:
-        """Build tolerations for scheduling on tainted nodes.
-
-        Args:
-            settings: The step operator settings.
-
-        Returns:
-            List of Toleration objects or None.
-        """
-        if not settings.tolerations:
-            return None
-
-        tolerations_list = []
-        for t in settings.tolerations:
-            toleration_dict: Dict[str, Any] = {}
-            if "key" in t:
-                toleration_dict["key"] = t["key"]
-            if "operator" in t:
-                toleration_dict["operator"] = t["operator"]
-            if "value" in t:
-                toleration_dict["value"] = t["value"]
-            if "effect" in t:
-                toleration_dict["effect"] = t["effect"]
-            tolerations_list.append(Toleration(**toleration_dict))
-
-        return tolerations_list
-
     def _build_labels(
         self, settings: RunAIStepOperatorSettings
     ) -> Optional[List[Label]]:
@@ -605,22 +726,20 @@ class RunAIStepOperator(BaseStepOperator):
 
     def _build_annotations(
         self, settings: RunAIStepOperatorSettings
-    ) -> Optional[List[Annotation]]:
+    ) -> List[Annotation]:
         """Build annotations for the workload pod.
 
         Args:
             settings: The step operator settings.
 
         Returns:
-            List of Annotation objects or None.
+            List of Annotation objects.
         """
-        if not settings.annotations:
-            return None
-
-        return [
-            Annotation(name=k, value=v)
-            for k, v in settings.annotations.items()
-        ]
+        annotations = {
+            **(settings.annotations or {}),
+            WORKSPACE_USER_ID_ANNOTATION_KEY: str(Client().active_user.id),
+        }
+        return [Annotation(name=k, value=v) for k, v in annotations.items()]
 
     def _cleanup_workload(
         self, client: RunAIClient, workload_id: str, reason: str
@@ -640,7 +759,7 @@ class RunAIStepOperator(BaseStepOperator):
         logger.info(f"Stopping workload {workload_id}: {reason}")
         try:
             client.suspend_training_workload(workload_id)
-        except Exception as suspend_exc:
+        except RunAIClientError as suspend_exc:
             logger.error(
                 f"Failed to stop workload {workload_id}: {suspend_exc}. "
                 f"{manual_cleanup_hint}"
@@ -657,7 +776,7 @@ class RunAIStepOperator(BaseStepOperator):
         logger.info(f"Deleting workload {workload_id}: {reason}")
         try:
             client.delete_training_workload(workload_id)
-        except Exception as delete_exc:
+        except RunAIClientError as delete_exc:
             logger.error(
                 f"Failed to delete workload {workload_id}: {delete_exc}. "
                 f"{manual_cleanup_hint}"
@@ -723,11 +842,11 @@ class RunAIStepOperator(BaseStepOperator):
                         max_missing_status_checks,
                     )
                     sleep_time = base_interval
-                elif status and is_success_status(status):
+                elif is_success_status(status):
                     missing_status_retries = 0
                     return ExecutionStatus.COMPLETED
 
-                elif status and is_failure_status(status):
+                elif is_failure_status(status):
                     missing_status_retries = 0
                     self._cleanup_workload(
                         client, workload_id, f"failed with status: {status}"
@@ -738,7 +857,7 @@ class RunAIStepOperator(BaseStepOperator):
 
                 else:
                     missing_status_retries = 0
-                    if status and is_pending_status(status):
+                    if is_pending_status(status):
                         if pending_start_time is None:
                             pending_start_time = time.time()
                         if (
@@ -788,7 +907,9 @@ class RunAIStepOperator(BaseStepOperator):
                     )
 
                 sleep_time = min(base_interval * (2**retry_count), 300)
-                sleep_time += random.uniform(0, 0.1 * sleep_time)
+                sleep_time += random.SystemRandom().uniform(
+                    0, 0.1 * sleep_time
+                )
                 logger.warning(
                     f"Status check failed (retry {retry_count}/{max_retries}): {exc}"
                 )

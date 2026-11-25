@@ -61,6 +61,7 @@ from zenml.steps.utils import (
     run_as_single_step_pipeline,
 )
 from zenml.utils import (
+    async_utils,
     dict_utils,
     materializer_utils,
     notebook_utils,
@@ -97,7 +98,7 @@ if TYPE_CHECKING:
     ]
 
     from zenml.execution.pipeline.dynamic.outputs import (
-        AnyStepFuture,
+        AnyOutputFuture,
         MapResultsFuture,
         StepFuture,
     )
@@ -134,6 +135,8 @@ class BaseStep:
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
+        on_start: Optional["HookSpecification"] = None,
+        on_end: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
         retry: Optional[StepRetryConfig] = None,
         substitutions: Optional[Dict[str, str]] = None,
@@ -165,12 +168,14 @@ class BaseStep:
                 step.
             settings: Settings for this step.
             extra: Extra configurations for this step.
-            on_failure: Callback function in event of failure of the step. Can
-                be a function with a single argument of type `BaseException`, or
-                a source path to such a function (e.g. `module.my_function`).
-            on_success: Callback function in event of success of the step. Can
-                be a function with no arguments, or a source path to such a
-                function (e.g. `module.my_function`).
+            on_failure: Hook run when the step fails. A callable taking an
+                optional `BaseException`, or a source path to one.
+            on_success: Hook run when the step succeeds. A no-arg callable, or
+                a source path to one.
+            on_start: Hook run when the step starts. A no-arg callable, or a
+                source path to one.
+            on_end: Hook run when the step ends. A callable taking an optional
+                `BaseException`, or a source path to one.
             model: configuration of the model version in the Model Control Plane.
             retry: Configuration for retrying the step in case of failure.
             substitutions: Extra substitutions for model and artifact name
@@ -248,6 +253,8 @@ class BaseStep:
             extra=extra,
             on_failure=on_failure,
             on_success=on_success,
+            on_start=on_start,
+            on_end=on_end,
             model=model,
             retry=retry,
             substitutions=substitutions,
@@ -289,9 +296,29 @@ class BaseStep:
         if isinstance(obj, BaseStep):
             return obj
         elif isinstance(obj, type) and issubclass(obj, BaseStep):
-            return obj()
+            return obj._load_from_source()
+        elif inspect.isfunction(obj):
+            from zenml.steps.step_decorator import step
+
+            return step(obj)
         else:
-            raise ValueError("Invalid step source.")
+            import_path = (
+                source.import_path if isinstance(source, Source) else source
+            )
+            raise ValueError(
+                f"Invalid step source `{import_path}`: expected it to "
+                f"resolve to a `BaseStep` instance/subclass or a function, "
+                f"got `{type(obj).__name__}`."
+            )
+
+    @classmethod
+    def _load_from_source(cls) -> "BaseStep":
+        """Creates a step instance from a source class.
+
+        Returns:
+            A step instance.
+        """
+        return cls()
 
     def resolve(self) -> Source:
         """Resolves the step.
@@ -582,9 +609,12 @@ class BaseStep:
         after: Union[
             str,
             StepArtifact,
-            "AnyStepFuture",
-            Sequence[Union[str, StepArtifact, "AnyStepFuture"]],
+            "AnyOutputFuture",
+            Sequence[Union[str, StepArtifact, "AnyOutputFuture"]],
             None,
+        ] = None,
+        start_after: Union[
+            "AnyOutputFuture", Sequence["AnyOutputFuture"], None
         ] = None,
         **kwargs: Any,
     ) -> Any:
@@ -599,7 +629,11 @@ class BaseStep:
             *args: Entrypoint function arguments.
             id: Invocation ID to use.
             after: Upstream steps for the invocation.
+            start_after: Upstream futures to wait for the start of.
             **kwargs: Entrypoint function keyword arguments.
+
+        Raises:
+            RuntimeError: If `start_after` is used in a static pipeline.
 
         Returns:
             The outputs of the entrypoint function call.
@@ -617,6 +651,10 @@ class BaseStep:
 
         compilation_context = PipelineCompilationContext.get()
         if compilation_context:
+            if start_after is not None:
+                raise RuntimeError(
+                    "`start_after` is only supported in dynamic pipelines."
+                )
             # We're currently compiling a static pipeline, which we want to
             # allow even while inside a running step.
             after = cast(
@@ -648,10 +686,14 @@ class BaseStep:
             return self.call_entrypoint(*args, **kwargs)
 
         if run_context := DynamicPipelineRunContext.get():
+            from zenml.execution.pipeline.dynamic.outputs import (
+                AnyOutputFuture,
+            )
+
             after = cast(
                 Union[
-                    "AnyStepFuture",
-                    Sequence["AnyStepFuture"],
+                    AnyOutputFuture,
+                    Sequence[AnyOutputFuture],
                     None,
                 ],
                 after,
@@ -662,6 +704,7 @@ class BaseStep:
                 args=args,
                 kwargs=kwargs,
                 after=after,
+                start_after=start_after,
                 concurrent=False,
             )
 
@@ -706,13 +749,23 @@ class BaseStep:
                 "pydantic error above for more details."
             ) from e
 
+        if async_utils.is_async_callable(self.entrypoint):
+            return async_utils.run_coroutine_isolated(
+                self.entrypoint(**validated_args)
+            )
+
         return self.entrypoint(**validated_args)
 
     def submit(
         self,
         *args: Any,
         id: Optional[str] = None,
-        after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = None,
+        after: Union[
+            "AnyOutputFuture", Sequence["AnyOutputFuture"], None
+        ] = None,
+        start_after: Union[
+            "AnyOutputFuture", Sequence["AnyOutputFuture"], None
+        ] = None,
         **kwargs: Any,
     ) -> "StepFuture":
         """Submit the step to run concurrently in a separate thread.
@@ -722,6 +775,8 @@ class BaseStep:
             id: The invocation ID of the step.
             after: The step run output futures to wait for before executing the
                 step.
+            start_after: The step run output futures to wait for the start of
+                before executing the step.
             **kwargs: The keyword arguments to pass to the step function.
 
         Raises:
@@ -747,13 +802,19 @@ class BaseStep:
             args=args,
             kwargs=kwargs,
             after=after,
+            start_after=start_after,
             concurrent=True,
         )
 
     def map(
         self,
         *args: Any,
-        after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = None,
+        after: Union[
+            "AnyOutputFuture", Sequence["AnyOutputFuture"], None
+        ] = None,
+        start_after: Union[
+            "AnyOutputFuture", Sequence["AnyOutputFuture"], None
+        ] = None,
         **kwargs: Any,
     ) -> "MapResultsFuture":
         """Map over step inputs.
@@ -792,6 +853,8 @@ class BaseStep:
             *args: The arguments to pass to the step function.
             after: The step run output futures to wait for before executing the
                 steps.
+            start_after: The step run output futures to wait for the start of
+                before executing the steps.
             **kwargs: The keyword arguments to pass to the step function.
 
         Raises:
@@ -817,13 +880,19 @@ class BaseStep:
             args=args,
             kwargs=kwargs,
             after=after,
+            start_after=start_after,
             product=False,
         )
 
     def product(
         self,
         *args: Any,
-        after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = None,
+        after: Union[
+            "AnyOutputFuture", Sequence["AnyOutputFuture"], None
+        ] = None,
+        start_after: Union[
+            "AnyOutputFuture", Sequence["AnyOutputFuture"], None
+        ] = None,
         **kwargs: Any,
     ) -> "MapResultsFuture":
         """Map over step inputs using a cartesian product of the mapped inputs.
@@ -862,6 +931,8 @@ class BaseStep:
             *args: The arguments to pass to the step function.
             after: The step run output futures to wait for before executing the
                 steps.
+            start_after: The step run output futures to wait for the start of
+                before executing the steps.
             **kwargs: The keyword arguments to pass to the step function.
 
         Raises:
@@ -887,6 +958,7 @@ class BaseStep:
             args=args,
             kwargs=kwargs,
             after=after,
+            start_after=start_after,
             product=True,
         )
 
@@ -935,6 +1007,8 @@ class BaseStep:
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
+        on_start: Optional["HookSpecification"] = None,
+        on_end: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
         retry: Optional[StepRetryConfig] = None,
         substitutions: Optional[Dict[str, str]] = None,
@@ -975,12 +1049,14 @@ class BaseStep:
                 step.
             settings: Settings for this step.
             extra: Extra configurations for this step.
-            on_failure: Callback function in event of failure of the step. Can
-                be a function with a single argument of type `BaseException`, or
-                a source path to such a function (e.g. `module.my_function`).
-            on_success: Callback function in event of success of the step. Can
-                be a function with no arguments, or a source path to such a
-                function (e.g. `module.my_function`).
+            on_failure: Hook run when the step fails. A callable taking an
+                optional `BaseException`, or a source path to one.
+            on_success: Hook run when the step succeeds. A no-arg callable, or
+                a source path to one.
+            on_start: Hook run when the step starts. A no-arg callable, or a
+                source path to one.
+            on_end: Hook run when the step ends. A callable taking an optional
+                `BaseException`, or a source path to one.
             model: Model to use for this step.
             retry: Configuration for retrying the step in case of failure.
             substitutions: Extra substitutions for model and artifact name
@@ -1001,8 +1077,11 @@ class BaseStep:
         Returns:
             The step instance that this method was called on.
         """
-        from zenml.config.step_configurations import StepConfigurationUpdate
-        from zenml.hooks.hook_validators import resolve_and_validate_hook
+        from zenml.config.step_configurations import (
+            GroupInfo,
+            StepConfigurationUpdate,
+        )
+        from zenml.hooks.validation import resolve_and_validate_hook
 
         def _resolve_if_necessary(
             value: Union[str, Source, Type[Any]],
@@ -1039,13 +1118,23 @@ class BaseStep:
         if on_failure:
             # string of on_failure hook function to be used for this step
             failure_hook_source, _ = resolve_and_validate_hook(
-                on_failure, allow_exception_arg=True
+                on_failure, Exception()
             )
 
         success_hook_source = None
         if on_success:
             # string of on_success hook function to be used for this step
             success_hook_source, _ = resolve_and_validate_hook(on_success)
+
+        start_hook_source = None
+        if on_start:
+            # string of on_start hook function to be used for this step
+            start_hook_source, _ = resolve_and_validate_hook(on_start)
+
+        end_hook_source = None
+        if on_end:
+            # string of on_end hook function to be used for this step
+            end_hook_source, _ = resolve_and_validate_hook(on_end, Exception())
 
         if merge and secrets and self._configuration.secrets:
             secrets = self._configuration.secrets + list(secrets)
@@ -1069,6 +1158,8 @@ class BaseStep:
                 "extra": extra,
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
+                "start_hook_source": start_hook_source,
+                "end_hook_source": end_hook_source,
                 "model": model,
                 "retry": retry,
                 "substitutions": substitutions,
@@ -1100,6 +1191,8 @@ class BaseStep:
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
+        on_start: Optional["HookSpecification"] = None,
+        on_end: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
         retry: Optional[StepRetryConfig] = None,
         substitutions: Optional[Dict[str, str]] = None,
@@ -1130,12 +1223,14 @@ class BaseStep:
                 step.
             settings: Settings for this step.
             extra: Extra configurations for this step.
-            on_failure: Callback function in event of failure of the step. Can
-                be a function with a single argument of type `BaseException`, or
-                a source path to such a function (e.g. `module.my_function`).
-            on_success: Callback function in event of success of the step. Can
-                be a function with no arguments, or a source path to such a
-                function (e.g. `module.my_function`).
+            on_failure: Hook run when the step fails. A callable taking an
+                optional `BaseException`, or a source path to one.
+            on_success: Hook run when the step succeeds. A no-arg callable, or
+                a source path to one.
+            on_start: Hook run when the step starts. A no-arg callable, or a
+                source path to one.
+            on_end: Hook run when the step ends. A callable taking an optional
+                `BaseException`, or a source path to one.
             model: Model to use for this step.
             retry: Configuration for retrying the step in case of failure.
             substitutions: Extra substitutions for model and artifact name
@@ -1172,6 +1267,8 @@ class BaseStep:
             extra=extra,
             on_failure=on_failure,
             on_success=on_success,
+            on_start=on_start,
+            on_end=on_end,
             model=model,
             retry=retry,
             substitutions=substitutions,

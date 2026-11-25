@@ -14,10 +14,11 @@
 """SQLModel implementation of user tables."""
 
 import json
-from typing import TYPE_CHECKING, Any, List, Optional, Union
+from datetime import datetime
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column, UniqueConstraint
+from sqlalchemy import JSON, TEXT, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
@@ -82,11 +83,17 @@ class UserSchema(NamedSchema, table=True):
     )
     active: bool
     password: Optional[str] = Field(nullable=True)
+    password_changed_at: Optional[datetime] = Field(
+        default=None, nullable=True
+    )
     activation_token: Optional[str] = Field(nullable=True)
     email_opted_in: Optional[bool] = Field(nullable=True)
     external_user_id: Optional[UUID] = Field(nullable=True)
     is_admin: bool = Field(default=False)
     user_metadata: Optional[str] = Field(nullable=True)
+    oidc_claims: Optional[Dict[str, Any]] = Field(
+        sa_column=Column(JSON, nullable=True)
+    )
 
     default_project_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -173,6 +180,7 @@ class UserSchema(NamedSchema, table=True):
             avatar_url=model.avatar_url,
             active=model.active,
             password=model.create_hashed_password(),
+            password_changed_at=utc_now() if model.password else None,
             activation_token=model.create_hashed_activation_token(),
             external_user_id=model.external_user_id,
             email_opted_in=model.email_opted_in,
@@ -182,6 +190,7 @@ class UserSchema(NamedSchema, table=True):
             user_metadata=json.dumps(model.user_metadata)
             if model.user_metadata
             else None,
+            oidc_claims=model.oidc_claims,
         )
 
     @classmethod
@@ -226,6 +235,7 @@ class UserSchema(NamedSchema, table=True):
 
             if field == "password":
                 setattr(self, field, user_update.create_hashed_password())
+                self.password_changed_at = utc_now()
             elif field == "activation_token":
                 setattr(
                     self, field, user_update.create_hashed_activation_token()
@@ -233,6 +243,8 @@ class UserSchema(NamedSchema, table=True):
             elif field == "user_metadata":
                 if value is not None:
                     self.user_metadata = json.dumps(value)
+            elif field == "oidc_claims":
+                self.oidc_claims = value
             else:
                 setattr(self, field, value)
 
@@ -282,11 +294,15 @@ class UserSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = UserResponseMetadata(
+                password_changed_at=self.password_changed_at
+                if include_private
+                else None,
                 email=self.email if include_private else None,
                 external_user_id=self.external_user_id,
                 user_metadata=json.loads(self.user_metadata)
                 if self.user_metadata
                 else {},
+                oidc_claims=self.oidc_claims or {},
             )
 
         return UserResponse(

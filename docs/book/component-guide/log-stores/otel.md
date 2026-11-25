@@ -6,8 +6,12 @@ description: Exporting logs to any OpenTelemetry-compatible backend.
 
 The OpenTelemetry (OTEL) Log Store is a log store flavor that exports logs to any OpenTelemetry-compatible backend using the OTLP/HTTP protocol with JSON encoding. Built on the [OpenTelemetry Python SDK](https://opentelemetry.io/docs/languages/python/), it provides maximum flexibility for integrating with your existing observability infrastructure.
 
+{% hint style="info" %}
+This page covers pipeline and step log export through a ZenML stack component. ZenML server observability is configured separately with `ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT` or the standard `OTEL_EXPORTER_OTLP_ENDPOINT`, which exports server traces, metrics, and logs from the deployed ZenML server process. See the deployment guides for more details.
+{% endhint %}
+
 {% hint style="warning" %}
-The OTEL Log Store is a **write-only** log store. It can export logs to an OTEL-compatible endpoint, but it cannot fetch logs back for display in the ZenML dashboard. If you need log retrieval capabilities, you can extend this log store and implement the `fetch()` method for your backend. See [Develop a Custom Log Store](custom.md) for details on how to do this.
+The OTEL Log Store is a **write-only** log store. It can export logs to an OTEL-compatible endpoint, but it cannot fetch logs back for display in the ZenML UI. If you need log retrieval capabilities, you can extend this log store and implement the `fetch()` method for your backend. See [Develop a Custom Log Store](custom.md) for details on how to do this.
 {% endhint %}
 
 ### When to use it
@@ -141,9 +145,9 @@ This ensures reliable log delivery even in unstable network conditions.
 
 ### Limitations
 
-1. **No log fetching**: The OTEL Log Store cannot retrieve logs for display in the ZenML dashboard. You must use your observability platform's native interface to view logs.
+1. **No log fetching**: The OTEL Log Store cannot retrieve logs for display in the ZenML UI. You must use your observability platform's native interface to view logs.
 
-2. **Dashboard integration**: Since logs cannot be fetched, the ZenML dashboard will show "Logs not available" for steps using this log store.
+2. **UI integration**: Since logs cannot be fetched, the ZenML UI will show "No logs available yet." for steps using this log store.
 
 3. **Endpoint compatibility**: Your endpoint must support OTLP/HTTP with JSON encoding. Protobuf-only endpoints are not supported.
 

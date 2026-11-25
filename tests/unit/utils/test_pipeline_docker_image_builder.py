@@ -21,6 +21,7 @@ from zenml.client import Client
 from zenml.config import DockerSettings
 from zenml.config.docker_settings import DockerBuildConfig, DockerBuildOptions
 from zenml.integrations.sklearn import SKLEARN, SklearnIntegration
+from zenml.utils import requirements_utils
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
 )
@@ -215,6 +216,62 @@ def test_python_package_installer_args():
     )
 
 
+def test_python_package_installer_cache_mount():
+    """Tests that the installer cache mount is rendered into the RUN line."""
+    requirements_files = [("requirements.txt", "numpy", [])]
+
+    # uv installer with cache mount: --mount is added and --no-cache-dir is
+    # dropped so the cache is actually used.
+    docker_settings = DockerSettings(
+        python_package_installer_cache_mount="type=cache,target=/root/.cache/uv",
+    )
+    generated_dockerfile = (
+        PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
+            "image:tag",
+            docker_settings,
+            requirements_files=requirements_files,
+        )
+    )
+    assert (
+        "RUN --mount=type=cache,target=/root/.cache/uv uv pip install"
+        in generated_dockerfile
+    )
+    assert "-r requirements.txt" in generated_dockerfile
+    assert "--no-cache-dir" not in generated_dockerfile
+
+    # pip installer with cache mount.
+    docker_settings = DockerSettings(
+        python_package_installer="pip",
+        python_package_installer_cache_mount="type=cache,target=/root/.cache/pip",
+    )
+    generated_dockerfile = (
+        PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
+            "image:tag",
+            docker_settings,
+            requirements_files=requirements_files,
+        )
+    )
+    assert (
+        "RUN --mount=type=cache,target=/root/.cache/pip pip install"
+        in generated_dockerfile
+    )
+    assert "--default-timeout=60" in generated_dockerfile
+    assert "--no-cache-dir" not in generated_dockerfile
+
+    # Without the cache mount, the default --no-cache-dir is kept and no
+    # --mount flag is rendered.
+    docker_settings = DockerSettings()
+    generated_dockerfile = (
+        PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
+            "image:tag",
+            docker_settings,
+            requirements_files=requirements_files,
+        )
+    )
+    assert "--mount=" not in generated_dockerfile
+    assert "--no-cache-dir" in generated_dockerfile
+
+
 def test_dockerfile_needs_to_exist():
     """Tests that an error gets raised if the Dockerfile specified in the
     DockerSettings does not exist."""
@@ -259,3 +316,24 @@ def test_build_args_are_added_to_dockerfile():
     )
     assert "ARG ARG1" in generated_dockerfile
     assert "ARG ARG2" in generated_dockerfile
+
+
+def test_installs_pin_zenml_in_image():
+    """Tests that installs pin the ZenML version installed in the image."""
+    requirements_files = [
+        ("requirements.txt", "sagemaker", []),
+        ("zenml_requirements.txt", "zenml==0.1.0", []),
+    ]
+    lines = PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
+        "image:tag",
+        DockerSettings(),
+        requirements_files=requirements_files,
+    ).splitlines()
+
+    zenml_requirement = requirements_utils.INSTALLED_ZENML_SHELL_REQUIREMENT
+    assert any(
+        line.endswith(f"-r requirements.txt {zenml_requirement}")
+        for line in lines
+    )
+    # A file that installs ZenML itself already brings its requirements.
+    assert any(line.endswith("-r zenml_requirements.txt") for line in lines)

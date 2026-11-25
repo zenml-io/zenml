@@ -30,11 +30,6 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(ROOT_DIR, "VERSION")) as version_file:
     __version__: str = version_file.read().strip()
 
-# Initialize logging
-from zenml.logger import init_logging  # noqa
-
-init_logging()
-
 def __getattr__(name: str) -> Any:
     # We allow directly accessing the entrypoint module as `zenml.entrypoint`
     # as this is needed for some orchestrators. Instead of directly importing
@@ -65,17 +60,19 @@ from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.model.model import Model
 from zenml.pipelines import get_pipeline_context, pipeline
-from zenml.steps import step, get_step_context
+from zenml.steps import step, get_step_context, CommandStep
 from zenml.steps.utils import log_step_metadata
 from zenml.utils.metadata_utils import log_metadata, bulk_log_metadata
 from zenml.utils.tag_utils import Tag, add_tags, remove_tags
 from zenml.execution.pipeline.dynamic.utils import unmapped, wait
+from zenml.hooks import run_hook
 
 __all__ = [
     "add_tags",
     "remove_tags",
     "Tag",
     "ArtifactConfig",
+    "CommandStep",
     "ExternalArtifact",
     "get_pipeline_context",
     "get_step_context",
@@ -88,6 +85,7 @@ __all__ = [
     "Model",
     "link_artifact_to_model",
     "pipeline",
+    "run_hook",
     "save_artifact",
     "register_artifact",
     "show",
@@ -95,3 +93,10 @@ __all__ = [
     "unmapped",
     "wait",
 ]
+
+# Initialize logging after the root package has finished importing the public
+# API. This keeps logging handlers from re-entering partially initialized ZenML
+# modules during import.
+from zenml.logger import init_logging  # noqa
+
+init_logging()

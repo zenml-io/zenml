@@ -251,6 +251,15 @@ class ServiceConnectorRegistry:
                 )
 
             try:
+                from zenml.service_connectors.oauth2_service_connector import (  # noqa
+                    OAuth2ServiceConnector,
+                )
+            except ImportError as e:
+                logger.debug(
+                    f"Could not import OAuth2 service connector: {e}."
+                )
+
+            try:
                 from zenml.integrations.hyperai.service_connectors.hyperai_service_connector import (  # noqa
                     HyperAIServiceConnector,
                 )

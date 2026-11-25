@@ -14,7 +14,7 @@ In this tutorial you will:
 1. Build a simple training `step` that takes a hyper‑parameter as input.
 2. Create a **fan‑out / fan‑in** pipeline that trains multiple models in parallel – one for each hyper‑parameter value.
 3. Select the best performing model.
-4. Run the pipeline and inspect the results in the ZenML dashboard or programmatically.
+4. Run the pipeline and inspect the results in the ZenML UI or programmatically.
 
 {% hint style="info" %}
 This tutorial focuses on the mechanics of orchestrating a grid‑search with ZenML.  For more advanced approaches (random search, Bayesian optimization, …) or a ready‑made example have a look at the [E2E example](https://github.com/zenml-io/zenml/tree/main/examples/e2e) mentioned at the end of the page.
@@ -96,7 +96,7 @@ if __name__ == "__main__":
 While the pipeline is running you can:
 
 * follow the logs in your terminal
-* open the ZenML dashboard and watch the DAG execute
+* open the ZenML UI and watch the DAG execute
 
 ---
 
@@ -117,7 +117,7 @@ For a deeper exploration of how to query past pipeline runs, see the [Inspecting
 
 ## Next steps
 
-* Replace the simple grid‑search with a more sophisticated tuner (e.g. `sklearn.model_selection.GridSearchCV` or [Optuna](https://optuna.org/)).
+* Replace the simple grid‑search with a more sophisticated tuner (e.g. `sklearn.model_selection.GridSearchCV` or [Optuna](https://optuna.org/)). For a complete Optuna example that uses ZenML dynamic pipelines for parallel trial execution, see [`examples/optuna_hyperparameter_tuning`](https://github.com/zenml-io/zenml/tree/main/examples/optuna_hyperparameter_tuning).
 * Deploy the winning model as an HTTP service using [Pipeline Deployments](https://docs.zenml.io/concepts/deployment) (recommended) or via the legacy [Model Deployer](https://docs.zenml.io/stacks/stack-components/model-deployers).
 * Move the pipeline to a [remote
   orchestrator](https://docs.zenml.io/stacks/orchestrators) to scale out the

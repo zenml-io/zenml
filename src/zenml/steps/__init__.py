@@ -28,12 +28,14 @@ decorator.
 
 from zenml.steps.base_step import BaseStep
 from zenml.config.resource_settings import ResourceSettings
+from zenml.steps.command_step import CommandStep
 from zenml.steps.heartbeat import StepHeartbeatWorker, StepHeartBeatTerminationException
 from zenml.steps.step_context import StepContext, get_step_context
 from zenml.steps.step_decorator import step
 
 __all__ = [
     "BaseStep",
+    "CommandStep",
     "ResourceSettings",
     "StepContext",
     "step",

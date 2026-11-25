@@ -38,6 +38,9 @@ class Action(StrEnum):
     # Service connectors
     CLIENT = "client"
 
+    # Stack components and service connectors
+    ATTACH = "attach"
+
     # Models
     PROMOTE = "promote"
 
@@ -71,13 +74,12 @@ class ResourceType(StrEnum):
     SERVICE_CONNECTOR = "service_connector"
     STACK = "stack"
     STACK_COMPONENT = "stack_component"
-    RESOURCE_POOL = "resource_pool"
-    RESOURCE_POOL_SUBJECT_POLICY = "resource_pool_subject_policy"
     TAG = "tag"
     PROJECT = "project"
     # Deactivated for now
     # USER = "user"
     TRIGGER = "trigger"
+    WEBHOOK = "webhook"
 
     def is_project_scoped(self) -> bool:
         """Check if a resource type is project scoped.
@@ -91,8 +93,6 @@ class ResourceType(StrEnum):
             self.SERVICE_CONNECTOR,
             self.STACK,
             self.STACK_COMPONENT,
-            self.RESOURCE_POOL,
-            self.RESOURCE_POOL_SUBJECT_POLICY,
             self.TAG,
             self.SERVICE_ACCOUNT,
             self.PROJECT,

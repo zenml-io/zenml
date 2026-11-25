@@ -227,6 +227,7 @@ def connect_to_server(
     refresh: bool = False,
     pro_server: bool = False,
     project: Optional[str] = None,
+    stack: Optional[str] = None,
 ) -> None:
     """Connect the client to a ZenML server or a SQL database.
 
@@ -238,6 +239,7 @@ def connect_to_server(
         refresh: Whether to force a new login flow with the ZenML server.
         pro_server: Whether the server is a ZenML Pro server.
         project: Name or ID of the project to set active after connecting.
+        stack: Name or ID of the stack to set active after connecting.
     """
     url = url.rstrip("/")
 
@@ -280,6 +282,8 @@ def connect_to_server(
         else:
             if project:
                 _set_active_project(project)
+            if stack:
+                _set_active_stack(stack)
 
     else:
         from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
@@ -303,6 +307,8 @@ def connect_to_server(
             cli_utils.declare(f"Connected to SQL database '{url}'")
             if project:
                 _set_active_project(project)
+            if stack:
+                _set_active_stack(stack)
 
 
 def connect_to_pro_server(
@@ -312,6 +318,7 @@ def connect_to_pro_server(
     pro_api_url: Optional[str] = None,
     verify_ssl: Union[str, bool] = True,
     project: Optional[str] = None,
+    stack: Optional[str] = None,
 ) -> None:
     """Connect the client to a ZenML Pro server.
 
@@ -324,6 +331,7 @@ def connect_to_pro_server(
         verify_ssl: Whether to verify the server's TLS certificate. If a string
             is passed, it is interpreted as the path to a CA bundle file.
         project: Name or ID of the project to set active after connecting.
+        stack: Name or ID of the stack to set active after connecting.
 
     Raises:
         ValueError: If incorrect parameters are provided.
@@ -381,6 +389,7 @@ def connect_to_pro_server(
                     pro_server=True,
                     verify_ssl=verify_ssl,
                     project=project,
+                    stack=stack,
                 )
                 return
             else:
@@ -528,6 +537,7 @@ def connect_to_pro_server(
         pro_server=True,
         verify_ssl=verify_ssl,
         project=project,
+        stack=stack,
     )
 
     # Update the stored server info with more accurate data taken from the
@@ -614,6 +624,27 @@ def _set_active_project(project_name_or_id: str) -> None:
             cli_utils.declare(
                 f"✔ The active project has been set to {project.name}"
             )
+
+
+def _set_active_stack(stack_name_or_id: str) -> None:
+    client = Client()
+
+    try:
+        client.activate_stack(stack_name_or_id)
+    except KeyError:
+        cli_utils.error(
+            f"No stack named or with ID '{stack_name_or_id}' exists on "
+            "the connected ZenML server."
+        )
+    except Exception as exc:
+        cli_utils.error(
+            f"Failed to set the active stack to '{stack_name_or_id}': {exc}"
+        )
+    else:
+        cli_utils.declare(
+            f"✔ The active stack has been set to "
+            f"{client.active_stack_model.name}"
+        )
 
 
 @cli.command(
@@ -707,9 +738,9 @@ def _set_active_project(project_name_or_id: str) -> None:
     The `--api-key` flag can be used to authenticate with a ZenML server using
     an API key instead of the web login flow.
 
-    Use the `--project` flag to immediately set the active project after
-    connecting, which is helpful when the server default is not the desired
-    project.
+    Use the `--project` and `--stack` flags to immediately set the active
+    project and stack after connecting, which is helpful when the server
+    defaults are not the desired runtime context.
 
     Examples:
 
@@ -758,6 +789,12 @@ def _set_active_project(project_name_or_id: str) -> None:
     type=str,
     default=None,
     help="Name or ID of the project to set as active after logging in.",
+)
+@click.option(
+    "--stack",
+    type=str,
+    default=None,
+    help="Name or ID of the stack to set as active after logging in.",
 )
 @click.option(
     "--api-key",
@@ -855,6 +892,7 @@ def login(
     pro: bool = False,
     refresh: bool = False,
     project: Optional[str] = None,
+    stack: Optional[str] = None,
     api_key: bool = False,
     no_verify_ssl: bool = False,
     ssl_ca_cert: Optional[str] = None,
@@ -878,6 +916,7 @@ def login(
         pro: Log in to a ZenML Pro server.
         refresh: Force a new login flow with the ZenML server.
         project: Name or ID of the project to set active after connecting.
+        stack: Name or ID of the stack to set active after connecting.
         api_key: Whether to use an API key to authenticate with the ZenML
             server.
         no_verify_ssl: Whether to verify the server's TLS certificate.
@@ -911,6 +950,13 @@ def login(
                 "`--blocking` to apply the project selection."
             )
 
+        if stack and blocking:
+            cli_utils.warning(
+                "The active stack cannot be set while the local server "
+                "runs in blocking mode. Restart the server without "
+                "`--blocking` to apply the stack selection."
+            )
+
         start_local_server(
             docker=docker,
             ip_address=ip_address,
@@ -923,6 +969,8 @@ def login(
 
         if project and not blocking:
             _set_active_project(project)
+        if stack and not blocking:
+            _set_active_stack(stack)
 
         return
 
@@ -945,6 +993,7 @@ def login(
             api_key=api_key_value,
             pro_api_url=pro_api_url,
             project=project,
+            stack=stack,
             verify_ssl=ssl_ca_cert
             if ssl_ca_cert is not None
             else not no_verify_ssl,
@@ -973,6 +1022,7 @@ def login(
                 verify_ssl=verify_ssl,
                 refresh=refresh,
                 project=project,
+                stack=stack,
             )
         elif re.match(r"^https?://", server):
             # The server argument is a server URL
@@ -989,6 +1039,7 @@ def login(
                     # available
                     pro_api_url=server_pro_api_url or pro_api_url,
                     verify_ssl=verify_ssl,
+                    stack=stack,
                 )
             else:
                 connect_to_server(
@@ -997,6 +1048,7 @@ def login(
                     verify_ssl=verify_ssl,
                     refresh=refresh,
                     project=project,
+                    stack=stack,
                 )
         else:
             # The server argument is a ZenML Pro server name or UUID
@@ -1005,6 +1057,7 @@ def login(
                 api_key=api_key_value,
                 refresh=refresh,
                 project=project,
+                stack=stack,
                 pro_api_url=pro_api_url,
                 verify_ssl=verify_ssl,
             )
@@ -1033,6 +1086,7 @@ def login(
                 # available
                 pro_api_url=server_pro_api_url or pro_api_url,
                 verify_ssl=verify_ssl,
+                stack=stack,
             )
         else:
             cli_utils.declare(
@@ -1048,6 +1102,7 @@ def login(
                 verify_ssl=verify_ssl,
                 refresh=True,
                 project=project,
+                stack=stack,
             )
     else:
         # If no server argument is provided, and the client is not currently
@@ -1065,12 +1120,18 @@ def login(
                 ngrok_token=ngrok_token,
                 restart=restart,
             )
+            if not blocking:
+                if project:
+                    _set_active_project(project)
+                if stack:
+                    _set_active_stack(stack)
         elif login_method.name == "pro":
             # Connect to ZenML Pro
             connect_to_pro_server(
                 api_key=api_key_value,
                 pro_api_url=pro_api_url,
                 project=project,
+                stack=stack,
                 verify_ssl=verify_ssl,
             )
         elif login_method.name == "cloud":
@@ -1105,6 +1166,7 @@ def login(
                     # available
                     pro_api_url=server_pro_api_url or pro_api_url,
                     verify_ssl=verify_ssl,
+                    stack=stack,
                 )
             else:
                 connect_to_server(
@@ -1113,6 +1175,7 @@ def login(
                     verify_ssl=verify_ssl,
                     refresh=True,  # Force refresh for manually entered URLs
                     project=project,
+                    stack=stack,
                 )
 
 

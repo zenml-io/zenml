@@ -261,6 +261,125 @@ zenml stack register <STACK_NAME> \
     ...
 ```
 
+## Using a custom flavor in remote pipelines
+
+Registering a custom flavor does not upload its Python implementation. ZenML
+stores the dotted import path of the flavor class, such as
+`my_components.flavors.MyArtifactStoreFlavor`, and imports that path whenever
+it needs to construct the active stack. The flavor must therefore be importable
+in every environment that constructs the stack. For a remote pipeline, this can
+include both an orchestration container and the containers that run individual
+steps.
+
+There are three ways to make the flavor available in these containers.
+
+### Include the flavor source in the image
+
+For development, you can keep the custom flavor inside the pipeline repository
+and have ZenML copy the [source root](../../how-to/steps-pipelines/sources.md)
+into the images:
+
+```python
+from zenml.config import DockerSettings
+
+docker_settings = DockerSettings(
+    allow_download_from_code_repository=False,
+    allow_download_from_artifact_store=False,
+    allow_including_files_in_images=True,
+)
+```
+
+Apply these settings at pipeline level so they are used for the orchestration
+image as well as the step images.
+
+Disabling both download options is important for custom stack components that
+must be imported before runtime code download. For example, some remote
+orchestrators construct the active stack in an orchestration container before
+they start the individual step containers. A custom artifact store also cannot
+download the source code containing its own implementation. Including the
+source files in the image avoids these bootstrap problems.
+
+Make sure that the flavor module is inside the source root and is not excluded
+by the `.dockerignore` file. If the repository must be installed as a Python
+package instead of only being present on the Python import path, add an install
+command:
+
+```python
+docker_settings = DockerSettings(
+    allow_download_from_code_repository=False,
+    allow_download_from_artifact_store=False,
+    allow_including_files_in_images=True,
+    local_project_install_command="pip install . --no-deps",
+)
+```
+
+ZenML runs `local_project_install_command` after copying the source files into
+the image. See the [containerization guide](../../how-to/containerization/containerization.md#managing-dependencies)
+for more information.
+
+### Install the flavor as a Python package
+
+For production, package the custom flavor and its implementation as a
+versioned Python distribution and publish it to a package index accessible
+during the image build. Install the package in the remote images with
+pipeline-level Docker settings:
+
+```python
+from zenml import pipeline
+from zenml.config import DockerSettings
+
+docker_settings = DockerSettings(
+    requirements=["my-zenml-components==1.2.3"],
+)
+
+
+@pipeline(settings={"docker": docker_settings})
+def my_pipeline() -> None:
+    ...
+```
+
+The package must also be installed in the local environment used to register
+the flavor and submit the pipeline. `install_stack_requirements=True` installs
+requirements declared by official ZenML integrations, but it cannot infer the
+package or system dependencies of an arbitrary custom component. Declare those
+dependencies explicitly with the `requirements` and `apt_packages` Docker
+settings.
+
+Pipeline-level settings usually ensure that the dependency is available in all
+pipeline images. If individual steps override the Docker settings, make sure
+their images also install the custom package when they need to construct the
+active stack.
+
+### Use a prebuilt parent image
+
+You can instead bake the custom package into a reusable parent image. The image
+must contain a ZenML version compatible with the client that submits the
+pipeline:
+
+```dockerfile
+FROM <COMPATIBLE_ZENML_IMAGE>
+RUN pip install my-zenml-components==1.2.3
+```
+
+Configure the image as the parent for the images built by ZenML:
+
+```python
+docker_settings = DockerSettings(
+    parent_image="registry.example.com/zenml-runtime:1.2.3",
+)
+```
+
+ZenML can still add pipeline source and other requirements on top of this
+image. Use `skip_build=True` only when the parent image already contains
+everything required for execution. For details, see [using custom parent images](../../how-to/containerization/containerization.md#using-custom-parent-images).
+
+Whichever method you choose, verify that the dotted path stored during flavor
+registration imports successfully in the final image. For example:
+
+```shell
+python -c "from my_components.flavors import MyArtifactStoreFlavor"
+```
+
 ## Tips and best practices
 
 * ZenML resolves the flavor classes by taking the path where you initialized ZenML (via `zenml init`) as the starting point of resolution. Therefore, you and your team should remember to execute `zenml init` in a consistent manner (usually at the root of the repository where the `.git` folder lives). If the `zenml init` command was not executed, the current working directory is used to find implementation classes, which could lead to unexpected behavior.

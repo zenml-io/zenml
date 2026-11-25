@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any, List, Optional, Sequence
 from uuid import UUID
 
 from sqlalchemy import UniqueConstraint
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship
 
@@ -148,12 +148,12 @@ class ScheduleSchema(NamedSchema, RunMetadataInterface, table=True):
         """
         options = []
 
-        # if include_metadata:
-        #     options.extend(
-        #         [
-        #             joinedload(jl_arg(ScheduleSchema.run_metadata)),
-        #         ]
-        #     )
+        if include_metadata:
+            options.extend(
+                [
+                    selectinload(jl_arg(ScheduleSchema.run_metadata)),
+                ]
+            )
 
         if include_resources:
             options.extend([joinedload(jl_arg(ScheduleSchema.user))])

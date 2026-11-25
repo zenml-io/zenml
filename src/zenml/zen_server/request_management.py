@@ -25,8 +25,10 @@ from uuid import UUID, uuid4
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 
-from zenml.constants import MEDIUMTEXT_MAX_LENGTH
-from zenml.exceptions import EntityExistsError
+from zenml.exceptions import (
+    ApiTransactionResultTooLargeError,
+    EntityExistsError,
+)
 from zenml.logger import get_logger
 from zenml.models import ApiTransactionRequest, ApiTransactionUpdate
 from zenml.utils.json_utils import pydantic_encoder
@@ -37,6 +39,8 @@ if TYPE_CHECKING:
 
 
 logger = get_logger(__name__)
+
+_SLOW_TRANSACTION_CLEANUP_SECONDS = 1.0
 
 
 class RequestContext:
@@ -64,9 +68,6 @@ class RequestContext:
                     "Please use a valid UUID."
                 )
 
-        # Use a random trace ID to identify the request internally in the logs.
-        self.trace_id = str(uuid4())[:4]
-
         self.source = request.headers.get("User-Agent") or ""
         self.received_at = utc_now()
 
@@ -89,7 +90,7 @@ class RequestContext:
             The request ID.
         """
         source_type = self.source.split("/")[0]
-        return f"{self.request_id}/{source_type}/{self.trace_id}"
+        return f"{self.request_id}/{source_type}"
 
     @property
     def log_request(self) -> str:
@@ -175,9 +176,7 @@ class RequestManager:
     that have already been executed.
     """
 
-    def __init__(
-        self,
-    ) -> None:
+    def __init__(self) -> None:
         """Initialize the request manager."""
         from zenml.zen_server.utils import server_config
 
@@ -193,6 +192,8 @@ class RequestManager:
         )
 
         self._cleanup_interval = cfg.api_transaction_cleanup_interval
+        self._cleanup_batch_size = cfg.api_transaction_cleanup_batch_size
+        self._cleanup_time_budget = cfg.api_transaction_cleanup_time_budget
 
         self._cleanup_task: Optional[asyncio.Task[None]] = None
         self._shutdown_event = asyncio.Event()
@@ -280,14 +281,39 @@ class RequestManager:
                 pass
 
     def _cleanup_expired_transactions(self) -> None:
-        """Execute the cleanup operation in a thread pool."""
+        """Execute bounded cleanup batches within the configured budget."""
         from zenml.zen_server.utils import zen_store
 
         start_time = time.perf_counter()
-        zen_store().cleanup_expired_api_transactions()
+        deadline = start_time + self._cleanup_time_budget
+        batch_count = 0
+        total_deleted_count = 0
+
+        while True:
+            deleted_count = zen_store().cleanup_expired_api_transactions(
+                batch_size=self._cleanup_batch_size
+            )
+            batch_count += 1
+            total_deleted_count += deleted_count
+
+            if deleted_count < self._cleanup_batch_size:
+                break
+
+            if time.perf_counter() >= deadline:
+                break
+
         duration = time.perf_counter() - start_time
 
-        logger.debug(f"Cleaning up expired transactions took {duration:.2f}s")
+        if (
+            total_deleted_count > 0
+            or duration >= _SLOW_TRANSACTION_CLEANUP_SECONDS
+        ):
+            logger.debug(
+                "Cleaned up %d expired transactions in %d batches over %.2fs",
+                total_deleted_count,
+                batch_count,
+                duration,
+            )
 
     async def async_run_and_cache_result(
         self,
@@ -312,16 +338,17 @@ class RequestManager:
         """
         from starlette.concurrency import run_in_threadpool
 
-        from zenml.zen_server.utils import get_system_metrics_log_str
+        from zenml.zen_server.utils import get_system_metrics
 
         request_context = request_record.request_context
         transaction_id = request_context.transaction_id
 
         logger.debug(
-            f"[{request_context.log_request_id}] ENDPOINT STATS - "
-            f"{request_context.log_request} "
-            f"async {func.__name__} STARTED "
-            f"{get_system_metrics_log_str(request_context.request)}"
+            "endpoint.async.started",
+            extra={
+                "endpoint": func.__name__,
+                **get_system_metrics(),
+            },
         )
 
         def sync_run_and_cache_result(*args: Any, **kwargs: Any) -> Any:
@@ -332,10 +359,11 @@ class RequestManager:
             deduplicate_request = deduplicate
 
             logger.debug(
-                f"[{request_context.log_request_id}] ENDPOINT STATS - "
-                f"{request_context.log_request} "
-                f"sync {func.__name__} STARTED "
-                f"{get_system_metrics_log_str(request_context.request)}"
+                "endpoint.sync.started",
+                extra={
+                    "endpoint": func.__name__,
+                    **get_system_metrics(),
+                },
             )
 
             try:
@@ -354,29 +382,19 @@ class RequestManager:
                         )
                     except EntityExistsError:
                         logger.error(
-                            f"[{request_context.log_request_id}] "
-                            f"Transaction {transaction_id} already exists "
-                            f"with method {request_context.request.method} and "
-                            f"URL {str(request_context.request.url)}. Skipping "
-                            "caching."
+                            "transaction.already_exists",
+                            extra={"transaction_id": str(transaction_id)},
                         )
                         deduplicate_request = False
                     except Exception:
-                        logger.exception(
-                            f"[{request_context.log_request_id}] "
-                            f"Unexpected error getting or creating API "
-                            "transaction. Skipping deduplication."
-                        )
+                        logger.exception("transaction.get_or_create_failed")
                         deduplicate_request = False
 
                     if deduplicate_request:
                         if api_transaction.completed:
                             logger.debug(
-                                f"[{request_context.log_request_id}] "
-                                "ENDPOINT STATS - "
-                                f"{request_context.log_request} "
-                                f"sync {func.__name__} CACHE HIT "
-                                f"{get_system_metrics_log_str(request_context.request)}"
+                                "endpoint.sync.cache_hit",
+                                extra={"endpoint": func.__name__},
                             )
 
                             try:
@@ -389,9 +407,7 @@ class RequestManager:
                                 )
                             except Exception:
                                 logger.exception(
-                                    f"[{request_context.log_request_id}] "
-                                    f"Unexpected error getting API transaction "
-                                    "result. Skipping deduplication."
+                                    "transaction.get_result_failed"
                                 )
                                 deduplicate_request = False
                             else:
@@ -405,11 +421,8 @@ class RequestManager:
 
                         elif not transaction_created:
                             logger.debug(
-                                f"[{request_context.log_request_id}] "
-                                "ENDPOINT STATS - "
-                                f"{request_context.log_request} "
-                                f"sync {func.__name__} DELAYED "
-                                f"{get_system_metrics_log_str(request_context.request)}"
+                                "endpoint.sync.delayed",
+                                extra={"endpoint": func.__name__},
                             )
 
                             # The transaction is being processed by another server
@@ -436,10 +449,7 @@ class RequestManager:
                                 api_transaction_id=transaction_id,
                             )
                         except Exception:
-                            logger.exception(
-                                f"[{request_context.log_request_id}] "
-                                f"Unexpected error deleting API transaction."
-                            )
+                            logger.exception("transaction.delete_failed")
                     raise
 
                 if deduplicate_request:
@@ -461,16 +471,6 @@ class RequestManager:
                                 f"for transaction {transaction_id}. Skipping "
                                 "caching."
                             )
-                        else:
-                            if len(result_to_cache) > MEDIUMTEXT_MAX_LENGTH:
-                                # If the result is too large, we also don't cache it.
-                                cache_result = False
-                                result_to_cache = None
-                                logger.error(
-                                    f"Result of {func.__name__} "
-                                    f"for transaction {transaction_id} is too "
-                                    "large. Skipping caching."
-                                )
 
                     if cache_result:
                         api_transaction_update = ApiTransactionUpdate(
@@ -485,12 +485,20 @@ class RequestManager:
                                 api_transaction_id=transaction_id,
                                 api_transaction_update=api_transaction_update,
                             )
-                        except Exception:
-                            logger.exception(
-                                f"[{request_context.log_request_id}] "
-                                f"Unexpected error finalizing API transaction. "
-                                "Ignoring."
+                        except ApiTransactionResultTooLargeError as e:
+                            logger.error(
+                                f"Result of {func.__name__} for transaction "
+                                f"{transaction_id} is too large. Skipping "
+                                f"caching: {e}"
                             )
+                            try:
+                                zen_store().delete_api_transaction(
+                                    api_transaction_id=transaction_id,
+                                )
+                            except Exception:
+                                logger.exception("transaction.delete_failed")
+                        except Exception:
+                            logger.exception("transaction.finalize_failed")
                     else:
                         try:
                             # If the result is not cacheable, there is no point in
@@ -499,19 +507,16 @@ class RequestManager:
                                 api_transaction_id=transaction_id,
                             )
                         except Exception:
-                            logger.exception(
-                                f"[{request_context.log_request_id}] "
-                                f"Unexpected error deleting API transaction. "
-                                "Ignoring."
-                            )
+                            logger.exception("transaction.delete_failed")
 
                 return result
             finally:
                 logger.debug(
-                    f"[{request_context.log_request_id}] ENDPOINT STATS - "
-                    f"{request_context.log_request} "
-                    f"sync {func.__name__} COMPLETED "
-                    f"{get_system_metrics_log_str(request_context.request)}"
+                    "endpoint.sync.completed",
+                    extra={
+                        "endpoint": func.__name__,
+                        **get_system_metrics(),
+                    },
                 )
 
         try:
@@ -527,10 +532,11 @@ class RequestManager:
                     del self.transactions[transaction_id]
 
         logger.debug(
-            f"[{request_context.log_request_id}] ENDPOINT STATS - "
-            f"{request_context.log_request} "
-            f"async {func.__name__} COMPLETED "
-            f"{get_system_metrics_log_str(request_context.request)}"
+            "endpoint.async.completed",
+            extra={
+                "endpoint": func.__name__,
+                **get_system_metrics(),
+            },
         )
 
         if isinstance(result, Exception):
@@ -565,16 +571,17 @@ class RequestManager:
         Returns:
             The result of the request.
         """
-        from zenml.zen_server.utils import get_system_metrics_log_str
+        from zenml.zen_server.utils import get_system_metrics
 
         request_context = self.current_request
         assert request_context is not None
 
         logger.debug(
-            f"[{request_context.log_request_id}] ENDPOINT STATS - "
-            f"{request_context.log_request} "
-            f"{func.__name__} STARTED "
-            f"{get_system_metrics_log_str(request_context.request)}"
+            "endpoint.started",
+            extra={
+                "endpoint": func.__name__,
+                **get_system_metrics(),
+            },
         )
 
         transaction_id = request_context.transaction_id
@@ -594,10 +601,11 @@ class RequestManager:
                 # server instance. We just wait for it to complete.
                 fut = self.transactions[transaction_id].future
                 logger.debug(
-                    f"[{request_context.log_request_id}] ENDPOINT STATS - "
-                    f"{request_context.log_request} "
-                    f"{func.__name__} RESUMED "
-                    f"{get_system_metrics_log_str(request_context.request)}"
+                    "endpoint.resumed",
+                    extra={
+                        "endpoint": func.__name__,
+                        **get_system_metrics(),
+                    },
                 )
             else:
                 # Start execution in background, use the future to wait for it
@@ -620,33 +628,44 @@ class RequestManager:
                     )
                 )
 
-        # Wait for the request to complete; timeout if deduplication is enabled
+        # Wait for the request to complete. Only deduplicated requests are
+        # allowed to keep running after the client receives a timeout
+        # response because retries are tied to the same API transaction.
+        # Non-deduplicated requests keep the connection and operation
+        # lifetime aligned to avoid hidden duplicate mutations on retry.
         try:
-            # We take into account the time that has already elapsed since the
-            # request was received to avoid keeping the request for too long.
-            timeout = max(
-                0, self.request_timeout - request_context.process_time
-            )
+            timeout: Optional[float] = None
+            if deduplicate:
+                # We take into account the time that has already elapsed
+                # since the request was received to avoid keeping the
+                # request for too long.
+                timeout = max(
+                    0, self.request_timeout - request_context.process_time
+                )
             result = await asyncio.wait_for(
                 # We use asyncio.shield to prevent the request from being
-                # cancelled when the timeout is reached.
+                # cancelled when the timeout is reached. With timeout=None,
+                # wait_for simply waits for non-deduplicated requests to
+                # complete.
                 asyncio.shield(fut),
-                timeout=timeout if deduplicate else None,
+                timeout=timeout,
             )
 
             logger.debug(
-                f"[{request_context.log_request_id}] ENDPOINT STATS - "
-                f"{request_context.log_request} "
-                f"{func.__name__} COMPLETED "
-                f"{get_system_metrics_log_str(request_context.request)}"
+                "endpoint.completed",
+                extra={
+                    "endpoint": func.__name__,
+                    **get_system_metrics(),
+                },
             )
             return result
         except asyncio.TimeoutError:
             logger.debug(
-                f"[{request_context.log_request_id}] ENDPOINT STATS - "
-                f"{request_context.log_request} "
-                f"{func.__name__} TIMEOUT "
-                f"{get_system_metrics_log_str(request_context.request)}"
+                "endpoint.timeout",
+                extra={
+                    "endpoint": func.__name__,
+                    **get_system_metrics(),
+                },
             )
             return JSONResponse(
                 {"error": "Server too busy. Please try again later."},

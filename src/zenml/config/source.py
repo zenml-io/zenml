@@ -23,7 +23,10 @@ from pydantic import (
     BeforeValidator,
     ConfigDict,
     PlainSerializer,
+    SerializationInfo,
     SerializeAsAny,
+    SerializerFunctionWrapHandler,
+    WrapSerializer,
     field_validator,
 )
 from typing_extensions import Annotated
@@ -34,6 +37,8 @@ if TYPE_CHECKING:
     AnyClassMethod = classmethod[Any]  # type: ignore[type-arg]
 
 logger = get_logger(__name__)
+
+SERIALIZE_AS_STRING_CONTEXT_KEY = "serialize_as_string"
 
 
 class SourceType(Enum):
@@ -483,6 +488,37 @@ class NotebookSource(Source):
 SourceWithValidator = Annotated[
     SerializeAsAny[Source],
     BeforeValidator(Source.convert_source),
+]
+
+
+def _serialize_source_optionally_as_string(
+    value: Any,
+    handler: SerializerFunctionWrapHandler,
+    info: SerializationInfo,
+) -> Any:
+    """Optionally serialize a source as an import path string.
+
+    This serializer keeps the default source serialization unless the
+    serialization context explicitly enables string output.
+
+    Args:
+        value: The source value.
+        handler: The default serializer handler.
+        info: Serialization info containing the context.
+
+    Returns:
+        The serialized source value.
+    """
+    context = info.context
+    if context and context.get(SERIALIZE_AS_STRING_CONTEXT_KEY):
+        return value.import_path
+
+    return handler(value)
+
+
+StringSerializableSource = Annotated[
+    SourceWithValidator,
+    WrapSerializer(_serialize_source_optionally_as_string),
 ]
 
 if TYPE_CHECKING:

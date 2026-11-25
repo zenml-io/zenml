@@ -23,7 +23,11 @@ from zenml.exceptions import InputResolutionError
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineRunResponse, StepRunResponse
+    from zenml.models import (
+        ModelVersionResponse,
+        PipelineRunResponse,
+        StepRunResponse,
+    )
     from zenml.models.v2.core.step_run import StepRunInputResponse
 
 
@@ -56,7 +60,8 @@ def resolve_step_inputs(
     from zenml.models.v2.core.step_run import StepRunInputResponse
     from zenml.orchestrators.step_run_utils import fetch_step_runs_by_names
 
-    step_runs = step_runs or {}
+    if step_runs is None:
+        step_runs = {}
 
     steps_to_fetch = set(
         input_.step_name
@@ -124,11 +129,17 @@ def resolve_step_inputs(
             )
         ]
 
+    model_version: Optional["ModelVersionResponse"] = None
+    if step.config.model_artifacts_or_metadata and pipeline_run.model_version:
+        model_version = Client().get_model_version(
+            model_version_name_or_number_or_id=pipeline_run.model_version.id
+        )
+
     for name, config_ in step.config.model_artifacts_or_metadata.items():
         err_msg = ""
         try:
             context_model_version = config_._get_model_response(
-                pipeline_run=pipeline_run
+                model_version=model_version
             )
         except RuntimeError as e:
             err_msg = str(e)

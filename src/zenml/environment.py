@@ -371,9 +371,6 @@ class Environment(metaclass=SingletonMetaClass):
     def get_python_packages() -> List[str]:
         """Returns a list of installed Python packages.
 
-        Tries `pip freeze` first, then falls back to `uv pip freeze` for
-        environments where only uv is installed (no pip in PATH).
-
         Raises:
             RuntimeError: If the process to get the list of installed packages
                 fails.
@@ -381,26 +378,37 @@ class Environment(metaclass=SingletonMetaClass):
         Returns:
             List of installed packages in pip freeze format.
         """
-        try:
-            output = subprocess.check_output(
-                [sys.executable, "-m", "pip", "freeze"]
-            ).decode()
-            return output.strip().split("\n")
-        except (FileNotFoundError, subprocess.CalledProcessError):
-            # pip not found in current python environment, try uv as a fallback
-            if shutil.which("uv"):
-                try:
-                    output = subprocess.check_output(
-                        ["uv", "pip", "freeze"]
-                    ).decode()
-                    return output.strip().split("\n")
-                except (subprocess.CalledProcessError, FileNotFoundError):
-                    pass
-            raise RuntimeError(
-                "Failed to get list of installed Python packages. "
-                "Neither pip nor uv was found in your environment."
+        # Try uv pip freeze first since it is much faster than pip, and only
+        # use pip as a fallback.
+        commands = []
+        if shutil.which("uv"):
+            commands.append(
+                ["uv", "pip", "freeze", "--python", sys.executable]
             )
-        except subprocess.CalledProcessError:
-            raise RuntimeError(
-                "Failed to get list of installed Python packages"
-            )
+        commands.append(
+            [
+                sys.executable,
+                "-m",
+                "uv",
+                "pip",
+                "freeze",
+                "--python",
+                sys.executable,
+            ]
+        )
+        commands.append([sys.executable, "-m", "pip", "freeze"])
+
+        for command in commands:
+            try:
+                output = subprocess.check_output(
+                    command,
+                    stderr=subprocess.DEVNULL,
+                ).decode()
+                return output.strip().split("\n")
+            except (FileNotFoundError, subprocess.CalledProcessError):
+                continue
+
+        raise RuntimeError(
+            "Failed to get list of installed Python packages. "
+            "Neither uv nor pip was found in your environment."
+        )

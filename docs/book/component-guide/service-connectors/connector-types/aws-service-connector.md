@@ -1252,7 +1252,7 @@ zenml service-connector login aws-session-token --resource-type kubernetes-clust
 Cluster "arn:aws:eks:us-east-1:715803424590:cluster/zenhacks-cluster" set.
 Context "arn:aws:eks:us-east-1:715803424590:cluster/zenhacks-cluster" modified.
 Updated local kubeconfig with the cluster details. The current kubectl context was set to 'arn:aws:eks:us-east-1:715803424590:cluster/zenhacks-cluster'.
-The 'aws-session-token' Kubernetes Service Connector connector was used to successfully configure the local Kubernetes cluster client/SDK.
+The 'aws-session-token' Kubernetes Service Connector was used to successfully configure the local Kubernetes cluster client/SDK.
 ```
 {% endcode %}
 
@@ -1297,7 +1297,7 @@ WARNING! Your password will be stored unencrypted in /home/stefan/.docker/config
 Configure a credential helper to remove this warning. See
 https://docs.docker.com/engine/reference/commandline/login/#credentials-store
 
-The 'aws-session-token' Docker Service Connector connector was used to successfully configure the local Docker/OCI container registry client/SDK.
+The 'aws-session-token' Docker Service Connector was used to successfully configure the local Docker/OCI container registry client/SDK.
 ```
 {% endcode %}
 
@@ -1337,7 +1337,7 @@ zenml service-connector login aws-session-token --resource-type aws-generic
 {% code title="Example Command Output" %}
 ```
 Configured local AWS SDK profile 'zenml-c0f8e857'.
-The 'aws-session-token' AWS Service Connector connector was used to successfully configure the local Generic AWS resource client/SDK.
+The 'aws-session-token' AWS Service Connector was used to successfully configure the local Generic AWS resource client/SDK.
 ```
 {% endcode %}
 

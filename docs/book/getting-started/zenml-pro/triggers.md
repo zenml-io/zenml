@@ -10,7 +10,7 @@ Triggers are part of ZenML's paid features. For details on availability and supp
 {% endhint %}
 
 In the [snapshots](./snapshots.md) section, you learned how to prepare snapshots and execute them on demand via 
-the dashboard, CLI, or SDK. In many cases, however, pipelines need to run automatically - either on a schedule or in 
+the UI, CLI, or SDK. In many cases, however, pipelines need to run automatically - either on a schedule or in 
 response to an event.
 
 Triggers enable this behavior. A trigger is a configuration that defines one or more conditions under 
@@ -70,7 +70,7 @@ zenml trigger schedule create daily-schedule-6-am --cron-expression "0 6 * * *"
 So far we have instructed our system with *when* to execute but not *what*. To do so,
 we need to *attach* a schedule to a snapshot.
 
-For the CLI, commands that take a trigger or snapshot accept itsname or ID
+For the CLI, commands that take a trigger or snapshot accept its name or ID
 (exact match, not a prefix). Positional order is always trigger first, then snapshot.
 
 Via the SDK:
@@ -180,31 +180,46 @@ zenml trigger schedule update "daily-schedule-6-am" --active=false \
 ### View Schedules
 
 Triggers are a first-level citizen of the ZenML platform. You can view detailed information in the
-dashboard as well as via the SDK and CLI.
+UI as well as via the SDK and CLI.
 
-Via the dashboard:
+Via the UI:
 
-To view schedules, you need to navigate to the `Triggers` tab:
+To view triggers, open **Pipelines** in the rail and select the `Triggers` tab:
 
 ![Image Showing Triggers tab](../../.gitbook/assets/schedule_list_dsb.png)
 
-You can inspect a schedule's information:
+You can update a trigger's configuration on its Update trigger page:
 
-![Image Showing Schedule View](../../.gitbook/assets/schedule_view_dsb.png)
+![Image Showing Trigger Update](../../.gitbook/assets/schedule_view_dsb.png)
 
-Or its attached snapshots and executed pipeline runs:
+The **Configuration** tab lists its attached snapshots, and the **Runs** tab its executed pipeline runs:
 
-![Image Showing Schedule Snapshots](../../.gitbook/assets/schedule_snaps_dsb.png)
+![Trigger Configuration tab with attached snapshots](../../.gitbook/assets/schedule_snaps_dsb.png)
 
-![Image Showing Schedule Runs](../../.gitbook/assets/schedule_runs_dash.png)
+![Trigger Runs tab](../../.gitbook/assets/schedule_runs_dash.png)
 
-For each trigger–snapshot attachment, ZenML can persist the **dispatch state** (for
-example, last status, or error message and severity when a dispatch fails). The
-snapshot dispatch states on a trigger response reflect that information. After
-you fix the underlying problem, you can acknowledge the error and clear the
-stored details (see the next section). Use `get_schedule_trigger` with
-`trigger_name_id_or_prefix` to load a schedule by name, full ID, or ID prefix;
-set `allow_name_prefix_match=False` if you need an exact name match.
+For each trigger–snapshot attachment, ZenML can persist the **dispatch state**.
+This is the small status record that answers, "what happened the last time this
+trigger tried to launch this snapshot?" The status can be:
+
+- `SUCCESS`: a run was launched successfully.
+- `SKIPPED_CONCURRENCY`: a run was skipped because the trigger's concurrency
+  rule said not to start another one yet.
+- `SKIPPED_MAX_RUNS`: a run was skipped because the configured run limit for
+  this trigger-snapshot attachment has already been reached.
+- `SKIPPED_TRIGGER_CYCLE`: a platform event trigger dispatch was skipped
+  because it would revisit a pipeline already present in the trigger chain.
+- `ERROR`: ZenML tried to dispatch the run, but something failed.
+
+When the last status is `ERROR`, the dispatch state can also include the last
+error message, error type, severity, stack trace, first/last error timestamps,
+and an error count. After you fix the underlying problem, you can acknowledge
+the error and clear the stored dispatch state (see the next section). In the
+normal failure case, clearing errors removes the `ERROR` status record for that
+trigger-snapshot attachment, so the next dispatch can start from a clean state.
+Use `get_schedule_trigger` with `trigger_name_id_or_prefix` to load a schedule
+by name, full ID, or ID prefix; set `allow_name_prefix_match=False` if you need
+an exact name match.
 
 Via the SDK:
 
@@ -256,8 +271,14 @@ client.create_schedule_trigger(
 
 #### `max_runs`
 
-Limits how many times a schedule can trigger a pipeline. Once the limit is reached, no further runs are scheduled. 
-Note that this limit applies per attached snapshot, for example, with a limit of 2 and two attached snapshots, you will see a total of 4 runs.
+Limits how many times a schedule can trigger a pipeline. Once the limit is
+reached for a trigger-snapshot attachment, no further runs are scheduled for
+that attachment. Later dispatch attempts can show up as `SKIPPED_MAX_RUNS` in
+the dispatch state. This is not an error that needs to be cleared; it is ZenML
+saying, "the run limit you configured has been reached."
+
+Note that this limit applies per attached snapshot, for example, with a limit of
+2 and two attached snapshots, you will see a total of 4 runs.
 
 ~~~python
 from zenml.client import Client
@@ -325,14 +346,14 @@ longer be used, but it remains in the system to preserve references for visibili
 Archiving (soft deletion) is the default deletion mode. Triggers can also be permanently deleted. Neither 
 operation can be reversed.
 
-Via the dashboard:
+Via the UI:
 
-![Image Showing Schedule Deletion](../../.gitbook/assets/delete_schedule_soft.png)
+![Image Showing Trigger Archive](../../.gitbook/assets/delete_schedule_soft.png)
 
-You can view archived schedules by setting the `Display archived` filter, where
+You can view archived triggers by setting the `View` to `Archived`, where
 you can also hard delete them.
 
-![Image Showing Schedule Hard Deletion](../../.gitbook/assets/delete_schedule_hard.png)
+![Image Showing Trigger Hard Deletion](../../.gitbook/assets/delete_schedule_hard.png)
 
 Via the SDK:
 
@@ -376,8 +397,8 @@ better suited for production workloads:
   * Triggers: Snapshots and schedules are managed independently. You can dynamically attach or detach snapshots to or from schedules.
   * OS Schedules: Schedules are bound to individual pipelines and cannot be shared across multiple pipelines.
 * Visibility
-  * Triggers: Extended dashboard visibility and management.
-  * OS Schedules: Limited dashboard exposure.
+  * Triggers: Extended UI visibility and management.
+  * OS Schedules: Limited UI exposure.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
 
@@ -400,14 +421,29 @@ trigger operates within your workflow.
 |---------------|-----------------------------------------------------------|------------------------------------|
 | name          | The name of the trigger                                   | Unique within project              |
 | source_type   | The type of ZenML entity to listen to (e.g., pipeline)    | Defines the event source category  |
-| source_id     | The unique identifier of the source entity                | e.g., a specific pipeline ID       |
-| target_events | List of events that will activate the trigger             | e.g., `completed`, `failed`        |
+| source_id     | The UUID of the source entity                             | e.g., a specific pipeline UUID     |
+| target_events | List of events that will activate the trigger             | Depends on the source type         |
 | active        | Status of the trigger (active/inactive)                   | -                                  |
 | concurrency   | Option to control how concurrent runs should be handled   | Skip is the default option         |
 
 You can manage platform event triggers using the same set of commands (create, update, attach, detach, list, delete, clear-errors)
 as for schedule triggers. While some parameters and responses differ slightly, additional utilities are 
 available to help you work more effectively with this trigger type.
+
+Supported target events depend on the source type:
+
+| Source type | Meaning | Target events |
+|-------------|---------|---------------|
+| `pipeline` | React to runs of a pipeline | `run_completed`, `run_failed` |
+| `pipeline_run` | React to one specific pipeline run | `completed`, `failed` |
+| `pipeline_snapshot` | React to runs of a pipeline snapshot | `run_completed`, `run_failed` |
+
+That distinction is easy to miss. If the source is a pipeline, the event name
+includes the word `run` because the pipeline itself is not what completes; one
+of its runs does. Pipeline snapshot events follow the same naming pattern. If
+the source is already a pipeline run, the event is simply `completed` or
+`failed`.
+
 
 ### Create Platform Event Trigger
 
@@ -443,7 +479,7 @@ zenml trigger platform-event list-supported-events pipeline
 Then we can create the trigger as follows:
 
 ```bash
-zenml trigger platform-event create "on-hello-pipeline-complete" pipeline <PIPELINE_NAME_OR_ID> --target_events=run_completed
+zenml trigger platform-event create "on-hello-pipeline-complete" pipeline <PIPELINE_UUID> --target_events=run_completed
 ```
 
 ### Update Platform Event Triggers
@@ -472,7 +508,7 @@ zenml trigger platform-event update "on-hello-pipeline-complete" \
 
 ### Remaining Platform Event Trigger operations
 
-The remaining operations (view, attach, detach, delete, and clear-errors) match schedule triggers. 
+The remaining operations (list, attach, detach, delete, and clear-errors) match schedule triggers.
 In the CLI, they are grouped under a different command namespace, but the syntax remains the same. 
 You can explore the available platform event trigger commands with:
 
@@ -508,7 +544,7 @@ c.attach_trigger_to_snapshot(
     pipeline_snapshot_id=UUID("<snapshot_uuid>"),
 )
 c.detach_trigger_from_snapshot(
-    trigger_id=UUID("<trigger_uuid>"),`
+    trigger_id=UUID("<trigger_uuid>"),
     pipeline_snapshot_id=UUID("<snapshot_uuid>"),
 )
 c.delete_trigger(trigger_id=UUID("<trigger_uuid>"), soft=True)
@@ -539,8 +575,620 @@ turn can trigger Pipeline C. This enables lightweight orchestration patterns dir
 to break down complex workflows into smaller, reusable pipeline components that execute in sequence based on platform events.
 
 {% hint style="warning" %}
-However, care must be taken when designing such workflows. Since cyclic dependencies are not currently validated, 
-it is possible to create loops where pipelines continuously trigger each other (for example, Pipeline 
-A triggers B, and B triggers A). This can lead to unintended behavior such as infinite execution cycles and 
-resource exhaustion. Users should ensure that their trigger configurations form an acyclic graph and avoid circular dependencies.
+ZenML detects trigger loops at the **pipeline level** while dispatching platform
+event triggers. Snapshots, runs, trigger IDs, and trigger configuration do not
+create separate nodes in the cycle: two different snapshots of the same
+pipeline still refer to the same pipeline in the trigger chain.
+
+If a downstream snapshot would revisit a pipeline that is already in the
+current chain, ZenML skips only that trigger-snapshot dispatch and records
+`SKIPPED_TRIGGER_CYCLE`. Other non-cyclic snapshots attached to the same trigger
+continue to dispatch normally. This protection does not disable or modify the
+trigger configuration, and it does not cancel runs that have already started.
 {% endhint %}
+
+Dispatch states are stored per attached snapshot, and
+`cycle_pipeline_ids` contains the ordered closed cycle (the first and last IDs
+are the pipeline that closes the loop):
+
+```python
+from zenml.client import Client
+from zenml.models import TriggerDispatchStatusCode
+
+client = Client()
+trigger = client.get_platform_event_trigger(
+    trigger_name_id_or_prefix="on-hello-pipeline-complete",
+)
+
+for snapshot_id, state in trigger.snapshot_dispatch_states.items():
+    if state.last_status == TriggerDispatchStatusCode.SKIPPED_TRIGGER_CYCLE:
+        cycle_pipeline_ids = (state.last_status_details or {}).get(
+            "cycle_pipeline_ids", []
+        )
+        print(
+            f"Snapshot {snapshot_id} was skipped because of pipeline cycle: "
+            f"{cycle_pipeline_ids}"
+        )
+```
+
+## Webhook Triggers
+
+Webhook triggers are consumers of accepted [webhook](webhooks.md) events. A
+webhook receives and authenticates external deliveries; a webhook trigger
+selects events from one webhook and dispatches its attached pipeline snapshots.
+Creating a webhook alone does not execute a pipeline.
+
+A webhook trigger belongs permanently to the webhook selected at creation. The
+webhook determines which provider-specific `target_events` configuration is
+valid. One webhook can own multiple triggers, and each matching trigger can be
+attached to multiple snapshots.
+
+Webhook and trigger active states are independent:
+
+- An inactive webhook rejects deliveries before consumers receive them.
+- An inactive trigger does not match accepted deliveries.
+- You can create and activate a trigger while its webhook is inactive, then
+  enable the webhook when setup is complete.
+
+| Attribute | Description | Notes |
+|-----------|-------------|-------|
+| `name` | The trigger name | Unique within the project |
+| `webhook` | The owning webhook | Selected by name or ID at creation and cannot be changed |
+| `configuration.target_events` | Provider-specific events and filters | Validated by the owning webhook's provider |
+| `active` | Whether the trigger can match deliveries | Independent from the webhook active state |
+| `concurrency` | How overlapping runs of an attached snapshot are handled | `skip` is the default |
+
+The CLI reads provider configuration from a YAML file. Configuration updates
+replace the complete configuration atomically rather than merging individual
+fields. The SDK accepts a mapping or a typed provider configuration model; the
+typed models are recommended because they validate and document the available
+fields.
+
+### String filter operators
+
+Every provider-defined string field in a webhook event filter supports the same
+case-sensitive operators:
+
+| Syntax | Matches when |
+|--------|--------------|
+| `value` or `equals:value` | The field equals `value` |
+| `notequals:value` | The field does not equal `value` |
+| `contains:value` | The field contains `value` |
+| `notcontains:value` | The field does not contain `value` |
+| `startswith:value` | The field starts with `value` |
+| `endswith:value` | The field ends with `value` |
+| `oneof:["a","b"]` | The field equals one of the JSON-list values |
+| `notoneof:["a","b"]` | The field equals none of the JSON-list values |
+
+The text before the first colon is treated as an operator only when it is one
+of the operators above. Other colon-containing values, such as
+`https://example.com/hook`, are matched literally. Use an explicit `equals:`
+when a literal value starts with an operator name, for example
+`equals:startswith:queued`.
+
+A YAML list combines multiple expressions for one field with OR. Use
+`notoneof:` instead of a list of `notequals:` expressions when excluding
+several exact values:
+
+```yaml
+target_events:
+  - type: push
+    branch:
+      - main
+      - "startswith:release/"
+    actor: 'notoneof:["dependabot[bot]","renovate[bot]"]'
+```
+
+Different populated fields on one target event combine with AND, while
+multiple target events combine with OR. An absent event field does not satisfy
+a configured filter, including a negative filter. For collection-valued event
+fields such as GitHub labels, positive operators match any item and negative
+operators require every item to satisfy the expression.
+
+### Dynamic event filters
+
+GitHub, ClickUp, Slack, and Custom triggers support a `dynamic` target for
+provider events and payload fields that are not covered by the semantic event
+catalog. For example, this target matches GitHub pull requests when they are
+opened against a release branch:
+
+```yaml
+target_events:
+  - type: dynamic
+    event_type: pull_request
+    filters:
+      action: opened
+      pull_request.base.ref: "startswith:release/"
+```
+
+`event_type` is required and supports all shared string filter operators. The
+provider determines its value: GitHub uses `X-GitHub-Event`, ClickUp uses the
+top-level `event` field, Slack uses `event.type` inside an event callback, and
+Custom uses `X-ZenML-Event`. Dynamic filters do not match Slack control
+deliveries such as URL verification or rate-limit notifications.
+
+The optional `filters` mapping is evaluated against the complete authenticated
+JSON body. All configured paths must match. A path supports object traversal,
+non-negative array indexes, one array wildcard, and JSON-quoted unusual keys:
+
+```yaml
+filters:
+  history_items[0].after.status: ready
+  labels[*].name: "contains:priority"
+  metadata["build.version"]: v2
+```
+
+Wildcard results use the same collection semantics as typed filters: positive
+operators match any resolved scalar and negative operators require all resolved
+scalars to match. Missing keys, incompatible payload types, out-of-range
+indexes, empty wildcard results, and object or array terminal values do not
+match. Strings are compared unchanged; JSON numbers, booleans, and null are
+compared as strings such as `42`, `false`, and `null`.
+
+Paths are intentionally smaller than JSONPath: recursive descent, functions,
+slices, inline predicates, negative indexes, and implicit numeric segments such
+as `items.0` are not supported. A configuration can contain at most 10 target
+events. Each dynamic target can contain at most 10 paths; paths are limited to
+512 characters, eight segments, and one wildcard. Each string filter supports
+at most 10 expressions, a 512-character expression, and 10 `oneof` or
+`notoneof` choices.
+
+Via the SDK, use the same public dynamic target model with any provider
+configuration:
+
+```python
+from zenml.webhooks import DynamicWebhookTargetEvent
+from zenml.webhooks.providers.github import GitHubWebhookConfiguration
+
+configuration = GitHubWebhookConfiguration(
+    target_events=[
+        DynamicWebhookTargetEvent(
+            event_type="pull_request",
+            filters={
+                "action": "opened",
+                "pull_request.base.ref": "startswith:release/",
+            },
+        )
+    ]
+)
+```
+
+Typed and dynamic targets can be combined in the same `target_events` list.
+They retain the usual OR behavior across target entries.
+
+### GitHub webhook triggers
+
+This example executes a pipeline snapshot when GitHub reports a push to the
+`main` branch of `acme/ml-pipelines`. First, create and configure the GitHub
+webhook by following [GitHub webhooks](webhooks/github.md).
+
+Create `github-push.yaml`:
+
+```yaml
+target_events:
+  - type: push
+    repo: acme/ml-pipelines
+    branch: main
+```
+
+Then create the trigger and select the owning webhook:
+
+```bash
+zenml trigger webhook create on-main-push \
+  --webhook github-ml-pipelines \
+  --config github-push.yaml
+```
+
+Via the SDK, use the typed GitHub configuration and event model:
+
+```python
+from zenml.client import Client
+from zenml.webhooks.providers.github import (
+    GitHubWebhookConfiguration,
+    PushEvent,
+)
+
+client = Client()
+trigger = client.create_webhook_trigger(
+    name="on-main-push",
+    webhook="github-ml-pipelines",
+    configuration=GitHubWebhookConfiguration(
+        target_events=[
+            PushEvent(
+                repo="acme/ml-pipelines",
+                branch="main",
+            )
+        ]
+    ),
+)
+```
+
+GitHub supports `merged_pull_request`, `workflow_run_completed`, `push`,
+`release_published`, and `issue_opened` semantic events. See the provider's
+[supported events and filters](webhooks/github.md#supported-events-and-filters)
+for all fields, supported string-filter operators, and another configuration
+example.
+
+### ClickUp webhook triggers
+
+This example executes a pipeline snapshot when ClickUp reports that a task in
+one list moved to `done`. First, create and configure the ClickUp webhook by
+following [ClickUp webhooks](webhooks/clickup.md).
+
+Create `clickup-status.yaml`:
+
+```yaml
+target_events:
+  - type: taskStatusUpdated
+    list_id: "162641285"
+    status: done
+```
+
+Then create the trigger and select the owning webhook:
+
+```bash
+zenml trigger webhook create on-task-done \
+  --webhook clickup-ops \
+  --config clickup-status.yaml
+```
+
+Via the SDK, use the typed ClickUp configuration and event model:
+
+```python
+from zenml.client import Client
+from zenml.webhooks.providers.clickup import (
+    ClickUpWebhookConfiguration,
+    TaskStatusUpdated,
+)
+
+client = Client()
+trigger = client.create_webhook_trigger(
+    name="on-task-done",
+    webhook="clickup-ops",
+    configuration=ClickUpWebhookConfiguration(
+        target_events=[
+            TaskStatusUpdated(
+                list_id="162641285",
+                status="done",
+            )
+        ]
+    ),
+)
+```
+
+ClickUp supports task and list semantic events such as `taskCreated`,
+`taskStatusUpdated`, and `listUpdated`. See the provider's
+[supported events and filters](webhooks/clickup.md#supported-events-and-filters)
+for all fields and supported string-filter operators.
+
+Attach the trigger to a snapshot as shown below, then follow the
+[signed ClickUp mock request](webhooks/clickup.md#mock-a-signed-clickup-delivery)
+to test the intake path.
+### Slack webhook triggers
+
+Slack webhook triggers support seven semantic event types suited to automation:
+`app_mention`, `message`, `reaction_added`, `reaction_removed`,
+`message_metadata_posted`, `message_metadata_updated`, and `file_shared`.
+First, configure the Slack app, event subscriptions, and webhook by following
+[Slack webhooks](webhooks/slack.md).
+
+Create `slack-automation.yaml`:
+
+```yaml
+target_events:
+  - type: app_mention
+    channel_id: C0123456789
+    text: "contains:deploy production"
+  - type: message
+    channel_id: 'oneof:["C0123456789","C9876543210"]'
+    text: "startswith:deploy production"
+  - type: reaction_added
+    channel_id: C0123456789
+    reaction: rocket
+```
+
+Then create the trigger:
+
+```bash
+zenml trigger webhook create on-slack-automation \
+  --webhook slack-events \
+  --config slack-automation.yaml
+```
+
+Via the SDK:
+
+```python
+from zenml.client import Client
+from zenml.webhooks.providers.slack import (
+    AppMentionEventFilter,
+    MessageEventFilter,
+    ReactionAddedEventFilter,
+    SlackWebhookConfiguration,
+)
+
+client = Client()
+trigger = client.create_webhook_trigger(
+    name="on-slack-automation",
+    webhook="slack-events",
+    configuration=SlackWebhookConfiguration(
+        target_events=[
+            AppMentionEventFilter(
+                channel_id="C0123456789",
+                text="contains:deploy production",
+            ),
+            MessageEventFilter(
+                channel_id='oneof:["C0123456789","C9876543210"]',
+                text="startswith:deploy production",
+            ),
+            ReactionAddedEventFilter(
+                channel_id="C0123456789",
+                reaction="rocket",
+            ),
+        ]
+    ),
+)
+```
+
+Each event filter has event-specific optional fields, and all string fields use
+the shared [string filter operators](#string-filter-operators). See the Slack
+provider's [supported events and filters](webhooks/slack.md#supported-events-and-filters)
+for the complete event catalog, subscription scopes, and matching behavior.
+
+### Attach the trigger to a snapshot
+
+A matching webhook trigger dispatches only the snapshots attached to it. In
+CLI commands that accept both resources, the trigger comes first and the
+snapshot second:
+
+```bash
+zenml trigger webhook attach on-main-push <SNAPSHOT_NAME_OR_ID>
+```
+
+Via the SDK:
+
+```python
+from uuid import UUID
+
+client.attach_trigger_to_snapshot(
+    trigger_id=trigger.id,
+    pipeline_snapshot_id=UUID("<SNAPSHOT_UUID>"),
+)
+```
+
+The trigger's `concurrency` setting controls what happens when another matching
+delivery arrives while a run for an attached snapshot is already active.
+
+{% hint style="warning" %}
+Triggered runs may fail before any pipeline steps start if you attach a
+snapshot created with ZenML 0.96.4 or earlier to a trigger type introduced in a
+newer ZenML version. For example, this can happen when you attach an older
+snapshot to a webhook trigger, even if your client and server are up to date.
+
+To avoid this, recreate the snapshot with ZenML 0.96.5 or later before
+attaching it to a newer trigger type. Starting with ZenML 0.96.5, trigger
+execution is forward compatible: snapshots do not need to match the server
+version when new trigger types are introduced.
+{% endhint %}
+
+Send an event from the configured provider, or test the intake path with a
+[signed GitHub mock request](webhooks/github.md#mock-a-signed-github-push) or
+[signed Slack mock request](webhooks/slack.md#mock-a-signed-slack-message).
+Remember that a successful `200` or `202` response confirms webhook intake;
+use trigger dispatch state and pipeline runs to verify downstream execution.
+
+### Access the upstream webhook event
+
+A pipeline run started directly by a webhook trigger stores the provider's
+delivery locator and, when available, its parsed semantic event in the run's
+trigger execution information. Use
+`get_webhook_upstream_event` inside a step to retrieve it as a plain dictionary:
+
+```python
+from zenml import step
+from zenml.utils.trigger_utils import get_webhook_upstream_event
+
+
+@step
+def inspect_webhook_event() -> None:
+    upstream_event = get_webhook_upstream_event()
+    if upstream_event is None:
+        print("This run was not started by a supported webhook event.")
+        return
+
+    github_event = upstream_event.get("github")
+    if github_event is not None:
+        print(f"Provider event type: {github_event['event_type']}")
+        event = github_event["event"]
+        if event is not None:
+            print(f"Semantic event type: {event['type']}")
+        print(f"Delivery ID: {github_event['delivery_id']}")
+```
+
+For example, a GitHub push event has this shape:
+
+```json
+{
+  "github": {
+    "webhook_id": "7f9f38a7-8dd6-4ced-91c8-bf05857838d5",
+    "delivery_id": "delivery-001",
+    "event_type": "push",
+    "event": {
+      "type": "push",
+      "repo": "acme/ml-pipelines",
+      "branch": "main",
+      "actor": "octocat",
+      "commit": {
+        "name": "Update model pipeline",
+        "sha": "abc123"
+      }
+    }
+  }
+}
+```
+
+`event_type` is the provider's raw event type. The nested event `type` is the
+semantic type used by typed webhook targets and can differ from the raw family.
+Optional semantic fields are included with `null` values when unavailable. You
+can also pass an existing pipeline run response to
+`get_webhook_upstream_event(pipeline_run=run)`.
+
+Only runs started directly by a webhook trigger contain this metadata. It is
+not propagated through later platform event triggers. For providers such as
+custom webhooks that do not produce a semantic event, `event` is `null`.
+
+### Access the raw webhook body
+
+When at least one trigger matches an accepted delivery, ZenML retains its
+original JSON body. Use `get_raw_webhook_event` inside a downstream step to
+retrieve it:
+
+```python
+from zenml import step
+from zenml.utils.trigger_utils import get_raw_webhook_event
+
+
+@step
+def inspect_raw_webhook_event() -> None:
+    raw_event = get_raw_webhook_event()
+    if raw_event is None:
+        print("No retained webhook body is available.")
+        return
+
+    print(raw_event["body"])
+```
+
+The returned envelope has the following extensible shape:
+
+```json
+{
+  "body": {
+    "action": "closed",
+    "pull_request": {
+      "body": "Description from the original pull request"
+    }
+  }
+}
+```
+
+You can pass an existing pipeline run response with
+`get_raw_webhook_event(pipeline_run=run)`. The helper returns `None` when the
+run was not started directly by a webhook trigger or when the retained body is
+missing. Reading the body requires read access to its webhook. Request headers
+are not retained in this version.
+
+### Custom webhook triggers
+
+Custom webhooks do not provide a semantic event catalog. An omitted, null, or
+empty `target_events` list preserves the original behavior: every accepted
+delivery matches every active, non-archived custom trigger owned by that
+webhook. Supply a non-empty list of
+[dynamic event filters](#dynamic-event-filters) to filter on `X-ZenML-Event`
+and the custom JSON body.
+
+Create `custom-webhook.yaml` with an empty provider configuration:
+
+```yaml
+{}
+```
+
+Create the trigger with the CLI:
+
+```bash
+zenml trigger webhook create on-custom-event \
+  --webhook custom-events \
+  --config custom-webhook.yaml
+```
+
+Via the SDK:
+
+```python
+from zenml.client import Client
+from zenml.webhooks.providers.custom import CustomWebhookConfiguration
+
+client = Client()
+trigger = client.create_webhook_trigger(
+    name="on-custom-event",
+    webhook="custom-events",
+configuration=CustomWebhookConfiguration(),
+)
+```
+
+For example, this configuration matches only successful publication events for
+one model:
+
+```yaml
+target_events:
+  - type: dynamic
+    event_type: model.published
+    filters:
+      model: fraud-detector
+      successful: "true"
+```
+
+Attach the trigger to a snapshot as shown above, then follow
+[Send a signed event](webhooks/custom.md#send-a-signed-event) to test it.
+
+### Update and inspect webhook triggers
+
+Replace a trigger's complete provider configuration with the CLI:
+
+```bash
+zenml trigger webhook update on-main-push --config github-push.yaml
+```
+
+You can update its active state and concurrency in the same command:
+
+```bash
+zenml trigger webhook update on-main-push \
+  --active false \
+  --concurrency submit
+```
+
+Via the SDK, provider configuration is also a complete replacement:
+
+```python
+from zenml.enums import TriggerRunConcurrency
+from zenml.webhooks.providers.github import (
+    GitHubWebhookConfiguration,
+    PushEvent,
+)
+
+trigger = client.update_webhook_trigger(
+    trigger_name_id_or_prefix="on-main-push",
+    active=True,
+    concurrency=TriggerRunConcurrency.SKIP,
+    configuration=GitHubWebhookConfiguration(
+        target_events=[
+            PushEvent(
+                repo="acme/ml-pipelines",
+                branch="startswith:release/",
+            )
+        ]
+    ),
+)
+```
+
+List or retrieve webhook triggers with:
+
+```bash
+zenml trigger webhook list
+zenml trigger webhook list --webhook-id <WEBHOOK_UUID>
+```
+
+```python
+trigger = client.get_webhook_trigger("on-main-push")
+triggers = client.list_webhook_triggers(webhook_id=trigger.webhook_id)
+```
+
+The attach, detach, delete, and clear-errors operations follow the same trigger
+resource lifecycle described earlier on this page:
+
+```bash
+zenml trigger webhook detach on-main-push <SNAPSHOT_NAME_OR_ID>
+zenml trigger webhook clear-errors on-main-push
+zenml trigger webhook delete on-main-push
+```
+
+Deleting a webhook is blocked while any non-archived trigger references it.
+The default trigger deletion is soft deletion (archival); archived triggers do
+not block subsequent webhook deletion.

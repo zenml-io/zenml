@@ -37,6 +37,7 @@ from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStoreConfig,
 )
 from zenml.client import Client
+from zenml.constants import ENV_ZENML_CUSTOM_SOURCE_ROOT
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
     BaseContainerRegistryConfig,
@@ -48,8 +49,17 @@ from zenml.stack.stack_component import (
     StackComponentConfig,
     StackComponentType,
 )
+from zenml.utils import source_utils
 
 DEFAULT_ENVIRONMENT_NAME = "default"
+
+
+def pytest_configure() -> None:
+    """Prevent the macOS OpenMP preload from reaching child processes."""
+    # macOS consumes this variable before Python starts. Child processes may
+    # use a different architecture or load a different native library stack.
+    if os.environ.get("PYTEST_DYLD_INSERT_LIBRARIES"):
+        os.environ.pop("DYLD_INSERT_LIBRARIES", None)
 
 
 def pytest_addoption(parser):
@@ -110,6 +120,16 @@ def pytest_addoption(parser):
     )
 
 
+def pytest_runtest_logreport(report: pytest.TestReport) -> None:
+    """Log the traceback of attempts that were retried by pytest-rerunfailures.
+
+    Args:
+        report: Test report for a single test phase.
+    """
+    if report.outcome == "rerun" and report.longrepr is not None:
+        print(f"\nRERUN traceback for {report.nodeid}:\n{report.longreprtext}")
+
+
 @pytest.fixture(scope="session", autouse=True)
 def auto_environment(
     session_mocker: MockerFixture,
@@ -165,6 +185,36 @@ def check_module_requirements(
         environment=env,
         client=client,
     )
+
+
+@pytest.fixture
+def isolated_mlflow_environment() -> Generator[None, None, None]:
+    """Restore the process environment and MLflow's global URIs after a test.
+
+    `MLFlowExperimentTracker.configure_mlflow()` writes tracking credentials
+    and Databricks settings into `os.environ`, and `mlflow.set_registry_uri()`
+    additionally exports `MLFLOW_REGISTRY_URI` so that subprocesses inherit
+    it. Without cleanup those values leak into every later test in the same
+    pytest process, including the example subprocesses, which then send model
+    registry requests to Databricks instead of the local backend.
+
+    Yields:
+        Nothing.
+    """
+    import mlflow
+
+    saved_environ = dict(os.environ)
+    try:
+        yield
+    finally:
+        # Reset MLflow's module-level URIs first: `set_tracking_uri(None)`
+        # also unsets `MLFLOW_TRACKING_URI`, so the environment is restored
+        # last. `None` is the state of a fresh process, which is what every
+        # test in the suite may assume.
+        mlflow.set_tracking_uri(None)
+        mlflow.set_registry_uri(None)
+        os.environ.clear()
+        os.environ.update(saved_environ)
 
 
 @pytest.fixture
@@ -241,11 +291,18 @@ def clean_client_with_repo(
     """
     try:
         cwd = os.getcwd()
+        original_source_root = os.environ.pop(
+            ENV_ZENML_CUSTOM_SOURCE_ROOT, None
+        )
+        source_utils.set_custom_source_root(None)
         os.chdir(tmp_path)
         clean_client.initialize(root=tmp_path)
         yield clean_client
     finally:
         os.chdir(cwd)
+        if original_source_root is not None:
+            os.environ[ENV_ZENML_CUSTOM_SOURCE_ROOT] = original_source_root
+            source_utils.set_custom_source_root(original_source_root)
 
 
 @pytest.fixture(scope="module")

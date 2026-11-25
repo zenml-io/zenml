@@ -51,7 +51,6 @@ class DummyEnum(DescribedValuesEnum):
 
 
 def test_described_values_returns_all_values():  # instance doesn't matter
-
     described = DummyEnum.described_values()
     values = {item["value"] for item in described}
 
@@ -70,7 +69,6 @@ def test_missing_descriptions_are_none():
 
 
 def test_pipeline_event_descriptions_cover_all_values():
-
     for target_enum in PLATFORM_EVENT_REGISTRY.values():
         assert len(target_enum.described_values()) > 1
 

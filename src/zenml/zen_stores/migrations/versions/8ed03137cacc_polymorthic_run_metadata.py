@@ -7,7 +7,6 @@ Create Date: 2023-11-17 16:19:34.281692
 """
 
 import sqlalchemy as sa
-import sqlmodel
 from alembic import op
 from sqlmodel import Session
 
@@ -26,11 +25,7 @@ def upgrade() -> None:
         batch_op.add_column(
             sa.Column("resource_type", sa.VARCHAR(length=255), nullable=True)
         )
-        batch_op.add_column(
-            sa.Column(
-                "resource_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
-        )
+        batch_op.add_column(sa.Column("resource_id", sa.Uuid(), nullable=True))
         batch_op.drop_constraint(
             "fk_run_metadata_step_run_id_step_run", type_="foreignkey"
         )
@@ -81,7 +76,7 @@ def upgrade() -> None:
         )
         batch_op.alter_column(
             "resource_id",
-            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            existing_type=sa.Uuid(),
             existing_nullable=True,
             nullable=False,
         )

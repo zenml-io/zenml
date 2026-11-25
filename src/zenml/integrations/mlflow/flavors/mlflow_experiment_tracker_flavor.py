@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """MLflow experiment tracker flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
 from pydantic import Field, model_validator
 
@@ -45,7 +45,7 @@ def is_remote_mlflow_tracking_uri(tracking_uri: str) -> bool:
     ) or is_databricks_tracking_uri(tracking_uri)
 
 
-def is_databricks_tracking_uri(tracking_uri: str) -> bool:
+def is_databricks_tracking_uri(tracking_uri: Optional[str]) -> bool:
     """Checks whether the given tracking uri is a Databricks tracking uri.
 
     Args:
@@ -101,6 +101,18 @@ class MLFlowExperimentTrackerConfig(
         description="Token for authenticating with the MLflow tracking server. "
         "Alternative to username/password authentication for remote tracking URIs.",
     )
+    databricks_client_id: Optional[str] = SecretField(
+        default=None,
+        description="Client ID of the Databricks service principal to use for "
+        "OAuth M2M authentication. Only applies when tracking_uri is set to "
+        "'databricks'.",
+    )
+    databricks_client_secret: Optional[str] = SecretField(
+        default=None,
+        description="Client secret of the Databricks service principal to use "
+        "for OAuth M2M authentication. Only applies when tracking_uri is set "
+        "to 'databricks'.",
+    )
     tracking_insecure_tls: bool = Field(
         False,
         description="Skips verification of TLS connection to the MLflow tracking "
@@ -118,54 +130,156 @@ class MLFlowExperimentTrackerConfig(
     )
 
     @model_validator(mode="after")
-    def _ensure_authentication_if_necessary(
+    def _ensure_complete_credential_pairs(
         self,
     ) -> "MLFlowExperimentTrackerConfig":
-        """Ensures that credentials or a token for authentication exist.
-
-        We make this check when running MLflow tracking with a remote backend.
+        """Ensures that credential pair authentication is complete.
 
         Returns:
             The validated values.
 
         Raises:
-             ValueError: If neither credentials nor a token are provided.
+             ValueError: If only one value of a credential pair is configured.
         """
-        if self.tracking_uri:
-            if is_databricks_tracking_uri(self.tracking_uri):
-                # If the tracking uri is "databricks", then we need the
-                # databricks host to be set.
-                if not self.databricks_host:
-                    raise ValueError(
-                        "MLflow experiment tracking with a Databricks MLflow "
-                        "managed tracking server requires the "
-                        "`databricks_host` to be set in your stack component. "
-                        "To update your component, run "
-                        "`zenml experiment-tracker update "
-                        "<NAME> --databricks_host=DATABRICKS_HOST` "
-                        "and specify the hostname of your Databricks workspace."
-                    )
+        if bool(self.tracking_username) != bool(self.tracking_password):
+            raise ValueError(
+                "MLflow username/password authentication requires both "
+                "`tracking_username` and `tracking_password` to be "
+                "configured."
+            )
 
-            if is_remote_mlflow_tracking_uri(self.tracking_uri):
-                # we need either username + password or a token to authenticate
-                # to the remote backend
-                basic_auth = self.tracking_username and self.tracking_password
-
-                if not (basic_auth or self.tracking_token):
-                    raise ValueError(
-                        f"MLflow experiment tracking with a remote backend "
-                        f"{self.tracking_uri} is only possible when specifying "
-                        f"either username and password or an authentication "
-                        f"token in your stack component. To update your "
-                        f"component, run the following command: "
-                        f"`zenml experiment-tracker update "
-                        f"<NAME> --tracking_username=MY_USERNAME "
-                        f"--tracking_password=MY_PASSWORD "
-                        f"--tracking_token=MY_TOKEN` and specify either your "
-                        f"username and password or token."
-                    )
+        if bool(self.databricks_client_id) != bool(
+            self.databricks_client_secret
+        ):
+            raise ValueError(
+                "Databricks OAuth M2M authentication requires both "
+                "`databricks_client_id` and `databricks_client_secret` to be "
+                "configured."
+            )
 
         return self
+
+    @model_validator(mode="after")
+    def _ensure_databricks_tracking_uri(
+        self,
+    ) -> "MLFlowExperimentTrackerConfig":
+        """Ensures that Databricks-specific options only target Databricks.
+
+        Returns:
+            The validated values.
+
+        Raises:
+             ValueError: If a Databricks option is configured for another URI.
+        """
+        if is_databricks_tracking_uri(self.tracking_uri):
+            return self
+
+        databricks_options = []
+        if self.databricks_host:
+            databricks_options.append("databricks_host")
+        if self.databricks_client_id:
+            databricks_options.append("databricks_client_id")
+        if self.databricks_client_secret:
+            databricks_options.append("databricks_client_secret")
+        if self.enable_unity_catalog:
+            databricks_options.append("enable_unity_catalog")
+
+        if databricks_options:
+            formatted_options = ", ".join(
+                f"`{option}`" for option in databricks_options
+            )
+            raise ValueError(
+                f"Databricks options {formatted_options} require "
+                "`tracking_uri` to be set to `databricks`."
+            )
+
+        return self
+
+    @model_validator(mode="after")
+    def _ensure_databricks_host_if_necessary(
+        self,
+    ) -> "MLFlowExperimentTrackerConfig":
+        """Ensures that Databricks tracking has a workspace host.
+
+        Returns:
+            The validated values.
+
+        Raises:
+             ValueError: If Databricks tracking is missing a host.
+        """
+        if (
+            is_databricks_tracking_uri(self.tracking_uri)
+            and not self.databricks_host
+        ):
+            raise ValueError(
+                "MLflow experiment tracking with a Databricks MLflow "
+                "managed tracking server requires the `databricks_host` to "
+                "be set in your stack component. To update your component, "
+                "run `zenml experiment-tracker update <NAME> "
+                "--databricks_host=DATABRICKS_HOST` and specify the hostname "
+                "of your Databricks workspace."
+            )
+
+        return self
+
+    @model_validator(mode="after")
+    def _ensure_exactly_one_authentication_method_if_necessary(
+        self,
+    ) -> "MLFlowExperimentTrackerConfig":
+        """Ensures that remote tracking uses one authentication method.
+
+        Returns:
+            The validated values.
+
+        Raises:
+             ValueError: If remote tracking has zero or multiple auth methods.
+        """
+        if not self.tracking_uri or not is_remote_mlflow_tracking_uri(
+            self.tracking_uri
+        ):
+            return self
+
+        auth_methods = self._configured_authentication_methods()
+        if len(auth_methods) == 1:
+            return self
+
+        valid_options = (
+            "`tracking_token`, `tracking_username` with `tracking_password`"
+        )
+        if is_databricks_tracking_uri(self.tracking_uri):
+            valid_options = (
+                f"{valid_options}, or `databricks_client_id` with "
+                "`databricks_client_secret`"
+            )
+
+        if not auth_methods:
+            raise ValueError(
+                f"MLflow experiment tracking with remote backend "
+                f"`{self.tracking_uri}` requires exactly one authentication "
+                f"method. Valid options are {valid_options}."
+            )
+
+        raise ValueError(
+            f"MLflow experiment tracking with remote backend "
+            f"`{self.tracking_uri}` requires exactly one authentication "
+            f"method, but received multiple authentication methods: "
+            f"{', '.join(auth_methods)}. Valid options are {valid_options}."
+        )
+
+    def _configured_authentication_methods(self) -> List[str]:
+        """Returns the authentication methods configured on the component.
+
+        Returns:
+            The configured authentication method names.
+        """
+        auth_methods = []
+        if self.tracking_username and self.tracking_password:
+            auth_methods.append("username/password")
+        if self.tracking_token:
+            auth_methods.append("token")
+        if self.databricks_client_id and self.databricks_client_secret:
+            auth_methods.append("Databricks OAuth M2M")
+        return auth_methods
 
     @property
     def is_local(self) -> bool:

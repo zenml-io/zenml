@@ -849,10 +849,11 @@ class MLFlowModelRegistry(BaseModelRegistry):
             )
             model_library = None
 
-        # Handle stage extraction for both MLflow 2.x and 3.x
-        # In MLflow 3.x, current_stage is deprecated but still present
-        # We also store aliases in metadata for 3.x compatibility
-        stage = ModelVersionStage(mlflow_model_version.current_stage)
+        # Alias-based registries can omit the deprecated current stage.
+        if mlflow_model_version.current_stage is None:
+            stage = ModelVersionStage.NONE
+        else:
+            stage = ModelVersionStage(mlflow_model_version.current_stage)
 
         # In MLflow 3.x, also track aliases
         if is_mlflow_3x() and hasattr(mlflow_model_version, "aliases"):

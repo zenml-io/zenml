@@ -178,18 +178,21 @@ def evaluate_and_decide(
 class YourCustomAgent(BaseAgent):
     def __init__(self, prompts: Optional[List[Prompt]] = None):
         super().__init__("YourCustomAgent", prompts)
-    
+
     def process_query(self, query: str) -> AgentResponse:
         # Your implementation here
-        return AgentResponse(text="...", latency_ms=..., confidence=..., tokens_used=...)
-    
+        return AgentResponse(
+            text="...", latency_ms=..., confidence=..., tokens_used=...
+        )
+
     def get_mermaid_diagram(self) -> str:
         """Return HTML with Mermaid diagram for automatic visualization."""
         return """<!DOCTYPE html>..."""
-    
+
     def get_graph_visualization(self) -> str:
         """Return text description for automatic visualization."""
         return "YourCustomAgent Architecture: ..."
+
 
 # Add to the architectures dictionary in run_architecture_comparison()
 # The AgentMaterializer will automatically generate visualizations
@@ -220,21 +223,24 @@ The pipeline automatically uses real LLMs when API keys are detected, with optio
 # The pipeline uses LiteLLM for unified access to 100+ providers
 from litellm import completion
 
-# This works with any provider supported by LiteLLM:
+# OpenAI example using LiteLLM:
 response = completion(
-    model="gpt-3.5-turbo",  # OpenAI
-    # model="claude-3-sonnet",  # Anthropic  
+    model="openai/gpt-5.6-luna",  # OpenAI
+    # model="claude-3-sonnet",  # Anthropic
     # model="groq/llama2-70b-4096",  # Groq
     # model="command-r",  # Cohere
     messages=[{"role": "user", "content": query}],
-    max_tokens=200,
+    max_completion_tokens=512,
+    reasoning_effort="none",  # OpenAI Luna; omit for other providers
     # Langfuse integration (automatic when env vars are set)
-    metadata={"agent_type": "SingleAgentRAG", "query_length": len(query)}
+    metadata={"agent_type": "SingleAgentRAG", "query_length": len(query)},
 )
 ```
 
+The default uses Luna for short customer-service replies, with reasoning disabled so internal reasoning does not consume the completion budget. The 512-token limit leaves headroom for the answer and token overhead. The `openai/` prefix selects the provider even when LiteLLM's model list does not yet include Luna.
+
 **Supported Providers via LiteLLM:**
-- **OpenAI**: `gpt-4`, `gpt-3.5-turbo`
+- **OpenAI**: `openai/gpt-5.6-luna` (default), `openai/gpt-5.6-terra`, `openai/gpt-5.6-sol`
 - **Anthropic**: `claude-3-opus`, `claude-3-sonnet`, `claude-3-haiku`
 - **Groq**: `groq/llama2-70b-4096`, `groq/mixtral-8x7b-32768`
 - **Cohere**: `command-r`, `command-r-plus`
@@ -302,6 +308,7 @@ To make this production-ready:
 5. **Scale Testing**: Run on larger datasets and more architectures
 6. **Add Monitoring**: Track performance degradation over time with Langfuse dashboards
 7. **Implement A/B Testing**: Gradually roll out winning architectures with proper monitoring
+8. **Replay Real Runs**: Import the Langfuse traces of the winning architecture into [Kitaru](https://docs.zenml.io/kitaru) with `kitaru-langfuse-importer` and replay them against your real code with one thing changed, instead of comparing architectures on sample data only ([importing Langfuse traces](https://docs.zenml.io/kitaru/guides/import-langfuse-traces))
 
 ## 🔗 Related Examples
 

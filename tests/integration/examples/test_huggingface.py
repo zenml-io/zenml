@@ -17,7 +17,15 @@ import pytest
 
 from tests.integration.examples.utils import run_example
 
+HF_EXAMPLE_SKIP_REASON = (
+    "Skipped due to CI/network/cache fragility when pulling Hugging Face "
+    "Hub resources."
+)
 
+
+# TODO: Replace these example executions with integration tests that validate
+# the Hugging Face integration in a safer, less Hugging Face Hub-dependent way.
+@pytest.mark.skip(reason=HF_EXAMPLE_SKIP_REASON)
 def test_token_classification(request: pytest.FixtureRequest) -> None:
     """Runs the huggingface token classification example."""
 
@@ -30,6 +38,7 @@ def test_token_classification(request: pytest.FixtureRequest) -> None:
         pass
 
 
+@pytest.mark.skip(reason=HF_EXAMPLE_SKIP_REASON)
 def test_sequence_classification(request: pytest.FixtureRequest) -> None:
     """Runs the huggingface sequence classification example."""
 

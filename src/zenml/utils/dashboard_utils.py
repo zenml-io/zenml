@@ -18,7 +18,6 @@ from typing import Optional
 from urllib.parse import urlparse
 
 from zenml import constants
-from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import EnvironmentType, StoreType
 from zenml.environment import get_environment
@@ -42,6 +41,8 @@ def get_cloud_dashboard_url() -> Optional[str]:
     Returns:
         The base url of the cloud dashboard.
     """
+    from zenml.client import Client
+
     client = Client()
 
     if client.zen_store.type == StoreType.REST:
@@ -59,6 +60,8 @@ def get_server_dashboard_url() -> Optional[str]:
     Returns:
         The server dashboard url.
     """
+    from zenml.client import Client
+
     client = Client()
 
     if client.zen_store.type == StoreType.REST:
@@ -85,15 +88,12 @@ def get_stack_url(stack: StackResponse) -> Optional[str]:
     """
     cloud_url = get_cloud_dashboard_url()
     if cloud_url:
-        # We don't have a stack detail page here, so just link to the filtered
-        # list of stacks.
-        return f"{cloud_url}{constants.STACKS}?id={stack.id}"
+        return f"{cloud_url}{constants.STACKS}/{stack.id}"
 
     base_url = get_server_dashboard_url()
 
     if base_url:
-        # There is no filtering in OSS, we just link to the stack list.
-        return f"{base_url}{constants.STACKS}"
+        return f"{base_url}{constants.STACKS}/{stack.id}"
 
     return None
 

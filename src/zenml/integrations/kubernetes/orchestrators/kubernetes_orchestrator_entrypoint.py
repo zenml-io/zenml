@@ -14,18 +14,18 @@
 """Entrypoint of the Kubernetes master/orchestrator pod."""
 
 import argparse
-import random
 import socket
 import threading
 import time
 from contextlib import nullcontext
-from typing import Any, ContextManager, Dict, List, Optional, Tuple, cast
+from typing import Any, ContextManager, List, Optional, Tuple, cast
 from uuid import UUID
 
 from kubernetes import client as k8s_client
 from kubernetes.client.rest import ApiException
 
 from zenml.client import Client
+from zenml.constants import LINUX_GID_CLAIM_KEY, LINUX_UID_CLAIM_KEY
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
@@ -38,6 +38,7 @@ from zenml.integrations.kubernetes.constants import (
     ORCHESTRATOR_RUN_ID_ANNOTATION_KEY,
     RUN_ID_ANNOTATION_KEY,
     STEP_NAME_ANNOTATION_KEY,
+    WORKSPACE_USER_ID_ANNOTATION_KEY,
 )
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
     KubernetesOrchestratorSettings,
@@ -46,12 +47,6 @@ from zenml.integrations.kubernetes.manifest_utils import (
     build_job_manifest,
     build_pod_manifest,
     pod_template_manifest_from_pod,
-)
-from zenml.integrations.kubernetes.orchestrators.dag_runner import (
-    DagRunner,
-    InterruptMode,
-    Node,
-    NodeStatus,
 )
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import (
     KubernetesOrchestrator,
@@ -65,6 +60,12 @@ from zenml.models import (
     StepRunResponse,
 )
 from zenml.orchestrators import publish_utils
+from zenml.orchestrators.dag_runner import (
+    DagRunner,
+    InterruptMode,
+    Node,
+    NodeStatus,
+)
 from zenml.orchestrators.step_run_utils import (
     StepRunRequestFactory,
     fetch_step_runs_by_names,
@@ -80,6 +81,7 @@ from zenml.utils.logging_utils import (
     is_pipeline_logging_enabled,
     setup_logging_context,
 )
+from zenml.utils.string_utils import random_hex_str
 from zenml.utils.time_utils import utc_now
 
 logger = get_logger(__name__)
@@ -102,6 +104,7 @@ def _get_orchestrator_job_state(
     namespace: str,
     job_name: str,
     api_request_timeout: Optional[int],
+    max_retries: int,
 ) -> Tuple[Optional[UUID], Optional[str]]:
     """Get the existing status of the orchestrator job.
 
@@ -110,6 +113,7 @@ def _get_orchestrator_job_state(
         namespace: The namespace.
         job_name: The name of the orchestrator job.
         api_request_timeout: The request timeout in seconds.
+        max_retries: The maximum number of API request retries.
 
     Returns:
         The run id and orchestrator run id.
@@ -122,6 +126,7 @@ def _get_orchestrator_job_state(
         namespace=namespace,
         job_name=job_name,
         api_request_timeout=api_request_timeout,
+        max_retries=max_retries,
     )
 
     if job.metadata and job.metadata.annotations:
@@ -141,6 +146,7 @@ def _reconstruct_nodes(
     namespace: str,
     batch_api: k8s_client.BatchV1Api,
     api_request_timeout: Optional[int] = None,
+    max_retries: int = 3,
 ) -> List[Node]:
     """Reconstruct the nodes from the pipeline run.
 
@@ -150,6 +156,7 @@ def _reconstruct_nodes(
         namespace: The namespace.
         batch_api: The batch api.
         api_request_timeout: The request timeout in seconds.
+        max_retries: The maximum number of API request retries.
 
     Returns:
         The reconstructed nodes.
@@ -171,6 +178,7 @@ def _reconstruct_nodes(
         namespace=namespace,
         label_selector=f"run_id={pipeline_run.id}",
         api_request_timeout=api_request_timeout,
+        max_retries=max_retries,
     )
     for job in job_list.items:
         annotations = job.metadata.annotations or {}
@@ -221,6 +229,8 @@ def main() -> None:
 
     client = Client()
     snapshot = client.get_snapshot(args.snapshot_id)
+    oidc_claims = client.active_user.oidc_claims
+    workspace_user_id = str(client.active_user.id)
 
     logs_context: ContextManager[Any] = nullcontext()
     if is_pipeline_logging_enabled(snapshot.pipeline_configuration):
@@ -257,6 +267,7 @@ def main() -> None:
             pod_name=orchestrator_pod_name,
             namespace=namespace,
             api_request_timeout=pipeline_settings.api_request_timeout,
+            max_retries=pipeline_settings.max_api_retries,
         )
         if not job_name:
             raise RuntimeError(
@@ -268,6 +279,7 @@ def main() -> None:
             namespace=namespace,
             job_name=job_name,
             api_request_timeout=pipeline_settings.api_request_timeout,
+            max_retries=pipeline_settings.max_api_retries,
         )
 
         if run_id and orchestrator_run_id:
@@ -279,6 +291,7 @@ def main() -> None:
                 namespace=namespace,
                 batch_api=batch_api,
                 api_request_timeout=pipeline_settings.api_request_timeout,
+                max_retries=pipeline_settings.max_api_retries,
             )
             logger.debug("Reconstructed nodes: %s", nodes)
 
@@ -309,6 +322,7 @@ def main() -> None:
                     ORCHESTRATOR_RUN_ID_ANNOTATION_KEY: orchestrator_run_id,
                 },
                 api_request_timeout=pipeline_settings.api_request_timeout,
+                max_retries=pipeline_settings.max_api_retries,
             )
             nodes = [
                 Node(id=step_name, upstream_nodes=step.spec.upstream_steps)
@@ -333,6 +347,7 @@ def main() -> None:
                     pod_name=orchestrator_pod_name,
                     namespace=namespace,
                     api_request_timeout=pipeline_settings.api_request_timeout,
+                    max_retries=pipeline_settings.max_api_retries,
                 )
                 # Make sure None of the owner references are marked as
                 # controllers of the created pod, which messes with the
@@ -347,13 +362,16 @@ def main() -> None:
             pipeline_run=pipeline_run,
             stack=active_stack,
         )
-        step_runs: Dict[str, StepRunResponse] = {}
 
         base_labels = {
-            "project_id": kube_utils.sanitize_label(str(snapshot.project_id)),
-            "run_id": kube_utils.sanitize_label(str(pipeline_run.id)),
-            "run_name": kube_utils.sanitize_label(str(pipeline_run.name)),
-            "pipeline": kube_utils.sanitize_label(
+            "project_id": kube_utils.sanitize_label_value(
+                str(snapshot.project_id)
+            ),
+            "run_id": kube_utils.sanitize_label_value(str(pipeline_run.id)),
+            "run_name": kube_utils.sanitize_label_value(
+                str(pipeline_run.name)
+            ),
+            "pipeline": kube_utils.sanitize_label_value(
                 snapshot.pipeline_configuration.name
             ),
         }
@@ -368,9 +386,7 @@ def main() -> None:
                 step_name
             )
             try:
-                step_run_request_factory.populate_request(
-                    step_run_request, step_runs=step_runs
-                )
+                step_run_request_factory.populate_request(step_run_request)
             except Exception as e:
                 logger.error(
                     f"Failed to populate step run request for step {step_name}: {e}"
@@ -381,38 +397,61 @@ def main() -> None:
                 step_run = publish_cached_step_run(
                     step_run_request, pipeline_run
                 )
-                step_runs[step_name] = step_run
+                step_run_request_factory.record_step_run(step_run)
                 logger.info("Using cached version of step `%s`.", step_name)
                 return True
 
             return False
 
-        def _handle_failed_job(step_name: str) -> NodeStatus:
-            steps = Client().list_run_steps(
-                name=step_name, pipeline_run_id=pipeline_run.id
-            )
-            if steps.total > 0:
-                step_run = steps[0]
+        def _get_latest_step_run(step_name: str) -> Optional[StepRunResponse]:
+            """Get the latest attempt of a step.
 
+            Retrying a step marks all earlier attempts as `RETRIED`, so only
+            the latest attempt reflects the state of the step.
+
+            Args:
+                step_name: The name of the step.
+
+            Returns:
+                The latest step run, or `None` if the step has no step run.
+            """
+            step_runs = Client().list_run_steps(
+                name=step_name,
+                pipeline_run_id=pipeline_run.id,
+                exclude_retried=True,
+                size=1,
+                hydrate=False,
+            )
+            return step_runs.items[0] if step_runs.items else None
+
+        def _resolve_node_status_from_step_run(step_name: str) -> NodeStatus:
+            """Resolve the status of a node whose job failed or is missing.
+
+            The step run takes precedence over the job, because the step
+            publishes its final status before its pod exits.
+
+            Args:
+                step_name: The name of the step.
+
+            Returns:
+                The status of the node.
+            """
+            step_run = _get_latest_step_run(step_name)
+            if step_run:
                 if step_run.status.is_successful:
-                    # If the step run is successful in the DB, we override the
-                    # failed job status.
                     logger.info(
-                        "Found successful step run in the DB for failed job "
-                        "of step `%s`, overriding failed job status.",
+                        "Found successful step run in the DB for step `%s`, "
+                        "ignoring the failed or missing job.",
                         step_name,
                     )
                     return NodeStatus.COMPLETED
-                else:
-                    return NodeStatus.FAILED
+                return NodeStatus.FAILED
 
             step_run_request = step_run_request_factory.create_request(
                 step_name
             )
             try:
-                step_run_request_factory.populate_request(
-                    step_run_request, step_runs=step_runs
-                )
+                step_run_request_factory.populate_request(step_run_request)
             except Exception as e:
                 logger.error(
                     "Failed to populate step run request for step `%s`: %s",
@@ -447,20 +486,23 @@ def main() -> None:
             """
             step_name = node.id
             step_config = snapshot.step_configurations[step_name].config
-            settings = step_config.settings.get(
-                "orchestrator.kubernetes", None
-            )
-            settings = KubernetesOrchestratorSettings.model_validate(
-                settings.model_dump() if settings else {}
+            settings = cast(
+                KubernetesOrchestratorSettings,
+                orchestrator.get_settings(
+                    snapshot.step_configurations[step_name]
+                ),
             )
             if not pipeline_settings.prevent_orchestrator_pod_caching:
                 if _cache_step_run_if_possible(step_name):
                     return NodeStatus.COMPLETED
 
             step_labels = base_labels.copy()
-            step_labels["step_name"] = kube_utils.sanitize_label(step_name)
+            step_labels["step_name"] = kube_utils.sanitize_label_value(
+                step_name
+            )
             step_annotations = {
                 STEP_NAME_ANNOTATION_KEY: step_name,
+                WORKSPACE_USER_ID_ANNOTATION_KEY: workspace_user_id,
             }
 
             step_env = shared_env.copy()
@@ -517,6 +559,11 @@ def main() -> None:
                 mount_local_stores=mount_local_stores,
                 termination_grace_period_seconds=settings.pod_stop_grace_period,
                 labels=step_labels,
+                annotations={
+                    WORKSPACE_USER_ID_ANNOTATION_KEY: workspace_user_id,
+                },
+                run_as_user=oidc_claims.get(LINUX_UID_CLAIM_KEY),
+                run_as_group=oidc_claims.get(LINUX_GID_CLAIM_KEY),
             )
 
             retry_config = step_config.retry
@@ -553,7 +600,7 @@ def main() -> None:
             }
 
             job_name = settings.job_name_prefix or ""
-            random_prefix = "".join(random.choices("0123456789abcdef", k=8))
+            random_prefix = random_hex_str(8)
             job_name += f"-{random_prefix}-{step_name}-{snapshot.pipeline_configuration.name}"
             # The job name will be used as a label on the pods, so we need to make
             # sure it doesn't exceed the label length limit
@@ -594,6 +641,7 @@ def main() -> None:
                 namespace=namespace,
                 job_manifest=job_manifest,
                 api_request_timeout=settings.api_request_timeout,
+                max_retries=settings.max_api_retries,
             )
 
             try:
@@ -626,8 +674,8 @@ def main() -> None:
             step_name = node.id
 
             label_selector = (
-                f"run_id={kube_utils.sanitize_label(str(pipeline_run.id))},"
-                f"step_name={kube_utils.sanitize_label(node.id)}"
+                f"run_id={kube_utils.sanitize_label_value(str(pipeline_run.id))},"
+                f"step_name={kube_utils.sanitize_label_value(node.id)}"
             )
 
             try:
@@ -696,23 +744,21 @@ def main() -> None:
             if node.id in step_run_skip_hb_set:
                 return False
 
-            sr_ = client.list_run_steps(
-                name=node.id, pipeline_run_id=pipeline_run.id, hydrate=False
-            )
+            step_run = _get_latest_step_run(node.id)
 
-            if sr_.items:
+            if step_run:
                 if (
-                    sr_.items[0].heartbeat_threshold is None
+                    step_run.heartbeat_threshold is None
                 ):  # heartbeat disabled/unset - skip next checks
                     step_run_skip_hb_set.add(node.id)
                     return False
 
                 return is_heartbeat_unhealthy(
-                    step_run_id=sr_.items[0].id,
-                    status=sr_.items[0].status,
-                    start_time=sr_.items[0].start_time,
-                    heartbeat_threshold=sr_.items[0].heartbeat_threshold,
-                    latest_heartbeat=sr_.items[0].latest_heartbeat,
+                    step_run_id=step_run.id,
+                    status=step_run.status,
+                    start_time=step_run.start_time,
+                    heartbeat_threshold=step_run.heartbeat_threshold,
+                    latest_heartbeat=step_run.latest_heartbeat,
                 )
 
             return False
@@ -734,30 +780,40 @@ def main() -> None:
                 )
                 return NodeStatus.FAILED
 
-            step_config = snapshot.step_configurations[step_name].config
-            settings = step_config.settings.get(
-                "orchestrator.kubernetes", None
+            settings = cast(
+                KubernetesOrchestratorSettings,
+                orchestrator.get_settings(
+                    snapshot.step_configurations[step_name]
+                ),
             )
-            settings = KubernetesOrchestratorSettings.model_validate(
-                settings.model_dump() if settings else {}
-            )
-            status, error_message = kube_utils.check_job_status(
+            status, status_message = kube_utils.check_job_status(
                 batch_api=batch_api,
                 core_api=core_api,
                 namespace=namespace,
                 job_name=job_name,
                 fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
                 api_request_timeout=settings.api_request_timeout,
+                max_retries=settings.max_api_retries,
             )
             if status == kube_utils.JobStatus.SUCCEEDED:
                 return NodeStatus.COMPLETED
+            elif status == kube_utils.JobStatus.NOT_FOUND:
+                logger.warning(
+                    "Job `%s` for step `%s` no longer exists, using the step "
+                    "run status instead. This usually means that "
+                    "`ttl_seconds_after_finished` is shorter than the time "
+                    "it takes to check all running steps.",
+                    job_name,
+                    step_name,
+                )
+                return _resolve_node_status_from_step_run(step_name)
             elif status == kube_utils.JobStatus.FAILED:
                 logger.error(
                     "Job for step `%s` failed: %s",
                     step_name,
-                    error_message,
+                    status_message,
                 )
-                return _handle_failed_job(step_name)
+                return _resolve_node_status_from_step_run(step_name)
             elif (
                 snapshot.pipeline_configuration.enable_heartbeat
                 and is_node_heartbeat_unhealthy(node)
@@ -769,6 +825,19 @@ def main() -> None:
                 stop_step(node=node)
                 return NodeStatus.FAILED
             else:
+                if status_message:
+                    last_pending_message = node.metadata.get(
+                        "last_pending_status_message"
+                    )
+                    if last_pending_message != status_message:
+                        logger.info(
+                            "Job for step `%s` is pending: %s",
+                            step_name,
+                            status_message,
+                        )
+                        node.metadata["last_pending_status_message"] = (
+                            status_message
+                        )
                 return NodeStatus.RUNNING
 
         def should_interrupt_execution() -> Optional[InterruptMode]:

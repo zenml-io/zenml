@@ -25,6 +25,7 @@ from typing import (
     Any,
     Dict,
     List,
+    Mapping,
     Optional,
     Type,
     Union,
@@ -68,9 +69,9 @@ from zenml.models import (
     StepRunResponse,
     StepRunUpdate,
 )
-from zenml.stack import StackComponent
 from zenml.steps.step_context import get_step_context
 from zenml.utils import source_utils
+from zenml.utils.uuid_utils import to_uuid
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 if TYPE_CHECKING:
@@ -78,6 +79,7 @@ if TYPE_CHECKING:
     from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.metadata.metadata_types import MetadataType
+    from zenml.models import ComponentResponse
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
     MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
@@ -318,6 +320,50 @@ def save_artifact(
     return artifact_version
 
 
+def upload_input_artifact_overrides(
+    overrides: Optional[Mapping[str, Mapping[str, Any]]],
+    artifact_store: Optional["BaseArtifactStore"] = None,
+) -> Dict[str, Dict[str, UUID]]:
+    """Upload input artifact override values to the artifact store.
+
+    Args:
+        overrides: The input artifact overrides to upload.
+        artifact_store: The artifact store to upload to. If not provided, the
+            active stack's artifact store is used.
+
+    Returns:
+        The overrides with values replaced by artifact version IDs.
+    """
+    from zenml.artifacts.external_artifact import ExternalArtifact
+
+    if not overrides:
+        return {}
+
+    processed_overrides: Dict[str, Dict[str, UUID]] = {}
+
+    for outer_key, input_overrides in overrides.items():
+        processed_overrides[outer_key] = {}
+        for input_name, value in input_overrides.items():
+            # UUIDs and existing artifact versions are already uploaded. We
+            # upload everything else to the artifact store.
+            if isinstance(value, UUID):
+                artifact_version_id = value
+            elif isinstance(value, ArtifactVersionResponse):
+                artifact_version_id = value.id
+            elif isinstance(value, ExternalArtifact):
+                artifact_version_id = value.id or value.upload_by_value(
+                    artifact_store=artifact_store
+                )
+            else:
+                artifact_version_id = ExternalArtifact(
+                    value=value
+                ).upload_by_value(artifact_store=artifact_store)
+
+            processed_overrides[outer_key][input_name] = artifact_version_id
+
+    return processed_overrides
+
+
 def register_artifact(
     folder_or_file_uri: str,
     name: str,
@@ -546,21 +592,18 @@ def load_artifact_visualization(
     artifact_store = load_artifact_store(
         artifact_store_id=artifact.artifact_store_id, zen_store=zen_store
     )
-    try:
-        mode = "rb" if visualization.type == VisualizationType.IMAGE else "r"
-        value = _load_file_from_artifact_store(
-            uri=visualization.uri,
-            artifact_store=artifact_store,
-            mode=mode,
-        )
+    mode = "rb" if visualization.type == VisualizationType.IMAGE else "r"
+    value = _load_file_from_artifact_store(
+        uri=visualization.uri,
+        artifact_store=artifact_store,
+        mode=mode,
+    )
 
-        # Encode image visualizations if requested
-        if visualization.type == VisualizationType.IMAGE and encode_image:
-            value = base64.b64encode(bytes(value))
+    # Encode image visualizations if requested
+    if visualization.type == VisualizationType.IMAGE and encode_image:
+        value = base64.b64encode(bytes(value))
 
-        return LoadedVisualization(type=visualization.type, value=value)
-    finally:
-        artifact_store.cleanup()
+    return LoadedVisualization(type=visualization.type, value=value)
 
 
 def load_artifact_from_response(artifact: "ArtifactVersionResponse") -> Any:
@@ -581,6 +624,7 @@ def load_artifact_from_response(artifact: "ArtifactVersionResponse") -> Any:
         data_type=artifact.data_type,
         uri=artifact.uri,
         artifact_store=artifact_store,
+        expected_content_hash=artifact.content_hash,
     )
 
 
@@ -764,6 +808,7 @@ def _load_artifact_from_uri(
     data_type: Union["Source", str],
     uri: str,
     artifact_store: Optional["BaseArtifactStore"] = None,
+    expected_content_hash: Optional[str] = None,
 ) -> Any:
     """Load an artifact using the given materializer.
 
@@ -772,6 +817,8 @@ def _load_artifact_from_uri(
         data_type: The source of the artifact data type.
         uri: The uri of the artifact.
         artifact_store: The artifact store used to store this artifact.
+        expected_content_hash: The content hash recorded for the artifact
+            version.
 
     Returns:
         The artifact loaded into memory.
@@ -820,10 +867,50 @@ def _load_artifact_from_uri(
     materializer_object: BaseMaterializer = materializer_class(
         uri, artifact_store
     )
+    materializer_object.expected_content_hash = expected_content_hash
     artifact = materializer_object.load(artifact_class)
     logger.debug("Artifact loaded successfully.")
 
     return artifact
+
+
+def should_use_artifact_store_cache() -> bool:
+    """Whether the server should serve artifact stores from the cache.
+
+    Returns:
+        Whether the artifact store cache is active.
+    """
+    if ENV_ZENML_SERVER not in os.environ:
+        return False
+
+    from zenml.config.server_config import ServerConfiguration
+
+    return ServerConfiguration.get_server_config().artifact_store_cache_enabled
+
+
+def instantiate_artifact_store(
+    model: "ComponentResponse",
+) -> "BaseArtifactStore":
+    """Return an artifact store for the model, cached when on the server.
+
+    On the server the returned instance is shared across requests, so callers
+    must not call `cleanup()` on it. The cache owns its lifecycle and closes
+    cached stores on server shutdown.
+
+    Args:
+        model: The artifact store component model.
+
+    Returns:
+        A cached or freshly built artifact store instance.
+    """
+    if should_use_artifact_store_cache():
+        from zenml.zen_server.utils import artifact_store_cache
+
+        return artifact_store_cache().get_or_create(model)
+
+    from zenml.stack import StackComponent
+
+    return cast("BaseArtifactStore", StackComponent.from_model(model))
 
 
 def load_artifact_store(
@@ -846,8 +933,7 @@ def load_artifact_store(
         NotImplementedError: If the artifact store could not be loaded.
     """
     client = Client()
-    if isinstance(artifact_store_id, str):
-        artifact_store_id = UUID(artifact_store_id)
+    artifact_store_id = to_uuid(artifact_store_id)
 
     if (
         ENV_ZENML_SERVER not in os.environ
@@ -871,10 +957,7 @@ def load_artifact_store(
         )
 
     try:
-        artifact_store = cast(
-            "BaseArtifactStore",
-            StackComponent.from_model(artifact_store_model),
-        )
+        return instantiate_artifact_store(artifact_store_model)
     except ImportError:
         link = "https://docs.zenml.io/stacks/stack-components/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores"
         raise NotImplementedError(
@@ -882,8 +965,6 @@ def load_artifact_store(
             f"instantiated. This is likely because the artifact store's "
             f"dependencies are not installed. For more information, see {link}."
         )
-
-    return artifact_store
 
 
 def _get_artifact_store_from_response_or_from_active_stack(
@@ -904,10 +985,7 @@ def _get_artifact_store_from_response_or_from_active_stack(
                 component_type=StackComponentType.ARTIFACT_STORE,
                 name_id_or_prefix=artifact.artifact_store_id,
             )
-            return cast(
-                "BaseArtifactStore",
-                StackComponent.from_model(artifact_store_model),
-            )
+            return instantiate_artifact_store(artifact_store_model)
         except KeyError:
             raise RuntimeError(
                 "Unable to fetch the artifact store with id: "
@@ -1039,12 +1117,14 @@ def load_model_from_metadata(model_uri: str) -> Any:
     """
     # Load the model from its metadata
     artifact_versions_by_uri = Client().list_artifact_versions(uri=model_uri)
+    expected_content_hash: Optional[str] = None
     if artifact_versions_by_uri.total == 1:
         artifact_store = (
             _get_artifact_store_from_response_or_from_active_stack(
                 artifact_versions_by_uri.items[0]
             )
         )
+        expected_content_hash = artifact_versions_by_uri.items[0].content_hash
     else:
         artifact_store = Client().active_stack.artifact_store
 
@@ -1059,6 +1139,7 @@ def load_model_from_metadata(model_uri: str) -> Any:
         data_type=data_type,
         uri=model_uri,
         artifact_store=artifact_store,
+        expected_content_hash=expected_content_hash,
     )
 
     # Switch to eval mode if the model is a torch model

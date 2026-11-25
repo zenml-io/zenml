@@ -252,6 +252,61 @@ def update_artifact_version(
         cli_utils.declare(f"Artifact version '{artifact_version.id}' updated.")
 
 
+@version.command("delete", help="Delete an artifact version by ID.")
+@click.argument("artifact_version_id")
+@click.option(
+    "--delete-data",
+    is_flag=True,
+    help="Also delete the artifact data from the artifact store.",
+)
+@click.option(
+    "--server-side",
+    is_flag=True,
+    help="Flag to decide whether the deletion should happen client-side or server-side.",
+)
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Don't ask for confirmation.",
+)
+def delete_artifact_version(
+    artifact_version_id: str,
+    delete_data: bool = False,
+    server_side: bool = False,
+    yes: bool = False,
+) -> None:
+    """Delete an artifact version by ID.
+
+    Args:
+        artifact_version_id: The ID of the artifact version to delete.
+        delete_data: If set, also delete the artifact data from the artifact
+            store.
+        server_side: If set, artifact deletion will happen on the server side.
+        yes: If set, don't ask for confirmation.
+    """
+    if not yes:
+        confirmation = cli_utils.confirmation(
+            f"Are you sure you want to delete artifact version "
+            f"'{artifact_version_id}'?"
+        )
+        if not confirmation:
+            cli_utils.declare("Artifact version deletion canceled.")
+            return
+
+    try:
+        Client().delete_artifact_version(
+            name_id_or_prefix=artifact_version_id,
+            delete_metadata=True,
+            delete_from_artifact_store=delete_data,
+            server_side=server_side,
+        )
+    except Exception as e:
+        cli_utils.exception(e)
+    else:
+        cli_utils.declare(f"Artifact version '{artifact_version_id}' deleted.")
+
+
 @artifact.command(
     "prune",
     help=(
@@ -289,11 +344,17 @@ def update_artifact_version(
     is_flag=True,
     help="Ignore errors and continue with the next artifact version.",
 )
+@click.option(
+    "--server-side",
+    is_flag=True,
+    help="Flag to decide whether the deletion should happen client-side or server-side.",
+)
 def prune_artifacts(
     only_artifact: bool = False,
     only_metadata: bool = False,
     yes: bool = False,
     ignore_errors: bool = False,
+    server_side: bool = False,
 ) -> None:
     """Delete all unused artifacts and artifact versions.
 
@@ -309,6 +370,7 @@ def prune_artifacts(
         yes: If set, don't ask for confirmation.
         ignore_errors: If set, ignore errors and continue with the next
             artifact version.
+        server_side: If set, artifact deletion will happen on the server side.
     """
     client = Client()
     unused_artifact_versions = depaginate(
@@ -334,6 +396,7 @@ def prune_artifacts(
                 name_id_or_prefix=unused_artifact_version.id,
                 delete_metadata=not only_artifact,
                 delete_from_artifact_store=not only_metadata,
+                server_side=server_side,
             )
             unused_artifact = unused_artifact_version.artifact
             if not unused_artifact.versions and not only_artifact:

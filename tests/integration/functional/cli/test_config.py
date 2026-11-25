@@ -14,8 +14,8 @@
 import os
 
 import pytest
-from click.testing import CliRunner
 
+from tests.cli_runner_utils import cli_runner
 from zenml.cli.config import opt_in, opt_out, set_logging_verbosity
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ZENML_LOGGING_VERBOSITY
@@ -32,7 +32,7 @@ def read_global_config():
 def test_analytics_opt_in_amends_global_config():
     """Check to make sure that analytics opt-in amends global config."""
     pre_test_status = GlobalConfiguration().analytics_opt_in
-    runner = CliRunner()
+    runner = cli_runner()
     result = runner.invoke(opt_in)
     assert result.exit_code == 0
     assert read_global_config()["analytics_opt_in"]
@@ -42,7 +42,7 @@ def test_analytics_opt_in_amends_global_config():
 def test_analytics_opt_out_amends_global_config():
     """Check to make sure that analytics opt-out amends global config."""
     pre_test_status = GlobalConfiguration().analytics_opt_in
-    runner = CliRunner()
+    runner = cli_runner()
     result = runner.invoke(opt_out)
     assert result.exit_code == 0
     assert not read_global_config()["analytics_opt_in"]
@@ -55,7 +55,7 @@ def test_set_logging_verbosity_stops_when_not_real_level(
 ) -> None:
     """Check that set_logging_verbosity doesn't run when no real level."""
     pre_test_logging_status = ZENML_LOGGING_VERBOSITY
-    runner = CliRunner()
+    runner = cli_runner()
     result = runner.invoke(set_logging_verbosity, [not_a_level])
     os.environ["ZENML_LOGGING_VERBOSITY"] = pre_test_logging_status
     assert result.exit_code == 2

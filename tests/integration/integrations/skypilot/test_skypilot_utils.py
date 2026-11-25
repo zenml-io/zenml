@@ -95,6 +95,38 @@ def test_create_docker_run_command_rejects_invalid_env_names(
         )
 
 
+def test_create_docker_run_command_propagates_env_when_using_sudo(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Tests env vars reach the container across the sudo boundary."""
+    utils = _load_utils_module(monkeypatch)
+
+    command = utils.create_docker_run_command(
+        image="my-registry.io/test/image:latest",
+        entrypoint_str="python -m zenml.entrypoints.entrypoint",
+        arguments_str="--snapshot_id abc",
+        environment={
+            "ZENML_STORE_URL": "https://server.example",
+            "ZENML_STORE_AUTH_TOKEN": "secret-token",
+        },
+        docker_run_args=[],
+        use_sudo=True,
+    )
+
+    sudo_aware = (
+        "--preserve-env" in command
+        or " -E " in command
+        or "--env-file" in command
+    )
+    assert sudo_aware, (
+        "sudo strips env vars by default; expected one of --preserve-env, "
+        f"-E, or --env-file in the command. Got: {command!r}"
+    )
+
+    assert "https://server.example" not in command
+    assert "secret-token" not in command
+
+
 def test_prepare_resources_kwargs_omits_cloud_region_zone_when_infra_is_set(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

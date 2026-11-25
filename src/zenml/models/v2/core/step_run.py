@@ -34,10 +34,17 @@ from zenml.enums import (
     ArtifactSaveType,
     ExecutionStatus,
     StepRunInputArtifactType,
+    StepRuntime,
     StepType,
 )
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import (
+    DatetimeFilterOption,
+    IntegerFilterOption,
+    StringFilterOption,
+    UUIDFilterOption,
+)
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -59,6 +66,7 @@ if TYPE_CHECKING:
         LogsRequest,
         LogsResponse,
     )
+    from zenml.models.v2.core.pipeline_run import PipelineRunResponse
     from zenml.models.v2.core.resource_request import ResourceRequestResponse
     from zenml.zen_stores.schemas import BaseSchema
 
@@ -176,6 +184,10 @@ class StepRunRequest(ProjectScopedRequest):
         "step run.",
         default=None,
     )
+    resource_request_runtime: Optional[StepRuntime] = Field(
+        title="The runtime mode used to decide resource request semantics.",
+        default=None,
+    )
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -247,6 +259,11 @@ class StepRunResponseBody(ProjectScopedResponseBody):
     model_version_id: Optional[UUID] = Field(
         title="The ID of the model version that was "
         "configured by this step run explicitly.",
+        default=None,
+    )
+    resource_request_id: Optional[UUID] = Field(
+        title="The ID of an externally managed resource request for the "
+        "step run.",
         default=None,
     )
     substitutions: Dict[str, str] = Field(
@@ -328,6 +345,10 @@ class StepRunResponseMetadata(ProjectScopedResponseMetadata):
 class StepRunResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the step run entity."""
 
+    pipeline_run: Optional["PipelineRunResponse"] = Field(
+        title="The pipeline run that this step run belongs to.",
+        default=None,
+    )
     log_collection: Optional[List["LogsResponse"]] = Field(
         title="Logs associated with this step run.",
         default=None,
@@ -678,6 +699,8 @@ class StepRunResponse(
         Returns:
             the value of the property.
         """
+        if self.resources is not None and self.resources.pipeline_run:
+            return self.resources.pipeline_run.id
         return self.get_metadata().pipeline_run_id
 
     @property
@@ -735,6 +758,15 @@ class StepRunResponse(
         return self.get_resources().model_version
 
     @property
+    def resource_request_id(self) -> Optional[UUID]:
+        """The `resource_request_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().resource_request_id
+
+    @property
     def resource_request(self) -> Optional["ResourceRequestResponse"]:
         """The `resource_request` property.
 
@@ -761,66 +793,68 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *RunMetadataFilterMixin.CLI_EXCLUDE_FIELDS,
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
+        *RunMetadataFilterMixin.API_SINGLE_INPUT_PARAMS,
+        "exclude_retried",
+        "cache_expired",
+    ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *RunMetadataFilterMixin.CUSTOM_SORTING_OPTIONS,
     ]
-    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
-        *ProjectScopedFilter.API_MULTI_INPUT_PARAMS,
-        *RunMetadataFilterMixin.API_MULTI_INPUT_PARAMS,
-    ]
 
-    name: Optional[str] = Field(
+    name: StringFilterOption = Field(
         default=None,
         description="Name of the step run",
     )
-    code_hash: Optional[str] = Field(
+    code_hash: StringFilterOption = Field(
         default=None,
         description="Code hash for this step run",
     )
-    cache_key: Optional[str] = Field(
+    cache_key: StringFilterOption = Field(
         default=None,
         description="Cache key for this step run",
     )
-    status: Optional[str] = Field(
+    status: StringFilterOption = Field(
         default=None,
         description="Status of the Step Run",
     )
-    start_time: Optional[Union[datetime, str]] = Field(
+    start_time: DatetimeFilterOption = Field(
         default=None,
         description="Start time for this run",
         union_mode="left_to_right",
     )
-    end_time: Optional[Union[datetime, str]] = Field(
+    end_time: DatetimeFilterOption = Field(
         default=None,
         description="End time for this run",
         union_mode="left_to_right",
     )
-    pipeline_run_id: Optional[Union[UUID, str]] = Field(
+    pipeline_run_id: UUIDFilterOption = Field(
         default=None,
         description="Pipeline run of this step run",
         union_mode="left_to_right",
     )
-    snapshot_id: Optional[Union[UUID, str]] = Field(
+    snapshot_id: UUIDFilterOption = Field(
         default=None,
         description="Snapshot of this step run",
         union_mode="left_to_right",
     )
-    original_step_run_id: Optional[Union[UUID, str]] = Field(
+    original_step_run_id: UUIDFilterOption = Field(
         default=None,
         description="Original id for this step run",
         union_mode="left_to_right",
     )
-    model_version_id: Optional[Union[UUID, str]] = Field(
+    model_version_id: UUIDFilterOption = Field(
         default=None,
         description="Model version associated with the step run.",
         union_mode="left_to_right",
     )
-    model: Optional[Union[UUID, str]] = Field(
+    model: UUIDFilterOption = Field(
         default=None,
         description="Name/ID of the model associated with the step run.",
     )
-    version: Union[int, str, None] = Field(
+    version: IntegerFilterOption = Field(
         default=None,
         description="Version of the step run.",
         union_mode="left_to_right",
@@ -829,7 +863,7 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         default=None,
         description="Whether to exclude retried step runs.",
     )
-    cache_expires_at: Optional[Union[datetime, str]] = Field(
+    cache_expires_at: DatetimeFilterOption = Field(
         default=None,
         description="Cache expiration time of the step run.",
         union_mode="left_to_right",
@@ -863,14 +897,20 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         )
 
         if self.model:
-            model_filter = and_(
-                StepRunSchema.model_version_id == ModelVersionSchema.id,
-                ModelVersionSchema.model_id == ModelSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.model, table=ModelSchema
-                ),
+            model_filters = (
+                self.model if isinstance(self.model, list) else [self.model]
             )
-            custom_filters.append(model_filter)
+            for model_filter in model_filters:
+                custom_filters.append(
+                    and_(
+                        StepRunSchema.model_version_id
+                        == ModelVersionSchema.id,
+                        ModelVersionSchema.model_id == ModelSchema.id,
+                        self.generate_name_or_id_query_conditions(
+                            value=model_filter, table=ModelSchema
+                        ),
+                    )
+                )
 
         if self.exclude_retried:
             custom_filters.append(
@@ -894,6 +934,19 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
 
 
 # ------------------ Heartbeat Model ---------------
+
+
+class StepHeartbeatRequest(BaseModel):
+    """Light-weight model for Step Heartbeat requests."""
+
+    heartbeat_liveness_timeout_seconds: Optional[int] = Field(
+        default=None,
+        gt=0,
+        title=(
+            "Seconds the server should wait before considering the "
+            "heartbeat client dead."
+        ),
+    )
 
 
 class StepHeartbeatResponse(BaseModel, use_enum_values=True):

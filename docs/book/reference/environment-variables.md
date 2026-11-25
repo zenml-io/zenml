@@ -15,11 +15,15 @@ export ZENML_LOGGING_VERBOSITY=INFO
 
 Choose from `INFO`, `WARN`, `ERROR`, `CRITICAL`, `DEBUG`.
 
-## Logging format
+## Console logging format
 
 ```bash
-export ZENML_LOGGING_FORMAT='%(asctime)s %(message)s'
+export ZENML_CONSOLE_LOGGING_FORMAT=console
 ```
+
+Choose from `console` (default), `json`, or any valid Python `%`-style logging format string such as `%(asctime)s - %(message)s` for custom console output. The `console` format uses a default compact layout for client-side `INFO+` logs and full structured text layout for `DEBUG` and server logs. The `json` format emits JSON formatted console/stdout logs.
+
+This controls terminal log formatting only; stored logs keep their raw message and structured metadata. The older `ZENML_LOGGING_FORMAT` environment variable is still supported as a deprecated alias.
 
 See [this page](https://docs.zenml.io/concepts/steps_and_pipelines/logging) for more information.
 
@@ -27,11 +31,21 @@ See [this page](https://docs.zenml.io/concepts/steps_and_pipelines/logging) for 
 
 Usually, ZenML [stores step logs in the artifact store](https://docs.zenml.io/concepts/steps_and_pipelines/logging), but this can sometimes cause performance bottlenecks, especially if the code utilizes progress bars.
 
-If you want to configure whether logged output from steps is stored or not, set the `ZENML_DISABLE_STEP_LOGS_STORAGE` environment variable to `true`. Note that this will mean that logs from your steps will no longer be stored and thus won't be visible on the dashboard anymore.
+If you want to configure whether logged output from steps is stored or not, set the `ZENML_DISABLE_STEP_LOGS_STORAGE` environment variable to `true`. Note that this will mean that logs from your steps will no longer be stored and thus won't be visible on the UI anymore.
 
 ```bash
 export ZENML_DISABLE_STEP_LOGS_STORAGE=true
 ```
+
+## File copy chunk size
+
+When copying files between different filesystems (e.g. uploading or downloading artifacts, models or code archives to/from a remote artifact store), ZenML streams the file in chunks to keep memory usage bounded. The default chunk size is 8 MiB and can be adjusted:
+
+```bash
+export ZENML_FILEIO_COPY_CHUNK_SIZE=16777216  # 16 MiB
+```
+
+Non-positive values are ignored and the default is used instead.
 
 ## ZenML repository path
 
@@ -51,7 +65,7 @@ export ZENML_ANALYTICS_OPT_IN=false
 
 ## Debug mode
 
-Setting to `true` switches to developer mode:
+Setting to `true` switches to developer mode. This redirects all ZenML analytics events to the development ZenML analytics server instead of the official ZenML analytics server. Should not be used in production environments.
 
 ```bash
 export ZENML_DEBUG=true
@@ -83,7 +97,8 @@ export ZENML_ENABLE_RICH_TRACEBACK=true
 
 ## Disable colorful logging
 
-If you wish to disable colorful logging, set the following environment variable:
+Console logs use colors by default. If you wish to disable colorful logging,
+set the following environment variable:
 
 ```bash
 ZENML_LOGGING_COLORS_DISABLED=true
@@ -105,6 +120,46 @@ my_pipeline = my_pipeline.with_options(
 )
 ```
 
+## Server OpenTelemetry export
+
+Set `ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT` to export ZenML server traces, metrics, and logs to an OpenTelemetry-compatible backend using OTLP/HTTP. The standard `OTEL_EXPORTER_OTLP_ENDPOINT` environment variable is also supported as a fallback:
+
+```bash
+export ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+# OR
+# export OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+```
+
+The endpoint should be the base OTLP/HTTP endpoint. ZenML appends `/v1/traces`, `/v1/metrics`, and `/v1/logs` for each signal. Standard per-signal OTLP/HTTP endpoint variables are also supported and take precedence:
+
+```bash
+export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel-collector:4318/v1/traces
+export OTEL_EXPORTER_OTLP_METRICS_ENDPOINT=http://otel-collector:4318/v1/metrics
+export OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
+```
+
+You can use the matching ZenML-specific names instead: `ZENML_SERVER_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`, `ZENML_SERVER_OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`, and `ZENML_SERVER_OTEL_EXPORTER_OTLP_LOGS_ENDPOINT`.
+
+If no base or per-signal endpoint is set, server OpenTelemetry instrumentation is disabled.
+
+Each signal is enabled by default when the endpoint is configured. You can disable individual signals with:
+
+```bash
+export ZENML_SERVER_OTEL_TRACES_ENABLED=false
+export ZENML_SERVER_OTEL_METRICS_ENABLED=false
+export ZENML_SERVER_OTEL_LOGS_ENABLED=false
+```
+
+You can also customize the service name reported in OpenTelemetry resource attributes. The standard `OTEL_SERVICE_NAME` environment variable is supported as well as a fallback. If unset, it defaults to `zenml-server` for self-hosted deployments, or to the ZenML Pro workspace name for cloud deployments.
+
+```bash
+export ZENML_SERVER_OTEL_SERVICE_NAME=zenml-server
+# OR
+# export OTEL_SERVICE_NAME=zenml-server
+```
+
+Standard OTLP headers, timeout, compression, trace sampler, and resource attribute environment variables are handled by the OpenTelemetry Python SDK and OTLP/HTTP exporters where supported. OTLP/gRPC protocol environment variables are not supported because ZenML configures OTLP/HTTP exporters directly. You can read more about the OpenTelemetry environment variables and SDK configuration [here](https://opentelemetry.io/docs/languages/sdk-configuration/).
+
 ## Disable stack validation
 
 If you wish to disable stack validation, set the following environment variable:
@@ -120,6 +175,24 @@ ZenML will by default require the local checkout to have no uncommitted or untra
 in order to use the code repository to track the commit and download files. If you want to ignore untracked files, you can set
 the `ZENML_CODE_REPOSITORY_IGNORE_UNTRACKED_FILES` environment variable to `True`. When doing this, you're responsible that
 the files committed to the repository includes everything necessary to run your pipeline.
+
+## Reproducible generated names
+
+ZenML adds random suffixes to some of the names it generates, for example the names of the jobs it creates on Kubernetes, Vertex AI or SageMaker. It also picks a random color for tags that you create without one. By default, these values don't use Python's `random` module, so generating them doesn't change your code's random state, and the names stay unique even when your code calls `random.seed(...)`.
+
+If you want these values to follow the seed you set in your code, enable:
+
+```bash
+export ZENML_USE_GLOBAL_RANDOM_SEED=true
+```
+
+With this enabled, calling `random.seed(42)` before running a pipeline makes these names and colors repeat from run to run. Keep the following in mind:
+
+* A seed only applies to the Python process that set it. Names that ZenML generates when you submit a pipeline follow the seed you set in that script. Names generated inside your orchestrator or step environments only follow it if your code also sets the seed there, for example at the top of the module that defines your steps. ZenML passes this environment variable on to those environments for you.
+* When you're connected to a ZenML server, tags that you pass to a pipeline, run or artifact are created on the server, so their colors don't follow your seed. Tags that you create with `add_tags` or `Client().create_tag` do.
+* Some services require unique names. Running the same seeded pipeline again can fail if a job with the same name still exists, for example on Vertex AI or Kubernetes.
+* ZenML takes these values from your random sequence, so the random values your code draws afterwards depend on how many names and colors ZenML generated. A tag only gets a color when it's first created, so a run that creates new tags draws more values than later runs that reuse them. Apart from that, this stays the same between runs as long as you use the same stack.
+* Run IDs, run names and artifact paths don't depend on this setting.
 
 ## ZenML global config path
 

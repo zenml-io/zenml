@@ -25,10 +25,12 @@ from typing import (
     List,
     Match,
     Optional,
+    Sequence,
     TypeVar,
     Union,
     cast,
 )
+from uuid import UUID
 
 from pydantic import BaseModel
 from typing_extensions import Self
@@ -279,7 +281,26 @@ def get_runtime_secret_environment(
     # overrides are applied in the correct order.
     secrets = list(reversed(dict.fromkeys(secrets)))
 
-    environment = {}
+    return resolve_secrets(secrets)
+
+
+def resolve_secrets(
+    secrets: Sequence[Union[str, UUID]],
+) -> Dict[str, str]:
+    """Resolves secrets into a flat dictionary.
+
+    If a secret cannot be resolved (doesn't exist, no permissions, no secret
+    values), it is skipped and this function does not fail.
+
+    Secrets later in the input override keys of earlier ones.
+
+    Args:
+        secrets: Secret names or UUIDs to resolve.
+
+    Returns:
+        A dictionary of secret values.
+    """
+    environment: Dict[str, str] = {}
     for secret_name_or_id in secrets:
         try:
             secret = Client().get_secret(secret_name_or_id)

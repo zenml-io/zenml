@@ -15,7 +15,7 @@
 
 import datetime
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 from uuid import UUID
 
 from zenml.config.pipeline_run_configuration import (
@@ -60,6 +60,9 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
+    HookInvocationFilter,
+    HookInvocationRequest,
+    HookInvocationResponse,
     LogsRequest,
     LogsResponse,
     LogsUpdate,
@@ -92,6 +95,8 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineSnapshotFilter,
+    PipelineSnapshotPruneRequest,
+    PipelineSnapshotPruneResponse,
     PipelineSnapshotRequest,
     PipelineSnapshotResponse,
     PipelineSnapshotRunRequest,
@@ -102,6 +107,8 @@ from zenml.models import (
     ProjectResponse,
     ProjectUpdate,
     RunMetadataRequest,
+    RunStatisticsRequest,
+    RunStatisticsResponse,
     RunTemplateFilter,
     RunTemplateRequest,
     RunTemplateResponse,
@@ -147,6 +154,8 @@ from zenml.models import (
     StepRunRequest,
     StepRunResponse,
     StepRunUpdate,
+    StreamBatchRequest,
+    StreamBatchResponse,
     TagFilter,
     TagRequest,
     TagResourceRequest,
@@ -160,6 +169,13 @@ from zenml.models import (
     UserRequest,
     UserResponse,
     UserUpdate,
+    WebhookCreateResponse,
+    WebhookFilter,
+    WebhookRequest,
+    WebhookResponse,
+    WebhookRotateSecretRequest,
+    WebhookSecretResponse,
+    WebhookUpdate,
 )
 from zenml.zen_stores.resource_pools.store_interface import (
     ResourcePoolsStoreInterface,
@@ -239,8 +255,11 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
         """
 
     @abstractmethod
-    def get_store_info(self) -> ServerModel:
+    def get_store_info(self, force_refresh: bool = False) -> ServerModel:
         """Get information about the store.
+
+        Args:
+            force_refresh: Fetch the store information even if it is cached.
 
         Returns:
             Information about the store.
@@ -1324,6 +1343,20 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
         """
 
     @abstractmethod
+    def prune_snapshots(
+        self, prune_request: PipelineSnapshotPruneRequest
+    ) -> PipelineSnapshotPruneResponse:
+        """Counts or deletes old anonymous snapshots that nothing references.
+
+        Args:
+            prune_request: Which snapshots to prune and whether to delete
+                them or only count them.
+
+        Returns:
+            The number of deleted or, for a dry run, eligible snapshots.
+        """
+
+    @abstractmethod
     def run_snapshot(
         self,
         snapshot_id: UUID,
@@ -1641,6 +1674,19 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
         """
 
     @abstractmethod
+    def get_run_statistics(
+        self, request: RunStatisticsRequest
+    ) -> RunStatisticsResponse:
+        """Compute grouped statistics over pipeline runs.
+
+        Args:
+            request: Statistics request.
+
+        Returns:
+            Grouped statistics.
+        """
+
+    @abstractmethod
     def update_run(
         self, run_id: UUID, run_update: PipelineRunUpdate
     ) -> PipelineRunResponse:
@@ -1693,6 +1739,24 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
 
         Returns:
             KeyError: if the pipeline run doesn't exist.
+        """
+
+    @abstractmethod
+    def publish_run_events(
+        self, pipeline_run_id: UUID, batch: StreamBatchRequest
+    ) -> StreamBatchResponse:
+        """Publish a batch of live events to a pipeline run's stream.
+
+        Args:
+            pipeline_run_id: The ID of the run the events belong to.
+            batch: The batch of events to publish.
+
+        Returns:
+            The server-side ingest response.
+
+        Raises:
+            NotImplementedError: If streaming is not configured on the
+                target store.
         """
 
     @abstractmethod
@@ -1781,6 +1845,108 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
 
         Returns:
             None
+        """
+
+    # -------------------- Webhooks ---------------------
+
+    @abstractmethod
+    def create_webhook(self, webhook: WebhookRequest) -> WebhookCreateResponse:
+        """Create a webhook.
+
+        Args:
+            webhook: The webhook creation request.
+
+        Returns:
+            The created webhook and any generated signing secret.
+        """
+
+    @abstractmethod
+    def get_webhook(
+        self, webhook_id: UUID, hydrate: bool = True
+    ) -> WebhookResponse:
+        """Get a webhook.
+
+        Args:
+            webhook_id: The webhook ID.
+            hydrate: Whether to include intake statistics.
+
+        Returns:
+            The webhook.
+        """
+
+    @abstractmethod
+    def list_webhooks(
+        self,
+        filter_model: WebhookFilter,
+        hydrate: bool = False,
+    ) -> Page[WebhookResponse]:
+        """List webhooks.
+
+        Args:
+            filter_model: The webhook filters.
+            hydrate: Whether to include intake statistics.
+
+        Returns:
+            A page of webhooks.
+        """
+
+    @abstractmethod
+    def update_webhook(
+        self,
+        webhook_id: UUID,
+        update: WebhookUpdate,
+    ) -> WebhookResponse:
+        """Update a webhook.
+
+        Args:
+            webhook_id: The webhook ID.
+            update: The webhook update.
+
+        Returns:
+            The updated webhook.
+        """
+
+    @abstractmethod
+    def delete_webhook(self, webhook_id: UUID) -> None:
+        """Delete a webhook and its signing secret.
+
+        Args:
+            webhook_id: The webhook ID.
+        """
+
+    @abstractmethod
+    def rotate_webhook_secret(
+        self,
+        webhook_id: UUID,
+        request: WebhookRotateSecretRequest,
+    ) -> WebhookSecretResponse:
+        """Rotate a webhook signing secret.
+
+        Args:
+            webhook_id: The webhook ID.
+            request: The secret rotation request.
+
+        Returns:
+            The newly active signing secret.
+        """
+
+    @abstractmethod
+    def get_raw_webhook_event(
+        self,
+        webhook_id: UUID,
+        delivery_id: str,
+    ) -> dict[str, Any]:
+        """Get a retained raw webhook event payload.
+
+        Args:
+            webhook_id: The webhook ID.
+            delivery_id: The provider or ZenML delivery ID.
+
+        Returns:
+            The extensible raw webhook event payload.
+
+        Raises:
+            KeyError: If no payload exists.
         """
 
     # -------------------- Triggers ---------------------
@@ -2680,15 +2846,85 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
 
     @abstractmethod
     def update_step_heartbeat(
-        self, step_run_id: UUID
+        self,
+        step_run_id: UUID,
+        heartbeat_liveness_timeout_seconds: Optional[int] = None,
     ) -> StepHeartbeatResponse:
         """Updates a step run heartbeat.
 
         Args:
             step_run_id: The ID of the step to update.
+            heartbeat_liveness_timeout_seconds: Optional number of seconds the
+                server should wait for another heartbeat before considering the
+                heartbeat client dead.
 
         Returns:
             The step heartbeat response.
+        """
+
+    # -------------------- Hook invocations --------------------
+
+    @abstractmethod
+    def create_hook_invocation(
+        self, hook_invocation: HookInvocationRequest
+    ) -> HookInvocationResponse:
+        """Create a hook invocation.
+
+        Args:
+            hook_invocation: The hook invocation to create.
+
+        Returns:
+            The created hook invocation.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
+    @abstractmethod
+    def get_hook_invocation(
+        self, hook_invocation_id: UUID, hydrate: bool = True
+    ) -> HookInvocationResponse:
+        """Get a hook invocation by ID.
+
+        Args:
+            hook_invocation_id: The ID of the hook invocation to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The hook invocation.
+
+        Raises:
+            KeyError: if the hook invocation doesn't exist.
+        """
+
+    @abstractmethod
+    def list_hook_invocations(
+        self,
+        hook_invocation_filter_model: HookInvocationFilter,
+        hydrate: bool = False,
+    ) -> Page[HookInvocationResponse]:
+        """List all hook invocations matching the given filter criteria.
+
+        Args:
+            hook_invocation_filter_model: All filter parameters including
+                pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all hook invocations matching the filter criteria.
+        """
+
+    @abstractmethod
+    def delete_hook_invocation(self, hook_invocation_id: UUID) -> None:
+        """Delete a hook invocation.
+
+        Args:
+            hook_invocation_id: The ID of the hook invocation to delete.
+
+        Raises:
+            KeyError: if the hook invocation doesn't exist.
         """
 
     # -------------------- Users --------------------

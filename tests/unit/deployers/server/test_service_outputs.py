@@ -199,7 +199,9 @@ def test_service_captures_in_memory_outputs(
     )
     monkeypatch.setattr(
         "zenml.deployers.server.service.deployment_snapshot_request_from_source_snapshot",
-        lambda source_snapshot, deployment_parameters: SimpleNamespace(),
+        lambda source_snapshot, run_name, deployment_parameters: (
+            SimpleNamespace()
+        ),
     )
 
     request = BaseDeploymentInvocationRequest(

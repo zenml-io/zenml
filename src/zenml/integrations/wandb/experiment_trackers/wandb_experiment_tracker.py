@@ -14,13 +14,16 @@
 """Implementation for the wandb experiment tracker."""
 
 import os
-from typing import TYPE_CHECKING, Dict, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 
 import wandb
 
 from zenml.constants import METADATA_EXPERIMENT_TRACKER_URL
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
+)
+from zenml.integrations.wandb.experiment_trackers.run_initialization import (
+    build_wandb_initialization,
 )
 from zenml.integrations.wandb.flavors.wandb_experiment_tracker_flavor import (
     WandbExperimentTrackerConfig,
@@ -37,18 +40,6 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 WANDB_API_KEY = "WANDB_API_KEY"
-
-
-def sanitize_tag(tag: str) -> str:
-    """Sanitize a tag to be a valid Wandb tag.
-
-    Args:
-        tag: The tag to sanitize.
-
-    Returns:
-        The sanitized tag.
-    """
-    return tag[:64]
 
 
 class WandbExperimentTracker(BaseExperimentTracker):
@@ -82,15 +73,12 @@ class WandbExperimentTracker(BaseExperimentTracker):
         settings = cast(
             WandbExperimentTrackerSettings, self.get_settings(info)
         )
-        tags = settings.tags + [
-            sanitize_tag(info.run_name),
-            sanitize_tag(info.pipeline.name),
-        ]
-
-        wandb_run_name = (
-            settings.run_name or f"{info.run_name}_{info.pipeline_step_name}"
+        init_kwargs = build_wandb_initialization(
+            config=self.config,
+            settings=settings,
+            info=info,
         )
-        self._initialize_wandb(run_name=wandb_run_name, tags=tags, info=info)
+        self._initialize_wandb(info=info, **init_kwargs)
 
     def get_step_run_metadata(
         self, info: "StepRunInfo"
@@ -103,14 +91,26 @@ class WandbExperimentTracker(BaseExperimentTracker):
         Returns:
             A dictionary of metadata.
         """
+        run_id: Optional[str] = None
+        run_path: Optional[str] = None
         run_url: Optional[str] = None
         run_name: Optional[str] = None
+        run_group: Optional[str] = None
+        run_project: Optional[str] = None
+        run_entity: Optional[str] = None
+        run_job_type: Optional[str] = None
 
         # Try to get the run name and URL from WandB directly
         current_wandb_run = wandb.run
         if current_wandb_run:
-            run_url = current_wandb_run.get_url()
-            run_name = current_wandb_run.name
+            run_id = getattr(current_wandb_run, "id", None)
+            run_path = getattr(current_wandb_run, "path", None)
+            run_url = current_wandb_run.url
+            run_name = getattr(current_wandb_run, "name", None)
+            run_group = getattr(current_wandb_run, "group", None)
+            run_project = getattr(current_wandb_run, "project", None)
+            run_entity = getattr(current_wandb_run, "entity", None)
+            run_job_type = getattr(current_wandb_run, "job_type", None)
 
         # If the URL cannot be retrieved, use the default run URL
         default_run_url = (
@@ -125,11 +125,32 @@ class WandbExperimentTracker(BaseExperimentTracker):
             WandbExperimentTrackerSettings, self.get_settings(info)
         )
         run_name = run_name or settings.run_name or default_run_name
+        default_group = (
+            info.run_name if settings.enable_zenml_metadata else None
+        )
 
-        return {
+        metadata: Dict[str, "MetadataType"] = {
             METADATA_EXPERIMENT_TRACKER_URL: Uri(run_url),
             "wandb_run_name": run_name,
         }
+        optional_metadata = {
+            "wandb_run_id": run_id,
+            "wandb_run_path": run_path,
+            "wandb_project": run_project or self.config.project_name,
+            "wandb_entity": run_entity or self.config.entity,
+            "wandb_group": run_group or settings.group or default_group,
+            "wandb_job_type": run_job_type or settings.job_type,
+            "wandb_url": run_url,
+        }
+        metadata.update(
+            {
+                key: value
+                for key, value in optional_metadata.items()
+                if value is not None
+            }
+        )
+
+        return metadata
 
     def cleanup_step_run(self, info: "StepRunInfo", step_failed: bool) -> None:
         """Stops the Wandb run.
@@ -144,31 +165,24 @@ class WandbExperimentTracker(BaseExperimentTracker):
     def _initialize_wandb(
         self,
         info: "StepRunInfo",
-        run_name: str,
-        tags: List[str],
+        **init_kwargs: Any,
     ) -> None:
         """Initializes a wandb run.
 
         Args:
             info: Step run information.
-            run_name: Name of the wandb run to create.
-            tags: Tags to attach to the wandb run.
+            init_kwargs: Keyword arguments passed to `wandb.init`.
         """
         logger.info(
             f"Initializing wandb with entity {self.config.entity}, project "
-            f"name: {self.config.project_name}, run_name: {run_name}."
+            f"name: {self.config.project_name}, run_name: "
+            f"{init_kwargs.get('name')}."
         )
+        wandb.init(**init_kwargs)
+
         settings = cast(
             WandbExperimentTrackerSettings, self.get_settings(info)
         )
-        wandb.init(
-            entity=self.config.entity,
-            project=self.config.project_name,
-            name=run_name,
-            tags=tags,
-            settings=settings.settings,
-        )
-
         if settings.enable_weave:
             import weave
 

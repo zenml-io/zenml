@@ -133,6 +133,9 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         """
         self.uri = uri
         self._artifact_store = artifact_store
+        # Content hash recorded for the artifact version, set by the loading
+        # machinery before `load` so materializers can validate the stored data.
+        self.expected_content_hash: Optional[str] = None
 
     @property
     def artifact_store(self) -> BaseArtifactStore:

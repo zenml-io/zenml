@@ -109,7 +109,7 @@ Show archived schedules on the CLI:
 zenml pipeline schedule list --is_archived=true
 ```
 
-Sow archived schedules on the SDK:
+Show archived schedules on the SDK:
 
 ```python
 from zenml.client import Client

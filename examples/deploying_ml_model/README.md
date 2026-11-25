@@ -102,6 +102,7 @@ ZenML allows you to deploy pipelines in a real-time API Just decorate your pipel
 from zenml.pipelines import pipeline
 from zenml.config import DeploymentSettings
 
+
 @pipeline(
     settings={
         "deployment": DeploymentSettings(
@@ -123,7 +124,7 @@ The `on_init` hook runs once when your pipeline deploys, loading the model into 
 
 ```python
 @pipeline(
-    on_init=init_model,        # Runs once at startup
+    on_init=init_model,  # Runs once at startup
     on_cleanup=cleanup_model,  # Clean shutdown
 )
 def churn_inference_pipeline(customer_features: Dict) -> Dict:
@@ -135,7 +136,7 @@ def churn_inference_pipeline(customer_features: Dict) -> Dict:
 Use `DeploymentSettings` to configure your HTTP service, including authentication, CORS, and static file serving:
 
 ```python
-settings={
+settings = {
     "deployment": DeploymentSettings(
         app_title="Churn Prediction API",
         dashboard_files_path="ui",  # Serve web UI at root

@@ -710,7 +710,7 @@ service_name = "test_service"
 service_type = ServiceType(
     type="model-serving", flavor="test_flavor", name="test_name"
 )
-service_source = "tests.unit.services.test_service.TestService"
+service_source = "tests.unit.services.test_service.ServiceForTesting"
 admin_state = ServiceState.ACTIVE
 config = {
     "type": "zenml.services.service.ServiceConfig",

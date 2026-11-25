@@ -23,13 +23,14 @@ To run this file locally, execute:
 import logging
 import os
 from asyncio.log import logger
+from contextlib import asynccontextmanager
 from genericpath import isfile
-from typing import Any, List
+from typing import Any, AsyncGenerator, List
 
 from anyio import to_thread
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import ORJSONResponse
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.responses import (
@@ -44,13 +45,13 @@ from zenml.constants import (
     READY,
 )
 from zenml.enums import AuthScheme
-from zenml.models import ServerDeploymentType
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
 from zenml.zen_server.cloud_utils import send_pro_workspace_status_update
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.middleware import add_middlewares
+from zenml.zen_server.otel import configure_otel, otel_span, shutdown_otel
 from zenml.zen_server.routers import (
     artifact_endpoint,
     artifact_version_endpoints,
@@ -60,6 +61,7 @@ from zenml.zen_server.routers import (
     deployment_endpoints,
     devices_endpoints,
     flavors_endpoints,
+    hook_invocations_endpoints,
     logs_endpoints,
     model_versions_endpoints,
     models_endpoints,
@@ -68,8 +70,6 @@ from zenml.zen_server.routers import (
     pipeline_snapshot_endpoints,
     pipelines_endpoints,
     projects_endpoints,
-    resource_pool_subject_policies_endpoints,
-    resource_pools_endpoints,
     resource_requests_endpoints,
     run_metadata_endpoints,
     run_templates_endpoints,
@@ -89,21 +89,31 @@ from zenml.zen_server.routers import (
     tags_endpoints,
     trigger_endpoints,
     users_endpoints,
+    webhook_endpoints,
 )
 from zenml.zen_server.secure_headers import (
     initialize_secure_headers,
 )
 from zenml.zen_server.utils import (
+    cleanup_artifact_store_cache,
     cleanup_request_manager,
+    initialize_artifact_store_cache,
     initialize_feature_gate,
+    initialize_maintenance_executor,
     initialize_rbac,
     initialize_request_manager,
     initialize_resource_pool_store,
     initialize_snapshot_executor,
+    initialize_snapshot_run_dispatcher,
+    initialize_streaming,
     initialize_workload_manager,
     initialize_zen_store,
+    maintenance_executor,
     register_event_handlers,
+    register_webhook_event_handlers,
     server_config,
+    shutdown_snapshot_run_dispatcher,
+    shutdown_streaming,
     snapshot_executor,
     start_event_loop_lag_monitor,
     stop_event_loop_lag_monitor,
@@ -122,22 +132,107 @@ def dashboard_directory() -> str:
     return os.path.join(os.path.dirname(__file__), "dashboard")
 
 
+def _configure_uvicorn_logging() -> None:
+    """Route uvicorn records through the ZenML root logging setup."""
+    # On startup uvicorn installs its own handlers and formatters on three loggers:
+    #
+    #   "uvicorn"        – parent logger (propagate=False by default)
+    #   "uvicorn.error"  – server lifecycle and internal errors
+    #   "uvicorn.access" – per-request access log
+    #
+    # These handlers use uvicorn's own output path. Clear them and let uvicorn
+    # propagate to the root logger so its records are handled by the same
+    # ZenML handlers that render console/JSON output and export logs to OTel.
+    for _uvicorn_logger_name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
+        _uvicorn_logger = logging.getLogger(_uvicorn_logger_name)
+
+        # clear uvicorn handlers to avoid double logging
+        _uvicorn_logger.handlers.clear()
+
+        # propagate uvicorn logs to the root logger
+        _uvicorn_logger.propagate = True
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    """Manage the ZenML server application lifespan.
+
+    Args:
+        app: The FastAPI application instance.
+
+    Yields:
+        None: Control is handed back to FastAPI once initialization completes.
+    """
+    cfg = server_config()
+    # Set the maximum number of worker threads
+    to_thread.current_default_thread_limiter().total_tokens = (
+        cfg.thread_pool_size
+    )
+    # Trace all app initialization before the app starts.
+    with otel_span("zenml.server.initialize"):
+        # IMPORTANT: these need to be run before the fastapi app starts, to
+        # avoid race conditions
+        await initialize_request_manager()
+        initialize_zen_store()
+        initialize_resource_pool_store()
+        service_connector_registry.register_builtin_service_connectors()
+        initialize_rbac()
+        initialize_feature_gate()
+        initialize_workload_manager()
+        initialize_snapshot_executor()
+        initialize_maintenance_executor()
+        await initialize_snapshot_run_dispatcher()
+        initialize_artifact_store_cache()
+        await initialize_streaming()
+        initialize_secure_headers()
+        if cfg.is_pro_server:
+            # Send a workspace status update to the Cloud API to indicate that the
+            # ZenML server is running or to update the version and server URL.
+            send_pro_workspace_status_update()
+
+        if logger.isEnabledFor(logging.DEBUG):
+            start_event_loop_lag_monitor()
+
+        await register_event_handlers()
+        await register_webhook_event_handlers()
+
+    yield
+
+    if logger.isEnabledFor(logging.DEBUG):
+        stop_event_loop_lag_monitor()
+
+    try:
+        snapshot_executor().shutdown(wait=True)
+        maintenance_executor().shutdown(wait=True)
+        await shutdown_snapshot_run_dispatcher()
+        await shutdown_streaming()
+        await cleanup_request_manager()
+        cleanup_artifact_store_cache()
+    finally:
+        # Shutown OTel after all cleanup tasks to ensure shutdown logs/traces are captured, if any.
+        shutdown_otel()
+
+
 app = FastAPI(
     title="ZenML",
     version=zenml.__version__,
     root_path=server_config().root_url_path,
-    default_response_class=ORJSONResponse,
+    lifespan=lifespan,
 )
 
 add_middlewares(app)
+
+# suppress uvicorn access logs
+_configure_uvicorn_logging()
+
+# Configure OpenTelemetry before the app starts
+configure_otel(config=server_config(), app=app)
 
 
 # Customize the default request validation handler that comes with FastAPI
 # to return a JSON response that matches the ZenML API spec.
 @app.exception_handler(RequestValidationError)
-def validation_exception_handler(
-    request: Any, exc: Exception
-) -> ORJSONResponse:
+def validation_exception_handler(request: Any, exc: Exception) -> JSONResponse:
     """Custom validation exception handler.
 
     Args:
@@ -147,54 +242,11 @@ def validation_exception_handler(
     Returns:
         The error response formatted using the ZenML API conventions.
     """
-    return ORJSONResponse(error_detail(exc, ValueError), status_code=422)
-
-
-@app.on_event("startup")
-async def initialize() -> None:
-    """Initialize the ZenML server."""
-    cfg = server_config()
-    # Set the maximum number of worker threads
-    to_thread.current_default_thread_limiter().total_tokens = (
-        cfg.thread_pool_size
-    )
-    # IMPORTANT: these need to be run before the fastapi app starts, to avoid
-    # race conditions
-    await initialize_request_manager()
-    initialize_zen_store()
-    initialize_resource_pool_store()
-    service_connector_registry.register_builtin_service_connectors()
-    initialize_rbac()
-    initialize_feature_gate()
-    initialize_workload_manager()
-    initialize_resource_pool_store()
-    initialize_snapshot_executor()
-    initialize_secure_headers()
-    if cfg.deployment_type == ServerDeploymentType.CLOUD:
-        # Send a workspace status update to the Cloud API to indicate that the
-        # ZenML server is running or to update the version and server URL.
-        send_pro_workspace_status_update()
-
-    if logger.isEnabledFor(logging.DEBUG):
-        start_event_loop_lag_monitor()
-
-    await register_event_handlers()
-
-
-@app.on_event("shutdown")
-async def shutdown() -> None:
-    """Shutdown the ZenML server."""
-    if logger.isEnabledFor(logging.DEBUG):
-        stop_event_loop_lag_monitor()
-    snapshot_executor().shutdown(wait=True)
-    await cleanup_request_manager()
+    return JSONResponse(error_detail(exc, ValueError), status_code=422)
 
 
 DASHBOARD_REDIRECT_URL = None
-if (
-    server_config().dashboard_url
-    and server_config().deployment_type == ServerDeploymentType.CLOUD
-):
+if server_config().dashboard_url and server_config().is_pro_server:
     DASHBOARD_REDIRECT_URL = server_config().dashboard_url
 
 if not DASHBOARD_REDIRECT_URL:
@@ -252,7 +304,7 @@ async def dashboard(request: Request) -> Any:
 
     if not os.path.isfile(os.path.join(dashboard_directory(), "index.html")):
         raise HTTPException(status_code=404)
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="index.html")
 
 
 app.include_router(artifact_endpoint.artifact_router)
@@ -263,6 +315,7 @@ app.include_router(code_repositories_endpoints.router)
 app.include_router(deployment_endpoints.router)
 app.include_router(curated_visualization_endpoints.router)
 app.include_router(flavors_endpoints.router)
+app.include_router(hook_invocations_endpoints.router)
 app.include_router(logs_endpoints.router)
 app.include_router(models_endpoints.router)
 app.include_router(model_versions_endpoints.router)
@@ -295,10 +348,10 @@ app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)
 app.include_router(projects_endpoints.workspace_router)
 app.include_router(projects_endpoints.router)
-app.include_router(resource_pools_endpoints.router)
-app.include_router(resource_pool_subject_policies_endpoints.router)
 app.include_router(resource_requests_endpoints.router)
 app.include_router(trigger_endpoints.router)
+app.include_router(webhook_endpoints.management_router)
+app.include_router(webhook_endpoints.intake_router)
 
 # When the auth scheme is set to EXTERNAL, users cannot be managed via the
 # API.
@@ -373,4 +426,4 @@ async def catch_all(request: Request, file_path: str) -> Any:
 
     # everything else is directed to the index.html file that hosts the
     # single-page application
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="index.html")

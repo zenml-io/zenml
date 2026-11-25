@@ -29,6 +29,13 @@ class _DownloadedRepositoryContext(LocalRepositoryContext):
         root: str,
         commit: str,
     ):
+        """Initialize the downloaded repository context.
+
+        Args:
+            code_repository: The code repository that was downloaded.
+            root: Root path of the downloaded repository.
+            commit: Commit checked out in the downloaded repository.
+        """
         super().__init__(code_repository=code_repository)
         self._root = root
         self._commit = commit

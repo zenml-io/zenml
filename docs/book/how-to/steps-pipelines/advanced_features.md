@@ -53,6 +53,47 @@ model, accuracy = train_classifier.entrypoint(X_train=X_train, y_train=y_train)
 
 You can make this the default behavior by setting the `ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK` environment variable to `True`.
 
+### Step signatures, definitions, and semantic types
+
+A ZenML step is usually written as a normal Python function at module level:
+
+```python
+from zenml import step
+
+@step
+def train_model(dataset_path: str, *, epochs: int = 10) -> None:
+    ...
+```
+
+Keyword-only arguments, like `epochs` in the example above, are supported and
+are treated as normal step inputs. This is useful when you want a call site to be
+explicit about important values. Variadic signatures such as `*args` and
+`**kwargs` are not valid step inputs because ZenML needs to know the step
+interface before the pipeline runs.
+
+For production code, define the underlying Python functions for your steps and
+pipelines at module level. They are easier to import, package, test, and review
+that way. If you need a factory-style pattern, you can wrap those top-level
+functions with `@step` or `@pipeline(dynamic=True)` inside another function, but
+the decorated function itself should still be importable from a module.
+
+You can also add semantic metadata to a step with `step_type`:
+
+```python
+from zenml import step
+from zenml.enums import StepType
+
+@step(step_type=StepType.LLM_CALL)
+def summarize_prompt(prompt: str) -> str:
+    ...
+```
+
+The current step types are `StepType.TOOL_CALL`, `StepType.LLM_CALL`, and
+`StepType.MEMORY_CALL`. Think of this as a label on the step run: it does not
+change how your Python function executes, but it gives the UI, DAG
+metadata, and downstream consumers a clearer story about what kind of work the
+step represents.
+
 ### Asynchronous Pipeline Execution
 
 By default, pipelines run synchronously, with terminal logs displaying as the pipeline builds and runs. You can change this behavior to run pipelines asynchronously (in the background):
@@ -74,6 +115,26 @@ settings:
 ```
 
 You can also configure the orchestrator to always run asynchronously by setting `synchronous=False` in its configuration.
+
+### Async Steps
+
+Step functions can be defined with `async def`. ZenML runs the coroutine to completion when the step executes, so whether a step body is async is invisible at the call site:
+
+```python
+from zenml import step
+
+@step
+async def fetch_data(url: str) -> bytes:
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url)
+        return response.content
+```
+
+An async step behaves like any other step: call it inside a pipeline, pass its outputs downstream, or run several concurrently with [`.submit()`](dynamic_pipelines.md#parallel-step-execution). Submitted async steps run on separate threads, so their `await` points overlap and IO-bound work proceeds in parallel.
+
+{% hint style="warning" %}
+A blocking call inside an async body (`time.sleep`, a synchronous HTTP request, heavy CPU work) stalls that step's event loop and erases the concurrency. Use the async equivalents (`asyncio.sleep`, an async HTTP client) inside async steps.
+{% endhint %}
 
 ### Step Execution Order
 
@@ -102,7 +163,7 @@ This is particularly useful for steps with side effects (like data loading or mo
 ZenML provides three execution modes that control how your orchestrator behaves when a step fails during pipeline execution. These modes are:
 
 - `CONTINUE_ON_FAILURE`: The orchestrator continues executing steps that don't depend on any of the failed steps.
-- `STOP_ON_FAILURE`: The orchestrator allows the running steps to complete, but prevents new steps from starting. 
+- `STOP_ON_FAILURE`: The orchestrator allows the running steps to complete, but prevents new steps from starting.
 - `FAIL_FAST`: The orchestrator stops the run and any running steps immediately when a failure occurs.
 
 You can configure the execution mode of your pipeline in several ways:
@@ -112,7 +173,7 @@ from zenml import pipeline
 from zenml.enums import ExecutionMode
 
 # Use the decorator
-@pipeline(execution_mode=ExecutionMode.CONTINUE_ON_ERROR)
+@pipeline(execution_mode=ExecutionMode.CONTINUE_ON_FAILURE)
 def my_pipeline():
     ...
 
@@ -144,8 +205,30 @@ If steps 2, 3, and 4 execute in parallel and step 2 fails:
 - With `CONTINUE_ON_FAILURE`: Step 1 finishes → Steps 2,3,4 start → Step 2 fails, Steps 3, 4 complete → Step 5 skipped (depends on failed Step 2), Steps 6, 7 run normally → Step 8 is skipped as well.
 
 {% hint style="info" %}
-All three execution modes are currently only supported by the `local`, `local_docker`, and `kubernetes` orchestrator flavors. For any other orchestrator flavor, the default (and only available) behavior is `CONTINUE_ON_FAILURE`. If you would like to see any of the other orchestrators extended to support the other execution modes, reach out to us in [Slack](https://zenml.io/slack-invite). 
+All three execution modes are currently only supported by the `local`, `local_docker`, `kubernetes`, and `modal` orchestrator flavors. For any other orchestrator flavor, the default (and only available) behavior is `CONTINUE_ON_FAILURE`. If you would like to see any of the other orchestrators extended to support the other execution modes, reach out to us in [Slack](https://zenml.io/slack-invite).
 {% endhint %}
+
+#### Execution modes in dynamic pipelines
+
+In [dynamic pipelines](dynamic_pipelines.md), execution modes control what happens when a step launched asynchronously with `step.submit(...)` or `step.map(...)` fails. Dynamic pipelines default to `STOP_ON_FAILURE`, so a failing step surfaces as a failed run unless you opt into another mode.
+
+With `CONTINUE_ON_FAILURE`, the failure of an asynchronous step no longer fails the run:
+
+```python
+from zenml import pipeline, step
+from zenml.enums import ExecutionMode
+
+@pipeline(dynamic=True, execution_mode=ExecutionMode.CONTINUE_ON_FAILURE)
+def my_pipeline() -> None:
+    risky_step.submit()          # if this fails, the run still completes
+    independent_step.submit()    # keeps running regardless
+```
+
+The following rules apply:
+
+- A failed asynchronous step does not fail the run. Independent asynchronous steps keep running and the run completes.
+- Steps that depend on a failed asynchronous step (through its output or `after=...`) are skipped.
+- Awaiting a failed step through `future.result()` or `future.wait()` still raises the step's exception, and a failure in a step that you call synchronously still fails the run.
 
 ### Step Heartbeat
 
@@ -280,7 +363,7 @@ def my_step() -> Tuple[int, ...]:
 
 ## Step output names
 
-By default, ZenML uses the output name `output` for single output steps and `output_0, output_1, ...` for steps with multiple outputs. These output names are used to display your outputs in the dashboard and [fetch them after your pipeline is finished](https://docs.zenml.io/user-guides/tutorial/fetching-pipelines).
+By default, ZenML uses the output name `output` for single output steps and `output_0, output_1, ...` for steps with multiple outputs. These output names are used to display your outputs in the UI and [fetch them after your pipeline is finished](https://docs.zenml.io/user-guides/tutorial/fetching-pipelines).
 
 If you want to use custom output names for your steps, use the `Annotated` type annotation:
 
@@ -302,7 +385,7 @@ def divide(a: int, b: int) -> Tuple[
 ```
 
 {% hint style="info" %}
-If you do not give your outputs custom names, the created artifacts will be named `{pipeline_name}::{step_name}::output` or `{pipeline_name}::{step_name}::output_{i}` in the dashboard. See the [documentation on artifact versioning and configuration](https://docs.zenml.io/user-guides/starter-guide/manage-artifacts) for more information.
+If you do not give your outputs custom names, the created artifacts will be named `{pipeline_name}::{step_name}::output` or `{pipeline_name}::{step_name}::output_{i}` in the UI. See the [documentation on artifact versioning and configuration](https://docs.zenml.io/user-guides/starter-guide/manage-artifacts) for more information.
 {% endhint %}
 
 ## Workflow Patterns
@@ -572,7 +655,7 @@ if __name__ == "__main__":
     )
 
     # Run the fan-out/fan-in pipeline with the snapshot
-    #  You can also get the snapshot ID from the dashboard
+    #  You can also get the snapshot ID from the UI
     fan_out_fan_in_pipeline(snapshot_id=snapshot.id)
 ```
 
@@ -675,82 +758,7 @@ This is particularly useful for steps that interact with external services or re
 
 ### Pipeline and Step Hooks
 
-Hooks allow you to execute custom code at specific points in the pipeline or step lifecycle:
-
-```python
-def success_hook():
-    print(f"Step completed successfully")
-
-def failure_hook(exception: BaseException):
-    print(f"Step failed with error: {str(exception)}")
-
-@step(on_success=success_hook, on_failure=failure_hook)
-def my_step():
-    return 42
-```
-
-The following conventions apply to hooks:
-
-* the success hook takes no arguments
-* the failure hook optionally takes a single `BaseException` typed argument
-
-You can also define hooks at the pipeline level to apply to all steps:
-
-```python
-@pipeline(on_failure=failure_hook, on_success=success_hook)
-def my_pipeline():
-    ...
-```
-
-Step-level hooks take precedence over pipeline-level hooks. Hooks are particularly useful for:
-- Sending notifications when steps fail or succeed
-- Logging detailed information about runs
-- Triggering external workflows based on pipeline state
-
-### Accessing Step Context in Hooks
-
-You can access detailed information about the current run using the step context:
-
-```python
-from zenml import step, get_step_context
-
-def on_failure(exception: BaseException):
-    context = get_step_context()
-    print(f"Failed step: {context.step_run.name}")
-    print(f"Parameters: {context.step_run.config.parameters}")
-    print(f"Exception: {type(exception).__name__}: {str(exception)}")
-    
-    # Access pipeline information
-    print(f"Pipeline: {context.pipeline_run.name}")
-
-@step(on_failure=on_failure)
-def my_step(some_parameter: int = 1):
-    raise ValueError("My exception")
-```
-
-### Using Alerter in Hooks
-
-You can use the [Alerter stack component](https://docs.zenml.io/component-guide/alerters) to send notifications when steps fail or succeed:
-
-```python
-from zenml import get_step_context
-from zenml.client import Client
-
-def on_failure():
-    step_name = get_step_context().step_run.name
-    Client().active_stack.alerter.post(f"{step_name} just failed!")
-```
-
-ZenML provides built-in alerter hooks for common scenarios:
-
-```python
-from zenml.hooks import alerter_success_hook, alerter_failure_hook
-
-@step(on_failure=alerter_failure_hook, on_success=alerter_success_hook)
-def my_step():
-    ...
-```
-
+Run custom code on step and pipeline lifecycle events (`on_start`, `on_end`, `on_success`, `on_failure`) to send notifications, log run details, or trigger external workflows. See the dedicated [Hooks](hooks.md) page for the full hook surface, including signatures, accessing run information, alerter integration, the static-versus-dynamic pipeline behavior, and running custom hooks using `run_hook(...)`.
 
 ## Conclusion
 

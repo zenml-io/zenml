@@ -41,6 +41,11 @@ class KubernetesStepOperatorSettings(BaseSettings):
         default=None,
         description="Pod configuration for step execution containers.",
     )
+    pod_count: PositiveInt = Field(
+        default=1,
+        description="Number of pods the step runs on. Values above 1 are "
+        "only allowed for command steps.",
+    )
     service_account_name: Optional[str] = Field(
         default=None,
         description="Kubernetes service account for step pods. Uses default account if not specified.",
@@ -78,6 +83,11 @@ class KubernetesStepOperatorSettings(BaseSettings):
     api_request_timeout: Optional[PositiveInt] = Field(
         default=None,
         description="Timeout for API requests in seconds. If not specified, no explicit timeout will be set. ",
+    )
+    max_api_retries: NonNegativeInt = Field(
+        default=3,
+        description="Maximum number of retries for failed Kubernetes API "
+        "requests. Set to 0 to disable retries.",
     )
 
     # Deprecated fields

@@ -11,39 +11,37 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Event Handler base functionality."""
+"""Base class for event handlers registered with the dispatcher."""
 
 from abc import ABC, abstractmethod
 
-from zenml.models import PipelineRunResponse
+from zenml.dispatcher.events import Event
 
 
 class EventHandler(ABC):
-    """Abstraction for EventHandler classes."""
+    """Abstract base for handlers registered with `EventDispatcher`."""
 
     @abstractmethod
-    def handle_run_status_update(
-        self,
-        run: PipelineRunResponse,
-    ) -> None:
-        """Handle a status update on a PipelineRun object.
-
-        Note: Status updates are a run-specific concept. This
-        method is non-generalizable across types by design. To support richer events
-        like `creation` or `deletion` of a resource we should extend the interface
-        signature with generic methods.
+    def handle_event(self, event: Event) -> None:
+        """Handle or ignore one dispatched event.
 
         Args:
-            run: A PipelineRunResponse object (with a status change).
+            event: The event envelope.
         """
-        pass
 
-    @staticmethod
-    @abstractmethod
-    async def create() -> "EventHandler":
-        """Factory method.
+    @classmethod
+    async def create(cls) -> "EventHandler":
+        """Factory used by the source loader.
+
+        Needs to be implemented if a handler is specified via
+        `server_config.event_handler_sources`.
+
+        Raises:
+            NotImplementedError: Always.
 
         Returns:
-            An EventHandler instance.
+            Handler instance.
         """
-        pass
+        raise NotImplementedError(
+            f"{cls.__name__}.create() is not implemented."
+        )

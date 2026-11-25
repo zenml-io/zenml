@@ -22,7 +22,7 @@ from zenml.config.compiler import Compiler
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.exceptions import StackValidationError
-from zenml.hooks.hook_validators import resolve_and_validate_hook
+from zenml.hooks.validation import resolve_and_validate_hook
 from zenml.pipelines import pipeline
 
 

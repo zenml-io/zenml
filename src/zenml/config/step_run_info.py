@@ -19,6 +19,7 @@ from uuid import UUID
 from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import StepConfiguration, StepSpec
+from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.logger import get_logger
 from zenml.models import PipelineSnapshotResponse, StepRunResponse
 
@@ -74,7 +75,20 @@ class StepRunInfo(FrozenBaseModel):
                     self.pipeline_step_name,
                 )
                 step_key = None
-        else:
-            step_key = self.pipeline_step_name
 
-        return self.snapshot.build.get_image(component_key=key, step=step_key)
+            try:
+                return self.snapshot.build.get_image(
+                    component_key=key, step=step_key
+                )
+            except KeyError:
+                # An image for the given component/step does not exist. This
+                # really only happens for steps using step operators which are
+                # not mentioned in `pipeline.depends_on`. We try to fallback
+                # to the orchestrator image.
+                return self.snapshot.build.get_image(
+                    component_key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_key
+                )
+
+        return self.snapshot.build.get_image(
+            component_key=key, step=self.pipeline_step_name
+        )

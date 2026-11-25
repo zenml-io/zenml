@@ -36,7 +36,7 @@ from typing import (
     Union,
     overload,
 )
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import psutil
 from pydantic import BaseModel, ValidationError
@@ -48,23 +48,30 @@ from zenml.config.server_config import ServerConfiguration
 from zenml.constants import (
     API,
     ENV_ZENML_SERVER,
-    HEALTH,
     INFO,
-    READY,
     VERSION_1,
 )
-from zenml.exceptions import IllegalOperationError, OAuthError
-from zenml.logger import get_logger
+from zenml.exceptions import (
+    IllegalOperationError,
+    MaxConcurrentTasksError,
+    OAuthError,
+)
+from zenml.logger import get_logger, get_logging_context, logging_context
 from zenml.models.v2.base.scoped import ProjectScopedFilter
 from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_server.feature_gate.feature_gate_interface import (
     FeatureGateInterface,
+)
+from zenml.zen_server.pipeline_execution.snapshot_run_dispatcher import (
+    SnapshotRunDispatcher,
 )
 from zenml.zen_server.pipeline_execution.workload_manager_interface import (
     WorkloadManagerInterface,
 )
 from zenml.zen_server.rbac.rbac_interface import RBACInterface
 from zenml.zen_server.request_management import RequestContext, RequestManager
+from zenml.zen_server.streaming.broadcaster import StreamBroadcaster
+from zenml.zen_server.streaming.brokers.base import StreamBroker
 from zenml.zen_stores.resource_pools.store_interface import (
     ResourcePoolsSQLStoreInterface,
 )
@@ -73,9 +80,13 @@ from zenml.zen_stores.sql_zen_store import SqlZenStore
 if TYPE_CHECKING:
     from fastapi import Request
 
+    from zenml.zen_server.artifact_store_cache import ArtifactStoreCache
     from zenml.zen_server.auth import AuthContext
     from zenml.zen_server.pipeline_execution.utils import (
         BoundedThreadPoolExecutor,
+    )
+    from zenml.zen_server.streaming.run_end_handler import (
+        StreamEndEventHandler,
     )
 
 
@@ -91,7 +102,13 @@ _feature_gate: Optional[FeatureGateInterface] = None
 _workload_manager: Optional[WorkloadManagerInterface] = None
 _resource_pool_store: Optional[ResourcePoolsSQLStoreInterface] = None
 _snapshot_executor: Optional["BoundedThreadPoolExecutor"] = None
+_maintenance_executor: Optional["BoundedThreadPoolExecutor"] = None
+_snapshot_run_dispatcher: Optional[SnapshotRunDispatcher] = None
 _request_manager: Optional[RequestManager] = None
+_stream_broker: Optional[StreamBroker] = None
+_stream_broadcaster: Optional[StreamBroadcaster] = None
+_stream_end_handler: Optional["StreamEndEventHandler"] = None
+_artifact_store_cache: Optional["ArtifactStoreCache"] = None
 _auth_context: ContextVar[Optional["AuthContext"]] = ContextVar(
     "auth_context", default=None
 )
@@ -208,6 +225,136 @@ def initialize_workload_manager() -> None:
             _workload_manager = workload_manager_class()
 
 
+def stream_broker() -> StreamBroker:
+    """Return the initialized stream broker.
+
+    Returns:
+        The active stream broker.
+
+    Raises:
+        RuntimeError: If streaming is disabled.
+    """
+    global _stream_broker
+    if _stream_broker is None:
+        raise RuntimeError(
+            "Stream broker not initialized; streaming is disabled. "
+            "Set `stream_broker_implementation_source` on the server config."
+        )
+    return _stream_broker
+
+
+def stream_broadcaster() -> StreamBroadcaster:
+    """Return the initialized stream broadcaster.
+
+    Returns:
+        The active stream broadcaster.
+
+    Raises:
+        RuntimeError: If streaming is disabled.
+    """
+    global _stream_broadcaster
+    if _stream_broadcaster is None:
+        raise RuntimeError(
+            "Stream broadcaster not initialized. Streaming is disabled. "
+            "Set `stream_broker_implementation_source` on the server config."
+        )
+    return _stream_broadcaster
+
+
+async def initialize_streaming() -> None:
+    """Initialize the live event streaming components.
+
+    Raises:
+        RuntimeError: If the configured broker class can't be loaded or
+            its connectivity probe fails.
+    """
+    global _stream_broker, _stream_broadcaster, _stream_end_handler
+
+    cfg = server_config()
+    source = cfg.stream_broker_implementation_source
+    if not source:
+        return
+
+    from zenml.utils import source_utils
+
+    try:
+        broker_class: Type[StreamBroker] = (
+            source_utils.load_and_validate_class(
+                source=source, expected_class=StreamBroker
+            )
+        )
+    except Exception as exc:
+        raise RuntimeError(
+            f"Could not load stream broker class {source}: {exc}. "
+            "Check `stream_broker_implementation_source` on the server "
+            "config."
+        ) from exc
+
+    try:
+        _stream_broker = broker_class()
+    except Exception as exc:
+        _stream_broker = None
+        raise RuntimeError(
+            f"Could not instantiate stream broker {source}: {exc}"
+        ) from exc
+
+    from zenml.zen_server.streaming.brokers.utils import startup_probe_key
+
+    try:
+        await _stream_broker.latest_id(startup_probe_key())
+    except Exception as exc:
+        broker = _stream_broker
+        _stream_broker = None
+        try:
+            await broker.close()
+        except Exception:
+            logger.debug("Probe-failure broker close errored", exc_info=True)
+        raise RuntimeError(
+            f"Stream broker {source} startup probe failed: {exc}"
+        ) from exc
+
+    _stream_broadcaster = StreamBroadcaster(
+        broker=_stream_broker,
+        max_subscribers_per_stream=cfg.streaming_max_subscribers_per_stream,
+        idle_grace_seconds=cfg.streaming_broadcaster_idle_grace_seconds,
+    )
+
+    from zenml.dispatcher import EventDispatcher
+    from zenml.zen_server.streaming.run_end_handler import (
+        StreamEndEventHandler,
+    )
+
+    _stream_end_handler = StreamEndEventHandler(
+        broker=_stream_broker, loop=asyncio.get_running_loop()
+    )
+    EventDispatcher().register_event_handler(_stream_end_handler)
+
+
+async def shutdown_streaming() -> None:
+    """Cancel broadcaster readers, unregister handlers, close the broker."""
+    global _stream_broker, _stream_broadcaster, _stream_end_handler
+    if _stream_end_handler is not None:
+        from zenml.dispatcher import EventDispatcher
+
+        try:
+            EventDispatcher().unregister_event_handler(_stream_end_handler)
+        except Exception:
+            logger.exception("Error unregistering stream-end handler")
+        _stream_end_handler = None
+    if _stream_broadcaster is not None:
+        try:
+            await _stream_broadcaster.shutdown()
+        except Exception:
+            logger.exception("Error during stream broadcaster shutdown")
+        _stream_broadcaster = None
+    if _stream_broker is not None:
+        try:
+            await _stream_broker.close()
+        except Exception:
+            logger.exception("Error during stream broker close")
+        _stream_broker = None
+
+
 def resource_pool_store() -> ResourcePoolsSQLStoreInterface:
     """Return the initialized resource pool store component.
 
@@ -273,6 +420,136 @@ def initialize_snapshot_executor() -> None:
         max_workers=server_config().max_concurrent_snapshot_runs,
         thread_name_prefix="zenml-snapshot-executor",
     )
+
+
+def maintenance_executor() -> "BoundedThreadPoolExecutor":
+    """Return the initialized maintenance executor.
+
+    Raises:
+        RuntimeError: If the maintenance executor is not initialized.
+
+    Returns:
+        The maintenance executor.
+    """
+    global _maintenance_executor
+    if _maintenance_executor is None:
+        raise RuntimeError("Maintenance executor not initialized")
+
+    return _maintenance_executor
+
+
+def initialize_maintenance_executor() -> None:
+    """Initialize the maintenance executor.
+
+    Maintenance jobs such as pruning scan large tables and are not expected
+    to overlap, so a single worker serializes them per server process and
+    rejects a job while another one is still running.
+    """
+    global _maintenance_executor
+    from zenml.zen_server.pipeline_execution.utils import (
+        BoundedThreadPoolExecutor,
+    )
+
+    _maintenance_executor = BoundedThreadPoolExecutor(
+        max_workers=1,
+        thread_name_prefix="zenml-maintenance-executor",
+    )
+
+
+def submit_maintenance_task(task: Callable[[], Any]) -> str:
+    """Run a task on the maintenance executor.
+
+    The task runs detached from the request that submitted it, so its outcome
+    is only reported through the server logs. Every log record it emits
+    carries the returned task ID and the ID of the submitting request.
+
+    Args:
+        task: The task to run.
+
+    Raises:
+        MaxConcurrentTasksError: If another maintenance task is still running.
+
+    Returns:
+        The ID of the scheduled task.
+    """
+    task_id = str(uuid4())
+    request_id = get_logging_context().get("request_id")
+
+    def _run() -> None:
+        with logging_context(task_id=task_id, request_id=request_id):
+            try:
+                task()
+            except Exception:
+                logger.exception("Maintenance task failed.")
+
+    try:
+        maintenance_executor().submit(_run)
+    except MaxConcurrentTasksError:
+        raise MaxConcurrentTasksError(
+            "Another maintenance task is still running. Retry once it has "
+            "finished."
+        ) from None
+
+    return task_id
+
+
+def snapshot_run_dispatcher() -> SnapshotRunDispatcher:
+    """Return the initialized snapshot run dispatcher.
+
+    Returns:
+        The snapshot run dispatcher.
+
+    Raises:
+        RuntimeError: If the dispatcher is not initialized.
+    """
+    if _snapshot_run_dispatcher is None:
+        raise RuntimeError("Snapshot run dispatcher not initialized")
+    return _snapshot_run_dispatcher
+
+
+async def initialize_snapshot_run_dispatcher() -> None:
+    """Initialize and start the configured snapshot run dispatcher.
+
+    Raises:
+        RuntimeError: If the configured implementation cannot be initialized.
+    """
+    global _snapshot_run_dispatcher
+
+    from zenml.zen_server.pipeline_execution.snapshot_run_dispatcher import (
+        LocalSnapshotRunDispatcher,
+    )
+
+    source = server_config().snapshot_run_dispatcher_implementation_source
+    try:
+        if source:
+            from zenml.utils import source_utils
+
+            dispatcher_class: Type[SnapshotRunDispatcher] = (
+                source_utils.load_and_validate_class(
+                    source=source, expected_class=SnapshotRunDispatcher
+                )
+            )
+            dispatcher = dispatcher_class()
+        else:
+            dispatcher = LocalSnapshotRunDispatcher()
+        await dispatcher.start()
+    except Exception as exc:
+        _snapshot_run_dispatcher = None
+        raise RuntimeError(
+            f"Could not initialize snapshot run dispatcher {source or 'local'}: {exc}"
+        ) from exc
+
+    _snapshot_run_dispatcher = dispatcher
+
+
+async def shutdown_snapshot_run_dispatcher() -> None:
+    """Close the initialized snapshot run dispatcher."""
+    global _snapshot_run_dispatcher
+    if _snapshot_run_dispatcher is None:
+        return
+    dispatcher = _snapshot_run_dispatcher
+    _snapshot_run_dispatcher = None
+    await dispatcher.close()
 
 
 def initialize_zen_store() -> None:
@@ -345,6 +622,111 @@ async def cleanup_request_manager() -> None:
         _request_manager = None
 
 
+def artifact_store_cache() -> "ArtifactStoreCache":
+    """Return the artifact store cache.
+
+    Returns:
+        The artifact store cache.
+
+    Raises:
+        RuntimeError: If the artifact store cache is not initialized.
+    """
+    global _artifact_store_cache
+    if _artifact_store_cache is None:
+        raise RuntimeError("Artifact store cache not initialized")
+    return _artifact_store_cache
+
+
+def initialize_artifact_store_cache() -> None:
+    """Initialize the artifact store cache."""
+    global _artifact_store_cache
+    from zenml.zen_server.artifact_store_cache import ArtifactStoreCache
+
+    _artifact_store_cache = ArtifactStoreCache()
+
+
+def cleanup_artifact_store_cache() -> None:
+    """Cleanup the artifact store cache."""
+    global _artifact_store_cache
+    if _artifact_store_cache is not None:
+        _artifact_store_cache.clear()
+        _artifact_store_cache = None
+
+
+def handle_endpoint_errors(
+    func: Callable[P, R],
+) -> Callable[P, R]:
+    """Translate raised exceptions into FastAPI HTTP responses.
+
+    OAuthError becomes a JSONResponse (it needs to carry its own body
+    schema); HTTPException is re-raised unchanged; anything else is
+    funneled through `http_exception_from_error` so the status code
+    follows the REST_API_EXCEPTIONS mapping. Use this on async endpoints
+    that don't go through `async_fastapi_endpoint_wrapper` (e.g. SSE).
+
+    Args:
+        func: The endpoint function to wrap.
+
+    Returns:
+        The wrapped function.
+    """
+
+    @wraps(func)
+    def wrapped(*args: P.args, **kwargs: P.kwargs) -> R:
+        # Imports kept inside the wrapper: this module is also imported by
+        # the CLI which doesn't ship with the `server` extra.
+        from fastapi import HTTPException
+        from fastapi.responses import JSONResponse
+
+        try:
+            return func(*args, **kwargs)
+        except OAuthError as error:
+            return JSONResponse(  # type: ignore[return-value]
+                status_code=error.status_code,
+                content=error.to_dict(),
+            )
+        except HTTPException:
+            raise
+        except Exception as error:
+            logger.exception("API error")
+            raise http_exception_from_error(error)
+
+    return wrapped
+
+
+def async_handle_endpoint_errors(
+    func: Callable[P, Awaitable[R]],
+) -> Callable[P, Awaitable[R]]:
+    """Async variant of `handle_endpoint_errors`.
+
+    Args:
+        func: The async endpoint function to wrap.
+
+    Returns:
+        The wrapped async function.
+    """
+
+    @wraps(func)
+    async def wrapped(*args: P.args, **kwargs: P.kwargs) -> R:
+        from fastapi import HTTPException
+        from fastapi.responses import JSONResponse
+
+        try:
+            return await func(*args, **kwargs)
+        except OAuthError as error:
+            return JSONResponse(  # type: ignore[return-value]
+                status_code=error.status_code,
+                content=error.to_dict(),
+            )
+        except HTTPException:
+            raise
+        except Exception as error:
+            logger.exception("API error")
+            raise http_exception_from_error(error)
+
+    return wrapped
+
+
 @overload
 def async_fastapi_endpoint_wrapper(
     func: Callable[P, R],
@@ -384,32 +766,12 @@ def async_fastapi_endpoint_wrapper(
     """
 
     def decorator(func: Callable[P, R]) -> Callable[P, Awaitable[Any]]:
+        translated = handle_endpoint_errors(func)
+
         @wraps(func)
         async def async_decorated(*args: P.args, **kwargs: P.kwargs) -> Any:
-            @wraps(func)
-            def decorated(*args: P.args, **kwargs: P.kwargs) -> Any:
-                # These imports can't happen at module level as this module is also
-                # used by the CLI when installed without the `server` extra
-                from fastapi import HTTPException
-                from fastapi.responses import JSONResponse
-
-                try:
-                    return func(*args, **kwargs)
-                except OAuthError as error:
-                    # The OAuthError is special because it needs to have a JSON response
-                    return JSONResponse(
-                        status_code=error.status_code,
-                        content=error.to_dict(),
-                    )
-                except HTTPException:
-                    raise
-                except Exception as error:
-                    logger.exception("API error")
-                    http_exception = http_exception_from_error(error)
-                    raise http_exception
-
             return await request_manager().execute(
-                decorated,
+                translated,
                 deduplicate,
                 *args,
                 **kwargs,
@@ -462,9 +824,10 @@ def make_dependable(cls: Type[BaseModel]) -> Callable[..., Any]:
             raise HTTPException(422, detail=detail)
 
     params = {v.name: v for v in inspect.signature(cls).parameters.values()}
-    query_params = getattr(cls, "API_MULTI_INPUT_PARAMS", [])
-    for qp in query_params:
-        if qp in params:
+    single_input_params = getattr(cls, "API_SINGLE_INPUT_PARAMS", [])
+
+    for qp in params.keys():
+        if qp not in single_input_params:
             params[qp] = inspect.Parameter(
                 name=params[qp].name,
                 default=Query(params[qp].default),
@@ -534,6 +897,25 @@ def verify_admin_status_if_no_rbac(
     return
 
 
+def get_request_path(request: "Request") -> str:
+    """Return the routed request path, immune to Host-header poisoning.
+
+    Security checks must not use ``request.url.path``. Starlette rebuilds
+    ``request.url`` from the (unvalidated) ``Host`` header, so a crafted Host
+    header can make ``request.url.path`` differ from the path the router
+    actually dispatched to (CVE-2026-48710 / GHSA-86qp-5c8j-p5mr). The raw ASGI
+    ``scope["path"]`` is the value routing uses and the Host header cannot
+    influence it, so it is the only safe basis for a path-based decision.
+
+    Args:
+        request: The incoming request.
+
+    Returns:
+        The raw ASGI path that routing dispatched to.
+    """
+    return str(request.scope["path"])
+
+
 def is_user_request(request: "Request") -> bool:
     """Determine if the incoming request is a user request.
 
@@ -559,18 +941,17 @@ def is_user_request(request: "Request") -> bool:
 
     user_prefix = f"{API}{VERSION_1}"
     excluded_user_apis = [INFO]
+    path = get_request_path(request)
     # Check if this is not an excluded endpoint
-    if request.url.path in [
-        user_prefix + suffix for suffix in excluded_user_apis
-    ]:
+    if path in [user_prefix + suffix for suffix in excluded_user_apis]:
         return False
 
     # Check if this is other user request
-    if request.url.path.startswith(user_prefix):
+    if path.startswith(user_prefix):
         return True
 
     # Exclude system paths
-    if any(request.url.path.startswith(path) for path in system_paths):
+    if any(path.startswith(system_path) for system_path in system_paths):
         return False
 
     # Exclude requests with specific headers
@@ -693,12 +1074,30 @@ if sys.platform != "win32":
         pass
 
 
-def get_system_metrics() -> Dict[str, Any]:
-    """Get comprehensive system metrics.
+def get_system_metrics(
+    logger: Optional[logging.Logger] = None,
+    log_level: int = logging.DEBUG,
+) -> Dict[str, Any]:
+    """Get comprehensive system metrics for enabled log records.
+
+    Metrics are only collected when the provided logger, or this module's
+    logger when omitted, is enabled for ``log_level``. This keeps debug-only
+    structured fields cheap when debug logging is disabled.
+
+    Args:
+        logger: Logger whose logging level decides whether metrics are
+            collected.
+        log_level: Logging level that must be enabled to collect metrics.
+            Defaults to ``logging.DEBUG``.
 
     Returns:
-        Dict containing system metrics
+        Dict containing system metrics, or an empty dict if ``log_level`` is
+        not enabled.
     """
+    active_logger = logger or get_logger(__name__)
+    if not active_logger.isEnabledFor(log_level):
+        return {}
+
     # Get active requests count
     from zenml.zen_server.middleware import active_requests_count
 
@@ -727,29 +1126,6 @@ def get_system_metrics() -> Dict[str, Any]:
         "current_thread_name": current_thread_name,
         "current_thread_id": current_thread_id,
     }
-
-
-def get_system_metrics_log_str(request: Optional["Request"] = None) -> str:
-    """Get the system metrics as a string for logging.
-
-    Args:
-        request: The request object.
-
-    Returns:
-        The system metrics as a string for debugging logging.
-    """
-    if not logger.isEnabledFor(logging.DEBUG):
-        return ""
-    if request and request.url.path in [HEALTH, READY]:
-        # Don't log system metrics for health and ready endpoints to keep them
-        # fast
-        return ""
-    metrics = get_system_metrics()
-    return (
-        " [ "
-        + " ".join([f"{key}: {value}" for key, value in metrics.items()])
-        + " ]"
-    )
 
 
 event_loop_lag_monitor_task: Optional[asyncio.Task[None]] = None
@@ -832,7 +1208,8 @@ async def register_event_handlers() -> None:
             try:
                 event_handler_cls: type[EventHandler] = (
                     source_utils.load_and_validate_class(
-                        source=source, expected_class=EventHandler
+                        source=source,
+                        expected_class=EventHandler,
                     )
                 )
             except Exception as exc:
@@ -849,3 +1226,28 @@ async def register_event_handlers() -> None:
                         f"Failed to register event handler {source}",
                         exc_info=exc,
                     )
+
+
+async def register_webhook_event_handlers() -> None:
+    """Load and register process-wide webhook event handlers."""
+    from zenml.dispatcher import EventDispatcher
+    from zenml.utils import source_utils
+    from zenml.webhooks import WebhookEventHandler
+
+    for source in server_config().webhook_event_handler_sources:
+        logger.info("Registering webhook event handler %s", source)
+        try:
+            handler_cls: type[WebhookEventHandler] = (
+                source_utils.load_and_validate_class(
+                    source=source,
+                    expected_class=WebhookEventHandler,
+                )
+            )
+            handler = await handler_cls.create()
+            EventDispatcher().register_event_handler(handler)
+        except Exception as exc:
+            logger.exception(
+                "Failed to register webhook event handler %s",
+                source,
+                exc_info=exc,
+            )

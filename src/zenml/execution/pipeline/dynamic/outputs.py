@@ -14,8 +14,10 @@
 """Dynamic pipeline execution outputs."""
 
 import threading
+import time
 from abc import ABC, abstractmethod
 from concurrent.futures import Future
+from contextlib import AbstractContextManager, nullcontext
 from typing import (
     Any,
     Generic,
@@ -30,13 +32,67 @@ from typing import (
 from uuid import UUID
 
 from zenml.enums import ExecutionStatus
+from zenml.exceptions import StepExecutionException
 from zenml.logger import get_logger
-from zenml.models import ArtifactVersionResponse, StepRunResponse
+from zenml.models import (
+    ArtifactVersionResponse,
+    PipelineRunResponse,
+    StepRunResponse,
+)
 from zenml.utils import exception_utils
 
 logger = get_logger(__name__)
 
 T = TypeVar("T")
+
+
+def wrap_step_failure(
+    exception: BaseException, invocation_id: Optional[str] = None
+) -> StepExecutionException:
+    """Wrap a step failure that was not explicitly awaited.
+
+    Args:
+        exception: The original step failure.
+        invocation_id: The invocation ID of the failed step, if known.
+
+    Returns:
+        The exception unchanged if it already is a `StepExecutionException`,
+        otherwise a new `StepExecutionException` chaining the original.
+    """
+    if isinstance(exception, StepExecutionException):
+        return exception
+
+    if invocation_id:
+        message = f"Step `{invocation_id}` failed."
+    else:
+        message = "A step failed during pipeline execution."
+
+    wrapped = StepExecutionException(message, original_exception=exception)
+    wrapped.__cause__ = exception
+    wrapped.__suppress_context__ = True
+    return wrapped
+
+
+def _maybe_release_pipeline_thread() -> AbstractContextManager[None]:
+    """Release the current runner's pipeline thread for the duration.
+
+    Returns a no-op context manager when called outside a dynamic
+    pipeline run context, or when called from a non-pipeline thread.
+
+    Returns:
+        A context manager that releases the runner's pipeline thread.
+    """
+    from zenml.execution.pipeline.dynamic.run_context import (
+        DynamicPipelineRunContext,
+    )
+
+    context = DynamicPipelineRunContext.get()
+    if context is None:
+        return nullcontext()
+    runner = context.runner
+    if threading.get_ident() != runner._state.id:
+        return nullcontext()
+    return runner._state.release()
 
 
 class OutputArtifact(ArtifactVersionResponse):
@@ -83,6 +139,11 @@ class OutputArtifact(ArtifactVersionResponse):
 
 
 StepRunOutputs = Union[None, OutputArtifact, Tuple[OutputArtifact, ...]]
+PipelineRunOutputs = Union[
+    None,
+    ArtifactVersionResponse,
+    Tuple[ArtifactVersionResponse, ...],
+]
 
 
 class BaseFuture(ABC):
@@ -199,22 +260,10 @@ class _IsolatedStepFuture(BaseFuture):
         Returns:
             The result of the step future.
         """  # noqa: DOC503
-        from zenml.execution.pipeline.dynamic.utils import (
-            wait_for_step_to_finish,
-        )
-
         if self._finished_step_run is not None:
             step_run = self._finished_step_run
         else:
-            if self._wrapped:
-                # We first wait until the step run is submitted and only then
-                # start monitoring the actual step.
-                self._wrapped.result()
-
-            step_run = wait_for_step_to_finish(
-                pipeline_run_id=self.pipeline_run_id,
-                step_name=self.invocation_id,
-            )
+            step_run = self._wait_for_step_to_finish()
             self._finished_step_run = step_run
 
         if (
@@ -230,6 +279,44 @@ class _IsolatedStepFuture(BaseFuture):
             )
 
         return step_run
+
+    def _wait_for_step_to_finish(self) -> "StepRunResponse":
+        """Wait until the step is finished.
+
+        Returns:
+            The finished step run.
+        """
+        from zenml.execution.pipeline.dynamic.utils import get_latest_step_run
+
+        sleep_interval = 1
+        max_sleep_interval = 64
+
+        while True:
+            # Re-check the wrapped future in case it got replaced.
+            if wrapped := self._wrapped:
+                wrapped.result()
+
+            step_run = get_latest_step_run(
+                self.pipeline_run_id, self.invocation_id, hydrate=False
+            )
+            # If a step is in `retrying` status, another step run will be
+            # created and we will try to pick it up in the next iteration.
+            if step_run.status not in {
+                ExecutionStatus.PROVISIONING,
+                ExecutionStatus.RUNNING,
+                ExecutionStatus.RETRYING,
+            }:
+                return step_run
+
+            logger.debug(
+                "Waiting for step `%s` to finish (current status: %s)",
+                self.invocation_id,
+                step_run.status,
+            )
+
+            time.sleep(sleep_interval)
+            if sleep_interval < max_sleep_interval:
+                sleep_interval *= 2
 
 
 StepExecutionFuture = Union[_InlineStepFuture, _IsolatedStepFuture]
@@ -362,7 +449,7 @@ class ArtifactFuture(BaseStepFuture):
         )
 
         step_run = self._parent._wait()
-        result = load_step_run_outputs(step_run.id)
+        result = load_step_run_outputs(step_run)
 
         if isinstance(result, OutputArtifact):
             return result
@@ -487,7 +574,7 @@ class StepFuture(BaseStepFuture):
         )
 
         step_run = self._wait()
-        return load_step_run_outputs(step_run.id)
+        return load_step_run_outputs(step_run)
 
     def load(self, disable_cache: bool = False) -> Any:
         """Get the step run output artifact data.
@@ -589,15 +676,25 @@ class StepFuture(BaseStepFuture):
         """
         return self._startup.result().result()
 
-    def _set_startup_result(
-        self, wrapped: Union[_InlineStepFuture, _IsolatedStepFuture]
-    ) -> None:
+    def _set_startup_result(self, wrapped: StepExecutionFuture) -> None:
         """Store the future that represents the started step.
 
         Args:
             wrapped: The future that represents the started step.
         """
         self._startup.set_result(wrapped)
+
+    def _rebind_execution_future(self, future: StepExecutionFuture) -> None:
+        """Rebind the execution future to a new attempt of the step.
+
+        Args:
+            future: The future that represents the new step execution attempt.
+        """
+        existing_future = self._startup.result()
+        assert isinstance(future, _IsolatedStepFuture)
+        assert isinstance(existing_future, _IsolatedStepFuture)
+
+        existing_future._wrapped = future._wrapped
 
     def _set_startup_failed(self, exception: BaseException) -> None:
         """Store a startup exception for the step.
@@ -614,6 +711,198 @@ class StepFuture(BaseStepFuture):
             exception: The cancellation exception to store.
         """
         self._set_startup_failed(exception)
+
+
+class PipelineFuture(BaseFuture):
+    """Future for a child pipeline run output."""
+
+    def __init__(
+        self,
+        invocation_id: str,
+        declared_output_names: Optional[List[str]] = None,
+    ) -> None:
+        """Initialize the future.
+
+        Args:
+            invocation_id: Invocation ID of the child pipeline node.
+            declared_output_names: Output names declared on the child pipeline
+                entrypoint (from its return-type annotation). Empty if the
+                entrypoint is unannotated; in that case effective names are
+                derived from the actual outputs after execution.
+        """
+        self._invocation_id = invocation_id
+        self._startup = _StartupResult[Future[PipelineRunResponse]]()
+        self._declared_output_names = declared_output_names or []
+
+    @property
+    def invocation_id(self) -> str:
+        """Invocation ID of this child pipeline future.
+
+        Returns:
+            The invocation ID.
+        """
+        return self._invocation_id
+
+    def _set_startup_result(
+        self, wrapped: Future[PipelineRunResponse]
+    ) -> None:
+        """Store the future that represents the started child pipeline run.
+
+        Args:
+            wrapped: The future that resolves to the pipeline run.
+        """
+        self._startup.set_result(wrapped)
+
+    def _set_startup_failed(self, exception: BaseException) -> None:
+        """Store a startup exception for the child pipeline.
+
+        Args:
+            exception: The startup exception.
+        """
+        self._startup.set_exception(exception)
+
+    def _cancel_startup(self, exception: BaseException) -> None:
+        """Cancel child pipeline startup if it has not been resolved yet.
+
+        Args:
+            exception: The cancellation exception to store.
+        """
+        self._set_startup_failed(exception)
+
+    def running(self) -> bool:
+        """Check if the child pipeline future is running.
+
+        Returns:
+            True if the future is running, False otherwise.
+        """
+        if not self._startup.done():
+            return True
+        if self._startup.failed():
+            return False
+
+        return not self._startup.result().done()
+
+    def wait(self) -> None:
+        """Wait for the child pipeline to finish."""
+        with _maybe_release_pipeline_thread():
+            self._startup.result().result()
+
+    def result(self) -> PipelineRunOutputs:
+        """Get the child pipeline outputs.
+
+        Returns:
+            The child pipeline outputs.
+        """
+        from zenml.execution.pipeline.dynamic.utils import (
+            load_pipeline_run_outputs,
+        )
+
+        with _maybe_release_pipeline_thread():
+            run = self._startup.result().result()
+        return load_pipeline_run_outputs(run=run)
+
+    def artifacts(self) -> PipelineRunOutputs:
+        """Get the child pipeline output artifacts.
+
+        Returns:
+            The child pipeline output artifacts.
+        """
+        return self.result()
+
+    def get_artifact(self, key: str) -> ArtifactVersionResponse:
+        """Get an output artifact by output name.
+
+        Args:
+            key: The output name.
+
+        Raises:
+            KeyError: If no output exists for the key.
+
+        Returns:
+            The output artifact.
+        """
+        outputs = self._output_tuple()
+        names = self._effective_output_names(count=len(outputs))
+        if key not in names:
+            raise KeyError(
+                f"Child pipeline `{self.invocation_id}` does not have an output "
+                f"with the name `{key}`."
+            )
+        return outputs[names.index(key)]
+
+    def _output_tuple(self) -> Tuple["ArtifactVersionResponse", ...]:
+        """Normalize outputs to tuple form.
+
+        Returns:
+            Outputs as tuple.
+        """
+        result = self.result()
+        if result is None:
+            return ()
+        if isinstance(result, ArtifactVersionResponse):
+            return (result,)
+        return result
+
+    def _effective_output_names(self, count: int) -> List[str]:
+        """Resolve effective output names matching what the server persisted.
+
+        Args:
+            count: Number of output artifacts actually produced.
+
+        Returns:
+            Output names in deterministic order.
+        """
+        from zenml.execution.pipeline.dynamic.pipeline_output_utils import (
+            resolve_pipeline_output_names,
+        )
+
+        return resolve_pipeline_output_names(
+            declared_names=self._declared_output_names, count=count
+        )
+
+    @overload
+    def __getitem__(self, key: int) -> ArtifactVersionResponse: ...
+
+    @overload
+    def __getitem__(
+        self, key: slice
+    ) -> Tuple[ArtifactVersionResponse, ...]: ...
+
+    def __getitem__(
+        self, key: Union[int, slice]
+    ) -> Union[
+        ArtifactVersionResponse,
+        Tuple[ArtifactVersionResponse, ...],
+    ]:
+        """Get output artifact(s) by index.
+
+        Args:
+            key: Index or slice.
+
+        Returns:
+            Output artifact(s).
+        """
+        return self._output_tuple()[key]
+
+    def __iter__(self) -> Iterator[ArtifactVersionResponse]:
+        """Iterate over output artifacts.
+
+        Yields:
+            Output artifacts.
+        """
+        yield from self._output_tuple()
+
+    def __len__(self) -> int:
+        """Get the declared number of output artifacts.
+
+        Returns the count from the entrypoint's return-type annotation. This
+        is non-blocking and may be `0` if the entrypoint is unannotated; in
+        that case use `len(future.result())` to get the actual count.
+
+        Returns:
+            Number of declared output artifacts.
+        """
+        return len(self._declared_output_names)
 
 
 class MapResultsFuture(BaseFuture):
@@ -795,4 +1084,10 @@ class MapResultsFuture(BaseFuture):
         return len(self.futures)
 
 
-AnyStepFuture = Union[ArtifactFuture, StepFuture, MapResultsFuture]
+AnyOutputFuture = Union[
+    ArtifactFuture,
+    StepFuture,
+    MapResultsFuture,
+    PipelineFuture,
+]
+AnyStepFuture = AnyOutputFuture  # Backwards compatibility alias

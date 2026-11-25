@@ -37,8 +37,8 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.metadata.lazy_load import LazyRunMetadataResponse
 from zenml.steps.utils import (
     OutputSignature,
+    get_resolved_signature,
     parse_return_type_annotations,
-    resolve_type_annotation,
 )
 from zenml.utils import yaml_utils
 
@@ -256,7 +256,7 @@ def validate_entrypoint_function(
     Returns:
         A validated definition of the entrypoint function.
     """
-    signature = inspect.signature(func, follow_wrapped=True)
+    signature = get_resolved_signature(func)
     validate_reserved_arguments(
         signature=signature, reserved_arguments=reserved_arguments
     )
@@ -271,8 +271,7 @@ def validate_entrypoint_function(
                 f"{func.__name__}."
             )
 
-        annotation = parameter.annotation
-        if annotation is parameter.empty:
+        if parameter.annotation is parameter.empty:
             if ENFORCE_TYPE_ANNOTATIONS:
                 raise RuntimeError(
                     f"Missing type annotation for input '{key}' of step "
@@ -282,12 +281,12 @@ def validate_entrypoint_function(
             # If a type annotation is missing, use `Any` instead
             parameter = parameter.replace(annotation=Any)
 
-        annotation = resolve_type_annotation(annotation)
         inputs[key] = parameter
 
     outputs = parse_return_type_annotations(
         func=func,
         enforce_type_annotations=ENFORCE_TYPE_ANNOTATIONS,
+        resolved_signature=signature,
     )
 
     return EntrypointFunctionDefinition(

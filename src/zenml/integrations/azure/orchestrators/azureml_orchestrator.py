@@ -69,7 +69,11 @@ from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
 from zenml.orchestrators.publish_utils import publish_step_run_metadata
-from zenml.orchestrators.utils import get_orchestrator_run_name
+from zenml.orchestrators.utils import (
+    get_orchestrator_run_name,
+    get_step_entrypoint_command,
+    shell_join,
+)
 from zenml.pipelines.dynamic.entrypoint_configuration import (
     DynamicPipelineEntrypointConfiguration,
 )
@@ -620,15 +624,12 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         image = step_run_info.get_image(key=ORCHESTRATOR_DOCKER_IMAGE_KEY)
         env = Environment(name=f"zenml-{step_run_info.run_name}", image=image)
 
-        entrypoint_command = (
-            StepOperatorEntrypointConfiguration.get_entrypoint_command()
-        )
-        entrypoint_args = (
-            StepOperatorEntrypointConfiguration.get_entrypoint_arguments(
-                step_name=step_run_info.pipeline_step_name,
-                snapshot_id=(step_run_info.snapshot.id),
-                step_run_id=str(step_run_info.step_run_id),
-            )
+        entrypoint_command, entrypoint_args = get_step_entrypoint_command(
+            invocation_id=step_run_info.pipeline_step_name,
+            config=step_run_info.config,
+            entrypoint_config_class=StepOperatorEntrypointConfiguration,
+            snapshot_id=step_run_info.snapshot.id,
+            step_run_id=str(step_run_info.step_run_id),
         )
 
         compute_target = create_or_get_compute(
@@ -641,7 +642,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         command_job = command(
             name=job_name,
             display_name=job_name,
-            command=" ".join(entrypoint_command + entrypoint_args),
+            command=shell_join(entrypoint_command + entrypoint_args),
             environment=env,
             environment_variables=environment,
             compute=compute_target,

@@ -22,6 +22,16 @@ from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
+# The final 2.13 and 2.14 releases cap NumPy or pin `ml-dtypes`, but their
+# release candidates do not. When another package (for example JAX) has
+# already pulled in a newer `ml-dtypes`, uv can pick one of these release
+# candidates instead of a final release, and with 2.14.0rc1
+# `import tensorflow` then fails. The version bounds already exclude the 2.12
+# and 2.15 release candidates.
+_EXCLUDED_RELEASE_CANDIDATES = (
+    "!=2.13.0rc0,!=2.13.0rc1,!=2.13.0rc2,!=2.14.0rc0,!=2.14.0rc1"
+)
+
 
 class TensorflowIntegration(Integration):
     """Definition of Tensorflow integration for ZenML."""
@@ -55,11 +65,11 @@ class TensorflowIntegration(Integration):
         target_os = target_os or platform.system()
         if target_os == "Darwin" and platform.machine() == "arm64":
             requirements = [
-                "tensorflow-macos>=2.12,<2.15",
+                f"tensorflow-macos>=2.12,<2.15,{_EXCLUDED_RELEASE_CANDIDATES}",
             ]
         else:
             requirements = [
-                "tensorflow>=2.12,<2.15",
+                f"tensorflow>=2.12,<2.15,{_EXCLUDED_RELEASE_CANDIDATES}",
                 "tensorflow_io>=0.24.0",
             ]
 

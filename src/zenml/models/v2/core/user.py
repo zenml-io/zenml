@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing users."""
 
+from datetime import datetime
 from secrets import token_hex
 from typing import (
     TYPE_CHECKING,
@@ -38,7 +39,12 @@ from zenml.models.v2.base.base import (
     BaseResponseResources,
     BaseUpdate,
 )
-from zenml.models.v2.base.filter import AnyQuery, BaseFilter
+from zenml.models.v2.base.filter import (
+    AnyQuery,
+    BaseFilter,
+    StringFilterOption,
+    UUIDFilterOption,
+)
 
 if TYPE_CHECKING:
     from passlib.context import CryptContext
@@ -80,6 +86,10 @@ class UserBase(BaseModel):
     user_metadata: Optional[Dict[str, Any]] = Field(
         default=None,
         title="The metadata associated with the user.",
+    )
+    oidc_claims: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="Claims synchronized from the external OIDC provider.",
     )
     avatar_url: Optional[str] = Field(
         default=None,
@@ -297,6 +307,10 @@ class UserResponseBody(BaseDatedResponseBody):
 class UserResponseMetadata(BaseResponseMetadata):
     """Response metadata for users."""
 
+    password_changed_at: Optional[datetime] = Field(
+        default=None,
+        title="The time when the user's password was last changed.",
+    )
     email: Optional[str] = Field(
         default="",
         title="The email address associated with the account. Only relevant "
@@ -311,6 +325,10 @@ class UserResponseMetadata(BaseResponseMetadata):
     user_metadata: Dict[str, Any] = Field(
         default={},
         title="The metadata associated with the user.",
+    )
+    oidc_claims: Dict[str, Any] = Field(
+        default={},
+        title="Claims synchronized from the external OIDC provider.",
     )
 
 
@@ -399,6 +417,26 @@ class UserResponse(
         """
         return self.get_body().is_service_account
 
+    def is_token_issued_after_password_change(
+        self, issued_at: Optional[datetime]
+    ) -> bool:
+        """Check whether a token was issued after the latest password change.
+
+        Args:
+            issued_at: The time at which the token was issued.
+
+        Returns:
+            True if the token is still valid for this user account.
+        """
+        if issued_at is None or self.is_service_account:
+            return True
+
+        password_changed_at = self.get_metadata().password_changed_at
+        if not password_changed_at:
+            return True
+
+        return issued_at >= password_changed_at
+
     @property
     def is_admin(self) -> bool:
         """The `is_admin` property.
@@ -434,6 +472,15 @@ class UserResponse(
             the value of the property.
         """
         return self.get_metadata().user_metadata
+
+    @property
+    def oidc_claims(self) -> Dict[str, Any]:
+        """The `oidc_claims` property.
+
+        Returns:
+            Claims synchronized from the external OIDC provider.
+        """
+        return self.get_metadata().oidc_claims
 
     @property
     def default_project_id(self) -> Optional[UUID]:
@@ -472,15 +519,21 @@ class UserResponse(
 class UserFilter(BaseFilter):
     """Model to enable advanced filtering of all Users."""
 
-    name: Optional[str] = Field(
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *BaseFilter.API_SINGLE_INPUT_PARAMS,
+        "active",
+        "email_opted_in",
+    ]
+
+    name: StringFilterOption = Field(
         default=None,
         description="Name of the user",
     )
-    full_name: Optional[str] = Field(
+    full_name: StringFilterOption = Field(
         default=None,
         description="Full Name of the user",
     )
-    email: Optional[str] = Field(
+    email: StringFilterOption = Field(
         default=None,
         description="Email of the user",
     )
@@ -494,7 +547,7 @@ class UserFilter(BaseFilter):
         description="Whether the user has opted in to emails",
         union_mode="left_to_right",
     )
-    external_user_id: Optional[Union[UUID, str]] = Field(
+    external_user_id: UUIDFilterOption = Field(
         default=None,
         title="The external user ID associated with the account.",
         union_mode="left_to_right",

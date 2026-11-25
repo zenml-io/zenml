@@ -7,7 +7,6 @@ Create Date: 2025-02-24 18:19:43.121393
 """
 
 import sqlalchemy as sa
-import sqlmodel
 from alembic import op
 
 # revision identifiers, used by Alembic.
@@ -23,7 +22,7 @@ def upgrade() -> None:
         batch_op.add_column(
             sa.Column(
                 "default_workspace_id",
-                sqlmodel.sql.sqltypes.GUID(),
+                sa.Uuid(),
                 nullable=True,
             )
         )

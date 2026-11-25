@@ -473,7 +473,7 @@ zenml service-connector login azure-service-principal --resource-type kubernetes
 ```
 ⠙ Attempting to configure local client using service connector 'azure-service-principal'...
 Updated local kubeconfig with the cluster details. The current kubectl context was set to 'demo-zenml-terraform-cluster'.
-The 'azure-service-principal' Kubernetes Service Connector connector was used to successfully configure the local Kubernetes cluster client/SDK.
+The 'azure-service-principal' Kubernetes Service Connector was used to successfully configure the local Kubernetes cluster client/SDK.
 ```
 {% endcode %}
 
@@ -520,7 +520,7 @@ WARNING! Your password will be stored unencrypted in /home/stefan/.docker/config
 Configure a credential helper to remove this warning. See
 https://docs.docker.com/engine/reference/commandline/login/#credentials-store
 
-The 'azure-service-principal' Docker Service Connector connector was used to successfully configure the local Docker/OCI container registry client/SDK.
+The 'azure-service-principal' Docker Service Connector was used to successfully configure the local Docker/OCI container registry client/SDK.
 ```
 {% endcode %}
 
@@ -560,7 +560,7 @@ zenml service-connector login azure-service-principal --resource-type azure-gene
 {% code title="Example Command Output" %}
 ```
 Updated the local Azure CLI configuration with the connector's service principal credentials.
-The 'azure-service-principal' Azure Service Connector connector was used to successfully configure the local Generic Azure resource client/SDK.
+The 'azure-service-principal' Azure Service Connector was used to successfully configure the local Generic Azure resource client/SDK.
 ```
 {% endcode %}
 
@@ -813,7 +813,7 @@ Active repository stack set to:'gcp-demo'
 $ python run.py
 Building Docker image(s) for pipeline simple_pipeline.
 Building Docker image demozenmlcontainerregistry.azurecr.io/zenml:simple_pipeline-orchestrator.
-- Including integration requirements: adlfs==2021.10.0, azure-identity==1.10.0, azure-keyvault-keys, azure-keyvault-secrets, azure-mgmt-containerservice>=20.0.0, azureml-core==1.48.0, kubernetes, kubernetes==18.20.0
+- Including integration requirements: adlfs>=2021.10.0, azure-identity>=1.4.0, azure-mgmt-containerregistry>=10.0.0, azure-mgmt-containerservice>=20.0.0, azure-mgmt-resource>=21.0.0,<25.0.0, azure-mgmt-storage>=20.0.0, azure-storage-blob>=12.17.0,<13.0.0, kubernetes>=18.20.0, requests>=2.27.11,<3.0.0, azure-ai-ml>=1.23.1,<2.0.0, marshmallow<4.0.0
 No .dockerignore found, including all files inside build context.
 Step 1/10 : FROM zenmldocker/zenml:0.40.0-py3.8
 Step 2/10 : WORKDIR /app

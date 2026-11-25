@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """ZenML settings constants."""
 
+BASIC_RESOURCE_KINDS = frozenset({"cpu", "gpu", "memory"})
 DOCKER_SETTINGS_KEY = "docker"
 RESOURCE_SETTINGS_KEY = "resources"
 DEPLOYMENT_SETTINGS_KEY = "deployment"

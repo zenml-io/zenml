@@ -90,6 +90,24 @@ def test_success_keeps_previous_error_details() -> None:
     assert state.first_error_at is not None
 
 
+def test_new_status_replaces_previous_status_details() -> None:
+    """Status details should always describe the latest transition."""
+    pipeline_id = uuid4()
+    state = TriggerSnapshotDispatchState(
+        last_status=TriggerDispatchStatusCode.SKIPPED_TRIGGER_CYCLE,
+        last_status_details={"cycle_pipeline_ids": [pipeline_id, pipeline_id]},
+    )
+
+    state.apply_new_state(
+        new_state=TriggerSnapshotDispatchState(
+            last_status=TriggerDispatchStatusCode.SUCCESS,
+        )
+    )
+
+    assert state.last_status == TriggerDispatchStatusCode.SUCCESS
+    assert state.last_status_details is None
+
+
 def test_clear_error_details_resets_error_counter() -> None:
     """Clearing errors should also reset the consecutive error counter."""
     state = TriggerSnapshotDispatchState(

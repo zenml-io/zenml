@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Pipeline snapshot models."""
 
+from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -35,6 +36,10 @@ from zenml.config.step_configurations import Step
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.models.v2.base.base import BaseUpdate, BaseZenModel
+from zenml.models.v2.base.filter import (
+    StringFilterOption,
+    UUIDFilterOption,
+)
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -130,6 +135,11 @@ class PipelineSnapshotRequest(PipelineSnapshotBase, ProjectScopedRequest):
     replace: Optional[bool] = Field(
         default=None,
         title="Whether to replace the existing snapshot with the same name.",
+        description=(
+            "The superseded snapshot is deleted unless runs, deployments, "
+            "triggers or other snapshots still reference it, in which case "
+            "it is archived (kept without a name)."
+        ),
     )
     tags: Optional[List[str]] = Field(
         default=None,
@@ -197,6 +207,11 @@ class PipelineSnapshotUpdate(BaseUpdate):
     replace: Optional[bool] = Field(
         default=None,
         title="Whether to replace the existing snapshot with the same name.",
+        description=(
+            "The superseded snapshot is deleted unless runs, deployments, "
+            "triggers or other snapshots still reference it, in which case "
+            "it is archived (kept without a name)."
+        ),
     )
     add_tags: Optional[List[str]] = Field(
         default=None, title="New tags to add to the snapshot."
@@ -236,6 +251,10 @@ class PipelineSnapshotResponseBody(ProjectScopedResponseBody):
     )
     is_dynamic: bool = Field(
         title="Whether this is a snapshot of a dynamic pipeline.",
+    )
+    pipeline_id: UUID | None = Field(
+        default=None,
+        title="The ID of the pipeline associated with the snapshot.",
     )
 
 
@@ -548,6 +567,18 @@ class PipelineSnapshotResponse(
         return self.get_resources().pipeline
 
     @property
+    def pipeline_id(self) -> UUID | None:
+        """The ID of the pipeline associated with this snapshot.
+
+        This foreign key is exposed on the response body to avoid unnecessary
+        resource hydration when callers only need the pipeline ID.
+
+        Returns:
+            The pipeline ID.
+        """
+        return self.get_body().pipeline_id
+
+    @property
     def stack(self) -> Optional[StackResponse]:
         """The `stack` property.
 
@@ -657,8 +688,17 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
+        *TaggableFilter.API_SINGLE_INPUT_PARAMS,
+        "named_only",
+        "runnable",
+        "deployable",
+        "deployed",
+        "trigger_id",
+    ]
 
-    name: Optional[str] = Field(
+    name: StringFilterOption = Field(
         default=None,
         description="Name of the snapshot.",
     )
@@ -666,27 +706,27 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         default=None,
         description="Whether to only return snapshots with a name.",
     )
-    pipeline: Optional[Union[UUID, str]] = Field(
+    pipeline: UUIDFilterOption = Field(
         default=None,
         description="Pipeline associated with the snapshot.",
         union_mode="left_to_right",
     )
-    stack: Optional[Union[UUID, str]] = Field(
+    stack: UUIDFilterOption = Field(
         default=None,
         description="Stack associated with the snapshot.",
         union_mode="left_to_right",
     )
-    build_id: Optional[Union[UUID, str]] = Field(
+    build_id: UUIDFilterOption = Field(
         default=None,
         description="Build associated with the snapshot.",
         union_mode="left_to_right",
     )
-    schedule_id: Optional[Union[UUID, str]] = Field(
+    schedule_id: UUIDFilterOption = Field(
         default=None,
         description="Schedule associated with the snapshot.",
         union_mode="left_to_right",
     )
-    source_snapshot_id: Optional[Union[UUID, str]] = Field(
+    source_snapshot_id: UUIDFilterOption = Field(
         default=None,
         description="Source snapshot used for the snapshot.",
         union_mode="left_to_right",
@@ -739,23 +779,36 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
             )
 
         if self.pipeline:
-            pipeline_filter = and_(
-                PipelineSnapshotSchema.pipeline_id == PipelineSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.pipeline, table=PipelineSchema
-                ),
+            pipeline_filters = (
+                self.pipeline
+                if isinstance(self.pipeline, list)
+                else [self.pipeline]
             )
-            custom_filters.append(pipeline_filter)
+            for pipeline_filter in pipeline_filters:
+                custom_filters.append(
+                    and_(
+                        PipelineSnapshotSchema.pipeline_id
+                        == PipelineSchema.id,
+                        self.generate_name_or_id_query_conditions(
+                            value=pipeline_filter, table=PipelineSchema
+                        ),
+                    )
+                )
 
         if self.stack:
-            stack_filter = and_(
-                PipelineSnapshotSchema.stack_id == StackSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.stack,
-                    table=StackSchema,
-                ),
+            stack_filters = (
+                self.stack if isinstance(self.stack, list) else [self.stack]
             )
-            custom_filters.append(stack_filter)
+            for stack_filter in stack_filters:
+                custom_filters.append(
+                    and_(
+                        PipelineSnapshotSchema.stack_id == StackSchema.id,
+                        self.generate_name_or_id_query_conditions(
+                            value=stack_filter,
+                            table=StackSchema,
+                        ),
+                    )
+                )
 
         if self.runnable is True:
             runnable_filter = and_(
@@ -924,4 +977,39 @@ class PipelineSnapshotRunRequest(BaseZenModel):
     step_run: Optional[UUID] = Field(
         default=None,
         title="The ID of the step run that ran the snapshot.",
+    )
+
+
+class PipelineSnapshotPruneRequest(BaseZenModel):
+    """Request model for pruning unused pipeline snapshots."""
+
+    project: UUID = Field(
+        title="The project whose snapshots should be pruned.",
+    )
+    older_than: datetime = Field(
+        title="Only snapshots created before this point in time are pruned.",
+    )
+    apply: bool = Field(
+        default=False,
+        title="Whether to delete the eligible snapshots. If false, the "
+        "eligible snapshots are only counted.",
+    )
+
+
+class PipelineSnapshotPruneResponse(BaseZenModel):
+    """Response model for pruning unused pipeline snapshots."""
+
+    snapshot_count: Optional[int] = Field(
+        default=None,
+        title="The number of eligible snapshots for a dry run, or the number "
+        "of deleted snapshots. Unset if the deletion was scheduled in the "
+        "background.",
+        description="Deleting a snapshot can make the snapshot it was "
+        "derived from eligible as well, so the number of eventually deleted "
+        "snapshots can exceed the count reported by a dry run.",
+    )
+    task_id: Optional[str] = Field(
+        default=None,
+        title="ID of the background task deleting the snapshots. Only set if "
+        "the deletion was scheduled in the background.",
     )

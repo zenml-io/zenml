@@ -16,7 +16,7 @@
 import functools
 from datetime import datetime, timedelta
 from functools import wraps
-from typing import Any, Awaitable, Callable, Dict, Optional, Tuple, Union, cast
+from typing import Any, Awaitable, Callable, Dict, Optional, Tuple, Union
 from urllib.parse import urlencode, urlparse
 from uuid import UUID, uuid4
 
@@ -101,13 +101,17 @@ class AuthContext(BaseModel):
 
 
 def _fetch_and_verify_api_key(
-    api_key_id: UUID, key_to_verify: Optional[str] = None
+    api_key_id: UUID,
+    key_to_verify: Optional[str] = None,
+    token_generation: Optional[int] = None,
 ) -> APIKeyInternalResponse:
     """Fetches an API key from the database and verifies it.
 
     Args:
         api_key_id: The API key ID.
         key_to_verify: Optional API key value to verify against the API key.
+        token_generation: Optional API key generation embedded in a JWT that
+            was derived from the API key.
 
     Returns:
         The fetched API key.
@@ -115,8 +119,7 @@ def _fetch_and_verify_api_key(
     Raises:
         CredentialsNotValid: If the API key could not be found, is not
             active, if it could not be verified against the supplied key value
-            or if the associated service account is not active or is an
-            external service account.
+            or if the associated service account is not active.
     """
     store = zen_store()
 
@@ -137,12 +140,11 @@ def _fetch_and_verify_api_key(
         raise CredentialsNotValid(error)
 
     if api_key.service_account.external_user_id:
-        error = (
-            "Authentication error: cannot use an API key associated with an "
+        warning = (
+            "Authentication warning: using an API key associated with an "
             "external service account to authenticate to the ZenML server"
         )
-        logger.exception(error)
-        raise CredentialsNotValid(error)
+        logger.warning(warning)
 
     if not api_key.active:
         error = (
@@ -154,12 +156,20 @@ def _fetch_and_verify_api_key(
         logger.error(error)
         raise CredentialsNotValid(error)
 
-    if key_to_verify and not api_key.verify_key(key_to_verify):
+    if key_to_verify is not None and not api_key.verify_key(key_to_verify):
         error = (
             f"Authentication error: could not verify key value for API key "
             f"{api_key.name}"
         )
         logger.exception(error)
+        raise CredentialsNotValid(error)
+
+    if not api_key.is_token_generation_valid(token_generation):
+        error = (
+            f"Authentication error: access token for API key {api_key.name} "
+            "was issued for an API key generation that is no longer valid"
+        )
+        logger.error(error)
         raise CredentialsNotValid(error)
 
     # Update the "last used" timestamp of the API key
@@ -324,12 +334,26 @@ def authenticate_credentials(
             logger.error(error)
             raise CredentialsNotValid(error)
 
+        if not user_model.is_token_issued_after_password_change(
+            decoded_token.issued_at
+        ):
+            error = (
+                f"Authentication error: access token for user "
+                f"{user_model.name} was issued before the user's password "
+                "was changed"
+            )
+            logger.error(error)
+            raise CredentialsNotValid(error)
+
         api_key_model: Optional[APIKeyInternalResponse] = None
         if decoded_token.api_key_id:
             # The API token was generated from an API key. We still have to
             # verify if the API key hasn't been deactivated or deleted in the
             # meantime.
-            api_key_model = _fetch_and_verify_api_key(decoded_token.api_key_id)
+            api_key_model = _fetch_and_verify_api_key(
+                decoded_token.api_key_id,
+                token_generation=decoded_token.api_key_generation,
+            )
 
         device_model: Optional[OAuthDeviceInternalResponse] = None
         if decoded_token.device_id:
@@ -513,6 +537,39 @@ def authenticate_credentials(
                     )
                     logger.error(error)
                     raise CredentialsNotValid(error)
+
+        if decoded_token.deployment_id:
+            # If the token contains a deployment ID, we need to check if the
+            # deployment still exists in the database. We use a cached version
+            # of the existence check to avoid unnecessary database queries.
+
+            @ttl_cache(
+                maxsize=config.memcache_max_capacity,
+                ttl=config.memcache_default_expiry,
+            )
+            def check_if_deployment_exists(deployment_id: UUID) -> bool:
+                """Check whether a deployment exists.
+
+                Args:
+                    deployment_id: The deployment ID.
+
+                Returns:
+                    Whether the deployment exists.
+                """
+                try:
+                    zen_store().get_deployment(deployment_id, hydrate=False)
+                except KeyError:
+                    return False
+
+                return True
+
+            if not check_if_deployment_exists(decoded_token.deployment_id):
+                error = (
+                    "Authentication error: deployment "
+                    f"{decoded_token.deployment_id} does not exist."
+                )
+                logger.error(error)
+                raise CredentialsNotValid(error)
 
         auth_context = AuthContext(
             user=user_model,
@@ -855,9 +912,10 @@ def authenticate_external_user(
                     email_opted_in=True,
                     active=True,
                     email=external_user.email,
-                    is_admin=external_user.is_admin,
+                    is_admin=external_user.is_superuser,
                     avatar_url=external_user.avatar_url,
                     external_user_id=external_user.id,
+                    oidc_claims=external_user.oidc_claims,
                 ),
             )
         else:
@@ -897,8 +955,9 @@ def authenticate_external_user(
                     email_opted_in=True,
                     active=True,
                     email=external_user.email,
-                    is_admin=external_user.is_admin,
+                    is_admin=external_user.is_superuser,
                     avatar_url=external_user.avatar_url,
+                    oidc_claims=external_user.oidc_claims,
                 )
             )
 
@@ -954,6 +1013,14 @@ def authenticate_api_key(
             error = f"Authentication error: {e}."
             logger.exception(error)
             raise CredentialsNotValid(error)
+
+    if server_config().auth_scheme == AuthScheme.EXTERNAL:
+        warning = (
+            "Authentication error: using local service account API keys with "
+            "external authentication is deprecated. Please use ZenML Pro API "
+            "keys instead."
+        )
+        logger.warning(warning)
 
     try:
         decoded_api_key = APIKey.decode_api_key(api_key)
@@ -1081,6 +1148,7 @@ def generate_access_token(
         user_id=user_id,
         device_id=device.id if device else None,
         api_key_id=api_key.id if api_key else None,
+        api_key_generation=api_key.key_generation if api_key else None,
         schedule_id=schedule_id,
         pipeline_run_id=pipeline_run_id,
         deployment_id=deployment_id,
@@ -1168,13 +1236,10 @@ def verify_download_token(
 
     config = server_config()
     try:
-        claims = cast(
-            Dict[str, Any],
-            jwt.decode(
-                token,
-                config.jwt_secret_key,
-                algorithms=[config.jwt_token_algorithm],
-            ),
+        claims = jwt.decode(
+            token,
+            config.jwt_secret_key,
+            algorithms=[config.jwt_token_algorithm],
         )
     except jwt.PyJWTError as e:
         raise CredentialsNotValid(f"Invalid JWT token: {e}") from e
@@ -1323,7 +1388,7 @@ def get_authorization_provider() -> Callable[..., Awaitable[AuthContext]]:
 
     @wraps(provider)
     async def async_authorize_fn(*args: Any, **kwargs: Any) -> AuthContext:
-        from zenml.zen_server.utils import get_system_metrics_log_str
+        from zenml.zen_server.utils import get_system_metrics
 
         request_context = request_manager().current_request
 
@@ -1332,10 +1397,8 @@ def get_authorization_provider() -> Callable[..., Awaitable[AuthContext]]:
             assert request_context is not None
 
             logger.debug(
-                f"[{request_context.log_request_id}] API STATS - "
-                f"{request_context.log_request} "
-                f"AUTHORIZING "
-                f"{get_system_metrics_log_str(request_context.request)}"
+                "request.authorizing",
+                extra=get_system_metrics(),
             )
 
             try:
@@ -1344,10 +1407,8 @@ def get_authorization_provider() -> Callable[..., Awaitable[AuthContext]]:
                 return auth_context
             finally:
                 logger.debug(
-                    f"[{request_context.log_request_id}] API STATS - "
-                    f"{request_context.log_request} "
-                    f"AUTHORIZED "
-                    f"{get_system_metrics_log_str(request_context.request)}"
+                    "request.authorized",
+                    extra=get_system_metrics(),
                 )
 
         func = functools.partial(sync_authorize_fn, *args, **kwargs)

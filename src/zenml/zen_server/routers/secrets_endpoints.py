@@ -53,6 +53,7 @@ from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     make_dependable,
+    verify_admin_status_if_no_rbac,
     zen_store,
 )
 
@@ -250,7 +251,7 @@ def delete_secret(
 def backup_secrets(
     ignore_errors: bool = True,
     delete_secrets: bool = False,
-    _: AuthContext = Security(authorize),
+    auth_context: AuthContext = Security(authorize),
 ) -> None:
     """Backs up all secrets in the secrets store to the backup secrets store.
 
@@ -262,7 +263,11 @@ def backup_secrets(
             successfully backed up from the primary secrets store. Setting
             this flag effectively moves all secrets from the primary secrets
             store to the backup secrets store.
+        auth_context: Authentication context.
     """
+    verify_admin_status_if_no_rbac(
+        auth_context.user.is_admin, "backup secrets"
+    )
     verify_permission(
         resource_type=ResourceType.SECRET, action=Action.BACKUP_RESTORE
     )
@@ -280,7 +285,7 @@ def backup_secrets(
 def restore_secrets(
     ignore_errors: bool = False,
     delete_secrets: bool = False,
-    _: AuthContext = Security(authorize),
+    auth_context: AuthContext = Security(authorize),
 ) -> None:
     """Restores all secrets from the backup secrets store into the main secrets store.
 
@@ -292,7 +297,11 @@ def restore_secrets(
             successfully restored from the backup secrets store. Setting
             this flag effectively moves all secrets from the backup secrets
             store to the primary secrets store.
+        auth_context: Authentication context.
     """
+    verify_admin_status_if_no_rbac(
+        auth_context.user.is_admin, "restore secrets"
+    )
     verify_permission(
         resource_type=ResourceType.SECRET,
         action=Action.BACKUP_RESTORE,

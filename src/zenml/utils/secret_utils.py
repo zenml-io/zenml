@@ -16,7 +16,7 @@
 import re
 from typing import TYPE_CHECKING, Any, List, NamedTuple, Union
 
-from pydantic import Field, PlainSerializer, SecretStr
+from pydantic import AfterValidator, Field, PlainSerializer, SecretStr
 from typing_extensions import Annotated
 
 from zenml.logger import get_logger
@@ -39,6 +39,33 @@ PlainSerializedSecretStr = Annotated[
     ),
 ]
 
+
+def _validate_non_empty_secret(secret: SecretStr) -> SecretStr:
+    """Validate that a secret contains non-whitespace content.
+
+    Args:
+        secret: The secret to validate.
+
+    Returns:
+        The validated secret.
+
+    Raises:
+        ValueError: If the secret is empty or contains only whitespace.
+    """
+    if not secret.get_secret_value().strip():
+        raise ValueError("Secret must not be empty.")
+    return secret
+
+
+NonEmptyPlainSerializedSecretStr = Annotated[
+    SecretStr,
+    AfterValidator(_validate_non_empty_secret),
+    PlainSerializer(
+        lambda v: v.get_secret_value() if v is not None else None,
+        when_used="json",
+    ),
+]
+
 logger = get_logger(__name__)
 
 
@@ -51,6 +78,9 @@ def is_secret_reference(value: Any) -> bool:
     Returns:
         `True` if the value is a secret reference, `False` otherwise.
     """
+    if isinstance(value, SecretStr):
+        value = value.get_secret_value()
+
     if not isinstance(value, str):
         return False
 
@@ -69,7 +99,9 @@ class SecretReference(NamedTuple):
     key: str
 
 
-def parse_secret_reference(reference: str) -> SecretReference:
+def parse_secret_reference(
+    reference: Union[str, SecretStr],
+) -> SecretReference:
     """Parses a secret reference.
 
     This function assumes the input string is a valid secret reference and
@@ -82,6 +114,9 @@ def parse_secret_reference(reference: str) -> SecretReference:
     Returns:
         The parsed secret reference.
     """
+    if isinstance(reference, SecretStr):
+        reference = reference.get_secret_value()
+
     reference = reference[2:]
     reference = reference[:-2]
 

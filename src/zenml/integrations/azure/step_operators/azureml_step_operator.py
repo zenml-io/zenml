@@ -32,6 +32,7 @@ from zenml.integrations.azure.flavors.azureml_step_operator_flavor import (
 )
 from zenml.logger import get_logger
 from zenml.orchestrators.publish_utils import publish_step_run_metadata
+from zenml.orchestrators.utils import shell_join
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 
@@ -226,9 +227,14 @@ class AzureMLStepOperator(BaseStepOperator):
             azureml_client, settings, default_compute_name=f"zenml_{self.id}"
         )
 
+        job_name_prefix = str(info.step_run_id)[:8]
+        job_name = (
+            f"{job_name_prefix}-{info.run_name}-{info.pipeline_step_name}"
+        )
+
         command_job = command(
-            name=info.run_name,
-            command=" ".join(entrypoint_command),
+            name=job_name,
+            command=shell_join(entrypoint_command),
             environment=env,
             environment_variables=environment,
             compute=compute_target,

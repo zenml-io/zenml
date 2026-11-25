@@ -32,11 +32,11 @@
 
 import json
 import os
-import random
 import socket
 from contextlib import contextmanager
 from typing import (
     TYPE_CHECKING,
+    Any,
     Dict,
     Generator,
     List,
@@ -54,6 +54,9 @@ from kubernetes.client import ApiException
 from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import (
+    DYNAMIC_PIPELINE_RUN_FAILED_EXIT_CODE,
+    LINUX_GID_CLAIM_KEY,
+    LINUX_UID_CLAIM_KEY,
     METADATA_ORCHESTRATOR_RUN_ID,
     ORCHESTRATOR_DOCKER_IMAGE_KEY,
 )
@@ -70,6 +73,7 @@ from zenml.integrations.kubernetes.constants import (
     KUBERNETES_SECRET_TOKEN_KEY_NAME,
     ORCHESTRATOR_ANNOTATION_KEY,
     STEP_NAME_ANNOTATION_KEY,
+    WORKSPACE_USER_ID_ANNOTATION_KEY,
 )
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
     KubernetesOrchestratorConfig,
@@ -95,7 +99,12 @@ from zenml.orchestrators import (
     PipelineSubmissionError,
     SubmissionResult,
 )
+from zenml.orchestrators import utils as orchestrator_utils
 from zenml.stack import StackValidator
+from zenml.step_operators.step_operator_entrypoint_configuration import (
+    StepOperatorEntrypointConfiguration,
+)
+from zenml.utils.string_utils import random_hex_str
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
@@ -103,6 +112,7 @@ if TYPE_CHECKING:
         PipelineRunResponse,
         PipelineSnapshotBase,
         PipelineSnapshotResponse,
+        ResourceRequestResponse,
         ScheduleResponse,
         StepRunResponse,
     )
@@ -248,6 +258,15 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             The settings class.
         """
         return KubernetesOrchestratorSettings
+
+    @property
+    def supports_resource_pool_allocation(self) -> bool:
+        """Whether the orchestrator supports resource pool allocations.
+
+        Returns:
+            Whether the orchestrator supports resource pool allocations.
+        """
+        return True
 
     def get_kubernetes_contexts(self) -> Tuple[List[str], str]:
         """Get list of configured Kubernetes contexts and the active context.
@@ -542,6 +561,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         settings: KubernetesOrchestratorSettings,
         pod_settings: Optional[KubernetesPodSettings] = None,
         backoff_limit: Optional[int] = None,
+        pod_failure_policy: Optional[Dict[str, Any]] = None,
     ) -> k8s_client.V1Job:
         """Prepares the job manifest for a Kubernetes job.
 
@@ -556,6 +576,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             settings: Component settings for the orchestrator.
             pod_settings: Optional settings for the pod.
             backoff_limit: The backoff limit for the job.
+            pod_failure_policy: Default pod failure policy for the job. The
+                `pod_failure_policy` setting takes precedence over this value.
 
         Returns:
             The job manifest.
@@ -574,6 +596,13 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             pod_settings=pod_settings,
         )
 
+        oidc_claims = Client().active_user.oidc_claims
+        workspace_user_id = str(Client().active_user.id)
+        annotations = {
+            **annotations,
+            WORKSPACE_USER_ID_ANNOTATION_KEY: workspace_user_id,
+        }
+
         pod_manifest = build_pod_manifest(
             pod_name=None,
             image_name=image,
@@ -584,38 +613,46 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             service_account_name=service_account_name,
             env=environment,
             labels=labels,
+            annotations={WORKSPACE_USER_ID_ANNOTATION_KEY: workspace_user_id},
             mount_local_stores=self.config.is_local,
             termination_grace_period_seconds=settings.pod_stop_grace_period,
+            run_as_user=oidc_claims.get(LINUX_UID_CLAIM_KEY),
+            run_as_group=oidc_claims.get(LINUX_GID_CLAIM_KEY),
         )
 
-        pod_failure_policy = settings.pod_failure_policy or {
-            # These rules are applied sequentially. This means any failure in
-            # the main container will count towards the max retries. Any other
-            # disruption will not count towards the max retries.
-            "rules": [
-                # If the main container fails, we count it towards the max
+        pod_failure_policy = (
+            settings.pod_failure_policy
+            or pod_failure_policy
+            or {
+                # These rules are applied sequentially. This means any failure
+                # in the main container will count towards the max retries.
+                # Any other disruption will not count towards the max
                 # retries.
-                {
-                    "action": "Count",
-                    "onExitCodes": {
-                        "containerName": "main",
-                        "operator": "NotIn",
-                        "values": [0],
+                "rules": [
+                    # If the main container fails, we count it towards the
+                    # max retries.
+                    {
+                        "action": "Count",
+                        "onExitCodes": {
+                            "containerName": "main",
+                            "operator": "NotIn",
+                            "values": [0],
+                        },
                     },
-                },
-                # If the pod is interrupted at any other time, we don't count
-                # it as a retry
-                {
-                    "action": "Ignore",
-                    "onPodConditions": [
-                        {
-                            "type": "DisruptionTarget",
-                            "status": "True",
-                        }
-                    ],
-                },
-            ]
-        }
+                    # If the pod is interrupted at any other time, we don't
+                    # count it as a retry
+                    {
+                        "action": "Ignore",
+                        "onPodConditions": [
+                            {
+                                "type": "DisruptionTarget",
+                                "status": "True",
+                            }
+                        ],
+                    },
+                ]
+            }
+        )
 
         return build_job_manifest(
             job_name=name,
@@ -645,7 +682,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             The job name.
         """
         job_name = settings.job_name_prefix or ""
-        random_prefix = "".join(random.choices("0123456789abcdef", k=8))
+        random_prefix = random_hex_str(8)
         job_name += f"-{random_prefix}-{pipeline_name}"
         if step_name:
             job_name += f"-{step_name}"
@@ -760,15 +797,17 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             image = self.get_image(snapshot=snapshot, step_name=invocation_id)
 
         labels = {
-            "project_id": kube_utils.sanitize_label(str(snapshot.project_id)),
-            "pipeline": kube_utils.sanitize_label(pipeline_name),
+            "project_id": kube_utils.sanitize_label_value(
+                str(snapshot.project_id)
+            ),
+            "pipeline": kube_utils.sanitize_label_value(pipeline_name),
         }
 
         if placeholder_run:
-            labels["run_id"] = kube_utils.sanitize_label(
+            labels["run_id"] = kube_utils.sanitize_label_value(
                 str(placeholder_run.id)
             )
-            labels["run_name"] = kube_utils.sanitize_label(
+            labels["run_name"] = kube_utils.sanitize_label_value(
                 placeholder_run.name
             )
 
@@ -779,6 +818,44 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         job_name = self._get_job_name(
             settings, pipeline_name=snapshot.pipeline_configuration.name
         )
+
+        pod_failure_policy = {
+            # Rule order matters: a disrupted pod can also exit with code
+            # 137/143, so the DisruptionTarget rule must be evaluated before
+            # the exit-code rules below.
+            "rules": [
+                # If the pod is disrupted, we don't count it as a retry.
+                {
+                    "action": "Ignore",
+                    "onPodConditions": [
+                        {
+                            "type": "DisruptionTarget",
+                            "status": "True",
+                        }
+                    ],
+                },
+                # If the pod exits with the dedicated exit code, the run
+                # already reached a terminal status and retrying is useless.
+                {
+                    "action": "FailJob",
+                    "onExitCodes": {
+                        "containerName": "main",
+                        "operator": "In",
+                        "values": [DYNAMIC_PIPELINE_RUN_FAILED_EXIT_CODE],
+                    },
+                },
+                # Any other failure of the main container counts towards the
+                # max retries.
+                {
+                    "action": "Count",
+                    "onExitCodes": {
+                        "containerName": "main",
+                        "operator": "NotIn",
+                        "values": [0],
+                    },
+                },
+            ]
+        }
 
         try:
             with self._create_auth_secret_if_necessary(
@@ -795,6 +872,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                     settings=settings,
                     pod_settings=orchestrator_pod_settings,
                     backoff_limit=settings.orchestrator_job_backoff_limit,
+                    pod_failure_policy=pod_failure_policy,
                 )
 
                 if snapshot.schedule:
@@ -835,6 +913,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                         namespace=self.config.kubernetes_namespace,
                         job_manifest=job_manifest,
                         api_request_timeout=settings.api_request_timeout,
+                        max_retries=settings.max_api_retries,
                     )
 
                     if settings.synchronous:
@@ -851,6 +930,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                                 fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
                                 stream_logs=True,
                                 api_request_timeout=settings.api_request_timeout,
+                                max_retries=settings.max_api_retries,
                             )
 
                         return SubmissionResult(
@@ -872,8 +952,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 f"{body.get('message', '')}"
             )
 
-    def submit_isolated_step(
-        self, step_run_info: "StepRunInfo", environment: Dict[str, str]
+    def submit_isolated_step_with_allocation(
+        self,
+        step_run_info: "StepRunInfo",
+        environment: Dict[str, str],
+        allocated_resource_request: Optional["ResourceRequestResponse"],
     ) -> None:
         """Submit an isolated step.
 
@@ -881,11 +964,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             step_run_info: The step run information.
             environment: The environment variables to set in the execution
                 environment.
+            allocated_resource_request: The allocated resource request for the
+                step, if any.
         """
-        from zenml.step_operators.step_operator_entrypoint_configuration import (
-            StepOperatorEntrypointConfiguration,
-        )
-
         logger.info(
             "Launching job for step `%s`.",
             step_run_info.pipeline_step_name,
@@ -894,25 +975,37 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         settings = cast(
             KubernetesOrchestratorSettings, self.get_settings(step_run_info)
         )
+        settings = kube_utils.apply_resource_request_component_settings(
+            settings=settings,
+            allocated_resource_request=allocated_resource_request,
+            settings_class=KubernetesOrchestratorSettings,
+        )
         image = step_run_info.get_image(key=ORCHESTRATOR_DOCKER_IMAGE_KEY)
-        command = StepOperatorEntrypointConfiguration.get_entrypoint_command()
-        args = StepOperatorEntrypointConfiguration.get_entrypoint_arguments(
-            step_name=step_run_info.pipeline_step_name,
-            snapshot_id=(step_run_info.snapshot.id),
+        command, args = orchestrator_utils.get_step_entrypoint_command(
+            invocation_id=step_run_info.pipeline_step_name,
+            config=step_run_info.config,
+            entrypoint_config_class=StepOperatorEntrypointConfiguration,
+            snapshot_id=step_run_info.snapshot.id,
             step_run_id=str(step_run_info.step_run_id),
         )
 
         labels = {
-            "project_id": kube_utils.sanitize_label(
+            "project_id": kube_utils.sanitize_label_value(
                 str(step_run_info.snapshot.project_id)
             ),
-            "pipeline": kube_utils.sanitize_label(step_run_info.pipeline.name),
-            "run_id": kube_utils.sanitize_label(str(step_run_info.run_id)),
-            "run_name": kube_utils.sanitize_label(str(step_run_info.run_name)),
-            "step_run_id": kube_utils.sanitize_label(
+            "pipeline": kube_utils.sanitize_label_value(
+                step_run_info.pipeline.name
+            ),
+            "run_id": kube_utils.sanitize_label_value(
+                str(step_run_info.run_id)
+            ),
+            "run_name": kube_utils.sanitize_label_value(
+                str(step_run_info.run_name)
+            ),
+            "step_run_id": kube_utils.sanitize_label_value(
                 str(step_run_info.step_run_id)
             ),
-            "step_name": kube_utils.sanitize_label(
+            "step_name": kube_utils.sanitize_label_value(
                 step_run_info.pipeline_step_name
             ),
         }
@@ -926,6 +1019,13 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             step_name=step_run_info.pipeline_step_name,
         )
 
+        pod_settings = (
+            kube_utils.apply_resource_request_allocations_to_pod_settings(
+                allocated_resource_request=allocated_resource_request,
+                pod_settings=settings.pod_settings,
+            )
+        )
+
         job_manifest = self._prepare_job_manifest(
             name=job_name,
             command=command,
@@ -935,7 +1035,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             labels=labels,
             annotations=annotations,
             settings=settings,
-            pod_settings=settings.pod_settings,
+            pod_settings=pod_settings,
             # In the dynamic pipeline case, we can't handle retries at the
             # orchestrator level because the entrypoint args contain a step
             # run ID.
@@ -947,6 +1047,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             namespace=self.config.kubernetes_namespace,
             job_manifest=job_manifest,
             api_request_timeout=settings.api_request_timeout,
+            max_retries=settings.max_api_retries,
         )
 
         try:
@@ -968,6 +1069,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 str(e),
             )
 
+        logger.debug(
+            "Launched job for step `%s`.",
+            step_run_info.pipeline_step_name,
+        )
+
     def get_isolated_step_status(
         self, step_run: "StepRunResponse"
     ) -> ExecutionStatus:
@@ -980,7 +1086,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             The status.
         """
         label_selector = (
-            f"step_run_id={kube_utils.sanitize_label(str(step_run.id))}"
+            f"step_run_id={kube_utils.sanitize_label_value(str(step_run.id))}"
         )
         try:
             job_list = kube_utils.list_jobs(
@@ -988,6 +1094,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 namespace=self.config.kubernetes_namespace,
                 label_selector=label_selector,
                 api_request_timeout=self.config.api_request_timeout,
+                max_retries=self.config.max_api_retries,
             )
         except Exception as e:
             logger.warning(
@@ -995,17 +1102,41 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             )
             return ExecutionStatus.FAILED
 
-        if not job_list.items:
-            logger.warning("No jobs found for step run `%s`", step_run.id)
-            return ExecutionStatus.FAILED
+        if job_list.items:
+            job_name = job_list.items[0].metadata.name
+            status, error_message = kube_utils.check_job_status(
+                batch_api=self._k8s_batch_api,
+                core_api=self._k8s_core_api,
+                namespace=self.config.kubernetes_namespace,
+                job_name=job_name,
+                api_request_timeout=self.config.api_request_timeout,
+                max_retries=self.config.max_api_retries,
+            )
+        else:
+            status, error_message = kube_utils.JobStatus.NOT_FOUND, None
 
-        job = job_list.items[0]
-        if job.status.conditions:
-            for condition in job.status.conditions:
-                if condition.type == "Complete" and condition.status == "True":
-                    return ExecutionStatus.COMPLETED
-                if condition.type == "Failed" and condition.status == "True":
-                    return ExecutionStatus.FAILED
+        if status == kube_utils.JobStatus.NOT_FOUND:
+            # Kubernetes also deletes successful jobs once their TTL expires,
+            # so the step run is the only remaining record of the outcome. An
+            # unfinished step run can't finish without its job.
+            logger.warning("No job found for step run `%s`", step_run.id)
+            step_run_status = (
+                Client().get_run_step(step_run.id, hydrate=False).status
+            )
+            if step_run_status.is_finished:
+                return step_run_status
+            return ExecutionStatus.FAILED
+        if status == kube_utils.JobStatus.SUCCEEDED:
+            return ExecutionStatus.COMPLETED
+        if status == kube_utils.JobStatus.FAILED:
+            logger.error(
+                "Kubernetes job `%s:%s` for step run `%s` failed: %s",
+                self.config.kubernetes_namespace,
+                job_name,
+                step_run.id,
+                error_message,
+            )
+            return ExecutionStatus.FAILED
 
         return ExecutionStatus.RUNNING
 
@@ -1016,7 +1147,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             step_run: The step run.
         """
         label_selector = (
-            f"step_run_id={kube_utils.sanitize_label(str(step_run.id))}"
+            f"step_run_id={kube_utils.sanitize_label_value(str(step_run.id))}"
         )
         try:
             job_list = kube_utils.list_jobs(
@@ -1024,6 +1155,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 namespace=self.config.kubernetes_namespace,
                 label_selector=label_selector,
                 api_request_timeout=self.config.api_request_timeout,
+                max_retries=self.config.max_api_retries,
             )
         except Exception as e:
             logger.warning(
@@ -1091,6 +1223,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                     pod_name=pod_name,
                     namespace=self.config.kubernetes_namespace,
                     api_request_timeout=self.config.api_request_timeout,
+                    max_retries=self.config.max_api_retries,
                 )
             except Exception as e:
                 logger.warning(
@@ -1126,13 +1259,16 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         errors = []
 
         # Find all jobs running steps of the pipeline
-        label_selector = f"run_id={kube_utils.sanitize_label(str(run.id))}"
+        label_selector = (
+            f"run_id={kube_utils.sanitize_label_value(str(run.id))}"
+        )
         try:
             job_list = kube_utils.list_jobs(
                 batch_api=self._k8s_batch_api,
                 namespace=self.config.kubernetes_namespace,
                 label_selector=label_selector,
                 api_request_timeout=self.config.api_request_timeout,
+                max_retries=self.config.max_api_retries,
             )
         except Exception as e:
             raise RuntimeError(
@@ -1219,13 +1355,16 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         pipeline_status = None
         include_run_status = not run.status.is_finished
 
-        label_selector = f"run_id={kube_utils.sanitize_label(str(run.id))}"
+        label_selector = (
+            f"run_id={kube_utils.sanitize_label_value(str(run.id))}"
+        )
         try:
             job_list = kube_utils.list_jobs(
                 batch_api=self._k8s_batch_api,
                 namespace=self.config.kubernetes_namespace,
                 label_selector=label_selector,
                 api_request_timeout=self.config.api_request_timeout,
+                max_retries=self.config.max_api_retries,
             )
         except Exception as e:
             logger.warning(f"Failed to list jobs for run {run.id}: {e}")

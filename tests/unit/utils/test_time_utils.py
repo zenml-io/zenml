@@ -1,8 +1,29 @@
+"""Tests for time utilities."""
+
 from datetime import datetime
 
 import pytest
 
-from zenml.utils.time_utils import iso8601_to_utc_naive
+from zenml.utils.time_utils import (
+    exponential_backoff_delays,
+    iso8601_to_utc_naive,
+)
+
+
+def test_exponential_backoff_remains_capped_for_many_attempts() -> None:
+    """Ensure capped backoff delays do not overflow after many attempts."""
+    delays = list(
+        exponential_backoff_delays(
+            attempts=2000,
+            initial_delay=1.0,
+            max_delay=20.0,
+            factor=2.0,
+            jitter="none",
+        )
+    )
+
+    assert delays[:6] == [1.0, 2.0, 4.0, 8.0, 16.0, 20.0]
+    assert delays[-1] == 20.0
 
 
 def test_iso8601_to_utc_naive_expected_behaviors() -> None:

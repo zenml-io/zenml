@@ -11,19 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from pipelines.docker_settings import docker_settings
 from pipelines.tracking_pipeline.tracking_pipeline import (
     mlflow_tracking_pipeline,
 )
 
 from zenml import pipeline
-from zenml.config import DockerSettings
-from zenml.integrations.constants import MLFLOW, SKLEARN
 from zenml.integrations.mlflow.steps.mlflow_registry import (
     mlflow_register_model_step,
-)
-
-docker_settings = DockerSettings(
-    required_integrations=[MLFLOW, SKLEARN], requirements=["scikit-image"]
 )
 
 

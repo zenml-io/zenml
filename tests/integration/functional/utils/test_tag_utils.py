@@ -123,13 +123,39 @@ def test_tag_utils(clean_client):
     assert len(runs.items) == 0
 
     remove_tags(
-        tags=["cascade_tag", "exclusive_tag"],
+        tags=["cascade_tag", "exclusive_tag", "normal_tag", "axl"],
         run=second_run.id,
     )
     run = clean_client.get_pipeline_run(second_run.id)
     second_run_tags = [t.name for t in run.tags]
     assert "cascade_tag" not in second_run_tags
     assert "exclusive_tag" not in second_run_tags
+
+    runs_with_tags = clean_client.list_pipeline_runs(tags=["isnotnull:"])
+    runs_without_tags = clean_client.list_pipeline_runs(tags=["isnull:"])
+    runs_not_contains_exclusive = clean_client.list_pipeline_runs(
+        tags=["notcontains:exclusive"]
+    )
+
+    run_ids_with_tags = {run.id for run in runs_with_tags.items}
+    run_ids_without_tags = {run.id for run in runs_without_tags.items}
+    run_ids_not_contains_exclusive = {
+        run.id for run in runs_not_contains_exclusive.items
+    }
+
+    assert first_run.id in run_ids_with_tags
+    assert second_run.id not in run_ids_with_tags
+    assert second_run.id in run_ids_without_tags
+    assert first_run.id not in run_ids_without_tags
+    assert first_run.id in run_ids_not_contains_exclusive
+
+    add_tags(tags=["standalone_only_tag"], run=second_run.id)
+    runs_not_one_of = clean_client.list_pipeline_runs(
+        tags=['notoneof:["normal_tag","cascade_tag","exclusive_tag","axl"]']
+    )
+    run_ids_not_one_of = {run.id for run in runs_not_one_of.items}
+    assert second_run.id in run_ids_not_one_of
+    assert first_run.id not in run_ids_not_one_of
 
     pipeline_model = clean_client.get_pipeline(first_run.pipeline.id)
     with pytest.raises(ValueError):
@@ -277,3 +303,51 @@ def test_tags_with_special_characters():
     for tag in tags:
         client.get_tag(tag)
         client.delete_tag(tag)
+
+
+@step
+def step_infer_artifact_false() -> None:
+    """Step calls add_tags with an explicit `infer_artifact=False`."""
+    add_tags(tags=["axl_no_infer"], infer_artifact=False)
+
+
+@pipeline(enable_cache=False)
+def pipeline_for_infer_artifact_false():
+    """Pipeline exercising the bare `infer_artifact=False` call shape."""
+    step_infer_artifact_false()
+
+
+@pipeline(enable_cache=False)
+def pipeline_plain_run():
+    """Pipeline used only to obtain a run to tag from the outside."""
+    step_no_output()
+
+
+def test_infer_artifact_false_dispatches_like_the_default(clean_client):
+    """A bare `infer_artifact=False` must behave exactly like omitting it.
+
+    The only overload accepting ``infer_artifact`` defaults it to ``False``, so
+    passing it explicitly with no other identifier is valid and means "do not
+    infer". It has to tag the run through the step context, the same as
+    ``add_tags(tags=...)``, rather than fall through to the unsupported-call
+    ``ValueError``.
+    """
+    run = pipeline_for_infer_artifact_false()
+
+    tags = [t.name for t in clean_client.get_pipeline_run(run.id).tags]
+    assert "axl_no_infer" in tags
+
+
+def test_infer_artifact_false_keeps_rejecting_manual_resources(clean_client):
+    """`infer_artifact` is not part of the manual-resource call shapes.
+
+    No overload accepts it alongside ``run``/``pipeline``/``artifact``, so those
+    combinations must keep raising instead of being silently accepted.
+    """
+    run = pipeline_plain_run()
+
+    with pytest.raises(ValueError):
+        add_tags(tags=["axl_no_infer"], run=run.id, infer_artifact=False)
+
+    with pytest.raises(ValueError):
+        remove_tags(tags=["axl_no_infer"], run=run.id, infer_artifact=False)

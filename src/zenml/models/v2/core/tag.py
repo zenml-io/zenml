@@ -18,9 +18,17 @@ from typing import TYPE_CHECKING, ClassVar, List, Optional, Type, TypeVar
 
 from pydantic import Field, field_validator
 
-from zenml.constants import STR_FIELD_MAX_LENGTH
+from zenml.constants import (
+    ENV_ZENML_USE_GLOBAL_RANDOM_SEED,
+    STR_FIELD_MAX_LENGTH,
+    handle_bool_env_var,
+)
 from zenml.enums import ColorVariants, TaggableResourceTypes
 from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import (
+    EnumFilterOption,
+    StringFilterOption,
+)
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
     UserScopedRequest,
@@ -38,6 +46,20 @@ if TYPE_CHECKING:
 
     AnySchema = TypeVar("AnySchema", bound="BaseSchema")
 
+
+def _random_tag_color() -> ColorVariants:
+    """Pick a color for a tag that was created without one.
+
+    Returns:
+        A random color. It only follows the global `random` seed if
+        `ZENML_USE_GLOBAL_RANDOM_SEED` is enabled.
+    """
+    colors = list(ColorVariants)
+    if handle_bool_env_var(ENV_ZENML_USE_GLOBAL_RANDOM_SEED):
+        return random.choice(colors)
+    return random.SystemRandom().choice(colors)
+
+
 # ------------------ Request Model ------------------
 
 
@@ -54,7 +76,7 @@ class TagRequest(UserScopedRequest):
     )
     color: ColorVariants = Field(
         description="The color variant assigned to the tag.",
-        default_factory=lambda: random.choice(list(ColorVariants)),
+        default_factory=_random_tag_color,
     )
 
     @field_validator("name")
@@ -120,7 +142,7 @@ class TagResponseBody(UserScopedResponseBody):
 
     color: ColorVariants = Field(
         description="The color variant assigned to the tag.",
-        default_factory=lambda: random.choice(list(ColorVariants)),
+        default_factory=_random_tag_color,
     )
     exclusive: bool = Field(
         description="The flag signifying whether the tag is an exclusive tag."
@@ -199,18 +221,22 @@ class TagFilter(UserScopedFilter):
         *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "resource_type",
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *UserScopedFilter.API_SINGLE_INPUT_PARAMS,
+        "exclusive",
+    ]
 
-    name: Optional[str] = Field(
+    name: StringFilterOption = Field(
         description="The unique title of the tag.", default=None
     )
-    color: Optional[ColorVariants] = Field(
+    color: EnumFilterOption[ColorVariants] = Field(
         description="The color variant assigned to the tag.", default=None
     )
     exclusive: Optional[bool] = Field(
         description="The flag signifying whether the tag is an exclusive tag.",
         default=None,
     )
-    resource_type: Optional[TaggableResourceTypes] = Field(
+    resource_type: EnumFilterOption[TaggableResourceTypes] = Field(
         description="Filter tags associated with a specific resource type.",
         default=None,
     )
@@ -237,13 +263,24 @@ class TagFilter(UserScopedFilter):
 
         if self.resource_type:
             # Filter for tags that have at least one association with the specified resource type
-            resource_type_filter = exists(
-                select(TagResourceSchema).where(
-                    TagResourceSchema.tag_id == TagSchema.id,
-                    TagResourceSchema.resource_type
-                    == self.resource_type.value,
-                )
+            resource_type_filters = (
+                self.resource_type
+                if isinstance(self.resource_type, list)
+                else [self.resource_type]
             )
-            custom_filters.append(resource_type_filter)
+            for resource_type_filter in resource_type_filters:
+                resource_type = (
+                    resource_type_filter.value
+                    if isinstance(resource_type_filter, TaggableResourceTypes)
+                    else resource_type_filter
+                )
+                custom_filters.append(
+                    exists(
+                        select(TagResourceSchema).where(
+                            TagResourceSchema.tag_id == TagSchema.id,
+                            TagResourceSchema.resource_type == resource_type,
+                        )
+                    )
+                )
 
         return custom_filters

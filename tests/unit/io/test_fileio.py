@@ -18,12 +18,15 @@ from collections.abc import Iterable
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from types import GeneratorType
+from typing import Any
 
 import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis.strategies import text
 
 from zenml.io import fileio
+from zenml.io.filesystem import BaseFilesystem, PathType
+from zenml.io.filesystem_registry import default_filesystem_registry
 from zenml.logger import get_logger
 from zenml.utils import io_utils
 
@@ -247,3 +250,54 @@ def test_walk_returns_an_iterator(tmp_path) -> None:
 def test_walk_function_returns_a_generator_object(tmp_path):
     """Check walk function returns a generator object."""
     assert isinstance(fileio.walk(str(tmp_path)), GeneratorType)
+
+
+def test_copy_across_filesystems_streams_in_chunks(tmp_path, monkeypatch):
+    """Test that cross-filesystem copies stream chunks instead of buffering.
+
+    A copy between two different filesystems (e.g. uploading a local file to
+    a remote artifact store) must never read the entire source file into
+    memory at once.
+    """
+    written_chunks = []
+
+    class _RecordingWriter:
+        def write(self, data: bytes) -> int:
+            written_chunks.append(bytes(data))
+            return len(data)
+
+        def __enter__(self) -> "_RecordingWriter":
+            return self
+
+        def __exit__(self, *args: Any) -> bool:
+            return False
+
+    class MockChunkFilesystem(BaseFilesystem):
+        SUPPORTED_SCHEMES = {"mockchunkfs://"}
+
+        @staticmethod
+        def open(path: PathType, mode: str = "r") -> Any:
+            return _RecordingWriter()
+
+        @staticmethod
+        def exists(path: PathType) -> bool:
+            return False
+
+    # Patch the registry instead of calling `register()` so the mock scheme
+    # is removed again after the test.
+    monkeypatch.setitem(
+        default_filesystem_registry._filesystems,
+        "mockchunkfs://",
+        MockChunkFilesystem,
+    )
+    monkeypatch.setattr(fileio, "FILEIO_COPY_CHUNK_SIZE", 4)
+
+    source_path = tmp_path / "source.bin"
+    content = b"0123456789abcdef"
+    source_path.write_bytes(content)
+
+    fileio.copy(str(source_path), "mockchunkfs://bucket/destination.bin")
+
+    assert b"".join(written_chunks) == content
+    assert len(written_chunks) == 4
+    assert all(len(chunk) <= 4 for chunk in written_chunks)

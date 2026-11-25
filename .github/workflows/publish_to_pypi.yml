@@ -2,6 +2,10 @@
 name: Publish Pypi package
 on:
   workflow_call:
+env:
+  ZENML_DEBUG: 1
+  ZENML_LOGGING_VERBOSITY: debug
+  ZENML_ANALYTICS_OPT_IN: false
 jobs:
   publish_to_pypi:
     name: Publish Python 🐍 package 📦 to PyPI
@@ -12,24 +16,24 @@ jobs:
       id-token: write
       contents: read
     env:
-      ZENML_DEBUG: 1
-      ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - name: Get the version from the github tag ref
         id: get_version
         run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
       - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
           python-version: '3.11'
       - name: Install uv
-        uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57  # v8.0.0
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
         with:
           version: 0.8.14
           enable-cache: false
       - name: Include latest dashboard
+        env:
+          ZENML_UI_RELEASE_TOKEN: ${{ secrets.ZENML_UI_RELEASE_TOKEN }}
         run: bash scripts/install-dashboard.sh
       - name: Verify version
         run: |-
@@ -40,4 +44,4 @@ jobs:
       - name: Build package
         run: uv build
       - name: Publish package distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # release/v1
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086  # release/v1

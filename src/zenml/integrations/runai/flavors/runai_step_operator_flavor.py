@@ -13,7 +13,9 @@
 #  permissions and limitations under the License.
 """Run:AI step operator flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Type
+import re
+from collections import Counter
+from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Type
 from urllib.parse import urlparse
 
 from pydantic import (
@@ -26,8 +28,22 @@ from pydantic import (
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.runai import RUNAI_STEP_OPERATOR_FLAVOR
+from zenml.integrations.runai.flavors.runai_training_workload_settings import (
+    RunAIConfigMapMountSettings,
+    RunAIExternalURLSettings,
+    RunAIHostPathMountSettings,
+    RunAINFSMountSettings,
+    RunAIPortSettings,
+    RunAIPVCMountSettings,
+    RunAIS3MountSettings,
+    RunAISecretMountSettings,
+    RunAISecurityContextSettings,
+    RunAITolerationSettings,
+)
 from zenml.step_operators import BaseStepOperatorConfig, BaseStepOperatorFlavor
 from zenml.utils.secret_utils import PlainSerializedSecretStr
+
+_MEMORY_FORMAT_RE = re.compile(r"^(\d+(?:\.\d+)?)(K|M|G|T|Ki|Mi|Gi|Ti)$")
 
 if TYPE_CHECKING:
     from zenml.integrations.runai.step_operators import RunAIStepOperator
@@ -142,12 +158,11 @@ class RunAIStepOperatorSettings(BaseSettings):
         "Run:AI presets: 'train' (50), 'build' (50), 'interactive-preemptible' (100), 'inference' (125)",
     )
 
-    tolerations: Optional[List[Dict[str, Any]]] = Field(
+    tolerations: Optional[List[RunAITolerationSettings]] = Field(
         default=None,
-        description="Kubernetes tolerations for scheduling on tainted nodes. Each item: "
-        "{'key': str, 'operator': 'Equal'|'Exists', 'value': str, "
-        "'effect': 'NoSchedule'|'PreferNoSchedule'|'NoExecute'}. "
-        "Example: [{'key': 'nvidia.com/gpu', 'operator': 'Exists', 'effect': 'NoSchedule'}]",
+        description="Kubernetes tolerations for scheduling on tainted nodes. Each item is a "
+        "RunAITolerationSettings with optional key, operator, value, and effect. "
+        "Example: [RunAITolerationSettings(key='nvidia.com/gpu', operator='Exists', effect='NoSchedule')]",
     )
 
     extended_resources: Optional[Dict[str, str]] = Field(
@@ -194,6 +209,79 @@ class RunAIStepOperatorSettings(BaseSettings):
         "Example: {'prometheus.io/scrape': 'true'}",
     )
 
+    pvc_mounts: Optional[List[RunAIPVCMountSettings]] = Field(
+        default=None,
+        description="PVC mounts attached to the workload. Each entry is a "
+        "RunAIPVCMountSettings with claim_name and absolute container path. "
+        "Example: [RunAIPVCMountSettings(claim_name='datasets', path='/mnt/data')]",
+    )
+    config_map_mounts: Optional[List[RunAIConfigMapMountSettings]] = Field(
+        default=None,
+        description="ConfigMap mounts attached to the workload. Each entry is a "
+        "RunAIConfigMapMountSettings with config_map name and absolute mount_path. "
+        "Example: [RunAIConfigMapMountSettings(config_map='train-cfg', mount_path='/etc/train')]",
+    )
+    secret_mounts: Optional[List[RunAISecretMountSettings]] = Field(
+        default=None,
+        description="Secret mounts attached to the workload. Each entry is a "
+        "RunAISecretMountSettings with secret name and absolute mount_path. "
+        "Example: [RunAISecretMountSettings(secret='hf-token', mount_path='/etc/secrets')]",
+    )
+    nfs_mounts: Optional[List[RunAINFSMountSettings]] = Field(
+        default=None,
+        description="NFS mounts attached to the workload. Each entry is a "
+        "RunAINFSMountSettings with server, exported path, and container mount_path. "
+        "Example: [RunAINFSMountSettings(server='nfs.example.com', path='/exports', mount_path='/mnt/nfs')]",
+    )
+    s3_mounts: Optional[List[RunAIS3MountSettings]] = Field(
+        default=None,
+        description="S3 mounts attached to the workload. Each entry is a "
+        "RunAIS3MountSettings with bucket and absolute container path. "
+        "Example: [RunAIS3MountSettings(bucket='my-bucket', path='/mnt/s3')]",
+    )
+    host_path_mounts: Optional[List[RunAIHostPathMountSettings]] = Field(
+        default=None,
+        description="HostPath mounts attached to the workload. Each entry is a "
+        "RunAIHostPathMountSettings with absolute host path and absolute mount_path. "
+        "Example: [RunAIHostPathMountSettings(path='/var/data', mount_path='/mnt/host')]",
+    )
+    workload_template_id: Optional[str] = Field(
+        default=None,
+        description="Run:AI workload template ID to apply when creating the workload. "
+        "Must be the UUID of an existing template; ZenML does not resolve template names. "
+        "Example: '550e8400-e29b-41d4-a716-446655440000'",
+    )
+    security_context: Optional[RunAISecurityContextSettings] = Field(
+        default=None,
+        description="Container security context. Accepts a RunAISecurityContextSettings "
+        "with UID/GID, seccomp, capabilities, and related fields. "
+        "Example: RunAISecurityContextSettings(uid_gid_source='custom', run_as_uid=1000, run_as_gid=1000)",
+    )
+    ports: Optional[List[RunAIPortSettings]] = Field(
+        default=None,
+        description="Container ports to expose on the workload. Each entry is a "
+        "RunAIPortSettings with container port (1-65535) and optional service_type. "
+        "Example: [RunAIPortSettings(container=8888, service_type='ClusterIP', external=30088)]",
+    )
+    external_urls: Optional[List[RunAIExternalURLSettings]] = Field(
+        default=None,
+        description="External URL exposure for the workload. Each entry is a "
+        "RunAIExternalURLSettings with container port and authorization_type. "
+        "Example: [RunAIExternalURLSettings(container=8888, authorization_type='authenticatedUsers')]",
+    )
+    parallelism: Optional[PositiveInt] = Field(
+        default=None,
+        description="Run:AI training workload parallelism. Number of pods that run "
+        "the same step in parallel for one step run. Must be <= completions. "
+        "Use only for explicitly idempotent workloads. Example: 2",
+    )
+    completions: Optional[PositiveInt] = Field(
+        default=None,
+        description="Run:AI training workload completions. Total number of successful "
+        "pod completions required for the workload to be considered complete. "
+        "Must be >= parallelism. Example: 4",
+    )
+
     workload_timeout: Optional[PositiveInt] = Field(
         default=None,
         description="Maximum time in seconds to wait for workload completion. "
@@ -229,11 +317,7 @@ class RunAIStepOperatorSettings(BaseSettings):
         if value is None:
             return None
 
-        import re
-
-        # Use regex for stricter validation
-        pattern = r"^(\d+(?:\.\d+)?)(K|M|G|T|Ki|Mi|Gi|Ti)$"
-        if not re.match(pattern, value):
+        if not _MEMORY_FORMAT_RE.match(value):
             raise ValueError(
                 f"Invalid memory format: {value}. "
                 f"Must be a number followed by one of: K, M, G, T, Ki, Mi, Gi, Ti. "
@@ -243,14 +327,14 @@ class RunAIStepOperatorSettings(BaseSettings):
         return value
 
     @model_validator(mode="after")
-    def _validate_gpu_settings(self) -> "RunAIStepOperatorSettings":
-        """Validate GPU settings consistency.
+    def _validate_settings(self) -> "RunAIStepOperatorSettings":
+        """Validate cross-field settings consistency.
 
         Returns:
             The validated settings.
 
         Raises:
-            ValueError: If GPU settings are inconsistent.
+            ValueError: If settings are inconsistent.
         """
         if self.gpu_request_type == "memory" and not self.gpu_memory_request:
             raise ValueError(
@@ -261,6 +345,36 @@ class RunAIStepOperatorSettings(BaseSettings):
                 raise ValueError(
                     "gpu_portion_limit must be >= gpu_portion_request"
                 )
+
+        if (
+            self.parallelism is not None
+            and self.completions is not None
+            and self.parallelism > self.completions
+        ):
+            raise ValueError("parallelism must be <= completions")
+
+        mount_collections = (
+            self.pvc_mounts,
+            self.config_map_mounts,
+            self.secret_mounts,
+            self.nfs_mounts,
+            self.s3_mounts,
+            self.host_path_mounts,
+        )
+        mount_paths = [
+            mount.container_mount_path
+            for collection in mount_collections
+            for mount in (collection or [])
+        ]
+        duplicate_mount_paths = {
+            path for path, count in Counter(mount_paths).items() if count > 1
+        }
+        if duplicate_mount_paths:
+            sorted_paths = ", ".join(sorted(duplicate_mount_paths))
+            raise ValueError(
+                f"Mount paths must be unique across all Run:AI mounts: {sorted_paths}"
+            )
+
         return self
 
 

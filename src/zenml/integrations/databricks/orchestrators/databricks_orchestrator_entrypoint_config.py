@@ -14,12 +14,13 @@
 """Entrypoint configuration for ZenML Databricks pipeline steps."""
 
 import os
-import sys
-from importlib.metadata import distribution
 from typing import Any, Dict, List
 
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
+)
+from zenml.integrations.databricks.utils.databricks_utils import (
+    configure_databricks_wheel_environment,
 )
 
 WHEEL_PACKAGE_OPTION = "wheel_package"
@@ -32,9 +33,8 @@ ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID = (
 class DatabricksEntrypointConfiguration(StepEntrypointConfiguration):
     """Entrypoint configuration for ZenML Databricks pipeline steps.
 
-    The only purpose of this entrypoint configuration is to reconstruct the
-    environment variables that exceed the maximum length of 256 characters
-    allowed for Databricks Processor steps from their individual components.
+    Databricks job parameters are limited to 256 characters, so this
+    configuration reconstructs long environment variables from shorter options.
     """
 
     @classmethod
@@ -77,23 +77,12 @@ class DatabricksEntrypointConfiguration(StepEntrypointConfiguration):
 
     def run(self) -> None:
         """Runs the step."""
-        # Get the wheel package and add it to the sys path
         wheel_package = self.entrypoint_args[WHEEL_PACKAGE_OPTION]
+        configure_databricks_wheel_environment(wheel_package)
 
-        dist = distribution(wheel_package)
-        project_root = os.path.join(
-            str(dist.locate_file(".")), str(wheel_package)
-        )
-
-        if project_root not in sys.path:
-            sys.path.insert(0, project_root)
-            sys.path.insert(-1, project_root)
-
-        # Get the job id and add it to the environment
         databricks_job_id = self.entrypoint_args[DATABRICKS_JOB_ID_OPTION]
         os.environ[ENV_ZENML_DATABRICKS_ORCHESTRATOR_RUN_ID] = (
             databricks_job_id
         )
 
-        # Run the step
         super().run()

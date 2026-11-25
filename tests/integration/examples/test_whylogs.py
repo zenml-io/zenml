@@ -18,8 +18,12 @@ from tests.integration.examples.utils import run_example
 
 
 def test_example(request: pytest.FixtureRequest) -> None:
-    """Runs the whylogs_data_profiling example."""
-    from whylogs.core import DatasetProfileView  # type: ignore
+    """Run the whylogs data profiling example when the integration is installed.
+
+    Args:
+        request: The pytest fixture request.
+    """
+    DatasetProfileView = pytest.importorskip("whylogs.core").DatasetProfileView
 
     with run_example(
         request=request,

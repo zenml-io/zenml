@@ -95,7 +95,15 @@ install_zenml() {
     fi
     
     # install ZenML in editable mode
-    uv pip install $PIP_ARGS $upgrade_args -e ".[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]"
+    uv pip install $PIP_ARGS $upgrade_args -e ".[server,otel,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]"
+
+    # `docstring_parser_fork` (required by pydoclint) ships under the same
+    # `docstring_parser/` namespace as the upstream `docstring-parser` package.
+    # Some integration dependencies pull in upstream `docstring-parser`, which
+    # then overwrites the fork's files on disk and breaks `pydoclint` with an
+    # `ImportError: cannot import name 'DocstringYields'`. Force-reinstall the
+    # fork last so its files win the namespace collision.
+    uv pip install $PIP_ARGS --force-reinstall --no-deps "docstring_parser_fork"
     
     echo "✅ ZenML installation completed"
 }
@@ -108,9 +116,15 @@ install_integrations() {
 
     ignore_integrations="feast label_studio bentoml seldon pycaret skypilot_aws skypilot_gcp skypilot_azure skypilot_kubernetes skypilot_lambda pigeon prodigy argilla vllm"
 
-    # Ignore tensorflow and deepchecks only on Python 3.12 and 3.13
-    if [ "$python_version" = "3.12" ] || [ "$python_version" = "3.13" ]; then
+    # Ignore tensorflow and deepchecks only on Python 3.12, 3.13 and 3.14
+    if [ "$python_version" = "3.12" ] || [ "$python_version" = "3.13" ] || [ "$python_version" = "3.14" ]; then
         ignore_integrations="$ignore_integrations tensorflow deepchecks"
+    fi
+
+    # The combined integration environment resolves Evidently to 0.6.0, whose
+    # NumPy/scikit-learn dependencies have no Python 3.14 wheels.
+    if [ "$python_version" = "3.14" ]; then
+        ignore_integrations="$ignore_integrations evidently"
     fi
 
     # TODO: Revisit once pytorch Windows support stabilizes.
@@ -119,6 +133,13 @@ install_integrations() {
     os_name=$(python -c "import platform; print(platform.system())")
     if [ "$os_name" = "Windows" ]; then
         ignore_integrations="$ignore_integrations pytorch neural_prophet pytorch_lightning"
+    fi
+
+    # whylogs-sketching has no Python 3.13/3.14 wheels. Its source build
+    # fails with GCC 15 on Ubuntu, so retain coverage on the other CI jobs.
+    if [ "$os_name" = "Linux" ] &&
+        { [ "$python_version" = "3.13" ] || [ "$python_version" = "3.14" ]; }; then
+        ignore_integrations="$ignore_integrations whylogs"
     fi
     
     # turn the ignore integrations into a list of --ignore-integration args
@@ -150,6 +171,12 @@ install_integrations() {
         echo "maison<2" >> integration-requirements.txt
     fi
     
+    # TensorFlow <2.15 keeps these shared integration environments on NumPy 1.
+    # PyArrow 26 needs NumPy 2 but omits that requirement from its wheel metadata.
+    if [ "$python_version" = "3.10" ] || [ "$python_version" = "3.11" ]; then
+        echo "pyarrow<26" >> integration-requirements.txt
+    fi
+
     echo "-e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]" >> integration-requirements.txt
 
     # Build upgrade arguments based on UPGRADE_ALL flag
@@ -184,6 +211,7 @@ set -x
 set -e
 
 export ZENML_DEBUG=1
+export ZENML_LOGGING_VERBOSITY=debug
 export ZENML_ANALYTICS_OPT_IN=false
 
 parse_args "$@"

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import os
 from contextlib import ExitStack as does_not_raise
-from typing import Tuple
+from typing import Any, Tuple
 
 from typing_extensions import Annotated
 
@@ -122,6 +122,22 @@ def test_step_with_single_artifact_list_input_works() -> None:
         pipeline_with_single_artifact_list_input()
 
 
+@step
+def bare_list_consumer(input_: list) -> None:
+    assert input_ == [1, 1]
+
+
+@pipeline(enable_cache=False, dynamic=True)
+def pipeline_with_bare_list_input() -> None:
+    bare_list_consumer([producer(), producer()])
+
+
+def test_step_with_bare_list_input_annotation_works() -> None:
+    """Tests that a step input annotated with bare `list` works."""
+    with does_not_raise():
+        pipeline_with_bare_list_input()
+
+
 def test_replay_skips_first_step_and_overrides_second_step_input():
     """Tests that replaying a pipeline and overriding step inputs works."""
     original_run = replay_pipeline(expected_consumer_input=1)
@@ -132,3 +148,115 @@ def test_replay_skips_first_step_and_overrides_second_step_input():
         skip={"producer"},
         step_input_overrides={"consumer": {"input_": 42}},
     )
+
+
+@pipeline(enable_cache=False, dynamic=True)
+def replay_pipeline_with_two_invocations(expected_consumer_input: int) -> None:
+    consumer(producer(), expected_input=expected_consumer_input)
+    consumer(producer(), expected_input=expected_consumer_input)
+
+
+def test_replay_overrides_step_input_by_name():
+    """Tests that a step-wide override applies to every invocation of a step."""
+    original_run = replay_pipeline_with_two_invocations(
+        expected_consumer_input=1
+    )
+
+    consumer_name = original_run.steps["consumer"].config.name
+
+    # Step-wide override applies to both `consumer` and `consumer_2`, while the
+    # per-invocation override wins for `consumer_2` only.
+    replay_pipeline_with_two_invocations.replay(
+        pipeline_run=original_run.id,
+        input_overrides={"expected_consumer_input": 42},
+        skip={"producer", "producer_2"},
+        step_default_input_overrides={consumer_name: {"input_": 42}},
+        step_input_overrides={"consumer_2": {"input_": 42}},
+    )
+
+
+@step
+def defaulted_parameter_consumer(value: str, expected_value: str) -> None:
+    assert value == expected_value
+
+
+@pipeline(enable_cache=False, dynamic=True)
+def replay_pipeline_with_defaulted_parameter(
+    expected_value: str, value: str = "default"
+) -> None:
+    defaulted_parameter_consumer(value=value, expected_value=expected_value)
+
+
+def test_replay_forwards_parameters_with_defaults():
+    """Tests that replaying forwards original values of defaulted parameters."""
+    original_run = replay_pipeline_with_defaulted_parameter(
+        expected_value="original", value="original"
+    )
+
+    replay_pipeline_with_defaulted_parameter.replay(
+        pipeline_run=original_run.id
+    )
+
+
+def test_replay_prefers_configured_parameters():
+    """Tests that configured parameters win over the original run values."""
+    original_run = replay_pipeline_with_defaulted_parameter(
+        expected_value="original", value="original"
+    )
+
+    replay_pipeline_with_defaulted_parameter.with_options(
+        parameters={"value": "configured"}
+    ).replay(
+        pipeline_run=original_run.id,
+        input_overrides={"expected_value": "configured"},
+    )
+
+
+@pipeline(enable_cache=False, dynamic=True)
+def replay_pipeline_with_removed_parameter(expected_value: str) -> None:
+    defaulted_parameter_consumer(
+        value="original", expected_value=expected_value
+    )
+
+
+def test_replay_ignores_removed_parameters():
+    """Tests that replaying ignores parameters the entrypoint no longer has."""
+    original_run = replay_pipeline_with_defaulted_parameter(
+        expected_value="original", value="original"
+    )
+
+    replay_pipeline_with_removed_parameter.replay(pipeline_run=original_run.id)
+
+
+@pipeline(enable_cache=False, dynamic=True)
+def replay_pipeline_with_arbitrary_parameters(
+    expected_value: str, **kwargs: Any
+) -> None:
+    defaulted_parameter_consumer(
+        value=kwargs["value"], expected_value=expected_value
+    )
+
+
+def test_replay_forwards_arbitrary_parameters():
+    """Tests that replaying forwards parameters of a `**kwargs` entrypoint."""
+    original_run = replay_pipeline_with_arbitrary_parameters(
+        expected_value="original", value="original"
+    )
+
+    replay_pipeline_with_arbitrary_parameters.replay(
+        pipeline_run=original_run.id
+    )
+
+
+def pipeline_function_definition() -> None:
+    producer()
+
+
+def test_pipeline_run_with_nested_pipeline_definition() -> None:
+    """Tests that a dynamic pipeline run succeeds when the pipeline is defined
+    inside a function rather than at module top level."""
+    nested_pipeline = pipeline(dynamic=True, enable_cache=False)(
+        pipeline_function_definition
+    )
+    with does_not_raise():
+        nested_pipeline()

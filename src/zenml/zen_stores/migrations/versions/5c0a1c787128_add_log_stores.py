@@ -7,7 +7,6 @@ Create Date: 2025-10-24 10:06:54.402219
 """
 
 import sqlalchemy as sa
-import sqlmodel
 from alembic import op
 
 # revision identifiers, used by Alembic.
@@ -21,9 +20,7 @@ def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
     with op.batch_alter_table("logs", schema=None) as batch_op:
         batch_op.add_column(
-            sa.Column(
-                "log_store_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
+            sa.Column("log_store_id", sa.Uuid(), nullable=True)
         )
         batch_op.alter_column("uri", existing_type=sa.TEXT(), nullable=True)
         batch_op.alter_column(

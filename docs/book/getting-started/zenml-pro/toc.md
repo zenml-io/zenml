@@ -37,14 +37,30 @@
 * [Teams](teams.md)
 * [Snapshots](snapshots.md)
 * [Triggers](triggers.md)
+* [Webhooks](webhooks.md)
+  * [Slack](webhooks/slack.md)
+  * [GitHub](webhooks/github.md)
+  * [ClickUp](webhooks/clickup.md)
+  * [Custom webhooks](webhooks/custom.md)
 * [Resource Pools](resource-pools.md)
   * [Core Concepts](resource-pools-core-concepts.md)
+  * [Admin Guide](resource-pools-admin-guide.md)
+  * [User Guide](resource-pools-user-guide.md)
+  * [External Workloads](resource-pools-external-workloads.md)
   * [Reconciliation Process](resource-pools-reconciliation.md)
   * [Examples](resource-pools-examples.md)
+
+## Bots
+
+* [Bots](bots.md)
+  * [Core Concepts](bots-core-concepts.md)
+  * [System Architecture](bots-system-architecture.md)
+  * [Roles and Permissions](bots-rbac.md)
 
 ## Access Management
 
 * [Roles & Permissions](roles.md)
+* [Trusted domains](trusted-domains.md)
 * [Personal Access Tokens](personal-access-tokens.md)
 * [Service Accounts](service-accounts.md)
 * [Secrets Stores](secrets-stores.md)

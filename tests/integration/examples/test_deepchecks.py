@@ -20,8 +20,12 @@ from tests.integration.examples.utils import run_example
 
 
 @pytest.mark.skipif(
-    sys.version_info.minor == 12 or sys.version_info.minor == 13,
-    reason="The deepchecks integrations is not yet supported on 3.12 or 3.13.",
+    sys.version_info.minor in (12, 13, 14),
+    reason="The deepchecks integrations is not yet supported on 3.12, 3.13 or 3.14.",
+)
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="Deepchecks imports PyTorch, whose DLLs fail to load on Windows CI.",
 )
 def test_example(request: pytest.FixtureRequest) -> None:
     """Test the deepchecks example."""

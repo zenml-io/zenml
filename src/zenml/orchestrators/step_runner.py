@@ -23,6 +23,7 @@ from typing import (
     ContextManager,
     Dict,
     List,
+    Optional,
     Tuple,
     Type,
 )
@@ -32,9 +33,9 @@ from zenml.artifacts.utils import _store_artifact_data_and_prepare_request
 from zenml.client import Client
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
-from zenml.enums import ArtifactSaveType, ExecutionStatus
+from zenml.enums import ArtifactSaveType, ExecutionStatus, HookType
 from zenml.exceptions import StepInterfaceError
-from zenml.hooks.hook_validators import load_and_run_hook
+from zenml.hooks.execution import run_lifecycle_hook
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.in_memory_materializer import InMemoryMaterializer
@@ -61,6 +62,7 @@ from zenml.steps.step_context import (
 )
 from zenml.steps.utils import (
     OutputSignature,
+    get_resolved_signature,
     parse_return_type_annotations,
     resolve_type_annotation,
 )
@@ -80,6 +82,7 @@ from zenml.utils.typing_utils import get_args, get_origin, is_union
 
 if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
+    from zenml.config.source import Source
     from zenml.config.step_configurations import Step
     from zenml.models import (
         ArtifactVersionResponse,
@@ -126,7 +129,7 @@ class StepRunner:
         input_artifacts: Dict[str, List["StepRunInputResponse"]],
         output_artifact_uris: Dict[str, str],
         step_run_info: StepRunInfo,
-    ) -> None:
+    ) -> "StepRunResponse":
         """Runs the step.
 
         Args:
@@ -139,8 +142,23 @@ class StepRunner:
         Raises:
             BaseException: A general exception if the step fails.
             StepHeartBeatTerminationException: if step heartbeat is enabled and the step is remotely stopped.
+
+        Returns:
+            The updated step run.
         """
         from zenml.deployers.server import runtime
+
+        # Deployment invocations share a single run context that the
+        # deployment service initializes once at startup, so the init and
+        # cleanup hooks must not run (and tear that context down) at step
+        # level, regardless of which orchestrator the stack uses.
+        # TODO: do we need to disable this for dynamic pipelines?
+        step_level_hooks_snapshot = None
+        if (
+            self._stack.orchestrator.run_init_cleanup_at_step_level
+            and not runtime.is_active()
+        ):
+            step_level_hooks_snapshot = step_run_info.snapshot
 
         logs_context: ContextManager[Any] = nullcontext()
         if is_step_logging_enabled(
@@ -154,12 +172,13 @@ class StepRunner:
         with logs_context:
             step_instance = self._load_step()
             output_materializers = self._load_output_materializers()
-            spec = inspect.getfullargspec(
-                inspect.unwrap(step_instance.entrypoint)
+            resolved_signature = get_resolved_signature(
+                step_instance.entrypoint
             )
 
             output_annotations = parse_return_type_annotations(
-                func=step_instance.entrypoint
+                func=step_instance.entrypoint,
+                resolved_signature=resolved_signature,
             )
 
             self._evaluate_artifact_names_in_collections(
@@ -185,8 +204,7 @@ class StepRunner:
 
             with step_context:
                 function_params = self._parse_inputs(
-                    args=spec.args,
-                    annotations=spec.annotations,
+                    signature=resolved_signature,
                     input_artifacts=input_artifacts,
                 )
 
@@ -212,6 +230,12 @@ class StepRunner:
 
                 heartbeat_worker = StepHeartbeatWorker(step_id=step_run.id)
 
+                self._fire_step_hook(
+                    self.configuration.start_hook_source,
+                    HookType.STEP_START,
+                    step_environment,
+                )
+
                 try:
                     if self._step.spec.enable_heartbeat:
                         logger.info(
@@ -220,13 +244,9 @@ class StepRunner:
                             step_run.id,
                         )
                         heartbeat_worker.start()
-                    if (
-                        # TODO: do we need to disable this for dynamic pipelines?
-                        pipeline_run.snapshot
-                        and self._stack.orchestrator.run_init_cleanup_at_step_level
-                    ):
+                    if step_level_hooks_snapshot:
                         self._stack.orchestrator.run_init_hook(
-                            snapshot=pipeline_run.snapshot
+                            snapshot=step_level_hooks_snapshot
                         )
 
                     # Get all step environment variables. For most
@@ -259,6 +279,17 @@ class StepRunner:
                                 ),
                             )
 
+                        # A remote stop is a graceful, non-failure termination,
+                        # so the per-attempt end hook fires here as it does on
+                        # the success and failure paths. The exception is None,
+                        # since the step did not fail.
+                        self._fire_step_hook(
+                            self.configuration.end_hook_source,
+                            HookType.STEP_END,
+                            step_environment,
+                            optional_args=(None,),
+                        )
+
                         raise StepHeartBeatTerminationException(
                             "Remotely stopped step - terminating execution."
                         )
@@ -273,21 +304,22 @@ class StepRunner:
                             step_run_id=step_run_info.step_run_id
                         )
 
+                        # The per-attempt end hook fires before the retry
+                        # decision, so it precedes the terminal failure hook.
+                        self._fire_step_hook(
+                            self.configuration.end_hook_source,
+                            HookType.STEP_END,
+                            step_environment,
+                            optional_args=(step_exception,),
+                        )
+
                         if not step_run.is_retriable:
-                            if (
-                                failure_hook_source
-                                := self.configuration.failure_hook_source
-                            ):
-                                logger.info(
-                                    "Detected failure hook. Running..."
-                                )
-                                with env_utils.temporary_environment(
-                                    step_environment
-                                ):
-                                    load_and_run_hook(
-                                        failure_hook_source,
-                                        step_exception=step_exception,
-                                    )
+                            self._fire_step_hook(
+                                self.configuration.failure_hook_source,
+                                HookType.STEP_FAILURE,
+                                step_environment,
+                                optional_args=(step_exception,),
+                            )
                     raise step_exception
                 finally:
                     heartbeat_worker.stop()
@@ -302,18 +334,17 @@ class StepRunner:
                         info=step_run_info, step_failed=step_failed
                     )
                     if not step_failed:
-                        if (
-                            success_hook_source
-                            := self.configuration.success_hook_source
-                        ):
-                            logger.info("Detected success hook. Running...")
-                            with env_utils.temporary_environment(
-                                step_environment
-                            ):
-                                load_and_run_hook(
-                                    success_hook_source,
-                                    step_exception=None,
-                                )
+                        self._fire_step_hook(
+                            self.configuration.end_hook_source,
+                            HookType.STEP_END,
+                            step_environment,
+                            optional_args=(None,),
+                        )
+                        self._fire_step_hook(
+                            self.configuration.success_hook_source,
+                            HookType.STEP_SUCCESS,
+                            step_environment,
+                        )
 
                         # Store and publish the output artifacts of the step function.
                         output_data = self._validate_outputs(
@@ -356,12 +387,9 @@ class StepRunner:
 
                     # We run the cleanup hook at step level if we're not in an
                     # environment that supports a shared run context
-                    if (
-                        pipeline_run.snapshot
-                        and self._stack.orchestrator.run_init_cleanup_at_step_level
-                    ):
+                    if step_level_hooks_snapshot:
                         self._stack.orchestrator.run_cleanup_hook(
-                            snapshot=pipeline_run.snapshot
+                            snapshot=step_level_hooks_snapshot
                         )
 
             # Update the status and output artifacts of the step run.
@@ -371,9 +399,29 @@ class StepRunner:
                 ]
                 for output_name, artifact in output_artifacts.items()
             }
-            publish_successful_step_run(
+            return publish_successful_step_run(
                 step_run_id=step_run_info.step_run_id,
                 output_artifact_ids=output_artifact_ids,
+            )
+
+    def _fire_step_hook(
+        self,
+        hook_source: Optional["Source"],
+        hook_type: HookType,
+        step_environment: Dict[str, str],
+        optional_args: Optional[Tuple[Any, ...]] = None,
+    ) -> None:
+        """Fires a configured step lifecycle hook in the step environment.
+
+        Args:
+            hook_source: The configured hook source, or None.
+            hook_type: The type of the lifecycle hook.
+            step_environment: The step environment to run the hook in.
+            optional_args: Candidate arguments offered to the hook in order.
+        """
+        with env_utils.temporary_environment(step_environment):
+            run_lifecycle_hook(
+                hook_source, hook_type, optional_args=optional_args
             )
 
     def _evaluate_artifact_names_in_collections(
@@ -441,15 +489,13 @@ class StepRunner:
 
     def _parse_inputs(
         self,
-        args: List[str],
-        annotations: Dict[str, Any],
+        signature: inspect.Signature,
         input_artifacts: Dict[str, List["StepRunInputResponse"]],
     ) -> Dict[str, Any]:
         """Parses the inputs for a step entrypoint function.
 
         Args:
-            args: The arguments of the step entrypoint function.
-            annotations: The annotations of the step entrypoint function.
+            signature: The resolved signature of the step entrypoint function.
             input_artifacts: The input artifact versions of the step.
 
         Raises:
@@ -461,11 +507,18 @@ class StepRunner:
         """
         function_params: Dict[str, Any] = {}
 
-        if args and args[0] == "self":
-            args.pop(0)
+        for arg, parameter in signature.parameters.items():
+            if parameter.kind in {
+                inspect.Parameter.VAR_POSITIONAL,
+                inspect.Parameter.VAR_KEYWORD,
+            }:
+                continue
 
-        for arg in args:
-            annotation = annotations.get(arg, None)
+            annotation = (
+                parameter.annotation
+                if parameter.annotation is not inspect.Parameter.empty
+                else None
+            )
             arg_type = resolve_type_annotation(annotation)
 
             if arg in input_artifacts:
@@ -497,9 +550,17 @@ class StepRunner:
                         pass
                     elif issubclass(arg_type, (list, tuple)):
                         assert annotation
-                        item_arg_type = get_args(annotation)[0]
-                        item_arg_type = resolve_type_annotation(item_arg_type)
                         collection_type = arg_type
+                        type_args = get_args(annotation)
+                        if type_args:
+                            item_arg_type = resolve_type_annotation(
+                                type_args[0]
+                            )
+                        else:
+                            # Bare `list` or `tuple` annotation without type
+                            # arguments, load each item using the data type
+                            # stored with the artifact.
+                            item_arg_type = Any
                     else:
                         raise StepInterfaceError(
                             "Passing multiple artifacts to a step is only "
@@ -556,6 +617,7 @@ class StepRunner:
             materializer: BaseMaterializer = materializer_class(
                 uri=artifact.uri, artifact_store=artifact_store
             )
+            materializer.expected_content_hash = artifact.content_hash
 
             if artifact.chunk_index is not None:
                 # We need to skip the type compatibility check here because
@@ -684,6 +746,9 @@ class StepRunner:
         Returns:
             The IDs of the published output artifacts.
         """
+        if not output_data:
+            return {}
+
         from zenml.deployers.server import runtime
 
         step_context = get_step_context()

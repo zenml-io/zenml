@@ -206,6 +206,9 @@ examples/computer_vision/test_runs
 #generated folder by zenml
 zenml_tutorial/
 
+# uv gunk
+uv.lock
+
 # Claude
 **/.claude/settings.local.json
 .claude/*

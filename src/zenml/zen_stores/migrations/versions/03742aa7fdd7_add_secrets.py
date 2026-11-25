@@ -22,11 +22,9 @@ def upgrade() -> None:
     op.create_table(
         "secret",
         sa.Column("values", sa.TEXT(), nullable=False),
-        sa.Column(
-            "workspace_id", sqlmodel.sql.sqltypes.GUID(), nullable=False
-        ),
-        sa.Column("user_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
-        sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("workspace_id", sa.Uuid(), nullable=False),
+        sa.Column("user_id", sa.Uuid(), nullable=False),
+        sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("created", sa.DateTime(), nullable=False),
         sa.Column("updated", sa.DateTime(), nullable=False),
         sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),

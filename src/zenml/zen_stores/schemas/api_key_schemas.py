@@ -56,6 +56,7 @@ class APIKeySchema(NamedSchema, table=True):
     description: str = Field(sa_column=Column(TEXT))
     key: str
     previous_key: Optional[str] = Field(default=None, nullable=True)
+    key_generation: int = Field(default=1)
     retain_period: int = Field(default=0)
     active: bool = Field(default=True)
     last_login: Optional[datetime] = None
@@ -214,6 +215,7 @@ class APIKeySchema(NamedSchema, table=True):
             id=self.id,
             name=self.name,
             previous_key=self.previous_key,
+            key_generation=self.key_generation,
             body=model.body,
             metadata=model.metadata,
         )
@@ -266,6 +268,7 @@ class APIKeySchema(NamedSchema, table=True):
         """
         self.updated = utc_now()
         self.previous_key = self.key
+        self.key_generation += 1
         self.retain_period = rotate_request.retain_period_minutes
         new_key = self._generate_jwt_secret_key()
         self.key = self._get_hashed_key(new_key)

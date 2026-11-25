@@ -11,6 +11,10 @@ The following enrollment key has been used to enroll your server in the ZenML Pr
 
   {{ $server.pro.enrollmentKey }}
 
+{{- else if $server.pro.enrollmentKeySecretRef }}
+
+The enrollment key has been sourced from key "{{ $server.pro.enrollmentKeySecretRef.key }}" in the existing Kubernetes Secret "{{ $server.pro.enrollmentKeySecretRef.name }}".
+
 {{- else }}
 
 An enrollment key has been auto-generated for your server. Please use the following command to fetch the enrollment key:
@@ -20,7 +24,20 @@ An enrollment key has been auto-generated for your server. Please use the follow
 {{- end }}
 
 {{- else }}
-{{- if $server.ingress.enabled }}
+{{- if $server.gateway.enabled }}
+{{- if $server.gateway.host }}
+{{- $gatewayScheme := "http" }}
+{{- if eq $server.gateway.sectionName "https" }}
+{{- $gatewayScheme = "https" }}
+{{- end }}
+
+Please access the ZenML server at the following URL {{- if .Release.IsInstall }} to activate the server and create an initial admin user account {{- end }}:
+
+  {{ $gatewayScheme }}://{{ $server.gateway.host }}{{ $server.gateway.path }}
+
+{{- else }}
+{{- end }}
+{{- else if $server.ingress.enabled }}
 {{- if $server.ingress.host }}
 
 Please access the ZenML server at the following URL {{- if .Release.IsInstall }} to activate the server and create an initial admin user account {{- end }}:

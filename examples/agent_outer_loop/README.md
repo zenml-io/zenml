@@ -26,9 +26,9 @@ Example of a simple pipeline:
 ```python
 @pipeline
 def my_pipeline():
-    data = load_data()        # Step 1: Load data
-    model = train_model(data) # Step 2: Train model using data from step 1
-    do_agentic_loop(model)    # Step 3: Use model with an agent (toy example)
+    data = load_data()  # Step 1: Load data
+    model = train_model(data)  # Step 2: Train model using data from step 1
+    do_agentic_loop(model)  # Step 3: Use model with an agent (toy example)
 ```
 
 **Key insight**: ZenML unifies batch training and real-time serving with the same primitives.
@@ -47,6 +47,8 @@ Note, this is purely a toy example meant to illustrate some of the key concepts 
 pip install -r requirements.txt
 export OPENAI_API_KEY=sk-xxx  # Optional - works without it
 ```
+
+With an API key, responses use `gpt-5.6-luna` with reasoning disabled and a 512-token completion limit. This leaves room for the requested two or three sentences without spending the budget on internal reasoning. Without a key, the example uses template responses.
 
 ### Setup
 ```bash
@@ -185,6 +187,7 @@ quickstart/
 This quickstart shows the foundation. In production, you might:
 
 - **Collect real conversation data** from agent interactions via tracing tools like Langfuse, Datadog, etc.
+- **Turn those traces into tests** with [Kitaru](https://docs.zenml.io/kitaru), ZenML's sibling project for agents: `kitaru-langfuse-importer` imports Langfuse traces as sessions you can replay against your real code with one thing changed, so a failure you saw in production becomes a check you can rerun ([importing your traces](https://docs.zenml.io/kitaru/getting-started/import-your-traces))
 - **Fine-tune larger models** (DistilBERT, small LLMs) for better accuracy
 - **A/B test model versions** by deploying different tagged artifacts
 - **Deploy to any cloud infrastructure** with [stacks](https://docs.zenml.io/stacks)

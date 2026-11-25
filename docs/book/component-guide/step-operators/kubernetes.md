@@ -119,7 +119,7 @@ Some configuration options for the Kubernetes step operator can only be set thro
 
 The following configuration options can be set either through the step operator config or overridden using `KubernetesStepOperatorSettings`:
 
-- **`pod_settings`**: Node selectors, labels, affinity, tolerations, secrets, environment variables and image pull secrets to apply to the Kubernetes Pods. These can be either specified using the Kubernetes model objects or as dictionaries.
+- **`pod_settings`**: Node selectors, labels, affinity, tolerations, secrets, environment variables, image pull secrets and image pull policy to apply to the Kubernetes Pods. These can be either specified using the Kubernetes model objects or as dictionaries.
 - **`service_account_name`**: Name of the service account to use for the pod.
 - **`privileged`** (default: False): If the container should be run in privileged mode.
 - **`pod_startup_timeout`** (default: 600): The maximum time (in seconds) to wait for a pending step pod to start.
@@ -223,6 +223,7 @@ kubernetes_settings = KubernetesStepOperatorSettings(
         ],
         "host_ipc": True,
         "image_pull_secrets": ["regcred", "gcr-secret"],
+        "image_pull_policy": "Always",
         "labels": {
             "app": "ml-pipeline",
             "environment": "production",
@@ -244,6 +245,63 @@ def my_kubernetes_step():
 Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kubernetes.html#zenml.integrations.kubernetes) for a full list of available attributes and [this docs page](https://docs.zenml.io/concepts/steps_and_pipelines/configuration) for more information on how to specify settings.
 
 For more information and a full list of configurable attributes of the Kubernetes steop operator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kubernetes.html#zenml.integrations.kubernetes) .
+
+#### Externally synchronized Linux identities
+
+If ZenML Pro has synchronized a numeric Linux UID and primary GID for the
+current user, the Kubernetes step operator applies that identity to its pod and
+every container. This also covers every pod in a multi-pod command step. The
+synchronized `runAsUser` and `runAsGroup` override conflicting pod settings
+while preserving unrelated security settings, including pod-level `fsGroup`.
+
+The UID and GID are applied independently. A synchronized UID sets
+`runAsUser`, while a synchronized GID sets `runAsGroup`. Missing values are
+omitted, while unexpected non-positive or non-integer values produce a warning
+and are ignored. ZenML does not derive `fsGroup` from the synchronized GID;
+administrators can configure it explicitly through the existing pod settings.
+Cluster admission policies, including OpenShift SCCs, must allow the requested
+IDs. ZenML does not broaden cluster permissions.
+
+#### Multi-pod command steps (distributed training)
+
+Command steps that own their own distributed launch (`torchrun`,
+prime-rl's entrypoints, Ray) can run across multiple pods by setting
+`pod_count`:
+
+```python
+from zenml import CommandStep
+from zenml.integrations.kubernetes.flavors import KubernetesStepOperatorSettings
+
+train = CommandStep(
+    command=[
+        "bash", "-lc",
+        "torchrun --nnodes=$ZENML_KUBERNETES_POD_COUNT "
+        "--node-rank=$JOB_COMPLETION_INDEX "
+        "--rdzv-backend=c10d "
+        "--rdzv-endpoint=$ZENML_KUBERNETES_MAIN_ADDRESS:$ZENML_KUBERNETES_MAIN_PORT "
+        "train.py",
+    ],
+    name="train",
+    step_operator="k8s",
+    settings={"step_operator": KubernetesStepOperatorSettings(pod_count=4)},
+)
+```
+
+The step becomes an indexed Kubernetes Job (`completions = parallelism
+= pod_count`) plus a headless service for stable pod-to-pod DNS.
+Every pod runs the step command with `ZENML_KUBERNETES_POD_COUNT`,
+`ZENML_KUBERNETES_MAIN_ADDRESS` (the DNS name of the pod with rank 0) and
+`ZENML_KUBERNETES_MAIN_PORT` set, and Kubernetes injects each pod's rank as
+`JOB_COMPLETION_INDEX`. All pods must exit 0 for the step to succeed.
+The service is owned by the Job, so cancellation, TTL cleanup, or
+deletion reap everything without depending on step code running.
+
+Set `pod_count` in the step settings, not the pipeline settings.
+Regular (non-command) steps are refused at `pod_count > 1`: they would
+duplicate their artifacts, outputs, and logs on every pod. The pods of
+a multi-pod job can start before the headless service exists, so the
+launcher must retry its rendezvous rather than resolve
+`ZENML_KUBERNETES_MAIN_ADDRESS` exactly once at startup (`torchrun` does).
 
 #### Enabling CUDA for GPU-backed hardware
 

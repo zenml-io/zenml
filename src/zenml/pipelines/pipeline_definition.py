@@ -59,7 +59,7 @@ from zenml.execution.pipeline.utils import (
     should_prevent_pipeline_execution,
     submit_pipeline,
 )
-from zenml.hooks.hook_validators import resolve_and_validate_hook
+from zenml.hooks.validation import resolve_and_validate_hook
 from zenml.logger import get_logger
 from zenml.models import (
     CodeReferenceRequest,
@@ -148,6 +148,10 @@ class Pipeline:
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
+        on_start: Optional["HookSpecification"] = None,
+        on_end: Optional["HookSpecification"] = None,
+        on_pause: Optional["HookSpecification"] = None,
+        on_resume: Optional["HookSpecification"] = None,
         on_init: Optional["InitHookSpecification"] = None,
         on_init_kwargs: Optional[Dict[str, Any]] = None,
         on_cleanup: Optional["HookSpecification"] = None,
@@ -178,12 +182,28 @@ class Pipeline:
             settings: Settings for this pipeline.
             tags: Tags to apply to runs of this pipeline.
             extra: Extra configurations for this pipeline.
-            on_failure: Callback function in event of failure of the step. Can
-                be a function with a single argument of type `BaseException`, or
-                a source path to such a function (e.g. `module.my_function`).
-            on_success: Callback function in event of success of the step. Can
-                be a function with no arguments, or a source path to such a
-                function (e.g. `module.my_function`).
+            on_failure: Hook run when the pipeline fails. A callable taking
+                an optional `BaseException`, or a source path to one. Static
+                pipelines propagate it to each step as a default. Dynamic
+                pipelines run it once at the run level.
+            on_success: Hook run when the pipeline succeeds. A no-arg
+                callable, or a source path to one. Static pipelines propagate
+                it to each step as a default. Dynamic pipelines run it once
+                at the run level.
+            on_start: Hook run when the pipeline starts. A no-arg callable,
+                or a source path to one. Static pipelines propagate it to each
+                step as a default. Dynamic pipelines run it once at the run
+                level.
+            on_end: Hook run when the pipeline ends. A callable taking an
+                optional `BaseException`, or a source path to one. Static
+                pipelines propagate it to each step as a default. Dynamic
+                pipelines run it once at the run level.
+            on_pause: Hook run when the run pauses. A no-arg callable, or a
+                source path to one. Static pipelines ignore it. Dynamic
+                pipelines run it once at the run level.
+            on_resume: Hook run when a paused run resumes. A no-arg callable,
+                or a source path to one. Static pipelines ignore it. Dynamic
+                pipelines run it once at the run level.
             on_init: Callback function to run on initialization of the pipeline.
                 Can be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`) if the function returns a
@@ -220,6 +240,10 @@ class Pipeline:
                 extra=extra,
                 on_failure=on_failure,
                 on_success=on_success,
+                on_start=on_start,
+                on_end=on_end,
+                on_pause=on_pause,
+                on_resume=on_resume,
                 on_init=on_init,
                 on_init_kwargs=on_init_kwargs,
                 on_cleanup=on_cleanup,
@@ -368,6 +392,10 @@ class Pipeline:
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
+        on_start: Optional["HookSpecification"] = None,
+        on_end: Optional["HookSpecification"] = None,
+        on_pause: Optional["HookSpecification"] = None,
+        on_resume: Optional["HookSpecification"] = None,
         on_init: Optional["InitHookSpecification"] = None,
         on_init_kwargs: Optional[Dict[str, Any]] = None,
         on_cleanup: Optional["HookSpecification"] = None,
@@ -407,12 +435,28 @@ class Pipeline:
             settings: Settings for this pipeline.
             tags: Tags to apply to runs of this pipeline.
             extra: Extra configurations for this pipeline.
-            on_failure: Callback function in event of failure of the step. Can
-                be a function with a single argument of type `BaseException`, or
-                a source path to such a function (e.g. `module.my_function`).
-            on_success: Callback function in event of success of the step. Can
-                be a function with no arguments, or a source path to such a
-                function (e.g. `module.my_function`).
+            on_failure: Hook run when the pipeline fails. A callable taking
+                an optional `BaseException`, or a source path to one. Static
+                pipelines propagate it to each step as a default. Dynamic
+                pipelines run it once at the run level.
+            on_success: Hook run when the pipeline succeeds. A no-arg
+                callable, or a source path to one. Static pipelines propagate
+                it to each step as a default. Dynamic pipelines run it once
+                at the run level.
+            on_start: Hook run when the pipeline starts. A no-arg callable,
+                or a source path to one. Static pipelines propagate it to each
+                step as a default. Dynamic pipelines run it once at the run
+                level.
+            on_end: Hook run when the pipeline ends. A callable taking an
+                optional `BaseException`, or a source path to one. Static
+                pipelines propagate it to each step as a default. Dynamic
+                pipelines run it once at the run level.
+            on_pause: Hook run when the run pauses. A no-arg callable, or a
+                source path to one. Static pipelines ignore it. Dynamic
+                pipelines run it once at the run level.
+            on_resume: Hook run when a paused run resumes. A no-arg callable,
+                or a source path to one. Static pipelines ignore it. Dynamic
+                pipelines run it once at the run level.
             on_init: Callback function to run on initialization of the pipeline.
                 Can be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`) if the function returns a
@@ -446,13 +490,33 @@ class Pipeline:
         if on_failure:
             # string of on_failure hook function to be used for this pipeline
             failure_hook_source, _ = resolve_and_validate_hook(
-                on_failure, allow_exception_arg=True
+                on_failure, Exception()
             )
 
         success_hook_source = None
         if on_success:
             # string of on_success hook function to be used for this pipeline
             success_hook_source, _ = resolve_and_validate_hook(on_success)
+
+        start_hook_source = None
+        if on_start:
+            # string of on_start hook function to be used for this pipeline
+            start_hook_source, _ = resolve_and_validate_hook(on_start)
+
+        end_hook_source = None
+        if on_end:
+            # string of on_end hook function to be used for this pipeline
+            end_hook_source, _ = resolve_and_validate_hook(on_end, Exception())
+
+        pause_hook_source = None
+        if on_pause:
+            # string of on_pause hook function to be used for this pipeline
+            pause_hook_source, _ = resolve_and_validate_hook(on_pause)
+
+        resume_hook_source = None
+        if on_resume:
+            # string of on_resume hook function to be used for this pipeline
+            resume_hook_source, _ = resolve_and_validate_hook(on_resume)
 
         init_hook_kwargs = None
         init_hook_source = None
@@ -472,7 +536,7 @@ class Pipeline:
             # string of on_init hook function and JSON-able arguments to be used
             # for this pipeline
             init_hook_source, init_hook_kwargs = resolve_and_validate_hook(
-                on_init, on_init_kwargs
+                on_init, kwargs=on_init_kwargs
             )
 
         cleanup_hook_source = None
@@ -503,6 +567,10 @@ class Pipeline:
                 "extra": extra,
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
+                "start_hook_source": start_hook_source,
+                "end_hook_source": end_hook_source,
+                "pause_hook_source": pause_hook_source,
+                "resume_hook_source": resume_hook_source,
                 "init_hook_source": init_hook_source,
                 "init_hook_kwargs": init_hook_kwargs,
                 "cleanup_hook_source": cleanup_hook_source,
@@ -546,6 +614,33 @@ class Pipeline:
         config = PipelineConfigurationUpdate(**values)
         self._apply_configuration(config, merge=merge)
         return self
+
+    @property
+    def parameters(self) -> List[str]:
+        """List of parameters for the pipeline entrypoint.
+
+        Returns:
+            List of parameters for the pipeline entrypoint.
+        """
+        signature = inspect.signature(self.entrypoint, follow_wrapped=True)
+        return [
+            parameter.name
+            for parameter in signature.parameters.values()
+            if parameter.kind is not inspect.Parameter.VAR_KEYWORD
+        ]
+
+    @property
+    def accepts_arbitrary_parameters(self) -> bool:
+        """Whether the pipeline entrypoint accepts arbitrary parameters.
+
+        Returns:
+            Whether the pipeline entrypoint accepts arbitrary parameters.
+        """
+        signature = inspect.signature(self.entrypoint, follow_wrapped=True)
+        return any(
+            parameter.kind is inspect.Parameter.VAR_KEYWORD
+            for parameter in signature.parameters.values()
+        )
 
     @property
     def required_parameters(self) -> List[str]:
@@ -1078,7 +1173,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                             "not run the same steps as the original run."
                         )
 
-                self.log_pipeline_snapshot_metadata(snapshot)
+                self.log_pipeline_snapshot_metadata(snapshot, stack)
 
                 run = (
                     create_placeholder_run(
@@ -1127,11 +1222,13 @@ To avoid this consider setting pipeline parameters only in one place (config or 
     @staticmethod
     def log_pipeline_snapshot_metadata(
         snapshot: PipelineSnapshotResponse,
+        stack: "Stack",
     ) -> None:
         """Displays logs based on the snapshot model upon running a pipeline.
 
         Args:
             snapshot: The model for the pipeline snapshot
+            stack: The stack the pipeline runs on
         """
         try:
             # Log about the caching status
@@ -1173,14 +1270,10 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             if snapshot.stack is not None:
                 logger.info(f"Using stack: `{snapshot.stack.name}`")
 
-                for (
-                    component_type,
-                    components,
-                ) in snapshot.stack.components.items():
-                    for component in components:
-                        logger.info(
-                            f"  {component_type.value}: `{component.name}`"
-                        )
+                for component in stack.all_components:
+                    logger.info(
+                        f"  {component.type.value}: `{component.name}`"
+                    )
         except Exception as e:
             logger.debug(f"Logging pipeline snapshot metadata failed: {e}")
 
@@ -1291,7 +1384,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     if not source.is_internal:
                         custom_materializer = True
 
-        stack_creator = Client().get_stack(stack.id).user_id
+        stack_creator = stack.model.user_id
         active_user = Client().active_user
         own_stack = stack_creator and stack_creator == active_user.id
 
@@ -1447,8 +1540,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         invocation_id = compute_invocation_id(
             existing_invocations=set(self.invocations.keys()),
-            step=step,
-            custom_id=custom_id,
+            base_name=custom_id or step.name,
             allow_suffix=allow_id_suffix,
         )
         self._invocations[invocation_id] = StepInvocation(
@@ -1571,7 +1663,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         pipeline_copy._run_args.update(run_args)
         return pipeline_copy
 
-    def copy(self) -> "Pipeline":
+    def copy(self) -> Self:
         """Copies the pipeline.
 
         Returns:
@@ -1595,11 +1687,25 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             *args: Entrypoint function arguments.
             **kwargs: Entrypoint function keyword arguments.
 
+        Raises:
+            RuntimeError: If a non-dynamic pipeline is called from inside a
+                dynamic pipeline run.
+
         Returns:
             If called within another pipeline, returns the outputs of the
             `entrypoint` method. Otherwise, returns the pipeline run or `None`
             if running with a schedule.
         """
+        from zenml.execution.pipeline.dynamic.run_context import (
+            DynamicPipelineRunContext,
+        )
+
+        if DynamicPipelineRunContext.get() is not None:
+            raise RuntimeError(
+                f"Pipeline `{self.name}` is not a dynamic pipeline and cannot "
+                "be called from within a dynamic pipeline."
+            )
+
         if PipelineCompilationContext.is_active():
             # Calling a pipeline inside a pipeline, we return the potential
             # outputs of the entrypoint function
@@ -1832,48 +1938,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         self._parameters = {}
         self._output_artifacts = []
 
-    def _prepare_step_input_overrides(
-        self,
-        step_input_overrides: Optional[Mapping[str, Mapping[str, Any]]],
-    ) -> Dict[str, Dict[str, "UUID"]]:
-        """Prepares replay step input overrides.
-
-        Args:
-            step_input_overrides: User-provided step input overrides.
-
-        Returns:
-            Artifact version IDs for step input overrides.
-        """
-        from zenml import ExternalArtifact
-        from zenml.models import ArtifactVersionResponse
-
-        if not step_input_overrides:
-            return {}
-
-        processed_overrides: Dict[str, Dict[str, UUID]] = {}
-
-        for invocation_id, overrides in step_input_overrides.items():
-            invocation_overrides: Dict[str, UUID] = {}
-
-            for input_name, value in overrides.items():
-                if isinstance(value, ArtifactVersionResponse):
-                    artifact_version_id = value.id
-                elif isinstance(value, ExternalArtifact):
-                    if value.id:
-                        artifact_version_id = value.id
-                    else:
-                        artifact_version_id = value.upload_by_value()
-                else:
-                    artifact_version_id = ExternalArtifact(
-                        value=value
-                    ).upload_by_value()
-
-                invocation_overrides[input_name] = artifact_version_id
-
-            processed_overrides[invocation_id] = invocation_overrides
-
-        return processed_overrides
-
     def replay(
         self,
         pipeline: Union[UUID, str, None] = None,
@@ -1882,6 +1946,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         skip_successful_steps: bool = False,
         input_overrides: Optional[Mapping[str, Any]] = None,
         step_input_overrides: Optional[Mapping[str, Mapping[str, Any]]] = None,
+        step_default_input_overrides: Optional[
+            Mapping[str, Mapping[str, Any]]
+        ] = None,
         debug: bool = False,
     ) -> PipelineRunResponse:
         """Replay the pipeline.
@@ -1904,6 +1971,10 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 Keys must be step invocation IDs and values must map input names
                 to either plain Python values, `ExternalArtifact` instances, or
                 `ArtifactVersionResponse` objects.
+            step_default_input_overrides: Input overrides applied to every
+                invocation of a step, keyed by the step's name. Values follow
+                the same shape as `step_input_overrides`. Per-invocation
+                overrides in `step_input_overrides` take precedence.
             debug: Whether to run the pipeline in debug mode. In debug mode, the
                 pipeline is executed using a local orchestrator, while
                 keeping the remaining components of your active stack.
@@ -1914,6 +1985,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         Returns:
             The replayed pipeline run.
         """
+        from zenml.artifacts.utils import upload_input_artifact_overrides
         from zenml.client import Client
         from zenml.execution.utils import DebugModeContext
 
@@ -1945,7 +2017,12 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         if step_input_overrides:
             configuration_update["step_input_overrides"] = (
-                self._prepare_step_input_overrides(step_input_overrides)
+                upload_input_artifact_overrides(step_input_overrides)
+            )
+
+        if step_default_input_overrides:
+            configuration_update["step_default_input_overrides"] = (
+                upload_input_artifact_overrides(step_default_input_overrides)
             )
 
         if configuration_update:
@@ -1956,12 +2033,27 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             )
 
         original_parameters = original_run.config.parameters or {}
+        configured_parameters = set(self.configuration.parameters or {})
+        if params_from_file := self._from_config_file.get("parameters", None):
+            configured_parameters.update(params_from_file)
+
+        dropped_parameters: Set[str] = set()
+        if not self.accepts_arbitrary_parameters:
+            dropped_parameters = set(original_parameters) - set(
+                self.parameters
+            )
+        if dropped_parameters:
+            logger.warning(
+                "Ignoring parameters of the original run that the pipeline "
+                f"`{self.name}` does not accept anymore: {dropped_parameters}."
+            )
+
         # Only include pipeline parameters of the original run for inputs that
-        # the user didn't provide a value for.
+        # the user didn't provide a value for and that the entrypoint accepts.
         inputs = {
             k: v
             for k, v in original_parameters.items()
-            if k in self.missing_parameters
+            if k not in configured_parameters and k not in dropped_parameters
         }
 
         if input_overrides:

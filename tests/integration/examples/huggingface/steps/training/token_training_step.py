@@ -11,9 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Training step for the HuggingFace token classification example."""
+
 from datasets import DatasetDict
+from steps.tf_dataset import create_tf_token_classification_dataset
 from transformers import (
-    DataCollatorForTokenClassification,
     PreTrainedTokenizerBase,
     TFAutoModelForTokenClassification,
     TFPreTrainedModel,
@@ -66,14 +68,11 @@ def token_trainer(
     # Compile model
     model.compile(optimizer=optimizer)
 
-    # Convert tokenized datasets into tf dataset
-    train_set = tokenized_datasets["train"].to_tf_dataset(
-        columns=["attention_mask", "input_ids", "labels"],
-        shuffle=True,
+    train_set = create_tf_token_classification_dataset(
+        dataset=tokenized_datasets["train"],
+        tokenizer=tokenizer,
         batch_size=batch_size,
-        collate_fn=DataCollatorForTokenClassification(
-            tokenizer, return_tensors="tf"
-        ),
+        shuffle=True,
     )
     if dummy_run:
         model.fit(train_set.take(10), epochs=epochs)

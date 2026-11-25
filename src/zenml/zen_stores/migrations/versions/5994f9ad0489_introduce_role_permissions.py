@@ -29,7 +29,7 @@ def upgrade() -> None:
     op.create_table(
         "rolepermissionschema",
         sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-        sa.Column("role_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("role_id", sa.Uuid(), nullable=False),
         sa.ForeignKeyConstraint(
             ["role_id"],
             ["roleschema.id"],

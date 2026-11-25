@@ -8,6 +8,9 @@ theme:
   locale: en
   favicon: _assets/favicon.png
   custom_dir: mkdocs/overrides
+  font:
+    text: Rethink Sans
+    code: JetBrains Mono
 
 repo_url: https://github.com/zenml-io/zenml
 edit_uri: https://github.com/zenml-io/zenml/docs/

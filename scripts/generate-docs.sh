@@ -42,6 +42,7 @@ done
 
 ##################################################### Setup ############################################################
 export ZENML_DEBUG=1
+export ZENML_LOGGING_VERBOSITY=debug
 export ZENML_ANALYTICS_OPT_IN=false
 export DISABLE_DATABASE_MIGRATION=1
 export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python

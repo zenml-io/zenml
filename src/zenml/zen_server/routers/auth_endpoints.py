@@ -44,7 +44,7 @@ from zenml.enums import (
     OAuthDeviceStatus,
     OAuthGrantTypes,
 )
-from zenml.exceptions import AuthorizationException
+from zenml.exceptions import AuthorizationException, CredentialsNotValid
 from zenml.logger import get_logger
 from zenml.models import (
     OAuthDeviceAuthorizationResponse,
@@ -243,6 +243,7 @@ def token(
         An access token or a redirect response.
 
     Raises:
+        CredentialsNotValid: If the credentials are invalid.
         ValueError: If the grant type is invalid.
     """
     config = server_config()
@@ -279,6 +280,7 @@ def token(
         # Try to get the external session token or authorization token from the
         # authorization header
         authorization_header = request.headers.get("Authorization")
+        external_access_token: Optional[str] = None
         if authorization_header:
             scheme, _, token = authorization_header.partition(" ")
             if token and scheme.lower() == "bearer":
@@ -292,6 +294,12 @@ def token(
 
             # Redirect the user to the external authentication login endpoint
             return OAuthRedirectResponse(authorization_url=authorization_url)
+
+        if not external_access_token:
+            logger.info("Request with invalid external authorization header")
+            raise CredentialsNotValid(
+                "Invalid request: invalid authorization header."
+            )
 
         auth_context = authenticate_external_user(
             external_access_token=external_access_token,
@@ -394,11 +402,7 @@ def device_authorization(
     # Fetch the IP address of the client
     ip_address: str = ""
     city, region, country = "", "", ""
-    forwarded = request.headers.get("X-Forwarded-For")
-
-    if forwarded:
-        ip_address = forwarded.split(",")[0].strip()
-    elif request.client and request.client.host:
+    if request.client and request.client.host:
         ip_address = request.client.host
 
     if ip_address:
@@ -542,9 +546,22 @@ def api_token(
                 "seconds."
             )
 
+        if token.schedule_id or token.pipeline_run_id or token.deployment_id:
+            logger.warning(
+                "A generic API token was requested using a workload-scoped "
+                "token. The generated token will retain the workload scope."
+            )
+
         return generate_access_token(
             user_id=token.user_id,
+            # Keep the original API key and device token scopes.
+            api_key=auth_context.api_key,
+            device=auth_context.device,
             expires_in=expires_in,
+            # Workload-scoped tokens must not be exchanged for unscoped tokens.
+            schedule_id=token.schedule_id,
+            pipeline_run_id=token.pipeline_run_id,
+            deployment_id=token.deployment_id,
             # Don't include the access token as a cookie in the response
             response=None,
         ).access_token
@@ -564,17 +581,6 @@ def api_token(
             f"Unable to scope API token to schedule {schedule_id}. The "
             f"token used to authorize this request is already scoped to "
             f"schedule {token.schedule_id}."
-        )
-
-    if (
-        pipeline_run_id
-        and token.pipeline_run_id
-        and pipeline_run_id != token.pipeline_run_id
-    ):
-        raise AuthorizationException(
-            f"Unable to scope API token to pipeline run {pipeline_run_id}. The "
-            f"token used to authorize this request is already scoped to "
-            f"pipeline run {token.pipeline_run_id}."
         )
 
     if (
@@ -608,10 +614,8 @@ def api_token(
             )
 
     if pipeline_run_id:
-        # The pipeline run must exist and the run must not be concluded
         try:
-            # TODO: this is expensive, we should only fetch the minimum data here
-            pipeline_run = zen_store().get_run(pipeline_run_id, hydrate=True)
+            pipeline_run = zen_store().get_run(pipeline_run_id, hydrate=False)
         except KeyError:
             raise ValueError(
                 f"Pipeline run {pipeline_run_id} does not exist and API tokens "
@@ -629,6 +633,23 @@ def api_token(
                 "concluded and API tokens can no longer be generated for it "
                 "for security reasons."
             )
+
+        if token.pipeline_run_id and token.pipeline_run_id != pipeline_run.id:
+            # The token is already scoped to a different run -> we now check if
+            # the token is scoped to the root run.
+            # In the current implementation of nested runs, orchestration of
+            # nested pipelines happens in the same environment, which has a
+            # token scoped to the root run. Which means even for nested child
+            # runs, we will always try to generate a sub-run token from a token
+            # scoped to the root run. Once we allow different orchestration
+            # environments, we will need to check the whole hierarchy instead.
+            if token.pipeline_run_id != pipeline_run.root_run_id:
+                raise AuthorizationException(
+                    f"Unable to scope API token to pipeline run "
+                    f"{pipeline_run_id}. The token used to authorize this "
+                    f"request is already scoped to pipeline run "
+                    f"{token.pipeline_run_id}."
+                )
 
     if deployment_id:
         # The deployment must exist

@@ -26,7 +26,9 @@ from zenml.constants import METADATA_EXPERIMENT_TRACKER_URL
     platform.system() == "Darwin",
     reason="It hangs forever now. Need to investigate.",  # TODO: investigate this
 )
-def test_example(request: pytest.FixtureRequest) -> None:
+def test_example(
+    request: pytest.FixtureRequest, isolated_mlflow_environment: None
+) -> None:
     """Runs the airflow_orchestration example."""
     import mlflow
     from mlflow.tracking import MlflowClient

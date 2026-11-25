@@ -114,6 +114,6 @@ class DynamicPipelineRunContext(context_utils.BaseContext):
         """
         if self._token is not None:
             raise RuntimeError(
-                "Calling a pipeline within a dynamic pipeline is not allowed."
+                "Re-entering the same dynamic pipeline run context is not allowed."
             )
         return super().__enter__()

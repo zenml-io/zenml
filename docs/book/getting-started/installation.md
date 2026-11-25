@@ -9,9 +9,43 @@ icon: cauldron
 {% step %}
 #### Install ZenML
 
-ZenML currently supports **Python 3.10, 3.11, 3.12, and 3.13**. Please make sure that you are using a supported Python version.
+ZenML currently supports **Python 3.10, 3.11, 3.12, 3.13, and 3.14**. Please make sure that you are using a supported Python version.
 
 {% tabs %}
+{% tab title="Installer script" %}
+On macOS and Linux (including WSL), the quickest way to get started is the one-line installer:
+
+```shell
+curl -fsSL https://zenml.io/install-zenml | bash
+```
+
+The script installs [`uv`](https://docs.astral.sh/uv/) if it is missing, then installs `zenml[local]`, which runs pipelines without a server. Where it installs depends on where you run it:
+
+* **Inside a Python project** (a directory with a `pyproject.toml` or `uv.lock`), ZenML is added to that project with `uv add`, so your pipelines run next to their own dependencies.
+* **Anywhere else**, ZenML is installed as an isolated `uv` tool with `zenml` on your `PATH`. This is enough for logging in, managing stacks, and browsing runs. To run pipelines, install ZenML into your project.
+
+It also installs the [ZenML agent skills](../reference/llms-txt.md#zenml-agent-skills) for coding agents such as Claude Code and Codex. The script does not log you in or start a server; it finishes by printing the next steps. Re-running it upgrades ZenML within your project's version constraints.
+
+Pass options after `bash -s --`:
+
+```shell
+# Install a specific version
+curl -fsSL https://zenml.io/install-zenml | bash -s -- --version=0.98.1
+
+# Include the local UI server and an extra package
+curl -fsSL https://zenml.io/install-zenml | bash -s -- --extras=server --with=scikit-learn
+
+# Point the next steps at your ZenML server
+curl -fsSL https://zenml.io/install-zenml | bash -s -- --server=https://zenml.example.com
+```
+
+Other useful flags are `--project` / `--global` to force where ZenML is installed, `--python=X.Y`, `--no-skills`, and `--no-modify-path`. Run with `--help` to see all options.
+
+{% hint style="info" %}
+To install ZenML, [Kitaru](https://kitaru.ai), or both from an interactive menu, use `curl -fsSL https://zenml.io/install | bash`. In non-interactive environments such as CI, pass `--products=zenml`, `--products=kitaru`, or `--products=zenml,kitaru`.
+{% endhint %}
+{% endtab %}
+
 {% tab title="Base package" %}
 **ZenML** is a Python package that can be installed using `pip` or other Python package managers:
 
@@ -27,8 +61,8 @@ pip install 'zenml[local]'
 {% endhint %}
 {% endtab %}
 
-{% tab title="Local Dashboard" %}
-If you want to use the [ZenML dashboard](https://github.com/zenml-io/zenml-dashboard) locally, you need to install ZenML with the `server` extra: 
+{% tab title="Local UI" %}
+If you want to use the ZenML UI locally, install ZenML with the `server` extra:
 
 ```shell
 pip install 'zenml[server]'
@@ -97,12 +131,12 @@ docker run -it -d -p 8080:8080 zenmldocker/zenml-server
 
 ## Starting the local server
 
-By default, ZenML runs without a server connected to a local database on your machine. If you want to access the dashboard locally, you need to start a local server:
+By default, ZenML runs without a server connected to a local database on your machine. If you want to access the UI locally, you need to start a local server:
 
 ```shell
 # Make sure to have the `server` extra installed
 pip install "zenml[server]"
-zenml login --local  # opens the dashboard locally 
+zenml login --local  # opens the UI locally 
 ```
 
 However, advanced ZenML features are dependent on a centrally deployed ZenML server accessible to other MLOps stack components. You can read more about it [here](deploying-zenml/). For the deployment of ZenML, you have the option to either [self-host](deploying-zenml/) it or register for a free [ZenML Pro](https://zenml.io/pro?utm_source=docs\&utm_medium=referral_link\&utm_campaign=cloud_promotion\&utm_content=signup_link) account.

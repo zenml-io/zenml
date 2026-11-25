@@ -13,12 +13,11 @@
 #  permissions and limitations under the License.
 """JWT utilities module for ZenML server."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import (
     Any,
     Dict,
     Optional,
-    cast,
 )
 from uuid import UUID
 
@@ -48,6 +47,9 @@ class JWTToken(BaseModel):
         step_run_id: The id of the step run for which the token was
             issued.
         session_id: The id of the authenticated session (used for CSRF).
+        issued_at: The time at which the token was issued.
+        api_key_generation: The API key generation for which this token was
+            issued.
         claims: The original token claims.
     """
 
@@ -58,6 +60,8 @@ class JWTToken(BaseModel):
     pipeline_run_id: Optional[UUID] = None
     deployment_id: Optional[UUID] = None
     session_id: Optional[UUID] = None
+    issued_at: Optional[datetime] = None
+    api_key_generation: Optional[int] = None
     claims: Dict[str, Any] = {}
 
     @classmethod
@@ -73,7 +77,13 @@ class JWTToken(BaseModel):
 
         Args:
             token: The encoded JWT token.
-            verify: Whether to verify the signature of the token.
+            verify: Whether to verify the token. When False, no checks are
+                performed at all: the signature, expiry, audience and issuer
+                are all skipped and the raw claims are returned as-is. This is
+                deliberately all-or-nothing, because validating claims such as
+                audience on a token whose signature is not checked provides no
+                security guarantee (an unsigned token can be forged with any
+                claims).
 
         Returns:
             The decoded JWT access token.
@@ -84,16 +94,18 @@ class JWTToken(BaseModel):
         config = server_config()
 
         try:
-            claims_data = jwt.decode(
+            # PyJWT disables the remaining claim checks (exp, aud, iss, ...) on
+            # its own once `verify_signature` is False, so we only need to set
+            # this one flag to get all-or-nothing verification.
+            claims = jwt.decode(
                 token,
                 config.jwt_secret_key,
                 algorithms=[config.jwt_token_algorithm],
                 audience=config.get_jwt_token_audience(),
                 issuer=config.get_jwt_token_issuer(),
-                verify=verify,
+                options={"verify_signature": verify},
                 leeway=timedelta(seconds=config.jwt_token_leeway_seconds),
             )
-            claims = cast(Dict[str, Any], claims_data)
         except jwt.PyJWTError as e:
             raise CredentialsNotValid(f"Invalid JWT token: {e}") from e
 
@@ -170,6 +182,28 @@ class JWTToken(BaseModel):
                     "UUID"
                 )
 
+        issued_at: Optional[datetime] = None
+        if "iat" in claims:
+            iat = claims.pop("iat")
+            if isinstance(iat, datetime):
+                issued_at = iat
+            elif isinstance(iat, (int, float)):
+                issued_at = datetime.utcfromtimestamp(iat)
+            else:
+                raise CredentialsNotValid(
+                    "Invalid JWT token: the iat claim is not a valid timestamp"
+                )
+
+        api_key_generation: Optional[int] = None
+        if "key_gen" in claims:
+            api_key_generation_value = claims.pop("key_gen")
+            if not isinstance(api_key_generation_value, int):
+                raise CredentialsNotValid(
+                    "Invalid JWT token: the key_gen claim is not a valid "
+                    "integer"
+                )
+            api_key_generation = api_key_generation_value
+
         return JWTToken(
             user_id=user_id,
             device_id=device_id,
@@ -178,6 +212,8 @@ class JWTToken(BaseModel):
             pipeline_run_id=pipeline_run_id,
             deployment_id=deployment_id,
             session_id=session_id,
+            issued_at=issued_at,
+            api_key_generation=api_key_generation,
             claims=claims,
         )
 
@@ -200,6 +236,10 @@ class JWTToken(BaseModel):
         claims["sub"] = str(self.user_id)
         claims["iss"] = config.get_jwt_token_issuer()
         claims["aud"] = config.get_jwt_token_audience()
+        issued_at = self.issued_at or datetime.utcnow()
+        if issued_at.tzinfo is None:
+            issued_at = issued_at.replace(tzinfo=timezone.utc)
+        claims["iat"] = issued_at.timestamp()
 
         if expires:
             claims["exp"] = expires
@@ -218,6 +258,8 @@ class JWTToken(BaseModel):
             claims["deployment_id"] = str(self.deployment_id)
         if self.session_id:
             claims["session_id"] = str(self.session_id)
+        if self.api_key_generation is not None:
+            claims["key_gen"] = self.api_key_generation
 
         return jwt.encode(
             claims,

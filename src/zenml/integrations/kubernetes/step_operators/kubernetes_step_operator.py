@@ -13,24 +13,35 @@
 #  permissions and limitations under the License.
 """Kubernetes step operator implementation."""
 
-import random
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    cast,
+)
 
 from kubernetes import client as k8s_client
 
+from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
 from zenml.config.build_configuration import BuildConfiguration
+from zenml.constants import LINUX_GID_CLAIM_KEY, LINUX_UID_CLAIM_KEY
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.integrations.kubernetes import kube_utils
 from zenml.integrations.kubernetes.constants import (
     STEP_NAME_ANNOTATION_KEY,
     STEP_OPERATOR_ANNOTATION_KEY,
+    WORKSPACE_USER_ID_ANNOTATION_KEY,
 )
 from zenml.integrations.kubernetes.flavors import (
     KubernetesStepOperatorConfig,
     KubernetesStepOperatorSettings,
 )
 from zenml.integrations.kubernetes.manifest_utils import (
+    build_headless_service_manifest,
     build_job_manifest,
     build_pod_manifest,
     pod_template_manifest_from_pod,
@@ -38,10 +49,15 @@ from zenml.integrations.kubernetes.manifest_utils import (
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
+from zenml.utils.string_utils import random_hex_str
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
-    from zenml.models import PipelineSnapshotBase, StepRunResponse
+    from zenml.models import (
+        PipelineSnapshotBase,
+        ResourceRequestResponse,
+        StepRunResponse,
+    )
 
 logger = get_logger(__name__)
 
@@ -73,6 +89,15 @@ class KubernetesStepOperator(BaseStepOperator):
         return KubernetesStepOperatorSettings
 
     @property
+    def supports_resource_pool_allocation(self) -> bool:
+        """Whether the step operator supports resource pool allocations.
+
+        Returns:
+            Whether the step operator supports resource pool allocations.
+        """
+        return True
+
+    @property
     def validator(self) -> Optional[StackValidator]:
         """Validates the stack.
 
@@ -88,7 +113,7 @@ class KubernetesStepOperator(BaseStepOperator):
                     "needs to write files into the artifact store, but the "
                     f"artifact store `{stack.artifact_store.name}` of the "
                     "active stack is local. Please ensure that your stack "
-                    "contains a remote artifact store when using the Vertex "
+                    "contains a remote artifact store when using the Kubernetes "
                     "step operator."
                 )
 
@@ -191,11 +216,12 @@ class KubernetesStepOperator(BaseStepOperator):
         """
         return k8s_client.BatchV1Api(self.get_kube_client())
 
-    def submit(
+    def submit_with_allocation(
         self,
         info: "StepRunInfo",
         entrypoint_command: List[str],
         environment: Dict[str, str],
+        allocated_resource_request: Optional["ResourceRequestResponse"],
     ) -> None:
         """Submits a step run to Kubernetes.
 
@@ -204,9 +230,28 @@ class KubernetesStepOperator(BaseStepOperator):
             entrypoint_command: Command that executes the step.
             environment: Environment variables to set in the step operator
                 environment.
+            allocated_resource_request: The allocated resource request for the
+                step, if any.
+
+        Raises:
+            RuntimeError: If a regular step requests more than one pod.
+            Exception: If the headless service creation fails.
+
         """
         settings = cast(
             KubernetesStepOperatorSettings, self.get_settings(info)
+        )
+        if settings.pod_count > 1 and info.config.command is None:
+            raise RuntimeError(
+                f"The step `{info.pipeline_step_name}` requests "
+                f"pod_count={settings.pod_count} but is not a command "
+                "step. Running a regular step on multiple pods would "
+                "duplicate its artifacts, outputs and logs on every pod."
+            )
+        settings = kube_utils.apply_resource_request_component_settings(
+            settings=settings,
+            allocated_resource_request=allocated_resource_request,
+            settings_class=KubernetesStepOperatorSettings,
         )
         image_name = info.get_image(
             key=KUBERNETES_STEP_OPERATOR_DOCKER_IMAGE_KEY
@@ -215,18 +260,24 @@ class KubernetesStepOperator(BaseStepOperator):
         args = entrypoint_command[3:]
 
         step_labels = {
-            "project_id": kube_utils.sanitize_label(
+            "project_id": kube_utils.sanitize_label_value(
                 str(info.snapshot.project_id)
             ),
-            "run_id": kube_utils.sanitize_label(str(info.run_id)),
-            "run_name": kube_utils.sanitize_label(str(info.run_name)),
-            "pipeline": kube_utils.sanitize_label(info.pipeline.name),
-            "step_run_id": kube_utils.sanitize_label(str(info.step_run_id)),
-            "step_name": kube_utils.sanitize_label(info.pipeline_step_name),
+            "run_id": kube_utils.sanitize_label_value(str(info.run_id)),
+            "run_name": kube_utils.sanitize_label_value(str(info.run_name)),
+            "pipeline": kube_utils.sanitize_label_value(info.pipeline.name),
+            "step_run_id": kube_utils.sanitize_label_value(
+                str(info.step_run_id)
+            ),
+            "step_name": kube_utils.sanitize_label_value(
+                info.pipeline_step_name
+            ),
         }
+        workspace_user_id = str(Client().active_user.id)
         step_annotations = {
             STEP_NAME_ANNOTATION_KEY: info.pipeline_step_name,
             STEP_OPERATOR_ANNOTATION_KEY: str(self.id),
+            WORKSPACE_USER_ID_ANNOTATION_KEY: workspace_user_id,
         }
 
         # We set some default minimum memory resource requests for the step pod
@@ -234,10 +285,38 @@ class KubernetesStepOperator(BaseStepOperator):
         # some memory resources itself and, if not specified, the pod will be
         # scheduled on any node regardless of available memory and risk
         # negatively impacting or even crashing the node due to memory pressure.
+        pod_settings = (
+            kube_utils.apply_resource_request_allocations_to_pod_settings(
+                allocated_resource_request=allocated_resource_request,
+                pod_settings=settings.pod_settings,
+            )
+        )
         pod_settings = kube_utils.apply_default_resource_requests(
             memory="400Mi",
-            pod_settings=settings.pod_settings,
+            pod_settings=pod_settings,
         )
+
+        job_name = settings.job_name_prefix or ""
+        random_prefix = random_hex_str(8)
+        job_name += f"-{random_prefix}-{info.pipeline_step_name}-{info.pipeline.name}-step-operator"
+        # The job name will be used as a label on the pods, so we need to make
+        # sure it doesn't exceed the label length limit
+        job_name = kube_utils.sanitize_label(job_name)
+
+        namespace = self.config.kubernetes_namespace
+        if settings.pod_count > 1:
+            job_name = kube_utils.multi_pod_job_name(
+                job_name, settings.pod_count
+            )
+            environment.update(
+                kube_utils.multi_pod_environment(
+                    job_name=job_name,
+                    namespace=namespace,
+                    pod_count=settings.pod_count,
+                )
+            )
+
+        oidc_claims = Client().active_user.oidc_claims
 
         pod_manifest = build_pod_manifest(
             pod_name=None,
@@ -249,14 +328,10 @@ class KubernetesStepOperator(BaseStepOperator):
             pod_settings=pod_settings,
             service_account_name=settings.service_account_name,
             labels=step_labels,
+            annotations={WORKSPACE_USER_ID_ANNOTATION_KEY: workspace_user_id},
+            run_as_user=oidc_claims.get(LINUX_UID_CLAIM_KEY),
+            run_as_group=oidc_claims.get(LINUX_GID_CLAIM_KEY),
         )
-
-        job_name = settings.job_name_prefix or ""
-        random_prefix = "".join(random.choices("0123456789abcdef", k=8))
-        job_name += f"-{random_prefix}-{info.pipeline_step_name}-{info.pipeline.name}-step-operator"
-        # The job name will be used as a label on the pods, so we need to make
-        # sure it doesn't exceed the label length limit
-        job_name = kube_utils.sanitize_label(job_name)
 
         job_manifest = build_job_manifest(
             job_name=job_name,
@@ -268,14 +343,50 @@ class KubernetesStepOperator(BaseStepOperator):
             active_deadline_seconds=settings.active_deadline_seconds,
             labels=step_labels,
             annotations=step_annotations,
+            pod_count=settings.pod_count,
         )
 
-        kube_utils.create_job(
-            batch_api=self._k8s_batch_api,
-            namespace=self.config.kubernetes_namespace,
+        batch_api = self._k8s_batch_api
+        created_job = kube_utils.create_job(
+            batch_api=batch_api,
+            namespace=namespace,
             job_manifest=job_manifest,
             api_request_timeout=settings.api_request_timeout,
+            max_retries=settings.max_api_retries,
         )
+
+        if settings.pod_count > 1:
+            # The headless service gives the job's pods stable DNS for
+            # pod-to-pod communication. It is owned by the job so
+            # Kubernetes garbage collection reaps it with the job.
+            try:
+                kube_utils.create_service(
+                    core_api=self._k8s_core_api,
+                    namespace=namespace,
+                    service_manifest=build_headless_service_manifest(
+                        created_job
+                    ),
+                    api_request_timeout=settings.api_request_timeout,
+                    max_retries=settings.max_api_retries,
+                )
+            except Exception:
+                # Without the service the pods can never reach each
+                # other, so don't leave the job running.
+                try:
+                    kube_utils.delete_job(
+                        batch_api=batch_api,
+                        namespace=namespace,
+                        job_name=job_name,
+                        api_request_timeout=settings.api_request_timeout,
+                        max_retries=settings.max_api_retries,
+                    )
+                except Exception:
+                    logger.exception(
+                        "Failed to delete job `%s` after failing to create "
+                        "its headless service.",
+                        job_name,
+                    )
+                raise
 
     def get_status(self, step_run: "StepRunResponse") -> ExecutionStatus:
         """Gets the status of a submitted step.
@@ -287,7 +398,7 @@ class KubernetesStepOperator(BaseStepOperator):
             The step status.
         """
         label_selector = (
-            f"step_run_id={kube_utils.sanitize_label(str(step_run.id))}"
+            f"step_run_id={kube_utils.sanitize_label_value(str(step_run.id))}"
         )
         try:
             job_list = kube_utils.list_jobs(
@@ -295,6 +406,7 @@ class KubernetesStepOperator(BaseStepOperator):
                 namespace=self.config.kubernetes_namespace,
                 label_selector=label_selector,
                 api_request_timeout=self.config.api_request_timeout,
+                max_retries=self.config.max_api_retries,
             )
         except Exception as e:
             logger.warning(
@@ -303,7 +415,13 @@ class KubernetesStepOperator(BaseStepOperator):
             return ExecutionStatus.FAILED
 
         if not job_list.items:
+            # Kubernetes also deletes successful jobs once their TTL expires,
+            # so the step run is the only remaining record of the outcome. An
+            # unfinished step run can't finish without its job.
             logger.warning("No jobs found for step run `%s`", step_run.id)
+            status = Client().get_run_step(step_run.id, hydrate=False).status
+            if status.is_finished:
+                return status
             return ExecutionStatus.FAILED
 
         job = job_list.items[0]
@@ -323,7 +441,7 @@ class KubernetesStepOperator(BaseStepOperator):
             step_run: The step run.
         """
         label_selector = (
-            f"step_run_id={kube_utils.sanitize_label(str(step_run.id))}"
+            f"step_run_id={kube_utils.sanitize_label_value(str(step_run.id))}"
         )
         try:
             job_list = kube_utils.list_jobs(
@@ -331,6 +449,7 @@ class KubernetesStepOperator(BaseStepOperator):
                 namespace=self.config.kubernetes_namespace,
                 label_selector=label_selector,
                 api_request_timeout=self.config.api_request_timeout,
+                max_retries=self.config.max_api_retries,
             )
         except Exception as e:
             logger.warning(
@@ -343,9 +462,11 @@ class KubernetesStepOperator(BaseStepOperator):
             return
 
         job_name = job_list.items[0].metadata.name
-        self._k8s_batch_api.delete_namespaced_job(
-            name=job_name,
+        kube_utils.delete_job(
+            batch_api=self._k8s_batch_api,
             namespace=self.config.kubernetes_namespace,
-            propagation_policy="Foreground",
+            job_name=job_name,
+            api_request_timeout=self.config.api_request_timeout,
+            max_retries=self.config.max_api_retries,
         )
         logger.info(f"Successfully cancelled step job: {job_name}")

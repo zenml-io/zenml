@@ -63,10 +63,10 @@ export ZENML_SERVER_URL="https://your-zenml-server.com"
 export ZENML_API_KEY="<your-api-key>"
 ```
 
-![Finding your workspace URL](../../../.gitbook/assets/workspace_url.png)
+![Workspace URL in Settings](../../../.gitbook/assets/workspace_url.png)
 
 {% hint style="info" %}
-**For ZenML Pro users:** The `ZENML_SERVER_URL` should be your Workspace URL, which can be found in your dashboard. It typically looks like: `https://1bfe8d94-zenml.cloudinfra.zenml.io`. Make sure you use the complete URL of your workspace, not just the domain. The `ZENML_API_KEY` should be [the ZenML Pro API key](https://docs.zenml.io/pro/access-management/service-accounts).
+**For ZenML Pro users:** The `ZENML_SERVER_URL` should be your Workspace URL, which can be found under **Settings** > **Workspace** > **General** > **URL**. It typically looks like: `https://1bfe8d94-zenml.cloudinfra.zenml.io`. Make sure you use the complete URL of your workspace, not just the domain. The `ZENML_API_KEY` should be [the ZenML Pro API key](https://docs.zenml.io/pro/access-management/service-accounts).
 {% endhint %}
 
 2. Create a new Terraform configuration file (e.g., `main.tf`), preferably in a new directory, with the content that looks like this (`<cloud provider>` can be`aws`, `gcp`, or `azure`):
@@ -85,7 +85,7 @@ terraform {
 
 provider "zenml" {
     # server_url = <taken from the ZENML_SERVER_URL environment variable if not set here>
-    # For ZenML Pro users, this should be your Workspace URL from the dashboard
+    # For ZenML Pro users, this should be your Workspace URL from the UI
     # api_key = <taken from the ZENML_API_KEY environment variable if not set here>
 }
 
@@ -168,7 +168,7 @@ terraform {
 
 provider "zenml" {
     # server_url = <taken from the ZENML_SERVER_URL environment variable if not set here>
-    # For ZenML Pro users, this should be your Workspace URL from the dashboard
+    # For ZenML Pro users, this should be your Workspace URL from the UI
     # api_key = <taken from the ZENML_API_KEY environment variable if not set here>
 }
 
@@ -247,7 +247,7 @@ terraform {
 
 provider "zenml" {
     # server_url = <taken from the ZENML_SERVER_URL environment variable if not set here>
-    # For ZenML Pro users, this should be your Workspace URL from the dashboard
+    # For ZenML Pro users, this should be your Workspace URL from the UI
     # api_key = <taken from the ZENML_API_KEY environment variable if not set here>
 }
 
@@ -337,7 +337,7 @@ terraform {{
 
 provider "zenml" {
     # server_url = <taken from the ZENML_SERVER_URL environment variable if not set here>
-    # For ZenML Pro users, this should be your Workspace URL from the dashboard
+    # For ZenML Pro users, this should be your Workspace URL from the UI
     # api_key = <taken from the ZENML_API_KEY environment variable if not set here>
 }
 

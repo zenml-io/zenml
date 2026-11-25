@@ -5,12 +5,6 @@ description: >-
 
 # Connect with a Service Account
 
-{% hint style="warning" %}
-**Workspace-level service accounts are not available in ZenML Pro**
-
-If you are using ZenML Pro, you will notice that workspace-level service accounts are not available. Please use [organization level service accounts instead](https://docs.zenml.io/pro/access-management/service-accounts).
-{% endhint %}
-
 Sometimes you may need to authenticate to a ZenML server from a non-interactive environment where the web login is not possible, like a CI/CD workload or a serverless function. In these cases, you can configure a service account and an API key and use the API key to authenticate to the ZenML server:
 
 ```bash
@@ -41,11 +35,11 @@ variables and can start interacting with your server right away.
 {% hint style="info" %}
 Using ZenML Pro?
 
-Use an organization‑level service account and API key. Set the workspace URL and your org service account API key as environment variables:
+Use a ZenML Pro service account and API key. Set the workspace URL and your service account API key as environment variables:
 
 ```bash
 export ZENML_STORE_URL=https://<your-workspace>.zenml.io
-export ZENML_STORE_API_KEY=<YOUR_ORG_SERVICE_ACCOUNT_API_KEY>
+export ZENML_STORE_API_KEY=<YOUR_SERVICE_ACCOUNT_API_KEY>
 # Optional for self-hosted Pro deployments:
 export ZENML_PRO_API_URL=https://<your-pro-api-url>
 ```
@@ -54,7 +48,7 @@ You can also authenticate via CLI:
 
 ```bash
 zenml login <your-workspace-name> --api-key
-# You will be prompted to enter your organization service account API key
+# You will be prompted to enter your service account API key
 ```
 {% endhint %}
 
@@ -110,11 +104,7 @@ To keep things simple, we can summarize the steps:
 
 You can use a service account's API key to access the ZenML server's REST API programmatically. This is particularly useful when you need to make long-term securely authenticated HTTP requests to the ZenML API endpoints. This is the recommended way to access the ZenML API programmatically when you're not using the ZenML CLI or Python client.
 
-Accessing the API with this method is thoroughly documented in the [API reference section](https://docs.zenml.io/api-reference/oss-api/getting-started#using-a-service-account-and-an-api-key).
-
-{% hint style="warning" %}
-The service accounts described here are only supported for OSS servers. If you are trying to access a ZenML Pro Workspace API programmatically, use a Pro API service account instead. See [Pro API Getting Started](https://docs.zenml.io/api-reference/pro-api/getting-started).
-{% endhint %}
+Accessing the OSS API with this method is thoroughly documented in the [API reference section](https://docs.zenml.io/api-reference/oss-api/getting-started#using-a-service-account-and-an-api-key). For ZenML Pro Workspace API access, use a ZenML Pro service account and API key as described in [Pro API Getting Started](https://docs.zenml.io/api-reference/pro-api/getting-started).
 
 ## Important notice
 

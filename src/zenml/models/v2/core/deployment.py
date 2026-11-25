@@ -31,6 +31,7 @@ from pydantic import BaseModel, Field
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import DeploymentStatus
 from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import StringFilterOption, UUIDFilterOption
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -382,30 +383,34 @@ class DeploymentFilter(ProjectScopedFilter, TaggableFilter):
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
+        *TaggableFilter.API_SINGLE_INPUT_PARAMS,
+    ]
 
-    name: Optional[str] = Field(
+    name: StringFilterOption = Field(
         default=None,
         description="Name of the deployment.",
     )
-    url: Optional[str] = Field(
+    url: StringFilterOption = Field(
         default=None,
         description="URL of the deployment.",
     )
-    status: Optional[str] = Field(
+    status: StringFilterOption = Field(
         default=None,
         description="Status of the deployment.",
     )
-    pipeline: Optional[Union[UUID, str]] = Field(
+    pipeline: UUIDFilterOption = Field(
         default=None,
         description="Pipeline associated with the deployment.",
         union_mode="left_to_right",
     )
-    snapshot_id: Optional[Union[UUID, str]] = Field(
+    snapshot_id: UUIDFilterOption = Field(
         default=None,
         description="Pipeline snapshot ID associated with the deployment.",
         union_mode="left_to_right",
     )
-    deployer_id: Optional[Union[UUID, str]] = Field(
+    deployer_id: UUIDFilterOption = Field(
         default=None,
         description="Deployer ID managing the deployment.",
         union_mode="left_to_right",
@@ -433,14 +438,23 @@ class DeploymentFilter(ProjectScopedFilter, TaggableFilter):
         custom_filters = super().get_custom_filters(table)
 
         if self.pipeline:
-            pipeline_filter = and_(
-                DeploymentSchema.snapshot_id == PipelineSnapshotSchema.id,
-                PipelineSnapshotSchema.pipeline_id == PipelineSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.pipeline, table=PipelineSchema
-                ),
+            pipeline_filters = (
+                self.pipeline
+                if isinstance(self.pipeline, list)
+                else [self.pipeline]
             )
-            custom_filters.append(pipeline_filter)
+            for pipeline_filter in pipeline_filters:
+                custom_filters.append(
+                    and_(
+                        DeploymentSchema.snapshot_id
+                        == PipelineSnapshotSchema.id,
+                        PipelineSnapshotSchema.pipeline_id
+                        == PipelineSchema.id,
+                        self.generate_name_or_id_query_conditions(
+                            value=pipeline_filter, table=PipelineSchema
+                        ),
+                    )
+                )
 
         return custom_filters
 

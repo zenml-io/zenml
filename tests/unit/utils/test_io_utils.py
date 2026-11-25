@@ -298,6 +298,19 @@ def test_move_moves_a_directory_from_source_to_destination(tmp_path) -> None:
     )
 
 
+def test_callback_writer_invokes_callback_for_every_write(tmp_path) -> None:
+    """Test that the callback writer invokes the callback for every write"""
+    written_chunks = []
+    file_path = os.path.join(tmp_path, "test.txt")
+    with open(file_path, "w") as f:
+        writer = io_utils.CallbackWriter(f, written_chunks.append)
+        writer.write("aria")
+        writer.write("_cat")
+
+    assert written_chunks == ["aria", "_cat"]
+    assert io_utils.read_file_contents_as_string(file_path) == "aria_cat"
+
+
 def test_get_grandparent_gets_the_grandparent_directory(tmp_path) -> None:
     """Test that get_grandparent gets the grandparent directory"""
     io_utils.create_dir_recursive_if_not_exists(

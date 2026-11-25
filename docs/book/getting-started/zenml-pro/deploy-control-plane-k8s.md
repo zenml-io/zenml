@@ -17,6 +17,8 @@ layout:
 
 This guide provides step-by-step instructions for deploying ZenML Pro on Kubernetes using Helm charts. All components run within your infrastructure with zero external dependencies.
 
+ZenML Pro deployments use standard Kubernetes APIs and work on managed cloud clusters (EKS, GKE, AKS), enterprise platforms like Red Hat OpenShift and SUSE Rancher, and self-managed clusters on-premises or in your own cloud.
+
 ## Deployment Architecture
 
 All components run entirely within your Kubernetes cluster and infrastructure:
@@ -25,7 +27,7 @@ All components run entirely within your Kubernetes cluster and infrastructure:
 
 ### Architecture Components
 
-Client access includes browser-based access to the ZenML UI dashboard and connections from developer laptops or CI systems to workspaces.
+Client access includes browser-based access to the ZenML UI and connections from developer laptops or CI systems to workspaces.
 
 The Kubernetes cluster provides the compute and services layer across several namespaces. The `zenml-controlplane-namespace` contains the UI Pod (hosting the ZenML Pro UI, connecting to the control plane and all workspaces) and the Control Plane Pod (API Server and User Management/RBAC). The `zenml-workspace-namespace` contains the Workspace Server Pod with the ZenML API Server, and Workload Manager that manages pipelines, stacks, and snapshots. The `zenml-runners-namespace` contains Runner Pods created on-demand for snapshots, and the `orchestrator-namespace` contains Orchestrator Pods for pipeline execution when using the Kubernetes orchestrator.
 
@@ -181,7 +183,7 @@ In addition to the above, the following might also be relevant for you:
 * SSO authentication settings (`zenml.auth.sso`) — see the [Single Sign-On (SSO)](sso.md) guide for prerequisites and migration from password authentication
 * additional Ingress settings (`zenml.ingress`)
 * Kubernetes resources allocated to the pods (`resources`)
-* If you set up a common DNS prefix that you plan on using for all the ZenML Pro services, you may configure the domain of the HTTP cookies used by the ZenML Pro dashboard to match it by setting `zenml.auth.authCookieDomain` to the DNS prefix (e.g. `.my.domain` instead of `zenml-pro.my-domain`)
+* If you set up a common DNS prefix that you plan on using for all the ZenML Pro services, you may configure the domain of the HTTP cookies used by the ZenML Pro UI to match it by setting `zenml.auth.authCookieDomain` to the DNS prefix (e.g. `.my.domain` instead of `zenml-pro.my-domain`)
 
 ### Step 3: Deploy the ZenML Pro Control Plane with Helm
 
@@ -224,8 +226,8 @@ Super-user accounts are special user accounts that are granted additional privil
 
 You will use this account to log in to the ZenML Pro UI to perform the following tasks that are part of onboarding your ZenML Pro instance:
 
-1. Create one or more [organizations](organization.md)
-2. Create user accounts and/or invite other users to join the organization(s)
+1. Create one or more [organizations](organization.md). After SSO is configured, organization [trusted domains](trusted-domains.md) (via the API) can change user discovery and whether some invitations require an explicit accept step.
+2. Create user accounts and/or invite other users to join the organization(s).
 3. Assign [roles and permissions](roles.md) to users or group them into [teams](teams.md)
 4. [Enroll workspaces](enroll-workspace.md) in the organization(s)
 

@@ -14,7 +14,7 @@
 """Models representing devices."""
 
 from datetime import datetime
-from typing import Optional, Union
+from typing import ClassVar, List, Optional, Union
 from uuid import UUID
 
 from pydantic import Field
@@ -23,6 +23,12 @@ from zenml.enums import OAuthDeviceStatus
 from zenml.models.v2.base.base import (
     BaseRequest,
     BaseUpdate,
+)
+from zenml.models.v2.base.filter import (
+    DatetimeFilterOption,
+    EnumFilterOption,
+    IntegerFilterOption,
+    UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
@@ -441,17 +447,22 @@ class OAuthDeviceInternalResponse(OAuthDeviceResponse):
 class OAuthDeviceFilter(UserScopedFilter):
     """Model to enable advanced filtering of OAuth2 devices."""
 
-    expires: Optional[Union[datetime, str, None]] = Field(
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *UserScopedFilter.API_SINGLE_INPUT_PARAMS,
+        "trusted_device",
+    ]
+
+    expires: DatetimeFilterOption = Field(
         default=None,
         description="The expiration date of the OAuth2 device.",
         union_mode="left_to_right",
     )
-    client_id: Union[UUID, str, None] = Field(
+    client_id: UUIDFilterOption = Field(
         default=None,
         description="The client ID of the OAuth2 device.",
         union_mode="left_to_right",
     )
-    status: Union[OAuthDeviceStatus, str, None] = Field(
+    status: EnumFilterOption[OAuthDeviceStatus] = Field(
         default=None,
         description="The status of the OAuth2 device.",
         union_mode="left_to_right",
@@ -461,12 +472,12 @@ class OAuthDeviceFilter(UserScopedFilter):
         description="Whether the OAuth2 device was marked as trusted.",
         union_mode="left_to_right",
     )
-    failed_auth_attempts: Union[int, str, None] = Field(
+    failed_auth_attempts: IntegerFilterOption = Field(
         default=None,
         description="The number of failed authentication attempts.",
         union_mode="left_to_right",
     )
-    last_login: Optional[Union[datetime, str, None]] = Field(
+    last_login: DatetimeFilterOption = Field(
         default=None,
         description="The date of the last successful login.",
         union_mode="left_to_right",

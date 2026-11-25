@@ -33,7 +33,11 @@ from tests.harness.environment import TestEnvironment
 from tests.harness.harness import TestHarness
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import ENV_ZENML_CONFIG_PATH, ENV_ZENML_DEBUG
+from zenml.constants import (
+    DEFAULT_PROJECT_NAME,
+    ENV_ZENML_CONFIG_PATH,
+    ENV_ZENML_DEBUG,
+)
 from zenml.login.credentials_store import CredentialsStore
 from zenml.stack.stack import Stack
 
@@ -110,21 +114,28 @@ def environment_session(
 
     if no_provision:
         logging.info("Skipping environment provisioning")
-        with environment.deployment.connect() as client:
-            yield environment, client
+        session = environment.deployment.connect()
     else:
         # Provision the environment (bring up the deployment, if local, and
         # register the stacks according to the environment's configuration)
-        with environment.setup(
+        session = environment.setup(
             teardown=not no_teardown,
             deprovision=not no_deprovision,
-        ) as client:
-            logging.info(
-                f"Test session is using environment '{environment.config.name}' "
-                f"running at '{client.zen_store.url}'."
-            )
+        )
 
-            yield environment, client
+    with session as client:
+        # A client with a new configuration only picks a project by itself
+        # when the server has exactly one. In CI several test lanes share one
+        # server, each with a configuration of its own, and the other lanes
+        # create projects (see `clean_project_session`), so whether that
+        # works would depend on which lane reaches the server first.
+        client.set_active_project(DEFAULT_PROJECT_NAME)
+        logging.info(
+            f"Test session is using environment '{environment.config.name}' "
+            f"running at '{client.zen_store.url}'."
+        )
+
+        yield environment, client
 
     # change working directory back to base path
     os.chdir(orig_cwd)
@@ -303,7 +314,7 @@ def check_test_requirements(
         client=client,
     )
     if not result:
-        pytest.skip(msg=f"Requirements not met: {msg}")
+        pytest.skip(reason=f"Requirements not met: {msg}")
 
     return result
 

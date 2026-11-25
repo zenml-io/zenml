@@ -29,7 +29,7 @@ jobs:
       # With dynamic approach dev can set label and rerun this flow to make it running.
       - name: Get PR labels
         id: pr-labels
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8.0.0
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
             const prNumber = ${{ github.event.pull_request.number }};
@@ -74,7 +74,7 @@ jobs:
         env:
           GITHUB_EVENT_INPUTS_BRANCH: ${{ github.event.inputs.branch }}
       - name: Checkout repository with correct branch
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           ref: ${{ steps.determine-branch.outputs.branch }}
           fetch-depth: 0
@@ -145,7 +145,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           ref: ${{ needs.set-branch-info.outputs.original_branch }}
 
@@ -173,11 +173,11 @@ jobs:
       ZENML_VERSION: ${{ needs.set-branch-info.outputs.zenml_version }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           ref: ${{ needs.set-branch-info.outputs.original_branch }}
       - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
           python-version: '3.11'
       - name: Install dependencies
@@ -186,8 +186,7 @@ jobs:
           pip install requests
       - name: Manage workspace
         env:
-          CLOUD_STAGING_CLIENT_ID: ${{ secrets.CLOUD_STAGING_CLIENT_ID }}
-          CLOUD_STAGING_CLIENT_SECRET: ${{ secrets.CLOUD_STAGING_CLIENT_SECRET }}
+          ZENML_PRO_API_KEY: ${{ secrets.ZENML_PRO_STAGING_RELEASE_API_KEY }}
           CLOUD_STAGING_GH_ACTIONS_ORGANIZATION_ID: ${{ secrets.CLOUD_STAGING_GH_ACTIONS_ORGANIZATION_ID }}
           WORKSPACE_NAME_OR_ID: ${{ needs.set-branch-info.outputs.workspace_name }}
           DOCKER_IMAGE: zenmldocker/zenml-server-dev:${{ needs.set-branch-info.outputs.branch_name }}

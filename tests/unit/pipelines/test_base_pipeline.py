@@ -34,6 +34,7 @@ from zenml.models import (
 from zenml.pipelines import Schedule, pipeline
 from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.steps import step
+from zenml.utils import source_utils
 
 
 def _compile_spec(p: Pipeline) -> PipelineSpec:
@@ -192,6 +193,27 @@ def test_step_can_receive_the_same_input_artifact_multiple_times():
 
     with does_not_raise():
         test_pipeline.with_options(unlisted=True)()
+
+
+@step
+async def async_int_producer() -> int:
+    return 7
+
+
+@step
+def assert_input_is_seven(value: int) -> None:
+    assert value == 7
+
+
+def test_async_step_runs_in_static_pipeline():
+    """Tests that an async step runs to completion inside a static pipeline."""
+
+    @pipeline
+    def async_pipeline():
+        assert_input_is_seven(async_int_producer())
+
+    with does_not_raise():
+        async_pipeline.with_options(unlisted=True)()
 
 
 @step(step_operator="azureml")
@@ -795,3 +817,26 @@ def test_run_tagging(clean_client, tmp_path, empty_pipeline):  # noqa: F811
     run = p()
 
     assert {tag.name for tag in run.tags} == {"tag_1", "tag_2", "tag_3"}
+
+
+@step
+def stringized_annotations_step() -> "int":
+    return 42
+
+
+@pipeline(enable_cache=False)
+def stringized_annotations_pipeline() -> None:
+    stringized_annotations_step()
+
+
+def test_pipeline_with_stringized_annotations(clean_client):
+    """Tests that stringized type annotations resolve correctly at runtime."""
+    stringized_annotations_pipeline()
+
+    last_run = stringized_annotations_pipeline.model.last_run
+    assert last_run.status == ExecutionStatus.COMPLETED
+
+    artifact = last_run.steps["stringized_annotations_step"].outputs["output"][
+        0
+    ]
+    assert source_utils.load(artifact.data_type) is int

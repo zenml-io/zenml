@@ -1,0 +1,10 @@
+# Dependencies for utils.py (log parsing and plotting). Python 3.10+.
+matplotlib>=3.7.0
+numpy>=1.24.0
+pandas>=2.0.0
+plotly>=5.18.0
+pydantic>=2.0,<3
+
+# Optional: run results.ipynb
+# jupyter>=1.0.0
+# ipykernel>=6.0.0

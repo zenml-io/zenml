@@ -15,41 +15,46 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
-from zenml.config.base_settings import BaseSettings
+from pydantic import Field
+
 from zenml.integrations.modal import MODAL_STEP_OPERATOR_FLAVOR
+from zenml.integrations.modal.flavors.modal_base_flavor import (
+    DEFAULT_TIMEOUT_SECONDS,
+    ModalCredentialsMixin,
+    ModalSettingsMixin,
+)
 from zenml.step_operators import BaseStepOperatorConfig, BaseStepOperatorFlavor
 
 if TYPE_CHECKING:
     from zenml.integrations.modal.step_operators import ModalStepOperator
 
+__all__ = [
+    "DEFAULT_TIMEOUT_SECONDS",
+    "ModalStepOperatorSettings",
+    "ModalStepOperatorConfig",
+    "ModalStepOperatorFlavor",
+]
 
-class ModalStepOperatorSettings(BaseSettings):
-    """Settings for the Modal step operator.
 
-    Specifying the region and cloud provider is only available for Enterprise
-    and Team plan customers.
-
-    Certain combinations of settings are not available. It is suggested to err
-    on the side of looser settings rather than more restrictive ones to avoid
-    pipeline execution failures. In the case of failures, however, Modal
-    provides detailed error messages that can help identify what is
-    incompatible. See more in the Modal docs at https://modal.com/docs/guide/region-selection.
-
-    Attributes:
-        gpu: The type of GPU to use for the step execution.
-        region: The region to use for the step execution.
-        cloud: The cloud provider to use for the step execution.
-    """
-
-    gpu: Optional[str] = None
-    region: Optional[str] = None
-    cloud: Optional[str] = None
+class ModalStepOperatorSettings(ModalSettingsMixin):
+    """Settings for the Modal step operator."""
 
 
 class ModalStepOperatorConfig(
-    BaseStepOperatorConfig, ModalStepOperatorSettings
+    BaseStepOperatorConfig, ModalCredentialsMixin, ModalStepOperatorSettings
 ):
     """Configuration for the Modal step operator."""
+
+    app_name: str = Field(
+        "zenml-step-operator",
+        min_length=1,
+        max_length=64,
+        description="Name of the Modal App that owns all Sandboxes created by "
+        "this step operator. Looked up (or created) in the configured Modal "
+        "environment. All step runs share this one App; each Sandbox is "
+        "tagged with its ZenML run and step so runs stay distinguishable. "
+        "Examples: 'zenml-step-operator', 'team-a-ml'",
+    )
 
     @property
     def is_remote(self) -> bool:

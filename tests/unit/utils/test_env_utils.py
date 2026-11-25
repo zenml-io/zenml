@@ -260,3 +260,87 @@ def test_env_resolution_unexpected_behaviors_raise(
 
     with pytest.raises(Exception):
         CombinedConfig.load_from_env()
+
+
+class TestResolveSecrets:
+    """Tests for the shared secret-resolution helper."""
+
+    def test_returns_empty_for_empty_input(self) -> None:
+        from zenml.utils.env_utils import resolve_secrets
+
+        assert resolve_secrets([]) == {}
+
+    def test_resolves_healthy_secret(self) -> None:
+        from unittest.mock import MagicMock, patch
+
+        from zenml.utils.env_utils import resolve_secrets
+
+        fake_secret = MagicMock(
+            secret_values={"API_KEY": "abc", "TOKEN": "xyz"}
+        )
+        fake_client = MagicMock()
+        fake_client.get_secret.return_value = fake_secret
+        with patch("zenml.utils.env_utils.Client", return_value=fake_client):
+            env = resolve_secrets(["secret-1"])
+        assert env == {"API_KEY": "abc", "TOKEN": "xyz"}
+
+    def test_coerces_non_string_values_via_str(self) -> None:
+        from unittest.mock import MagicMock, patch
+
+        from zenml.utils.env_utils import resolve_secrets
+
+        # Non-string values (rare but possible from custom secret stores)
+        # are coerced via str() so downstream env injection doesn't break.
+        fake_secret = MagicMock(secret_values={"COUNT": 42, "RATIO": 0.5})
+        fake_client = MagicMock()
+        fake_client.get_secret.return_value = fake_secret
+        with patch("zenml.utils.env_utils.Client", return_value=fake_client):
+            env = resolve_secrets(["secret-1"])
+        assert env == {"COUNT": "42", "RATIO": "0.5"}
+
+    def test_skips_secret_when_get_secret_raises(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        from unittest.mock import MagicMock, patch
+
+        from zenml.utils.env_utils import resolve_secrets
+
+        fake_client = MagicMock()
+        # First call raises, second succeeds — confirms iteration
+        # continues past the failure rather than bailing.
+        fake_client.get_secret.side_effect = [
+            RuntimeError("network down"),
+            MagicMock(secret_values={"OK": "yes"}),
+        ]
+        with patch("zenml.utils.env_utils.Client", return_value=fake_client):
+            env = resolve_secrets(["bad-secret", "good-secret"])
+        assert env == {"OK": "yes"}
+
+    def test_skips_secret_with_empty_secret_values(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        from unittest.mock import MagicMock, patch
+
+        from zenml.utils.env_utils import resolve_secrets
+
+        # Permissions issue: caller can read secret metadata but not
+        # its values. Warning logged, env entry skipped.
+        empty_secret = MagicMock(secret_values={})
+        fake_client = MagicMock()
+        fake_client.get_secret.return_value = empty_secret
+        with patch("zenml.utils.env_utils.Client", return_value=fake_client):
+            env = resolve_secrets(["empty-secret"])
+        assert env == {}
+
+    def test_later_secrets_override_earlier_on_collision(self) -> None:
+        from unittest.mock import MagicMock, patch
+
+        from zenml.utils.env_utils import resolve_secrets
+
+        first = MagicMock(secret_values={"X": "first"})
+        second = MagicMock(secret_values={"X": "second"})
+        fake_client = MagicMock()
+        fake_client.get_secret.side_effect = [first, second]
+        with patch("zenml.utils.env_utils.Client", return_value=fake_client):
+            env = resolve_secrets(["a", "b"])
+        assert env == {"X": "second"}

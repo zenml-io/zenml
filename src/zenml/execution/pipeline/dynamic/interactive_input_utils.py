@@ -16,6 +16,7 @@ from zenml.models import (
     RunWaitConditionResolveRequest,
     RunWaitConditionResponse,
 )
+from zenml.utils.json_utils import parse_value_for_schema
 
 if TYPE_CHECKING:
     from zenml.orchestrators import BaseOrchestrator
@@ -153,9 +154,11 @@ def poll_interactive_wait_condition_input(
     if raw_value:
         if condition.data_schema is not None:
             try:
-                result = json.loads(raw_value)
-            except json.JSONDecodeError as e:
-                print(f"Invalid JSON input: {e}")
+                result = parse_value_for_schema(
+                    raw_value, condition.data_schema
+                )
+            except ValueError as e:
+                print(f"Invalid input: {e}")
                 print("> ", end="", flush=True)
                 return
 

@@ -82,6 +82,7 @@ Configure the deployed service UI, title, and CORS using `DeploymentSettings`:
 from zenml.pipelines import pipeline
 from zenml.config import DeploymentSettings, CORSConfig
 
+
 @pipeline(
     settings={
         "deployment": DeploymentSettings(
@@ -101,8 +102,8 @@ Use `on_init` to set up shared resources (e.g., LLM client) once at startup and 
 
 ```python
 @pipeline(
-    on_init=init_llm_client,      # Runs once at deployment startup
-    on_cleanup=cleanup_llm_client # Clean shutdown
+    on_init=init_llm_client,  # Runs once at deployment startup
+    on_cleanup=cleanup_llm_client,  # Clean shutdown
 )
 def weather_agent_pipeline(city: str) -> Dict[str, Any]:
     return format_response(analyze_weather(fetch_weather(city)))

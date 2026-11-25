@@ -16,8 +16,8 @@ from contextlib import ExitStack as does_not_raise
 from typing import Optional
 
 import pytest
-from click.testing import CliRunner
 
+from tests.cli_runner_utils import cli_runner
 from tests.unit.test_flavor import AriaOrchestratorFlavor
 from zenml.cli.cli import cli
 from zenml.client import Client
@@ -32,7 +32,7 @@ def test_update_stack_component_succeeds(clean_client: "Client") -> None:
     register_command = cli.commands["container-registry"].commands["register"]
     update_command = cli.commands["container-registry"].commands["update"]
 
-    runner = CliRunner()
+    runner = cli_runner()
     register_result = runner.invoke(
         register_command,
         [
@@ -77,7 +77,7 @@ def test_update_stack_component_for_nonexistent_component_fails(
 ) -> None:
     """Test stack update of nonexistent stack fails."""
     update_command = cli.commands["orchestrator"].commands["update"]
-    runner = CliRunner()
+    runner = cli_runner()
     result = runner.invoke(
         update_command,
         ["not_an_orchestrator", "--some_property=123"],
@@ -93,7 +93,7 @@ def test_update_stack_component_with_non_configured_property_fails(
         "container-registry"
     ].commands["register"]
 
-    runner = CliRunner()
+    runner = cli_runner()
     register_result = runner.invoke(
         register_container_registry_command,
         [
@@ -157,7 +157,7 @@ def test_remove_attribute_component_succeeds(
             in created_orchestrator.configuration
         )
 
-        runner = CliRunner()
+        runner = cli_runner()
         remove_attribute_command = cli.commands["orchestrator"].commands[
             "remove-attribute"
         ]
@@ -192,7 +192,7 @@ def test_remove_attribute_component_non_existent_attributes_fail(
     clean_client: "Client",
 ) -> None:
     """Removing a nonexistent component attribute fails."""
-    runner = CliRunner()
+    runner = cli_runner()
 
     remove_attribute_command = cli.commands["orchestrator"].commands[
         "remove-attribute"
@@ -211,7 +211,7 @@ def test_remove_attribute_component_nonexistent_component_fails(
     clean_client: "Client",
 ) -> None:
     """Removing an attribute from a nonexistent stack component fails."""
-    runner = CliRunner()
+    runner = cli_runner()
 
     remove_attribute_command = cli.commands["orchestrator"].commands[
         "remove-attribute"
@@ -243,7 +243,7 @@ def test_remove_attribute_component_required_attribute_fails(
             configuration=configuration,
         )
 
-        runner = CliRunner()
+        runner = cli_runner()
         remove_attribute_command = cli.commands["orchestrator"].commands[
             "remove-attribute"
         ]
@@ -272,7 +272,7 @@ def test_rename_stack_component_to_preexisting_name_fails(
         "register"
     ]
 
-    runner = CliRunner()
+    runner = cli_runner()
     register_result = runner.invoke(
         register_orchestrator_command,
         [
@@ -286,7 +286,7 @@ def test_rename_stack_component_to_preexisting_name_fails(
     rename_orchestrator_command = cli.commands["orchestrator"].commands[
         "rename"
     ]
-    runner = CliRunner()
+    runner = cli_runner()
     result = runner.invoke(
         rename_orchestrator_command,
         ["new_orchestrator", "default"],
@@ -306,7 +306,7 @@ def test_rename_stack_component_nonexistent_component_fails(
     rename_container_registry_command = cli.commands[
         "container-registry"
     ].commands["rename"]
-    runner = CliRunner()
+    runner = cli_runner()
     result = runner.invoke(
         rename_container_registry_command,
         ["not_a_container_registry", "arias_container_registry"],
@@ -331,7 +331,7 @@ def test_renaming_non_core_component_succeeds(clean_client: "Client") -> None:
         "container-registry"
     ].commands["register"]
 
-    runner = CliRunner()
+    runner = cli_runner()
     register_result = runner.invoke(
         register_container_registry_command,
         [
@@ -346,7 +346,7 @@ def test_renaming_non_core_component_succeeds(clean_client: "Client") -> None:
     rename_container_registry_command = cli.commands[
         "container-registry"
     ].commands["rename"]
-    runner = CliRunner()
+    runner = cli_runner()
     result = runner.invoke(
         rename_container_registry_command,
         ["some_container_registry", new_component_name],
@@ -371,7 +371,7 @@ def test_renaming_core_component_succeeds(clean_client: "Client") -> None:
         "register"
     ]
 
-    runner = CliRunner()
+    runner = cli_runner()
     register_result = runner.invoke(
         register_orchestrator_command,
         [
@@ -387,7 +387,7 @@ def test_renaming_core_component_succeeds(clean_client: "Client") -> None:
     rename_orchestrator_command = cli.commands["orchestrator"].commands[
         "rename"
     ]
-    runner = CliRunner()
+    runner = cli_runner()
     result = runner.invoke(
         rename_orchestrator_command,
         ["some_orchestrator", new_component_name],
@@ -409,7 +409,7 @@ def test_renaming_default_component_fails(clean_client: "Client") -> None:
     """Test renaming a default stack component fails."""
     new_component_name = "aria"
 
-    runner = CliRunner()
+    runner = cli_runner()
     rename_command = cli.commands["orchestrator"].commands["rename"]
     result = runner.invoke(
         rename_command,
@@ -447,7 +447,7 @@ def test_renaming_default_component_fails(clean_client: "Client") -> None:
 
 def test_delete_default_component_fails(clean_client: "Client") -> None:
     """Test deleting a default stack component fails."""
-    runner = CliRunner()
+    runner = cli_runner()
     delete_command = cli.commands["orchestrator"].commands["delete"]
     result = runner.invoke(
         delete_command,
@@ -476,7 +476,7 @@ def test_set_labels_on_register(clean_client: "Client") -> None:
     """Test that metadata can be set while registering components."""
     register_command = cli.commands["orchestrator"].commands["register"]
 
-    runner = CliRunner()
+    runner = cli_runner()
     register_result = runner.invoke(
         register_command,
         [
@@ -504,7 +504,7 @@ def test_set_labels_on_update(clean_client: "Client") -> None:
     """Test that metadata can be set while updating components."""
     register_command = cli.commands["orchestrator"].commands["register"]
 
-    runner = CliRunner()
+    runner = cli_runner()
     register_result = runner.invoke(
         register_command,
         [
@@ -542,7 +542,7 @@ def test_remove_labels(clean_client: "Client") -> None:
     """Test that metadata can be removed from components."""
     register_command = cli.commands["orchestrator"].commands["register"]
 
-    runner = CliRunner()
+    runner = cli_runner()
     register_result = runner.invoke(
         register_command,
         [
@@ -569,7 +569,7 @@ def test_remove_labels(clean_client: "Client") -> None:
         "remove-attribute"
     ]
 
-    runner = CliRunner()
+    runner = cli_runner()
     remove_result = runner.invoke(
         remove_attribute_command,
         [

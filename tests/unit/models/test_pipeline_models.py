@@ -13,12 +13,41 @@
 #  permissions and limitations under the License.
 
 
+from datetime import datetime, timezone
+from uuid import uuid4
+
 import pytest
 from pydantic import ValidationError
 
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.models import PipelineFilter, PipelineRequest
+from zenml.models import (
+    PipelineFilter,
+    PipelineRequest,
+    PipelineSnapshotResponse,
+    PipelineSnapshotResponseBody,
+)
+
+
+def test_snapshot_pipeline_id_is_available_without_resources() -> None:
+    """The snapshot pipeline ID should not require resource hydration."""
+    pipeline_id = uuid4()
+    snapshot = PipelineSnapshotResponse(
+        id=uuid4(),
+        body=PipelineSnapshotResponseBody(
+            user_id=uuid4(),
+            project_id=uuid4(),
+            created=datetime.now(tz=timezone.utc),
+            updated=datetime.now(tz=timezone.utc),
+            runnable=True,
+            deployable=True,
+            is_dynamic=False,
+            pipeline_id=pipeline_id,
+        ),
+    )
+
+    assert snapshot.resources is None
+    assert snapshot.pipeline_id == pipeline_id
 
 
 def test_pipeline_request_model_fails_with_long_name():

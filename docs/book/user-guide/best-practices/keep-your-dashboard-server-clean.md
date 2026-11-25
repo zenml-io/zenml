@@ -3,13 +3,13 @@ description: Learn how to keep your pipeline runs clean during development.
 icon: washing-machine
 ---
 
-# Keep Your Dashboard Clean
+# Keep Your UI Clean
 
 When developing pipelines, it's common to run and debug them multiple times. To avoid cluttering the server with these development runs, ZenML provides several options:
 
 ## Run locally
 
-One of the easiest ways to avoid cluttering a shared server / dashboard is to disconnect your client from the remote server and simply spin up a local server:
+One of the easiest ways to avoid cluttering a shared server / UI is to disconnect your client from the remote server and simply spin up a local server:
 
 ```bash
 zenml login --local
@@ -117,6 +117,34 @@ By default, this method deletes artifacts physically from the underlying artifac
 
 For more information, see the [documentation for this artifact pruning feature](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/delete-an-artifact).
 
+## Pipeline Snapshots
+
+### Pruning unused snapshots
+
+Every pipeline run stores a snapshot of its configuration. Snapshots that you
+never named and that nothing references anymore, for example because the runs
+that used them were deleted, only take up space in the database. You can delete
+those that are older than a given number of days with:
+
+```bash
+zenml pipeline snapshot prune --older-than-days 90
+```
+
+Only snapshots without a name that no pipeline run, deployment, schedule, run
+template, trigger, or derived snapshot references are considered. Named,
+recent, and referenced snapshots are always kept. The command reports how many
+snapshots it found and asks for confirmation before deleting them. Use
+`--dry-run` to only see the count, and `--yes` to skip the confirmation.
+
+When connected to a ZenML server, the deletion runs in the background on the
+server and the command prints a task ID. Search the server logs for that task
+ID to follow the progress. Deleting a snapshot can make the snapshot it was
+derived from unused as well, so the number of deleted snapshots can be higher
+than the count reported by the dry run.
+
+The pruning commands for artifacts and snapshots are also available under a
+common `zenml prune` group, e.g. `zenml prune snapshots --older-than-days 90`.
+
 ## Cleaning your environment
 
 As a more drastic measure, the `zenml clean` command can be used to start from\
@@ -127,6 +155,6 @@ scratch on your local machine. This will:
 
 There is also a `--local` flag that you can set if you want to delete local files relating to the active stack. Note that `zenml clean` does not delete artifacts and pipelines on the server; it only deletes the local data and metadata.
 
-By utilizing these options, you can maintain a clean and organized pipeline dashboard, focusing on the runs that matter most for your project.
+By utilizing these options, you can maintain a clean and organized pipeline UI, focusing on the runs that matter most for your project.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -21,12 +21,18 @@ from uuid import UUID
 from pydantic import ConfigDict
 from sqlalchemy import String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
-from sqlalchemy.orm import Session, joinedload, object_session, selectinload
+from sqlalchemy.orm import (
+    Session,
+    defaultload,
+    defer,
+    joinedload,
+    object_session,
+    selectinload,
+)
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import TEXT, Column, Field, Relationship, col, select
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
-from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import (
@@ -49,6 +55,7 @@ from zenml.models import (
     PipelineRunTriggerInfo,
     PipelineRunUpdate,
     RunMetadataEntry,
+    StepRunUpdate,
 )
 from zenml.models.v2.core.pipeline_run import PipelineRunResponseResources
 from zenml.utils.run_utils import (
@@ -56,7 +63,7 @@ from zenml.utils.run_utils import (
     find_all_downstream_steps,
 )
 from zenml.utils.time_utils import utc_now
-from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
@@ -67,6 +74,7 @@ from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.schema_utils import (
     build_foreign_key_field,
+    build_index,
 )
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -76,6 +84,7 @@ from zenml.zen_stores.schemas.utils import (
 )
 
 if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
     from zenml.zen_stores.schemas.curated_visualization_schemas import (
         CuratedVisualizationSchema,
     )
@@ -97,6 +106,12 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
+# Fields of a step run update that can't affect the status of its pipeline
+# run: the cache expiration, links to saved or loaded artifacts, and logs.
+_RUN_STATUS_INDEPENDENT_STEP_RUN_UPDATE_FIELDS = frozenset(
+    {"cache_expires_at", "outputs", "loaded_artifact_versions", "add_logs"}
+)
+
 
 class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     """SQL Model for pipeline runs."""
@@ -112,6 +127,25 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             "name",
             "project_id",
             name="unique_run_name_in_project",
+        ),
+        UniqueConstraint(
+            "parent_run_id",
+            "child_key",
+            name="unique_child_key_for_parent_run_id",
+        ),
+        build_index(
+            table_name=__tablename__,
+            column_names=["project_id", "created", "id"],
+        ),
+        # Composite index for sorting pipelines by their latest run (UI default)
+        build_index(
+            table_name=__tablename__,
+            column_names=["pipeline_id", "created"],
+        ),
+        # Resolves step-triggered child runs without scanning pipeline_run.
+        build_index(
+            table_name=__tablename__,
+            column_names=["triggered_by", "triggered_by_type"],
         ),
     )
 
@@ -135,6 +169,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             nullable=True,
         )
     )
+    child_key: Optional[str] = Field(nullable=True, default=None)
 
     # Foreign keys
     snapshot_id: Optional[UUID] = build_foreign_key_field(
@@ -254,8 +289,43 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
+    parent_run_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=__tablename__,
+        source_column="parent_run_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    # ID of the root run in case of nested runs. Only set for child runs.
+    root_run_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=__tablename__,
+        source_column="root_run_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
     original_run: Optional["PipelineRunSchema"] = Relationship(
-        sa_relationship_kwargs={"remote_side": "PipelineRunSchema.id"}
+        sa_relationship_kwargs={
+            "remote_side": "PipelineRunSchema.id",
+            "foreign_keys": "[PipelineRunSchema.original_run_id]",
+        }
+    )
+    parent_run: Optional["PipelineRunSchema"] = Relationship(
+        sa_relationship_kwargs={
+            "remote_side": "PipelineRunSchema.id",
+            "foreign_keys": "[PipelineRunSchema.parent_run_id]",
+        }
+    )
+    child_runs: List["PipelineRunSchema"] = Relationship(
+        sa_relationship_kwargs={
+            "viewonly": True,
+            "primaryjoin": "foreign(PipelineRunSchema.parent_run_id) == PipelineRunSchema.id",
+        }
+    )
+    outputs: List["PipelineRunOutputSchema"] = Relationship(
+        sa_relationship_kwargs={"cascade": "delete"}
     )
 
     stack: Optional["StackSchema"] = Relationship()
@@ -320,10 +390,32 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
 
     @classmethod
+    def defer_detail_columns(cls) -> List[Any]:
+        """Defer the large columns that only hydrated run responses read.
+
+        The configuration and client environment columns are only filled for
+        runs created before snapshots existed.
+
+        Returns:
+            The query options.
+        """
+        return [
+            defer(jl_arg(column))
+            for column in [
+                cls.orchestrator_environment,
+                cls.exception_info,
+                cls.pipeline_configuration,
+                cls.client_environment,
+            ]
+        ]
+
+    @classmethod
     def get_query_options(
         cls,
         include_metadata: bool = False,
         include_resources: bool = False,
+        many: bool = False,
+        include_full_metadata: bool = False,
         **kwargs: Any,
     ) -> Sequence[ExecutableOption]:
         """Get the query options for the schema.
@@ -333,58 +425,87 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 the schema to a model.
             include_resources: Whether resources will be included when
                 converting the schema to a model.
+            many: Whether the options are applied to a query that returns many
+                rows.
+            include_full_metadata: Whether step-level metadata will be included.
             **kwargs: Keyword arguments to allow schema specific logic
 
         Returns:
             A list of query options.
         """
-        from zenml.zen_stores.schemas import ModelVersionSchema
+        from zenml.zen_stores.schemas import (
+            ModelVersionSchema,
+            StepRunSchema,
+        )
 
-        options = []
+        single_loader = selectinload if many else joinedload
+
+        options: List[ExecutableOption] = []
 
         if include_metadata:
             options.extend(
                 [
-                    selectinload(jl_arg(PipelineRunSchema.trigger_execution)),
+                    single_loader(jl_arg(PipelineRunSchema.trigger_execution)),
+                    selectinload(jl_arg(PipelineRunSchema.run_metadata)),
                 ]
             )
+            if include_full_metadata:
+                options.append(
+                    selectinload(
+                        jl_arg(PipelineRunSchema.step_runs)
+                    ).selectinload(jl_arg(StepRunSchema.run_metadata))
+                )
+        else:
+            options.extend(cls.defer_detail_columns())
 
         if include_resources:
             options.extend(
                 [
-                    selectinload(
+                    selectinload(jl_arg(PipelineRunSchema.outputs)),
+                    single_loader(
+                        jl_arg(PipelineRunSchema.parent_run)
+                    ).options(*cls.defer_detail_columns()),
+                    defaultload(
+                        jl_arg(PipelineRunSchema.original_run)
+                    ).options(*cls.defer_detail_columns()),
+                    single_loader(
                         jl_arg(PipelineRunSchema.model_version)
                     ).joinedload(
                         jl_arg(ModelVersionSchema.model), innerjoin=True
                     ),
-                    selectinload(
-                        jl_arg(PipelineRunSchema.snapshot)
-                    ).joinedload(
-                        jl_arg(PipelineSnapshotSchema.source_snapshot)
+                    single_loader(jl_arg(PipelineRunSchema.snapshot)).options(
+                        *(
+                            PipelineSnapshotSchema.defer_detail_columns()
+                            if include_metadata
+                            else PipelineSnapshotSchema.defer_large_columns()
+                        )
                     ),
-                    selectinload(
+                    single_loader(jl_arg(PipelineRunSchema.snapshot))
+                    .joinedload(jl_arg(PipelineSnapshotSchema.source_snapshot))
+                    .options(*PipelineSnapshotSchema.defer_large_columns()),
+                    single_loader(
                         jl_arg(PipelineRunSchema.snapshot)
                     ).joinedload(jl_arg(PipelineSnapshotSchema.pipeline)),
-                    selectinload(
+                    single_loader(
                         jl_arg(PipelineRunSchema.snapshot)
                     ).joinedload(jl_arg(PipelineSnapshotSchema.stack)),
-                    selectinload(
+                    single_loader(
                         jl_arg(PipelineRunSchema.snapshot)
                     ).joinedload(jl_arg(PipelineSnapshotSchema.build)),
-                    selectinload(
+                    single_loader(
                         jl_arg(PipelineRunSchema.snapshot)
                     ).joinedload(jl_arg(PipelineSnapshotSchema.schedule)),
-                    selectinload(
+                    single_loader(
                         jl_arg(PipelineRunSchema.snapshot)
                     ).joinedload(
                         jl_arg(PipelineSnapshotSchema.code_reference)
                     ),
                     selectinload(jl_arg(PipelineRunSchema.logs)),
                     selectinload(jl_arg(PipelineRunSchema.wait_conditions)),
-                    selectinload(jl_arg(PipelineRunSchema.user)),
+                    single_loader(jl_arg(PipelineRunSchema.user)),
                     selectinload(jl_arg(PipelineRunSchema.tags)),
                     selectinload(jl_arg(PipelineRunSchema.visualizations)),
-                    joinedload(jl_arg(PipelineRunSchema.trigger)),
+                    single_loader(jl_arg(PipelineRunSchema.trigger)),
                 ]
             )
 
@@ -397,6 +518,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         pipeline_id: UUID,
         index: int,
         enable_heartbeat: bool,
+        root_run_id: Optional[UUID] = None,
     ) -> "PipelineRunSchema":
         """Convert a `PipelineRunRequest` to a `PipelineRunSchema`.
 
@@ -405,6 +527,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             pipeline_id: The ID of the pipeline.
             index: The index of the pipeline run.
             enable_heartbeat: Whether the heartbeat should be enabled.
+            root_run_id: The `root_run_id` of the parent run, if this
+                run is a child run.
 
         Returns:
             The created `PipelineRunSchema`.
@@ -448,6 +572,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             if request.exception_info
             else None,
             original_run_id=request.original_run_id,
+            parent_run_id=request.parent_run_id,
+            child_key=request.child_key,
+            root_run_id=root_run_id,
         )
 
     def get_pipeline_configuration(self) -> PipelineConfiguration:
@@ -474,15 +601,42 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             )
 
         pipeline_config.finalize_substitutions(
-            start_time=self.start_time, inplace=True
+            start_time=self.substitution_time, inplace=True
         )
         return pipeline_config
 
-    def get_step_configuration(self, step_name: str) -> Step:
+    @property
+    def substitution_time(self) -> datetime:
+        """The time that the `{date}` and `{time}` substitutions resolve to.
+
+        A run without a start time uses its creation time, so that its
+        substitutions are the same on every read.
+
+        Returns:
+            The substitution time.
+        """
+        return self.start_time or self.created
+
+    def get_execution_mode(self) -> ExecutionMode:
+        """Get the execution mode of the pipeline run.
+
+        Returns:
+            The execution mode.
+        """
+        if self.snapshot:
+            return self.snapshot.get_execution_mode()
+
+        return self.get_pipeline_configuration().execution_mode
+
+    def get_step_configuration(
+        self, step_name: str, pipeline_configuration: PipelineConfiguration
+    ) -> Step:
         """Get the step configuration for the pipeline run.
 
         Args:
             step_name: The name of the step to get the configuration for.
+            pipeline_configuration: The pipeline configuration of the run as
+                returned by `get_pipeline_configuration`.
 
         Raises:
             RuntimeError: If the pipeline run has no snapshot.
@@ -491,34 +645,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             The step configuration.
         """
         if self.snapshot:
-            pipeline_configuration = self.get_pipeline_configuration()
-            return Step.from_dict(
-                data=json.loads(
-                    self.snapshot.get_step_configuration(step_name).config
-                ),
-                pipeline_configuration=pipeline_configuration,
+            return self.snapshot.get_step_configuration(step_name).to_step(
+                pipeline_configuration,
+                exclude_hook_sources=self.snapshot.is_dynamic,
             )
-        else:
-            raise RuntimeError("Pipeline run has no snapshot.")
-
-    def get_upstream_steps(self) -> Dict[str, List[str]]:
-        """Get the list of all the upstream steps for each step.
-
-        Returns:
-            The list of upstream steps for each step.
-
-        Raises:
-            RuntimeError: If the pipeline run has no snapshot or
-                the snapshot has no pipeline spec.
-        """
-        if self.snapshot and self.snapshot.pipeline_spec:
-            pipeline_spec = PipelineSpec.model_validate_json(
-                self.snapshot.pipeline_spec
-            )
-            steps = {}
-            for step_spec in pipeline_spec.steps:
-                steps[step_spec.invocation_id] = step_spec.upstream_steps
-            return steps
         else:
             raise RuntimeError("Pipeline run has no snapshot.")
 
@@ -600,33 +730,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         Returns:
             The created `PipelineRunResponse`.
-
-        Raises:
-            RuntimeError: if the model creation fails.
         """
-        if self.snapshot is not None:
-            config = PipelineConfiguration.model_validate_json(
-                self.snapshot.pipeline_configuration
-            )
-            client_environment = json.loads(self.snapshot.client_environment)
-        elif self.pipeline_configuration is not None:
-            config = PipelineConfiguration.model_validate_json(
-                self.pipeline_configuration
-            )
-            client_environment = (
-                json.loads(self.client_environment)
-                if self.client_environment
-                else {}
-            )
-        else:
-            raise RuntimeError(
-                "Pipeline run model creation has failed. Each pipeline run "
-                "entry should either have a snapshot_id or "
-                "pipeline_configuration."
-            )
-
-        config.finalize_substitutions(start_time=self.start_time, inplace=True)
-
         body = PipelineRunResponseBody(
             user_id=self.user_id,
             project_id=self.project_id,
@@ -637,9 +741,23 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             in_progress=self.in_progress,
             index=self.index,
             pipeline_id=self.pipeline_id,
+            child_key=self.child_key,
+            root_run_id=self.root_run_id,
         )
         metadata = None
         if include_metadata:
+            config = self.get_pipeline_configuration()
+            raw_client_environment = (
+                self.snapshot.client_environment
+                if self.snapshot
+                else self.client_environment
+            )
+            client_environment = (
+                json.loads(raw_client_environment)
+                if raw_client_environment
+                else {}
+            )
+
             is_templatable = False
             if (
                 self.snapshot
@@ -768,6 +886,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 original_run=self.original_run.to_model()
                 if self.original_run
                 else None,
+                parent_run=self.parent_run.to_model()
+                if self.parent_run
+                else None,
                 active_wait_condition=next(
                     (
                         condition.to_model()
@@ -777,6 +898,12 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     ),
                     None,
                 ),
+                outputs={
+                    output.name: output.artifact_version.to_model()
+                    for output in sorted(
+                        self.outputs, key=lambda output: output.output_index
+                    )
+                },
             )
 
         return PipelineRunResponse(
@@ -817,6 +944,31 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         self.updated = utc_now()
         return self
+
+    @staticmethod
+    def step_run_update_affects_status(step_run_update: StepRunUpdate) -> bool:
+        """Check whether a step run update can affect the status of a run.
+
+        Steps can update some fields after their run finished, for example to
+        expire their cache. Such updates shouldn't depend on deriving the
+        status of the finished run again.
+
+        Args:
+            step_run_update: The update of one of the steps of the run.
+
+        Returns:
+            False if the update only sets fields in
+            `_RUN_STATUS_INDEPENDENT_STEP_RUN_UPDATE_FIELDS`, True otherwise.
+            Empty updates and updates that set any other field, including
+            fields added to `StepRunUpdate` later, return True. A field counts
+            as set even when it's set to `None`.
+        """
+        updated_fields = step_run_update.model_fields_set
+        return not (
+            updated_fields
+            and updated_fields
+            <= _RUN_STATUS_INDEPENDENT_STEP_RUN_UPDATE_FIELDS
+        )
 
     def update_status(
         self,
@@ -862,6 +1014,14 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             )
 
         if (
+            requested_status == ExecutionStatus.RESUMING
+            and self.parent_run_id is not None
+        ):
+            raise IllegalOperationError(
+                "Cannot resume a child run. Resume the parent run instead."
+            )
+
+        if (
             requested_status == ExecutionStatus.PROVISIONING
             and current_status != ExecutionStatus.INITIALIZING
         ):
@@ -869,6 +1029,17 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             # This could happen if the orchestrator starts running the pipeline
             # before the client environment can update the status to provisioning.
             return False
+
+        if (
+            current_status == ExecutionStatus.STOPPING
+            and requested_status is not None
+            and not requested_status.is_finished
+        ):
+            # Orchestrators usually keep reporting a stopping run as running
+            # until its job is gone, which must not undo the stop request. Only
+            # the requested status is dropped, so that the step statuses can
+            # still settle the run at stopped.
+            requested_status = None
 
         # Snapshot always exists for pipeline runs of newer versions
         assert self.snapshot
@@ -881,6 +1052,14 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 return False
 
             new_status = requested_status or current_status
+
+            # If the run is stopping and fails, we set its status to stopped.
+            if (
+                current_status
+                in {ExecutionStatus.STOPPING, ExecutionStatus.STOPPED}
+                and new_status == ExecutionStatus.FAILED
+            ):
+                new_status = ExecutionStatus.STOPPED
         else:
             # For static pipelines we compute the run status based on the step
             # statuses.
@@ -1040,7 +1219,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             return True
 
         if run_status == ExecutionStatus.FAILED:
-            execution_mode = self.get_pipeline_configuration().execution_mode
+            execution_mode = self.get_execution_mode()
 
             if execution_mode in [
                 ExecutionMode.FAIL_FAST,
@@ -1065,9 +1244,11 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                         )
                     ).all()
 
-                    if self.snapshot and self.snapshot.pipeline_spec:
-                        step_dict = self.get_upstream_steps()
-
+                    if (
+                        self.snapshot
+                        and (step_dict := self.snapshot.get_upstream_steps())
+                        is not None
+                    ):
                         dag = build_dag(step_dict)
 
                         step_name_to_id = {
@@ -1135,6 +1316,48 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         return False
 
 
+class PipelineRunOutputSchema(BaseSchema, table=True):
+    """SQL model defining pipeline run outputs."""
+
+    __tablename__ = "pipeline_run_output"
+    __table_args__ = (
+        UniqueConstraint(
+            "pipeline_run_id",
+            "name",
+            name="unique_pipeline_run_output_name",
+        ),
+        UniqueConstraint(
+            "pipeline_run_id",
+            "output_index",
+            name="unique_pipeline_run_output_index",
+        ),
+    )
+
+    name: str = Field(nullable=False)
+    output_index: int = Field(nullable=False)
+    pipeline_run_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=PipelineRunSchema.__tablename__,
+        source_column="pipeline_run_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    artifact_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target="artifact_version",
+        source_column="artifact_id",
+        target_column="id",
+        ondelete="RESTRICT",
+        nullable=False,
+    )
+
+    pipeline_run: PipelineRunSchema = Relationship(back_populates="outputs")
+    artifact_version: "ArtifactVersionSchema" = Relationship(
+        sa_relationship_kwargs={"lazy": "joined"}
+    )
+
+
 def _compute_static_pipeline_run_status(
     run_status: ExecutionStatus,
     step_statuses: List[ExecutionStatus],
@@ -1150,7 +1373,13 @@ def _compute_static_pipeline_run_status(
     Returns:
         The status of the pipeline run.
     """
-    if run_status == ExecutionStatus.STOPPING:
+    if run_status == ExecutionStatus.STOPPED:
+        # A stopped run stays stopped, and a requested stopped status stops the
+        # run, for example from a status refresh when the job of the run is
+        # gone. Its steps might never report a final status then, so they
+        # can't move the run out of stopped.
+        return ExecutionStatus.STOPPED
+    elif run_status == ExecutionStatus.STOPPING:
         if all(status.is_finished for status in step_statuses):
             return ExecutionStatus.STOPPED
         else:

@@ -76,8 +76,10 @@ from zenml.constants import (
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     DISABLE_HEARTBEAT,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
+    EVENTS,
     FLAVORS,
     HEARTBEAT,
+    HOOK_INVOCATIONS,
     INFO,
     LOGIN,
     LOGS,
@@ -89,10 +91,9 @@ from zenml.constants import (
     PIPELINE_SNAPSHOTS,
     PIPELINES,
     PROJECTS,
+    PRUNE,
     REPLAY,
     RESOLVE,
-    RESOURCE_POOL_SUBJECT_POLICIES,
-    RESOURCE_POOLS,
     RESOURCE_REQUESTS,
     RUN_METADATA,
     RUN_TEMPLATES,
@@ -116,6 +117,7 @@ from zenml.constants import (
     STACK_COMPONENTS,
     STACK_DEPLOYMENT,
     STACKS,
+    STATISTICS,
     STEPS,
     TAG_RESOURCES,
     TAGS,
@@ -123,6 +125,7 @@ from zenml.constants import (
     TRIGGERS,
     USERS,
     VERSION_1,
+    WEBHOOKS,
     ZENML_PRO_API_KEY_PREFIX,
 )
 from zenml.enums import (
@@ -186,6 +189,9 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
+    HookInvocationFilter,
+    HookInvocationRequest,
+    HookInvocationResponse,
     LogsRequest,
     LogsResponse,
     LogsUpdate,
@@ -219,6 +225,8 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineSnapshotFilter,
+    PipelineSnapshotPruneRequest,
+    PipelineSnapshotPruneResponse,
     PipelineSnapshotRequest,
     PipelineSnapshotResponse,
     PipelineSnapshotRunRequest,
@@ -228,17 +236,12 @@ from zenml.models import (
     ProjectRequest,
     ProjectResponse,
     ProjectUpdate,
-    ResourcePoolFilter,
-    ResourcePoolRequest,
-    ResourcePoolResponse,
-    ResourcePoolSubjectPolicyFilter,
-    ResourcePoolSubjectPolicyRequest,
-    ResourcePoolSubjectPolicyResponse,
-    ResourcePoolSubjectPolicyUpdate,
-    ResourcePoolUpdate,
     ResourceRequestFilter,
+    ResourceRequestRenewalRequest,
     ResourceRequestResponse,
     RunMetadataRequest,
+    RunStatisticsRequest,
+    RunStatisticsResponse,
     RunTemplateFilter,
     RunTemplateRequest,
     RunTemplateResponse,
@@ -279,11 +282,14 @@ from zenml.models import (
     StackRequest,
     StackResponse,
     StackUpdate,
+    StepHeartbeatRequest,
     StepHeartbeatResponse,
     StepRunFilter,
     StepRunRequest,
     StepRunResponse,
     StepRunUpdate,
+    StreamBatchRequest,
+    StreamBatchResponse,
     TagFilter,
     TagRequest,
     TagResourceRequest,
@@ -297,6 +303,13 @@ from zenml.models import (
     UserRequest,
     UserResponse,
     UserUpdate,
+    WebhookCreateResponse,
+    WebhookFilter,
+    WebhookRequest,
+    WebhookResponse,
+    WebhookRotateSecretRequest,
+    WebhookSecretResponse,
+    WebhookUpdate,
 )
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
@@ -320,6 +333,7 @@ Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 AnyRequest = TypeVar("AnyRequest", bound=BaseRequest)
 AnyResponse = TypeVar("AnyResponse", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
+AnyModel = TypeVar("AnyModel", bound=BaseModel)
 
 
 class RestZenStoreConfiguration(StoreConfiguration):
@@ -351,9 +365,8 @@ class RestZenStoreConfiguration(StoreConfiguration):
     http_timeout: int = DEFAULT_HTTP_TIMEOUT
     connection_pool_size: int = 10
 
-    @field_validator("url")
-    @classmethod
-    def validate_url(cls, url: str) -> str:
+    @staticmethod
+    def _validate_url(url: str) -> str:
         """Validates that the URL is a well-formed REST store URL.
 
         Args:
@@ -369,7 +382,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
         scheme = re.search("^([a-z0-9]+://)", url)
         if scheme is None or scheme.group() not in ("https://", "http://"):
             raise ValueError(
-                "Invalid URL for REST store: {url}. Should be in the form "
+                f"Invalid URL for REST store: {url}. Should be in the form "
                 "https://hostname[:port] or http://hostname[:port]."
             )
 
@@ -445,7 +458,8 @@ class RestZenStoreConfiguration(StoreConfiguration):
         if not url:
             return data
 
-        url = replace_localhost_with_internal_hostname(url)
+        url = cls._validate_url(url)
+        data["url"] = url
 
         if api_token := data.pop("api_token", None):
             credentials_store = get_credentials_store()
@@ -554,8 +568,10 @@ class RestZenStore(BaseZenStore):
             logger.warning(
                 "Your ZenML client version (%s) does not match the server "
                 "version (%s). This version mismatch might lead to errors or "
-                "unexpected behavior. \nTo disable this warning message, set "
-                "the environment variable `%s=True`",
+                "unexpected behavior. Check "
+                "https://docs.zenml.io/changelog/compatibility to see whether "
+                "these versions work together. \nTo disable this warning "
+                "message, set the environment variable `%s=True`",
                 client_version,
                 server_version,
                 ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
@@ -568,18 +584,20 @@ class RestZenStore(BaseZenStore):
         Returns:
             Cached information about the server.
         """
-        if self._server_info is None:
-            return self.get_store_info()
-        return self._server_info
+        return self.get_store_info()
 
-    def get_store_info(self) -> ServerModel:
+    def get_store_info(self, force_refresh: bool = False) -> ServerModel:
         """Get information about the server.
+
+        Args:
+            force_refresh: Fetch the server information even if it is cached.
 
         Returns:
             Information about the server.
         """
-        body = self.get(INFO)
-        self._server_info = ServerModel.model_validate(body)
+        if self._server_info is None or force_refresh:
+            body = self.get(INFO)
+            self._server_info = ServerModel.model_validate(body)
         return self._server_info
 
     def get_deployment_id(self) -> UUID:
@@ -1037,7 +1055,32 @@ class RestZenStore(BaseZenStore):
             artifact_version_id: The ID of the artifact version to delete.
         """
         self._delete_resource(
-            resource_id=artifact_version_id, route=ARTIFACT_VERSIONS
+            resource_id=artifact_version_id,
+            route=ARTIFACT_VERSIONS,
+        )
+
+    def delete_artifact_version_server_side(
+        self,
+        artifact_version_id: UUID,
+        delete_metadata: bool = True,
+        delete_from_artifact_store: bool = False,
+    ) -> None:
+        """Delete an artifact version through the server endpoint.
+
+        Args:
+            artifact_version_id: The ID of the artifact version to delete.
+            delete_metadata: Whether the server should delete the artifact
+                version metadata.
+            delete_from_artifact_store: Whether the server should also delete
+                the artifact data from the artifact store.
+        """
+        self._delete_resource(
+            resource_id=artifact_version_id,
+            route=ARTIFACT_VERSIONS,
+            params={
+                "delete_metadata": delete_metadata,
+                "delete_from_artifact_store": delete_from_artifact_store,
+            },
         )
 
     def prune_artifact_versions(
@@ -1291,183 +1334,6 @@ class RestZenStore(BaseZenStore):
             route=STACK_COMPONENTS,
         )
 
-    # -------------------- Resource Pools -------------
-
-    def create_resource_pool(
-        self, resource_pool: ResourcePoolRequest
-    ) -> ResourcePoolResponse:
-        """Create a resource pool.
-
-        Args:
-            resource_pool: The resource pool to create.
-
-        Returns:
-            The created resource pool.
-        """
-        return self._create_resource(
-            resource=resource_pool,
-            route=RESOURCE_POOLS,
-            response_model=ResourcePoolResponse,
-        )
-
-    def get_resource_pool(
-        self, resource_pool_id: UUID, hydrate: bool = True
-    ) -> ResourcePoolResponse:
-        """Get a resource pool by ID.
-
-        Args:
-            resource_pool_id: The ID of the resource pool to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The resource pool.
-        """
-        return self._get_resource(
-            resource_id=resource_pool_id,
-            route=RESOURCE_POOLS,
-            response_model=ResourcePoolResponse,
-            params={"hydrate": hydrate},
-        )
-
-    def list_resource_pools(
-        self, filter_model: ResourcePoolFilter, hydrate: bool = False
-    ) -> Page[ResourcePoolResponse]:
-        """List all resource pools matching the given filter criteria.
-
-        Args:
-            filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all resource pools matching the filter criteria.
-        """
-        return self._list_paginated_resources(
-            route=RESOURCE_POOLS,
-            response_model=ResourcePoolResponse,
-            filter_model=filter_model,
-            params={"hydrate": hydrate},
-        )
-
-    def update_resource_pool(
-        self, resource_pool_id: UUID, update: ResourcePoolUpdate
-    ) -> ResourcePoolResponse:
-        """Update an existing resource pool.
-
-        Args:
-            resource_pool_id: The ID of the resource pool to update.
-            update: The update to be applied to the resource pool.
-
-        Returns:
-            The updated resource pool.
-        """
-        return self._update_resource(
-            resource_id=resource_pool_id,
-            resource_update=update,
-            route=RESOURCE_POOLS,
-            response_model=ResourcePoolResponse,
-        )
-
-    def delete_resource_pool(self, resource_pool_id: UUID) -> None:
-        """Delete a resource pool.
-
-        Args:
-            resource_pool_id: The ID of the resource pool to delete.
-        """
-        self._delete_resource(
-            resource_id=resource_pool_id,
-            route=RESOURCE_POOLS,
-        )
-
-    def create_resource_pool_subject_policy(
-        self, policy: ResourcePoolSubjectPolicyRequest
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Create a resource pool subject policy.
-
-        Args:
-            policy: The policy to create.
-
-        Returns:
-            The created policy.
-        """
-        return self._create_resource(
-            resource=policy,
-            route=RESOURCE_POOL_SUBJECT_POLICIES,
-            response_model=ResourcePoolSubjectPolicyResponse,
-        )
-
-    def get_resource_pool_subject_policy(
-        self, policy_id: UUID, hydrate: bool = True
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Get a resource pool subject policy by ID.
-
-        Args:
-            policy_id: The ID of the policy to get.
-            hydrate: Flag deciding whether to hydrate the output model(s).
-
-        Returns:
-            The policy.
-        """
-        return self._get_resource(
-            resource_id=policy_id,
-            route=RESOURCE_POOL_SUBJECT_POLICIES,
-            response_model=ResourcePoolSubjectPolicyResponse,
-            params={"hydrate": hydrate},
-        )
-
-    def list_resource_pool_subject_policies(
-        self,
-        filter_model: ResourcePoolSubjectPolicyFilter,
-        hydrate: bool = False,
-    ) -> Page[ResourcePoolSubjectPolicyResponse]:
-        """List resource pool subject policies.
-
-        Args:
-            filter_model: All filter parameters including pagination params.
-            hydrate: Flag deciding whether to hydrate the output model(s).
-
-        Returns:
-            Matching policies.
-        """
-        return self._list_paginated_resources(
-            route=RESOURCE_POOL_SUBJECT_POLICIES,
-            response_model=ResourcePoolSubjectPolicyResponse,
-            filter_model=filter_model,
-            params={"hydrate": hydrate},
-        )
-
-    def update_resource_pool_subject_policy(
-        self, policy_id: UUID, update: ResourcePoolSubjectPolicyUpdate
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Update an existing resource pool subject policy.
-
-        Args:
-            policy_id: The ID of the policy to update.
-            update: The update to be applied to the policy.
-
-        Returns:
-            The updated policy.
-        """
-        return self._update_resource(
-            resource_id=policy_id,
-            resource_update=update,
-            route=RESOURCE_POOL_SUBJECT_POLICIES,
-            response_model=ResourcePoolSubjectPolicyResponse,
-        )
-
-    def delete_resource_pool_subject_policy(self, policy_id: UUID) -> None:
-        """Delete a resource pool subject policy.
-
-        Args:
-            policy_id: The ID of the policy to delete.
-        """
-        self._delete_resource(
-            resource_id=policy_id,
-            route=RESOURCE_POOL_SUBJECT_POLICIES,
-        )
-
     # -------------------- Resource Requests -------------
 
     def get_resource_request(
@@ -1511,16 +1377,46 @@ class RestZenStore(BaseZenStore):
             params={"hydrate": hydrate},
         )
 
-    def delete_resource_request(self, resource_request_id: UUID) -> None:
-        """Delete a resource request.
+    def release_resource_request(
+        self,
+        resource_request_id: UUID,
+    ) -> ResourceRequestResponse:
+        """Release a resource request on behalf of its owner.
 
         Args:
-            resource_request_id: The ID of the resource request to delete.
+            resource_request_id: The ID of the resource request to release.
+
+        Returns:
+            The released resource request.
         """
-        self._delete_resource(
-            resource_id=resource_request_id,
-            route=RESOURCE_REQUESTS,
+        response_body = self._request(
+            "POST",
+            self.url
+            + API
+            + VERSION_1
+            + f"{RESOURCE_REQUESTS}/{resource_request_id}/release",
         )
+        return ResourceRequestResponse.model_validate(response_body)
+
+    def renew_resource_request(
+        self,
+        resource_request_id: UUID,
+        renewal_request: ResourceRequestRenewalRequest,
+    ) -> ResourceRequestResponse:
+        """Renew a resource request lease.
+
+        Args:
+            resource_request_id: The ID of the resource request to renew.
+            renewal_request: The renewed lease expiration timestamp.
+
+        Returns:
+            The renewed resource request.
+        """
+        response_body = self.post(
+            path=f"{RESOURCE_REQUESTS}/{resource_request_id}/renew",
+            body=renewal_request,
+        )
+        return ResourceRequestResponse.model_validate(response_body)
 
     #  ----------------------------- Flavors -----------------------------
 
@@ -1937,6 +1833,23 @@ class RestZenStore(BaseZenStore):
             route=PIPELINE_SNAPSHOTS,
         )
 
+    def prune_snapshots(
+        self, prune_request: PipelineSnapshotPruneRequest
+    ) -> PipelineSnapshotPruneResponse:
+        """Counts or deletes old anonymous snapshots that nothing references.
+
+        Args:
+            prune_request: Which snapshots to prune and whether to delete
+                them or only count them.
+
+        Returns:
+            The number of deleted or, for a dry run, eligible snapshots.
+        """
+        response_body = self.post(
+            path=f"{PIPELINE_SNAPSHOTS}{PRUNE}", body=prune_request
+        )
+        return PipelineSnapshotPruneResponse.model_validate(response_body)
+
     def run_snapshot(
         self,
         snapshot_id: UUID,
@@ -2335,6 +2248,20 @@ class RestZenStore(BaseZenStore):
             },
         )
 
+    def get_run_statistics(
+        self, request: RunStatisticsRequest
+    ) -> RunStatisticsResponse:
+        """Compute grouped statistics over pipeline runs.
+
+        Args:
+            request: Statistics request.
+
+        Returns:
+            Grouped statistics.
+        """
+        response_body = self.post(f"{RUNS}{STATISTICS}", body=request)
+        return RunStatisticsResponse.model_validate(response_body)
+
     def update_run(
         self, run_id: UUID, run_update: PipelineRunUpdate
     ) -> PipelineRunResponse:
@@ -2401,6 +2328,23 @@ class RestZenStore(BaseZenStore):
         self.put(
             path=f"{RUNS}/{str(run_id)}{DISABLE_HEARTBEAT}",
         )
+
+    def publish_run_events(
+        self, pipeline_run_id: UUID, batch: StreamBatchRequest
+    ) -> StreamBatchResponse:
+        """Publish a batch of live events to a pipeline run's stream.
+
+        Args:
+            pipeline_run_id: The ID of the run the events belong to.
+            batch: The batch of events to publish.
+
+        Returns:
+            The server-side ingest response.
+        """
+        response_body = self.post(
+            f"{RUNS}/{pipeline_run_id}{EVENTS}", body=batch
+        )
+        return StreamBatchResponse.model_validate(response_body)
 
     def create_run_wait_condition(
         self, run_wait_condition: RunWaitConditionRequest
@@ -2508,6 +2452,128 @@ class RestZenStore(BaseZenStore):
             run_metadata: The run metadata to create.
         """
         self.post(RUN_METADATA, body=run_metadata)
+
+    # ------------------------ Webhooks -----------------------
+
+    def create_webhook(self, webhook: WebhookRequest) -> WebhookCreateResponse:
+        """Create a webhook.
+
+        Args:
+            webhook: The webhook creation request.
+
+        Returns:
+            The created webhook and any generated signing secret.
+        """
+        response = self.post(WEBHOOKS, body=webhook)
+        return WebhookCreateResponse.model_validate(response)
+
+    def get_webhook(
+        self, webhook_id: UUID, hydrate: bool = True
+    ) -> WebhookResponse:
+        """Get a webhook.
+
+        Args:
+            webhook_id: The webhook ID.
+            hydrate: Whether to include intake statistics.
+
+        Returns:
+            The webhook.
+        """
+        response = self.get(
+            f"{WEBHOOKS}/{webhook_id}",
+            params={"hydrate": hydrate},
+        )
+        return WebhookResponse.model_validate(response)
+
+    def list_webhooks(
+        self,
+        filter_model: WebhookFilter,
+        hydrate: bool = False,
+    ) -> Page[WebhookResponse]:
+        """List webhooks.
+
+        Args:
+            filter_model: The webhook filters.
+            hydrate: Whether to include intake statistics.
+
+        Returns:
+            A page of webhooks.
+        """
+        response = self.get(
+            WEBHOOKS,
+            params={
+                "hydrate": hydrate,
+                **filter_model.model_dump(exclude_none=True),
+            },
+        )
+        return Page[WebhookResponse].model_validate(response)
+
+    def update_webhook(
+        self,
+        webhook_id: UUID,
+        update: WebhookUpdate,
+    ) -> WebhookResponse:
+        """Update a webhook.
+
+        Args:
+            webhook_id: The webhook ID.
+            update: The webhook update.
+
+        Returns:
+            The updated webhook.
+        """
+        response = self.put(f"{WEBHOOKS}/{webhook_id}", body=update)
+        return WebhookResponse.model_validate(response)
+
+    def delete_webhook(self, webhook_id: UUID) -> None:
+        """Delete a webhook.
+
+        Args:
+            webhook_id: The webhook ID.
+        """
+        self.delete(f"{WEBHOOKS}/{webhook_id}")
+
+    def rotate_webhook_secret(
+        self,
+        webhook_id: UUID,
+        request: WebhookRotateSecretRequest,
+    ) -> WebhookSecretResponse:
+        """Rotate a webhook signing secret.
+
+        Args:
+            webhook_id: The webhook ID.
+            request: The secret rotation request.
+
+        Returns:
+            The newly active signing secret.
+        """
+        response = self.put(f"{WEBHOOKS}/{webhook_id}/secret", body=request)
+        return WebhookSecretResponse.model_validate(response)
+
+    def get_raw_webhook_event(
+        self,
+        webhook_id: UUID,
+        delivery_id: str,
+    ) -> Dict[str, Any]:
+        """Get a retained raw webhook event payload.
+
+        Args:
+            webhook_id: The webhook ID.
+            delivery_id: The provider or ZenML delivery ID.
+
+        Returns:
+            The extensible raw webhook event payload.
+
+        Raises:
+            ValueError: If the server returns an invalid payload shape.
+        """
+        response = self.get(
+            f"{WEBHOOKS}/{webhook_id}/events/raw",
+            params={"delivery_id": delivery_id},
+        )
+        if not isinstance(response, dict):
+            raise ValueError("Invalid raw webhook event response.")
+        return response
 
     # ----------------------------- Triggers ------------------------------
 
@@ -3221,6 +3287,10 @@ class RestZenStore(BaseZenStore):
         Args:
             connector_models: The service connector or resource models to
                 populate.
+
+        Raises:
+            TypeError: If a model is neither a `ServiceConnectorResponse` nor
+                a `ServiceConnectorResourcesModel`.
         """
         for service_connector in connector_models:
             # Mark the remote connector type as being only remotely available
@@ -3251,8 +3321,8 @@ class RestZenStore(BaseZenStore):
             elif isinstance(service_connector, ServiceConnectorResourcesModel):
                 service_connector.connector_type = connector_type
             else:
-                TypeError(
-                    "The service connector must be an instance of either"
+                raise TypeError(
+                    "The service connector must be an instance of either "
                     "`ServiceConnectorResponse` or "
                     "`ServiceConnectorResourcesModel`."
                 )
@@ -3776,6 +3846,79 @@ class RestZenStore(BaseZenStore):
             params={"hydrate": hydrate},
         )
 
+    # -------------------- Hook invocations --------------------
+
+    def create_hook_invocation(
+        self, hook_invocation: HookInvocationRequest
+    ) -> HookInvocationResponse:
+        """Create a hook invocation.
+
+        Args:
+            hook_invocation: The hook invocation to create.
+
+        Returns:
+            The created hook invocation.
+        """
+        return self._create_resource(
+            resource=hook_invocation,
+            response_model=HookInvocationResponse,
+            route=HOOK_INVOCATIONS,
+        )
+
+    def get_hook_invocation(
+        self, hook_invocation_id: UUID, hydrate: bool = True
+    ) -> HookInvocationResponse:
+        """Get a hook invocation by ID.
+
+        Args:
+            hook_invocation_id: The ID of the hook invocation to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The hook invocation.
+        """
+        return self._get_resource(
+            resource_id=hook_invocation_id,
+            route=HOOK_INVOCATIONS,
+            response_model=HookInvocationResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_hook_invocations(
+        self,
+        hook_invocation_filter_model: HookInvocationFilter,
+        hydrate: bool = False,
+    ) -> Page[HookInvocationResponse]:
+        """List all hook invocations matching the given filter criteria.
+
+        Args:
+            hook_invocation_filter_model: All filter parameters including
+                pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all hook invocations matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=HOOK_INVOCATIONS,
+            response_model=HookInvocationResponse,
+            filter_model=hook_invocation_filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def delete_hook_invocation(self, hook_invocation_id: UUID) -> None:
+        """Delete a hook invocation.
+
+        Args:
+            hook_invocation_id: The ID of the hook invocation to delete.
+        """
+        self._delete_resource(
+            resource_id=hook_invocation_id,
+            route=HOOK_INVOCATIONS,
+        )
+
     def update_run_step(
         self,
         step_run_id: UUID,
@@ -3798,18 +3941,32 @@ class RestZenStore(BaseZenStore):
         )
 
     def update_step_heartbeat(
-        self, step_run_id: UUID
+        self,
+        step_run_id: UUID,
+        heartbeat_liveness_timeout_seconds: Optional[int] = None,
     ) -> StepHeartbeatResponse:
         """Updates a step run heartbeat.
 
         Args:
             step_run_id: The ID of the step to update.
+            heartbeat_liveness_timeout_seconds: Optional number of seconds the
+                server should wait for another heartbeat before considering the
+                heartbeat client dead.
 
         Returns:
             The step heartbeat response.
         """
+        request = None
+        if heartbeat_liveness_timeout_seconds is not None:
+            request = StepHeartbeatRequest(
+                heartbeat_liveness_timeout_seconds=(
+                    heartbeat_liveness_timeout_seconds
+                )
+            )
+
         response_body = self.put(
             path=f"{STEPS}/{str(step_run_id)}{HEARTBEAT}",
+            body=request,
             timeout=5,
         )
 
@@ -4674,6 +4831,24 @@ class RestZenStore(BaseZenStore):
             if api_key is not None:
                 # An API key is configured. Use it as a password to
                 # authenticate.
+                if self.server_info.is_pro_server() and not api_key.startswith(
+                    ZENML_PRO_API_KEY_PREFIX
+                ):
+                    logger.warning(
+                        "\n"
+                        "===============================================================\n"
+                        "DEPRECATED ZENML PRO AUTHENTICATION METHOD\n\n"
+                        "This client is authenticating to a ZenML Pro workspace with a "
+                        "workspace-level service account API key. Existing "
+                        "keys still work temporarily for compatibility, but "
+                        "workspace-level service accounts are deprecated and "
+                        "can no longer be managed in ZenML Pro workspaces.\n\n"
+                        "Migrate this automation to a ZenML Pro organization "
+                        "service account and API key as soon as possible:\n"
+                        "https://docs.zenml.io/pro/access-management/"
+                        "service-accounts#migration-of-workspace-level-service-accounts\n"
+                        "==============================================================="
+                    )
                 data = {
                     "grant_type": OAuthGrantTypes.ZENML_API_KEY.value,
                     "password": api_key,
@@ -4766,7 +4941,7 @@ class RestZenStore(BaseZenStore):
             # NOTE: this is the best place to do this because we know that
             # the token is valid and the server is reachable.
             try:
-                server_info = self.get_store_info()
+                server_info = self.get_store_info(force_refresh=True)
             except Exception as e:
                 logger.warning(f"Failed to get server info: {e}.")
             else:
@@ -5390,6 +5565,42 @@ class RestZenStore(BaseZenStore):
         # The initial page of items will be of type BaseResponseModel
         page_of_items: Page[AnyResponse] = Page.model_validate(body)
         # So these items will be parsed into their correct types like here
+        page_of_items.items = [
+            response_model.model_validate(generic_item)
+            for generic_item in body["items"]
+        ]
+        return page_of_items
+
+    def _list_paginated_models(
+        self,
+        route: str,
+        response_model: Type[AnyModel],
+        filter_model: BaseFilter,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> Page[AnyModel]:
+        """Retrieve a page of Pydantic models from a REST endpoint.
+
+        Args:
+            route: The resource REST API route to use.
+            response_model: Model to use to serialize the response body.
+            filter_model: The filter model to use for the list query.
+            params: Optional query parameters to pass to the endpoint.
+
+        Returns:
+            Page of retrieved models matching the filter criteria.
+
+        Raises:
+            ValueError: If the value returned by the server is not a list.
+        """
+        params = params or {}
+        params.update(filter_model.model_dump(exclude_none=True))
+        body = self.get(route, params=params)
+        if not isinstance(body, dict):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+
+        page_of_items: Page[AnyModel] = Page.model_validate(body)
         page_of_items.items = [
             response_model.model_validate(generic_item)
             for generic_item in body["items"]

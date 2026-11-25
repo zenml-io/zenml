@@ -20,17 +20,15 @@ def resource_request() -> None:
 
 
 @resource_request.command("describe", help="Describe a resource request.")
-@click.argument("resource_request_id", type=str, required=True)
-def describe_resource_request(resource_request_id: str) -> None:
+@click.argument("resource_request_id", type=UUID, required=True)
+def describe_resource_request(resource_request_id: UUID) -> None:
     """Describe a resource request.
 
     Args:
         resource_request_id: ID of the resource request.
     """
     try:
-        resource_request = Client().zen_store.get_resource_request(
-            UUID(resource_request_id)
-        )
+        resource_request = Client().get_resource_request(resource_request_id)
     except KeyError as err:
         cli_utils.exception(err)
     else:
@@ -43,7 +41,7 @@ def describe_resource_request(resource_request_id: str) -> None:
 @resource_request.command("list", help="List resource requests.")
 @list_options(
     ResourceRequestFilter,
-    default_columns=["id", "status", "component", "step_run", "created"],
+    default_columns=["id", "status", "pool_name", "step_name", "created"],
 )
 def list_resource_requests(
     columns: str, output_format: OutputFormat, **kwargs: Any
@@ -55,26 +53,13 @@ def list_resource_requests(
         output_format: Format for output (table/json/yaml/csv/tsv).
         **kwargs: Keyword arguments used to build the filter model.
     """
-    filter_model = ResourceRequestFilter(**kwargs)
     with console.status("Listing resource requests...\n"):
-        page = Client().zen_store.list_resource_requests(
-            filter_model=filter_model, hydrate=False
-        )
+        page = Client().list_resource_requests(**kwargs)
 
     cli_utils.print_page(
         page,
         columns,
         output_format,
+        column_aliases={"pool_name": "pool", "step_name": "step"},
         empty_message="No resource requests found for this filter.",
     )
-
-
-@resource_request.command("delete", help="Delete a resource request.")
-@click.argument("resource_request_id", type=str, required=True)
-def delete_resource_request(resource_request_id: str) -> None:
-    """Delete a resource request.
-
-    Args:
-        resource_request_id: ID of the resource request.
-    """
-    Client().zen_store.delete_resource_request(UUID(resource_request_id))

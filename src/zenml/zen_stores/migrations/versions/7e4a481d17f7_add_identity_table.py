@@ -7,7 +7,6 @@ Create Date: 2022-12-08 16:27:48.909015
 """
 
 import sqlalchemy as sa
-import sqlmodel
 from alembic import op
 
 # revision identifiers, used by Alembic.
@@ -23,7 +22,7 @@ def upgrade() -> None:
 
     op.create_table(
         "identity",
-        sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("id", sa.Uuid(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
     # get metadata from current connection

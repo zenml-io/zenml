@@ -39,6 +39,18 @@ def is_valid_uuid(value: Any, version: int = 4) -> bool:
     return False
 
 
+def to_uuid(value: Union[str, UUID]) -> UUID:
+    """Coerce a string or UUID into a UUID.
+
+    Args:
+        value: The value to coerce.
+
+    Returns:
+        The value as a UUID instance.
+    """
+    return value if isinstance(value, UUID) else UUID(value)
+
+
 def parse_name_or_uuid(
     name_or_id: Optional[str],
 ) -> Optional[Union[str, UUID]]:

@@ -46,7 +46,7 @@ from zenml.integrations.skypilot.utils import (
 )
 from zenml.logger import get_logger
 from zenml.models import PipelineRunResponse
-from zenml.orchestrators.dag_runner import NodeStatus, ThreadedDagRunner
+from zenml.orchestrators.legacy_dag_runner import NodeStatus, ThreadedDagRunner
 from zenml.orchestrators.publish_utils import (
     publish_failed_pipeline_run,
 )

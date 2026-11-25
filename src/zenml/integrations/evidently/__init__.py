@@ -25,7 +25,7 @@ file.
 import logging
 import os
 import warnings
-from typing import List, Type, Optional
+from typing import List, Optional, Type
 
 from zenml.integrations.constants import EVIDENTLY
 from zenml.integrations.integration import Integration
@@ -56,12 +56,16 @@ class EvidentlyIntegration(Integration):
     REQUIREMENTS = [
         "evidently>=0.5.0,<1.0",
         "tenacity!=8.4.0",  # https://github.com/jd/tenacity/issues/471
+        # Evidently imports a private Pandas function removed in 3.1.
+        "pandas<3.1.0",
     ]
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["tenacity", "pandas"]
 
     @classmethod
     def get_requirements(
-        cls, target_os: Optional[str] = None, python_version: Optional[str] = None
+        cls,
+        target_os: Optional[str] = None,
+        python_version: Optional[str] = None,
     ) -> List[str]:
         """Method to get the requirements for the integration.
 
@@ -90,4 +94,3 @@ class EvidentlyIntegration(Integration):
         )
 
         return [EvidentlyDataValidatorFlavor]
-

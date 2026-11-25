@@ -7,7 +7,6 @@ Create Date: 2026-01-23 18:51:29.944099
 """
 
 import sqlalchemy as sa
-import sqlmodel
 from alembic import op
 from sqlalchemy.dialects.mysql import MEDIUMBLOB
 
@@ -22,7 +21,7 @@ def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
     op.create_table(
         "api_transaction_result",
-        sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column(
             "result",
             MEDIUMBLOB

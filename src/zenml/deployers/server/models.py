@@ -17,7 +17,7 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from zenml.logger import get_logger
 
@@ -57,14 +57,13 @@ class BaseDeploymentInvocationRequest(BaseModel):
     run_name: Optional[str] = Field(
         default=None, title="Custom name for the pipeline run."
     )
-    timeout: int = Field(
-        default=300, title="The timeout for the pipeline execution."
-    )
     skip_artifact_materialization: bool = Field(
         default=False,
         title="Whether to keep outputs in memory for fast access instead of "
         "storing them as artifacts.",
     )
+
+    model_config = ConfigDict(extra="ignore")
 
 
 class BaseDeploymentInvocationResponse(BaseModel):
@@ -88,6 +87,12 @@ class BaseDeploymentInvocationResponse(BaseModel):
         default=None,
         title="The error that occurred, if the pipeline invocation failed.",
     )
+
+
+class BaseDeploymentSubmitResponse(BaseModel):
+    """Base pipeline submit response model."""
+
+    run_id: UUID = Field(title="The ID of the pipeline run.")
 
 
 class PipelineInfo(BaseModel):
@@ -131,6 +136,7 @@ class AppInfo(BaseModel):
     docs_url_path: str
     redoc_url_path: str
     invoke_url_path: str
+    submit_url_path: str
     health_url_path: str
     info_url_path: str
     metrics_url_path: str

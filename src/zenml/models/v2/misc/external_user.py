@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing users."""
 
-from typing import Optional
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -26,8 +26,9 @@ class ExternalUserModel(BaseModel):
     username: str
     email: Optional[str] = None
     name: Optional[str] = None
-    is_admin: bool = False
+    is_superuser: bool = False
     is_service_account: bool = False
     avatar_url: Optional[str] = None
+    oidc_claims: Optional[Dict[str, Any]] = None
 
     model_config = ConfigDict(extra="ignore")

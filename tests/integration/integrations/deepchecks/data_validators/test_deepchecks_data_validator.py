@@ -22,8 +22,8 @@ from zenml.enums import StackComponentType
 
 
 @pytest.mark.skipif(
-    sys.version_info.minor == 12 or sys.version_info.minor == 13,
-    reason="The deepchecks integrations is not yet supported on 3.12 or 3.13.",
+    sys.version_info.minor in (12, 13, 14),
+    reason="The deepchecks integrations is not yet supported on 3.12, 3.13 or 3.14.",
 )
 def test_deepchecks_data_validator_attributes():
     """Tests that the basic attributes of the Deepchecks data validator are set correctly."""

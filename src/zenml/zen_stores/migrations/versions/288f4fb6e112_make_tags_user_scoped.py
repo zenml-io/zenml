@@ -7,7 +7,6 @@ Create Date: 2025-02-19 15:16:42.954792
 """
 
 import sqlalchemy as sa
-import sqlmodel
 from alembic import op
 from sqlalchemy.orm import Session
 
@@ -22,9 +21,7 @@ def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
     with op.batch_alter_table("tag", schema=None) as batch_op:
         # First add columns as nullable
-        batch_op.add_column(
-            sa.Column("user_id", sqlmodel.sql.sqltypes.GUID(), nullable=True)
-        )
+        batch_op.add_column(sa.Column("user_id", sa.Uuid(), nullable=True))
 
         # Add foreign key constraints
         batch_op.create_foreign_key(

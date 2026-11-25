@@ -126,7 +126,9 @@ helm upgrade zenml oci://public.ecr.aws/zenml/zenml \
 
 ## Related resources
 
-- [Resource pools](resource-pools.md) — product overview and concepts
-- [Resource pools — Core concepts](resource-pools-core-concepts.md)
+- [Resource pools](resource-pools.md) — product overview
+- [Core concepts](resource-pools-core-concepts.md)
+- [Admin guide](resource-pools-admin-guide.md)
+- [User guide](resource-pools-user-guide.md)
 - [Self-hosted Deployment on Kubernetes with Helm](deploy-workspace-k8s.md)
 - [Helm chart on Artifact Hub](https://artifacthub.io/packages/helm/zenml/zenml)

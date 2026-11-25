@@ -110,6 +110,8 @@ As part of this, implementing comprehensive logging from the early stages of dev
 - [langfuse](https://langfuse.com/)
 - [braintrust](https://www.braintrust.dev/)
 
+If your inference calls come from an agent rather than a single model call, the traces you collect in these tools don't have to stay read-only. [Kitaru](https://docs.zenml.io/kitaru) ships importers for Langfuse, LangSmith, Braintrust, Logfire and Arize Phoenix that turn those traces into sessions you can replay against your real code; see [importing your traces](https://docs.zenml.io/kitaru/getting-started/import-your-traces).
+
 Alongside collecting the raw data and viewing it periodically, creating simple
 dashboards that display core metrics reflecting your model's performance is an
 effective way to visualize and monitor progress. These metrics should align with

@@ -296,6 +296,20 @@ response = invoke_deployment(
 print(response)
 ```
 
+By default, invoking a deployment blocks until the pipeline run finishes and returns its outputs. To submit the run for background execution and get the run ID back immediately instead, pass `--no-wait` on the CLI or `submit=True` with the SDK:
+
+```bash
+$ zenml deployment invoke my_deployment --name="John" --no-wait
+```
+
+```python
+response = invoke_deployment(
+    deployment_name_or_id="my_deployment",
+    name="John",
+    submit=True,
+)
+```
+
 #### Specifying deployment resources
 
 If your steps require additional hardware resources, you can specify them on your steps as described [here](https://docs.zenml.io/user-guides/tutorial/distributed-training/).

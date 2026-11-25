@@ -21,7 +21,7 @@ from zenml.pipelines.pipeline_context import get_pipeline_context
 from zenml.utils.pydantic_utils import before_validator_handler
 
 if TYPE_CHECKING:
-    from zenml.models import ModelVersionResponse, PipelineRunResponse
+    from zenml.models import ModelVersionResponse
 
 
 class ModelVersionDataLazyLoader(BaseModel):
@@ -80,18 +80,18 @@ class ModelVersionDataLazyLoader(BaseModel):
         return data
 
     def _get_model_response(
-        self, pipeline_run: "PipelineRunResponse"
+        self, model_version: Optional["ModelVersionResponse"]
     ) -> "ModelVersionResponse":
         # if the version/number is None -> return the model in context
         if self.model_version is None:
-            if mv := pipeline_run.model_version:
-                if mv.model.name != self.model_name:
+            if model_version:
+                if model_version.model.name != self.model_name:
                     raise RuntimeError(
                         "Lazy loading of the model failed, since given name "
                         f"`{self.model_name}` does not match the model name "
-                        f"in the pipeline context: `{mv.model.name}`."
+                        f"in the pipeline context: `{model_version.model.name}`."
                     )
-                return mv
+                return model_version
             else:
                 raise RuntimeError(
                     "Lazy loading of the model failed, since the model version "

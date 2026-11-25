@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if echo \"$CLAUDE_TOOL_INPUT\" | jq -r '.command' 2>/dev/null | grep -q 'git commit'; then echo '🔍 Running pre-commit formatting...'; bash \"$CLAUDE_PROJECT_DIR\"/scripts/format.sh && echo '✅ Formatting complete' || { echo '❌ Formatting failed - commit blocked'; exit 1; }; fi",
+            "command": "if jq -r '.tool_input.command' 2>/dev/null | grep -q 'git commit'; then echo '🔍 Running pre-commit formatting...'; bash \"$CLAUDE_PROJECT_DIR\"/scripts/format.sh && echo '✅ Formatting complete' || { echo '❌ Formatting failed - commit blocked' >&2; exit 2; }; fi",
             "timeout": 300
           }
         ]

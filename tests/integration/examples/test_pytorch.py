@@ -29,6 +29,9 @@ def test_example(
         "__ZENML__TORCHINDUCTOR_CACHE_DIR",
         "/tmp/torchinductor",  # nosec B108
     )
+    # Native crashes do not produce Python tracebacks unless faulthandler is
+    # enabled before the example subprocess starts.
+    monkeypatch.setenv("PYTHONFAULTHANDLER", "1")
 
     with run_example(
         request=request,
