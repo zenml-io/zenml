@@ -15246,9 +15246,20 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A boolean whether the model was created or not, and the model.
         """
+        # Look up first: every run with a configured model calls this, and a
+        # failed `create_model` call still emits a `Model created` event.
+        try:
+            return False, self.get_model_by_name_or_id(
+                model_name_or_id=model_request.name,
+                project=model_request.project,
+            )
+        except KeyError:
+            pass
+
         try:
             return True, self.create_model(model_request)
         except EntityExistsError:
+            # Another run created the model concurrently.
             return False, self.get_model_by_name_or_id(
                 model_name_or_id=model_request.name,
                 project=model_request.project,
