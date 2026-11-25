@@ -1186,6 +1186,31 @@ def get_auth_context() -> Optional["AuthContext"]:
     return request_context.auth_context
 
 
+def get_user_log_fields() -> dict[str, str | bool]:
+    """Get authenticated user fields for a log event.
+
+    Returns:
+        User fields, or an empty dictionary when no user is authenticated.
+    """
+    auth = get_auth_context()
+    if auth is None:
+        return {}
+
+    user = auth.user
+    metadata = user.metadata
+    external_id = metadata.external_user_id if metadata is not None else None
+    fields: dict[str, str | bool] = {
+        "zenml.user.id": str(external_id or user.id),
+        "zenml.user.username": user.name,
+        "zenml.user.is_service_account": user.is_service_account,
+        "zenml.user.is_admin": user.is_admin,
+    }
+    if not user.is_service_account and metadata is not None and metadata.email:
+        fields["zenml.user.email"] = metadata.email
+
+    return fields
+
+
 def get_current_request_context() -> RequestContext:
     """Get the current request context.
 

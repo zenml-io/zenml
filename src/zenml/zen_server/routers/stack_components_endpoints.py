@@ -21,6 +21,7 @@ from pydantic import BaseModel
 
 from zenml.constants import API, COMPONENT_TYPES, STACK_COMPONENTS, VERSION_1
 from zenml.enums import StackComponentType
+from zenml.logger import get_logger
 from zenml.models import (
     ComponentFilter,
     ComponentRequest,
@@ -45,9 +46,12 @@ from zenml.zen_server.rbac.utils import (
 from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
+    get_user_log_fields,
     make_dependable,
     zen_store,
 )
+
+logger = get_logger(__name__)
 
 router = APIRouter(
     prefix=API + VERSION_1 + STACK_COMPONENTS,
@@ -126,10 +130,12 @@ def create_stack_component(
             mode="json", exclude_unset=True
         )
 
-    return verify_permissions_and_create_entity(
+    result = verify_permissions_and_create_entity(
         request_model=component,
         create_method=zen_store().create_stack_component,
     )
+    logger.info("stack_component.created", extra=_component_log_fields(result))
+    return result
 
 
 @router.get(
@@ -258,12 +264,14 @@ def update_stack_component(
             model=service_connector, action=Action.ATTACH
         )
 
-    return verify_permissions_and_update_entity(
+    result = verify_permissions_and_update_entity(
         id=component_id,
         update_model=component_update,
         get_method=zen_store().get_stack_component,
         update_method=zen_store().update_stack_component,
     )
+    logger.info("stack_component.updated", extra=_component_log_fields(result))
+    return result
 
 
 @router.delete(
@@ -285,6 +293,10 @@ def deregister_stack_component(
         get_method=zen_store().get_stack_component,
         delete_method=zen_store().delete_stack_component,
     )
+    logger.info(
+        "stack_component.deleted",
+        extra={**get_user_log_fields(), "resource_id": str(component_id)},
+    )
 
 
 @types_router.get(
@@ -301,3 +313,25 @@ def get_stack_component_types(
         List of stack components.
     """
     return StackComponentType.values()
+
+
+def _component_log_fields(
+    component: ComponentResponse,
+) -> dict[str, str | bool | list[str]]:
+    """Return the resource and resulting links for a component event.
+
+    Args:
+        component: The resulting component.
+
+    Returns:
+        Component identity and link fields for the log record.
+    """
+    fields: dict[str, str | bool | list[str]] = {
+        **get_user_log_fields(),
+        "resource_id": str(component.id),
+    }
+    if component.metadata is not None:
+        fields["secret_ids"] = sorted(map(str, component.metadata.secrets))
+        if connector := component.metadata.connector:
+            fields["connector_id"] = str(connector.id)
+    return fields
