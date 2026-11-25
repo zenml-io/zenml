@@ -11,499 +11,682 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Unit tests for HuggingFace Jobs step operator utility functions.
+"""Unit tests for the HuggingFace Jobs step operator.
 
-These tests stub huggingface_hub in sys.modules so they run in CI
-environments where the package is not installed.
+Uses real ``huggingface_hub.JobInfo`` objects when ``huggingface_hub`` is
+installed, and mirrors the exact runtime shape (plain ``str`` for
+``JobStatus.stage``, ``JobOwner.name``, ``get_token``) when running in
+minimal CI environments without ``huggingface_hub``.
 """
 
 import enum
-import importlib
+import logging
 import sys
 import types
+from typing import Any, Optional
 from unittest.mock import MagicMock
+from uuid import uuid4
 
 import pytest
 
-from zenml.enums import ExecutionStatus
+from zenml.config.resource_settings import ResourceSettings
+from zenml.constants import (
+    METADATA_ORCHESTRATOR_LOGS_URL,
+    METADATA_ORCHESTRATOR_RUN_ID,
+    METADATA_ORCHESTRATOR_URL,
+)
+from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.exceptions import (
+    RunInterruptedException,
+    RunStoppedException,
+    StackValidationError,
+)
 from zenml.integrations.huggingface.flavors.huggingface_jobs_step_operator_flavor import (
     HuggingFaceJobsStepOperatorConfig,
     HuggingFaceJobsStepOperatorSettings,
 )
+from zenml.integrations.huggingface.step_operators import (
+    huggingface_jobs_step_operator as mod,
+)
+from zenml.metadata.metadata_types import Uri
+from zenml.step_operators import BaseStepOperator
 
 
-class FakeJobStage(enum.Enum):
-    """Mirrors huggingface_hub.JobStage for testing."""
+class _FallbackJobStage(str, enum.Enum):
+    """Mirrors real huggingface_hub.JobStage values when hub is uninstalled."""
 
     COMPLETED = "COMPLETED"
-    ERROR = "ERROR"
     CANCELED = "CANCELED"
+    ERROR = "ERROR"
     DELETED = "DELETED"
+    SCHEDULING = "SCHEDULING"
     RUNNING = "RUNNING"
-    INITIALIZING = "INITIALIZING"
 
 
-def _make_job_info(stage: FakeJobStage, message: str = "") -> MagicMock:
-    """Create a fake job info object returned by inspect_job.
+def _make_job_info(
+    stage: str,
+    *,
+    job_id: str = "job-123",
+    owner_name: str = "alice",
+    message: Optional[str] = None,
+) -> Any:
+    """Build a JobInfo whose ``status.stage`` is a plain string, like the SDK.
+
+    Uses the real ``huggingface_hub.JobInfo`` constructor when available.
 
     Args:
-        stage: The job stage.
+        stage: Raw stage string (e.g. ``"RUNNING"``, ``"COMPLETED"``).
+        job_id: Job identifier.
+        owner_name: Job owner/namespace name.
         message: Optional status message.
 
     Returns:
-        A mock with .status.stage and .status.message.
+        A real ``JobInfo`` or a shape-identical ``SimpleNamespace``.
     """
-    info = MagicMock()
-    info.status.stage = stage
-    info.status.message = message
-    return info
+    payload = {
+        "id": job_id,
+        "owner": {"id": "owner-1", "name": owner_name, "type": "user"},
+        "status": {"stage": stage, "message": message},
+    }
+    real_hf = sys.modules.get("huggingface_hub")
+    job_info_cls = getattr(real_hf, "JobInfo", None) if real_hf else None
+    if job_info_cls is not None:
+        return job_info_cls(**payload)
+
+    return types.SimpleNamespace(
+        id=job_id,
+        owner=types.SimpleNamespace(
+            id="owner-1", name=owner_name, type="user"
+        ),
+        status=types.SimpleNamespace(stage=stage, message=message),
+        url=f"https://huggingface.co/jobs/{owner_name}/{job_id}",
+    )
 
 
-def _stub_huggingface_hub(
-    monkeypatch,
+def _install_hf_module(
+    monkeypatch: pytest.MonkeyPatch,
     *,
-    token: str | None = None,
-    has_run_job: bool = True,
-    installed_version: str = "0.30.0",
+    token: Optional[str] = "hf_cached_token",
+    has_jobs_api: bool = True,
+    hf_debug: bool = False,
 ) -> types.ModuleType:
-    """Create and install a fake huggingface_hub module in sys.modules.
+    """Install a controllable huggingface_hub module in sys.modules.
+
+    When the real ``huggingface_hub`` package is installed, preserves its
+    real ``JobInfo`` and ``JobStage`` classes while patching only the network
+    functions and ``get_token``.
 
     Args:
         monkeypatch: pytest monkeypatch fixture.
-        token: Token to return from HfFolder.get_token().
-        has_run_job: Whether to include the run_job symbol.
-        installed_version: Version string for importlib.metadata.
+        token: Token returned by ``get_token()``.
+        has_jobs_api: Whether Jobs API functions exist on the module.
+        hf_debug: Value of ``constants.HF_DEBUG``.
 
     Returns:
-        The fake module.
+        The patched module object.
     """
+    real_job_info = None
+    real_job_stage = None
+    try:
+        import huggingface_hub as real_hf
+
+        real_job_info = getattr(real_hf, "JobInfo", None)
+        real_job_stage = getattr(real_hf, "JobStage", None)
+    except ImportError:
+        pass
+
     fake_hf = types.ModuleType("huggingface_hub")
-    fake_hf.__version__ = installed_version
+    fake_hf.constants = types.SimpleNamespace(HF_DEBUG=hf_debug)  # type: ignore[attr-defined]
+    fake_hf.get_token = MagicMock(return_value=token)  # type: ignore[attr-defined]
 
-    if has_run_job:
-        fake_hf.run_job = lambda **kwargs: None  # type: ignore[attr-defined]
+    if real_job_info is not None:
+        fake_hf.JobInfo = real_job_info  # type: ignore[attr-defined]
 
-    # Stub async interface symbols
-    fake_hf.inspect_job = MagicMock(  # type: ignore[attr-defined]
-        return_value=_make_job_info(FakeJobStage.RUNNING)
-    )
-    fake_hf.cancel_job = MagicMock()  # type: ignore[attr-defined]
-    fake_hf.fetch_job_logs = MagicMock(  # type: ignore[attr-defined]
-        return_value=[]
-    )
-    fake_hf.JobStage = FakeJobStage  # type: ignore[attr-defined]
-
-    class FakeHfFolder:
-        @staticmethod
-        def get_token() -> str | None:
-            return token
-
-    fake_hf.HfFolder = FakeHfFolder  # type: ignore[attr-defined]
-
-    # Also stub the private _space_api submodule
-    fake_space_api = types.ModuleType("huggingface_hub._space_api")
-    fake_hf._space_api = fake_space_api  # type: ignore[attr-defined]
+    if has_jobs_api:
+        fake_hf.JobStage = real_job_stage or _FallbackJobStage  # type: ignore[attr-defined]
+        fake_hf.run_job = MagicMock(  # type: ignore[attr-defined]
+            return_value=_make_job_info("SCHEDULING")
+        )
+        fake_hf.inspect_job = MagicMock(  # type: ignore[attr-defined]
+            return_value=_make_job_info("RUNNING")
+        )
+        fake_hf.cancel_job = MagicMock()  # type: ignore[attr-defined]
 
     monkeypatch.setitem(sys.modules, "huggingface_hub", fake_hf)
-    monkeypatch.setitem(
-        sys.modules, "huggingface_hub._space_api", fake_space_api
-    )
-
-    # Stub importlib.metadata.version for version checks
-    original_version = importlib.metadata.version
-
-    def _patched_version(name: str) -> str:
-        if name == "huggingface_hub":
-            return installed_version
-        return original_version(name)
-
-    monkeypatch.setattr(importlib.metadata, "version", _patched_version)
-
     return fake_hf
 
 
-def _reload_step_operator_module() -> types.ModuleType:
-    """Reload the step operator module to pick up stubbed sys.modules.
+def _make_operator(
+    config: Optional[HuggingFaceJobsStepOperatorConfig] = None,
+) -> mod.HuggingFaceJobsStepOperator:
+    """Create a HuggingFaceJobsStepOperator instance without store wiring.
+
+    Args:
+        config: Optional operator configuration.
 
     Returns:
-        The reloaded module.
+        A configured operator instance.
     """
-    import zenml.integrations.huggingface.step_operators.huggingface_jobs_step_operator as mod
+    operator = mod.HuggingFaceJobsStepOperator.__new__(
+        mod.HuggingFaceJobsStepOperator
+    )
+    operator.id = uuid4()
+    operator.name = "hf_jobs"
+    operator._config = config or HuggingFaceJobsStepOperatorConfig(
+        token="hf_operator_token"
+    )
+    return operator
 
-    return importlib.reload(mod)
+
+def _make_step_run_info(
+    *,
+    settings: Optional[HuggingFaceJobsStepOperatorSettings] = None,
+    resource_settings: Optional[ResourceSettings] = None,
+) -> MagicMock:
+    """Create a mock StepRunInfo suitable for submit() tests.
+
+    Args:
+        settings: Optional step operator settings.
+        resource_settings: Optional step resource settings.
+
+    Returns:
+        A mock StepRunInfo.
+    """
+    info = MagicMock()
+    info.step_run_id = uuid4()
+    info.run_name = "test-run"
+    info.pipeline_step_name = "train_step"
+    info.get_image.return_value = "docker.io/user/zenml:latest"
+    info.config.resource_settings = resource_settings or ResourceSettings()
+    info.step_run.run_metadata = {}
+    info._settings = settings or HuggingFaceJobsStepOperatorSettings()
+    return info
 
 
 class TestSplitEnvironment:
-    """Tests for the split_environment utility function."""
+    """Tests for split_environment."""
 
-    def test_pass_as_secrets_true(self):
-        from zenml.integrations.huggingface.step_operators.huggingface_jobs_step_operator import (
-            split_environment,
-        )
-
-        env = {"KEY1": "val1", "KEY2": "val2", "SECRET": "s3cr3t"}
-        plain, secrets = split_environment(env, pass_as_secrets=True)
+    def test_pass_as_secrets_true_keeps_all_vars_in_secrets(self) -> None:
+        env = {
+            "KEY1": "val1",
+            "HF_TOKEN": "step_token",
+            "HUGGING_FACE_HUB_TOKEN": "legacy_step_token",
+        }
+        plain, secrets = mod.split_environment(env, pass_as_secrets=True)
         assert plain == {}
         assert secrets == env
 
-    def test_pass_as_secrets_false(self):
-        from zenml.integrations.huggingface.step_operators.huggingface_jobs_step_operator import (
-            split_environment,
-        )
+    def test_pass_as_secrets_false_routes_hf_tokens_to_secrets(self) -> None:
+        env = {
+            "KEY1": "val1",
+            "HF_TOKEN": "step_token",
+            "HUGGING_FACE_HUB_TOKEN": "legacy_step_token",
+        }
+        plain, secrets = mod.split_environment(env, pass_as_secrets=False)
+        assert plain == {"KEY1": "val1"}
+        assert secrets == {
+            "HF_TOKEN": "step_token",
+            "HUGGING_FACE_HUB_TOKEN": "legacy_step_token",
+        }
 
+    def test_pass_as_secrets_false_without_hf_tokens(self) -> None:
         env = {"KEY1": "val1", "KEY2": "val2"}
-        plain, secrets = split_environment(env, pass_as_secrets=False)
+        plain, secrets = mod.split_environment(env, pass_as_secrets=False)
         assert plain == env
         assert secrets == {}
 
-    def test_empty_environment(self):
-        from zenml.integrations.huggingface.step_operators.huggingface_jobs_step_operator import (
-            split_environment,
-        )
-
-        plain, secrets = split_environment({}, pass_as_secrets=True)
-        assert plain == {}
-        assert secrets == {}
-
-    def test_returns_copies(self):
-        """Verify returned dicts are copies, not references."""
-        from zenml.integrations.huggingface.step_operators.huggingface_jobs_step_operator import (
-            split_environment,
-        )
-
+    def test_returns_copies(self) -> None:
         env = {"KEY": "val"}
-        plain, secrets = split_environment(env, pass_as_secrets=True)
+        plain, secrets = mod.split_environment(env, pass_as_secrets=True)
         secrets["NEW"] = "new"
         assert "NEW" not in env
-
-    def test_returns_copies_plain(self):
-        from zenml.integrations.huggingface.step_operators.huggingface_jobs_step_operator import (
-            split_environment,
-        )
-
-        env = {"KEY": "val"}
-        plain, secrets = split_environment(env, pass_as_secrets=False)
-        plain["NEW"] = "new"
-        assert "NEW" not in env
-
-    def test_strips_hf_token_from_plain_env(self):
-        """HF token keys must never appear in plain_env."""
-        from zenml.integrations.huggingface.step_operators.huggingface_jobs_step_operator import (
-            split_environment,
-        )
-
-        env = {
-            "KEY1": "val1",
-            "HF_TOKEN": "secret_token",
-            "HUGGING_FACE_HUB_TOKEN": "legacy_token",
-        }
-        plain, secrets = split_environment(env, pass_as_secrets=False)
-        assert "HF_TOKEN" not in plain
-        assert "HUGGING_FACE_HUB_TOKEN" not in plain
-        assert plain == {"KEY1": "val1"}
-        assert secrets == {}
-
-    def test_strips_hf_token_from_secrets(self):
-        """HF token keys stripped from secrets too (operator injects separately)."""
-        from zenml.integrations.huggingface.step_operators.huggingface_jobs_step_operator import (
-            split_environment,
-        )
-
-        env = {
-            "KEY1": "val1",
-            "HF_TOKEN": "secret_token",
-            "HUGGING_FACE_HUB_TOKEN": "legacy_token",
-        }
-        plain, secrets = split_environment(env, pass_as_secrets=True)
-        assert "HF_TOKEN" not in secrets
-        assert "HUGGING_FACE_HUB_TOKEN" not in secrets
         assert plain == {}
-        assert secrets == {"KEY1": "val1"}
+
+        plain2, _ = mod.split_environment(env, pass_as_secrets=False)
+        plain2["NEW"] = "new"
+        assert "NEW" not in env
 
 
 class TestResolveToken:
-    """Tests for the _resolve_token utility function."""
+    """Tests for _resolve_token."""
 
-    def test_token_from_config(self):
-        from zenml.integrations.huggingface.step_operators.huggingface_jobs_step_operator import (
-            _resolve_token,
-        )
+    def test_config_token_takes_precedence(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        fake_hf = _install_hf_module(monkeypatch, token="hf_from_get_token")
+        config = HuggingFaceJobsStepOperatorConfig(token="hf_config_token")
+        assert mod._resolve_token(config) == "hf_config_token"
+        fake_hf.get_token.assert_not_called()
 
-        config = MagicMock(spec=HuggingFaceJobsStepOperatorConfig)
-        config.token = "hf_config_token"
-        assert _resolve_token(config) == "hf_config_token"
-
-    def test_token_from_hf_token_env(self, monkeypatch):
-        from zenml.integrations.huggingface.step_operators.huggingface_jobs_step_operator import (
-            _resolve_token,
-        )
-
-        config = MagicMock(spec=HuggingFaceJobsStepOperatorConfig)
-        config.token = None
-        monkeypatch.setenv("HF_TOKEN", "hf_env_token")
+    def test_uses_huggingface_hub_get_token(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        fake_hf = _install_hf_module(monkeypatch, token="hf_from_get_token")
         monkeypatch.delenv("HUGGING_FACE_HUB_TOKEN", raising=False)
-        assert _resolve_token(config) == "hf_env_token"
+        config = HuggingFaceJobsStepOperatorConfig(token=None)
+        assert mod._resolve_token(config) == "hf_from_get_token"
+        fake_hf.get_token.assert_called_once()
 
-    def test_token_from_legacy_env(self, monkeypatch):
-        from zenml.integrations.huggingface.step_operators.huggingface_jobs_step_operator import (
-            _resolve_token,
-        )
-
-        config = MagicMock(spec=HuggingFaceJobsStepOperatorConfig)
-        config.token = None
-        monkeypatch.delenv("HF_TOKEN", raising=False)
+    def test_falls_back_to_legacy_env(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        _install_hf_module(monkeypatch, token=None)
         monkeypatch.setenv("HUGGING_FACE_HUB_TOKEN", "hf_legacy_token")
-        assert _resolve_token(config) == "hf_legacy_token"
+        config = HuggingFaceJobsStepOperatorConfig(token=None)
+        assert mod._resolve_token(config) == "hf_legacy_token"
 
-    def test_token_from_cached_login(self, monkeypatch):
-        """Uses stubbed huggingface_hub for cached token lookup."""
-        _stub_huggingface_hub(monkeypatch, token="hf_cached_token")
-        mod = _reload_step_operator_module()
-
-        config = MagicMock(spec=HuggingFaceJobsStepOperatorConfig)
-        config.token = None
-        monkeypatch.delenv("HF_TOKEN", raising=False)
+    def test_no_token_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        _install_hf_module(monkeypatch, token=None)
         monkeypatch.delenv("HUGGING_FACE_HUB_TOKEN", raising=False)
-
-        assert mod._resolve_token(config) == "hf_cached_token"
-
-    def test_no_token_raises(self, monkeypatch):
-        """Raises when no token source is available."""
-        _stub_huggingface_hub(monkeypatch, token=None)
-        mod = _reload_step_operator_module()
-
-        config = MagicMock(spec=HuggingFaceJobsStepOperatorConfig)
-        config.token = None
-        monkeypatch.delenv("HF_TOKEN", raising=False)
-        monkeypatch.delenv("HUGGING_FACE_HUB_TOKEN", raising=False)
-
-        with pytest.raises(RuntimeError, match="No Hugging Face token"):
+        config = HuggingFaceJobsStepOperatorConfig(token=None)
+        with pytest.raises(RuntimeError, match="hf auth login"):
             mod._resolve_token(config)
-
-    def test_config_token_takes_precedence(self, monkeypatch):
-        """Config token wins even when env vars are set."""
-        from zenml.integrations.huggingface.step_operators.huggingface_jobs_step_operator import (
-            _resolve_token,
-        )
-
-        config = MagicMock(spec=HuggingFaceJobsStepOperatorConfig)
-        config.token = "hf_config_token"
-        monkeypatch.setenv("HF_TOKEN", "hf_env_token")
-        assert _resolve_token(config) == "hf_config_token"
 
 
 class TestCheckHfJobsAvailability:
-    """Tests for the _check_hf_jobs_availability function."""
+    """Tests for _check_hf_jobs_availability."""
 
-    def test_available(self, monkeypatch):
-        """Should not raise when run_job is importable and version is OK."""
-        _stub_huggingface_hub(
-            monkeypatch, has_run_job=True, installed_version="0.30.0"
-        )
-        mod = _reload_step_operator_module()
+    def test_available(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        _install_hf_module(monkeypatch, has_jobs_api=True)
         mod._check_hf_jobs_availability()
 
-    def test_unavailable_no_run_job(self, monkeypatch):
-        """Should raise when run_job is not importable."""
-        _stub_huggingface_hub(
-            monkeypatch, has_run_job=False, installed_version="0.30.0"
-        )
-        mod = _reload_step_operator_module()
-
-        with pytest.raises(RuntimeError, match="Jobs API"):
+    def test_unavailable_missing_jobs_api(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        _install_hf_module(monkeypatch, has_jobs_api=False)
+        with pytest.raises(RuntimeError, match="0.34.0"):
             mod._check_hf_jobs_availability()
 
-    def test_unavailable_old_version(self, monkeypatch):
-        """Should raise when version is too old."""
-        _stub_huggingface_hub(
-            monkeypatch, has_run_job=False, installed_version="0.25.0"
-        )
-        mod = _reload_step_operator_module()
-
-        with pytest.raises(RuntimeError, match="0.25.0"):
-            mod._check_hf_jobs_availability()
-
-    def test_unavailable_not_installed(self, monkeypatch):
-        """Should raise when huggingface_hub is not installed at all."""
-        # Remove from sys.modules and make importlib.metadata.version fail
-        monkeypatch.delitem(sys.modules, "huggingface_hub", raising=False)
-        monkeypatch.delitem(
-            sys.modules, "huggingface_hub._space_api", raising=False
-        )
-
-        original_version = importlib.metadata.version
-
-        def _patched_version(name: str) -> str:
-            if name == "huggingface_hub":
-                raise importlib.metadata.PackageNotFoundError(name)
-            return original_version(name)
-
-        monkeypatch.setattr(importlib.metadata, "version", _patched_version)
-        mod = _reload_step_operator_module()
-
-        with pytest.raises(RuntimeError, match="not installed"):
+    def test_unavailable_not_installed(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setitem(sys.modules, "huggingface_hub", None)
+        with pytest.raises(RuntimeError, match="0.34.0"):
             mod._check_hf_jobs_availability()
 
 
-class TestSettings:
-    """Tests for HuggingFaceJobsStepOperatorSettings defaults."""
+class TestSettingsAndConfig:
+    """Tests for settings and config defaults."""
 
-    def test_default_settings(self):
+    def test_default_settings(self) -> None:
         settings = HuggingFaceJobsStepOperatorSettings()
         assert settings.hardware_flavor is None
         assert settings.timeout is None
         assert settings.namespace is None
 
-    def test_override_settings(self):
-        settings = HuggingFaceJobsStepOperatorSettings(
-            hardware_flavor="a10g-small",
-            timeout="2h",
-            namespace="my-org",
-        )
-        assert settings.hardware_flavor == "a10g-small"
-        assert settings.timeout == "2h"
-        assert settings.namespace == "my-org"
-
-
-class TestConfig:
-    """Tests for HuggingFaceJobsStepOperatorConfig defaults."""
-
-    def test_default_config(self):
+    def test_default_config(self) -> None:
         config = HuggingFaceJobsStepOperatorConfig()
         assert config.token is None
         assert config.pass_env_as_secrets is True
-        assert config.stream_logs is False
-        assert config.poll_interval_seconds == 10.0
         assert config.is_remote is True
+        assert not hasattr(config, "stream_logs")
+        assert not hasattr(config, "poll_interval_seconds")
 
-    def test_custom_config(self):
-        config = HuggingFaceJobsStepOperatorConfig(
-            token="hf_test",
-            hardware_flavor="a100-large",
-            timeout="1h",
-            namespace="zenml-org",
-            pass_env_as_secrets=False,
-            stream_logs=True,
-            poll_interval_seconds=30.0,
+
+class TestValidator:
+    """Tests for stack validation."""
+
+    def _make_stack(
+        self,
+        *,
+        local_artifact_store: bool = False,
+        local_registry: bool = False,
+        include_image_builder: bool = True,
+    ) -> MagicMock:
+        stack = MagicMock()
+        stack.name = "hf-test-stack"
+        stack.artifact_store.name = "artifact_store"
+        stack.artifact_store.type = StackComponentType.ARTIFACT_STORE
+        stack.artifact_store.config.is_local = local_artifact_store
+        stack.container_registry.name = "container_registry"
+        stack.container_registry.type = StackComponentType.CONTAINER_REGISTRY
+        stack.container_registry.config.is_local = local_registry
+
+        components = [stack.artifact_store, stack.container_registry]
+        if include_image_builder:
+            image_builder = MagicMock()
+            image_builder.type = StackComponentType.IMAGE_BUILDER
+            components.append(image_builder)
+        stack.all_components = components
+        return stack
+
+    def test_rejects_local_artifact_store(self) -> None:
+        operator = _make_operator()
+        validator = operator.validator
+        assert validator is not None
+
+        with pytest.raises(StackValidationError, match="artifact store"):
+            validator.validate(self._make_stack(local_artifact_store=True))
+
+    def test_rejects_local_container_registry(self) -> None:
+        operator = _make_operator()
+        validator = operator.validator
+        assert validator is not None
+
+        with pytest.raises(StackValidationError, match="container registry"):
+            validator.validate(self._make_stack(local_registry=True))
+
+    def test_rejects_missing_image_builder(self) -> None:
+        operator = _make_operator()
+        validator = operator.validator
+        assert validator is not None
+
+        with pytest.raises(StackValidationError, match="IMAGE_BUILDER"):
+            validator.validate(self._make_stack(include_image_builder=False))
+
+    def test_accepts_remote_stack(self) -> None:
+        operator = _make_operator()
+        validator = operator.validator
+        assert validator is not None
+
+        validator.validate(self._make_stack())
+
+
+class TestSubmit:
+    """Tests for submit()."""
+
+    def test_submit_passes_hardware_string_persists_owner_and_does_not_inject_operator_token(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        fake_hf = _install_hf_module(monkeypatch)
+        fake_hf.run_job.return_value = _make_job_info(
+            "SCHEDULING", job_id="job-999", owner_name="strickvl"
         )
-        assert config.token == "hf_test"
-        assert config.hardware_flavor == "a100-large"
-        assert config.timeout == "1h"
-        assert config.namespace == "zenml-org"
-        assert config.pass_env_as_secrets is False
-        assert config.stream_logs is True
-        assert config.poll_interval_seconds == 30.0
+        publish_mock = MagicMock()
+        monkeypatch.setattr(mod, "publish_step_run_metadata", publish_mock)
+
+        operator = _make_operator(
+            HuggingFaceJobsStepOperatorConfig(
+                token="hf_operator_admin_token",
+                hardware_flavor="h200",
+                timeout="2h",
+            )
+        )
+        settings = HuggingFaceJobsStepOperatorSettings(
+            hardware_flavor="h200",
+            timeout="2h",
+            namespace=None,
+        )
+        monkeypatch.setattr(operator, "get_settings", lambda _info: settings)
+
+        info = _make_step_run_info(settings=settings)
+        operator.submit(
+            info=info,
+            entrypoint_command=["python", "-m", "zenml.step"],
+            environment={"ZENML_STORE_URL": "https://example.com"},
+        )
+
+        fake_hf.run_job.assert_called_once_with(
+            image="docker.io/user/zenml:latest",
+            command=["python", "-m", "zenml.step"],
+            env=None,
+            secrets={"ZENML_STORE_URL": "https://example.com"},
+            flavor="h200",
+            timeout="2h",
+            namespace=None,
+            token="hf_operator_admin_token",
+        )
+        published = publish_mock.call_args.kwargs["step_run_metadata"][
+            operator.id
+        ]
+        assert published[mod.STEP_JOB_ID_METADATA_KEY] == "job-999"
+        assert published[METADATA_ORCHESTRATOR_RUN_ID] == "job-999"
+        assert published[mod._HF_JOB_NAMESPACE_METADATA_KEY] == "strickvl"
+        assert published[METADATA_ORCHESTRATOR_URL] == Uri(
+            "https://huggingface.co/jobs/strickvl/job-999"
+        )
+        assert published[METADATA_ORCHESTRATOR_LOGS_URL] == Uri(
+            "https://huggingface.co/jobs/strickvl/job-999"
+        )
+        assert info.step_run.run_metadata[mod.STEP_JOB_ID_METADATA_KEY] == (
+            "job-999"
+        )
+        assert (
+            info.step_run.run_metadata[mod._HF_JOB_NAMESPACE_METADATA_KEY]
+            == "strickvl"
+        )
+
+    def test_submit_preserves_step_supplied_hf_token(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        fake_hf = _install_hf_module(monkeypatch)
+        fake_hf.run_job.return_value = _make_job_info("SCHEDULING")
+        monkeypatch.setattr(mod, "publish_step_run_metadata", MagicMock())
+
+        operator = _make_operator(
+            HuggingFaceJobsStepOperatorConfig(
+                token="hf_operator_admin_token",
+                pass_env_as_secrets=False,
+            )
+        )
+        monkeypatch.setattr(
+            operator,
+            "get_settings",
+            lambda _info: HuggingFaceJobsStepOperatorSettings(),
+        )
+        info = _make_step_run_info()
+
+        operator.submit(
+            info=info,
+            entrypoint_command=["python", "run.py"],
+            environment={
+                "PLAIN_VAR": "1",
+                "HF_TOKEN": "hf_scoped_step_token",
+            },
+        )
+
+        call_kwargs = fake_hf.run_job.call_args.kwargs
+        assert call_kwargs["env"] == {"PLAIN_VAR": "1"}
+        assert call_kwargs["secrets"] == {"HF_TOKEN": "hf_scoped_step_token"}
+        assert call_kwargs["token"] == "hf_operator_admin_token"
+
+    def test_submit_cancels_job_and_reraises_when_metadata_publish_fails(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        fake_hf = _install_hf_module(monkeypatch)
+        fake_hf.run_job.return_value = _make_job_info(
+            "SCHEDULING", job_id="job-orphan", owner_name="my-org"
+        )
+        monkeypatch.setattr(
+            mod,
+            "publish_step_run_metadata",
+            MagicMock(side_effect=RuntimeError("server unreachable")),
+        )
+
+        operator = _make_operator()
+        monkeypatch.setattr(
+            operator,
+            "get_settings",
+            lambda _info: HuggingFaceJobsStepOperatorSettings(),
+        )
+        info = _make_step_run_info()
+
+        with pytest.raises(RuntimeError, match="server unreachable"):
+            operator.submit(
+                info=info,
+                entrypoint_command=["python", "run.py"],
+                environment={},
+            )
+
+        fake_hf.cancel_job.assert_called_once_with(
+            job_id="job-orphan",
+            namespace="my-org",
+            token="hf_operator_token",
+        )
+
+    def test_submit_warns_on_resource_settings_and_hf_debug(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        fake_hf = _install_hf_module(monkeypatch, hf_debug=True)
+        fake_hf.run_job.return_value = _make_job_info("SCHEDULING")
+        monkeypatch.setattr(mod, "publish_step_run_metadata", MagicMock())
+
+        operator = _make_operator()
+        monkeypatch.setattr(
+            operator,
+            "get_settings",
+            lambda _info: HuggingFaceJobsStepOperatorSettings(),
+        )
+        info = _make_step_run_info(
+            resource_settings=ResourceSettings(gpu_count=1)
+        )
+
+        with caplog.at_level(logging.WARNING):
+            operator.submit(
+                info=info,
+                entrypoint_command=["python", "run.py"],
+                environment={"SECRET_KEY": "value"},
+            )
+
+        assert "ResourceSettings" in caplog.text
+        assert "hardware_flavor" in caplog.text
+        assert "HF_DEBUG" in caplog.text
 
 
 class TestGetStatus:
-    """Tests for the get_status() method (JobStage -> ExecutionStatus mapping)."""
+    """Tests for get_status() using plain-string stages."""
 
-    def _make_operator_and_step_run(self, monkeypatch):
-        """Set up a stubbed operator and a fake step_run with metadata."""
-        fake_hf = _stub_huggingface_hub(monkeypatch, token="hf_test_token")
-        mod = _reload_step_operator_module()
-
-        # Build operator with a config that has a token
-        config = MagicMock(spec=HuggingFaceJobsStepOperatorConfig)
-        config.token = "hf_test_token"
-
-        operator = mod.HuggingFaceJobsStepOperator.__new__(
-            mod.HuggingFaceJobsStepOperator
+    @pytest.mark.parametrize(
+        ("stage", "expected"),
+        [
+            ("COMPLETED", ExecutionStatus.COMPLETED),
+            ("ERROR", ExecutionStatus.FAILED),
+            ("CANCELED", ExecutionStatus.FAILED),
+            ("DELETED", ExecutionStatus.FAILED),
+            ("RUNNING", ExecutionStatus.RUNNING),
+            ("SCHEDULING", ExecutionStatus.RUNNING),
+        ],
+    )
+    def test_maps_plain_string_stages(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        stage: str,
+        expected: ExecutionStatus,
+    ) -> None:
+        fake_hf = _install_hf_module(monkeypatch)
+        fake_hf.inspect_job.return_value = _make_job_info(
+            stage, message="boom" if stage == "ERROR" else None
         )
-        operator._config = config
 
+        operator = _make_operator()
         step_run = MagicMock()
         step_run.run_metadata = {
-            mod.STEP_JOB_NAME_METADATA_KEY: "job-123",
+            mod.STEP_JOB_ID_METADATA_KEY: "job-123",
+            mod._HF_JOB_NAMESPACE_METADATA_KEY: "my-org",
         }
 
-        return operator, step_run, fake_hf, mod
-
-    def test_completed(self, monkeypatch):
-        operator, step_run, fake_hf, _ = self._make_operator_and_step_run(
-            monkeypatch
-        )
-        fake_hf.inspect_job.return_value = _make_job_info(
-            FakeJobStage.COMPLETED
-        )
-        assert operator.get_status(step_run) == ExecutionStatus.COMPLETED
-
-    def test_error(self, monkeypatch):
-        operator, step_run, fake_hf, _ = self._make_operator_and_step_run(
-            monkeypatch
-        )
-        fake_hf.inspect_job.return_value = _make_job_info(
-            FakeJobStage.ERROR, "OOM killed"
-        )
-        assert operator.get_status(step_run) == ExecutionStatus.FAILED
-
-    def test_canceled(self, monkeypatch):
-        operator, step_run, fake_hf, _ = self._make_operator_and_step_run(
-            monkeypatch
-        )
-        fake_hf.inspect_job.return_value = _make_job_info(
-            FakeJobStage.CANCELED
-        )
-        assert operator.get_status(step_run) == ExecutionStatus.FAILED
-
-    def test_deleted(self, monkeypatch):
-        operator, step_run, fake_hf, _ = self._make_operator_and_step_run(
-            monkeypatch
-        )
-        fake_hf.inspect_job.return_value = _make_job_info(FakeJobStage.DELETED)
-        assert operator.get_status(step_run) == ExecutionStatus.FAILED
-
-    def test_running(self, monkeypatch):
-        operator, step_run, fake_hf, _ = self._make_operator_and_step_run(
-            monkeypatch
-        )
-        fake_hf.inspect_job.return_value = _make_job_info(FakeJobStage.RUNNING)
-        assert operator.get_status(step_run) == ExecutionStatus.RUNNING
-
-    def test_initializing_maps_to_running(self, monkeypatch):
-        operator, step_run, fake_hf, _ = self._make_operator_and_step_run(
-            monkeypatch
-        )
-        fake_hf.inspect_job.return_value = _make_job_info(
-            FakeJobStage.INITIALIZING
-        )
-        assert operator.get_status(step_run) == ExecutionStatus.RUNNING
-
-    def test_passes_namespace_from_metadata(self, monkeypatch):
-        """Verify namespace is forwarded to inspect_job."""
-        operator, step_run, fake_hf, mod = self._make_operator_and_step_run(
-            monkeypatch
-        )
-        step_run.run_metadata[mod._HF_JOB_NAMESPACE_METADATA_KEY] = "my-org"
-        fake_hf.inspect_job.return_value = _make_job_info(FakeJobStage.RUNNING)
-
-        operator.get_status(step_run)
-
+        assert operator.get_status(step_run) == expected
         fake_hf.inspect_job.assert_called_once_with(
             job_id="job-123",
             namespace="my-org",
-            token="hf_test_token",
+            token="hf_operator_token",
         )
 
 
-class TestCancel:
-    """Tests for the cancel() method."""
+class TestWait:
+    """Tests for wait() lifecycle and cancellation."""
 
-    def test_cancel_calls_cancel_job(self, monkeypatch):
-        fake_hf = _stub_huggingface_hub(monkeypatch, token="hf_test_token")
-        mod = _reload_step_operator_module()
-
-        config = MagicMock(spec=HuggingFaceJobsStepOperatorConfig)
-        config.token = "hf_test_token"
-
-        operator = mod.HuggingFaceJobsStepOperator.__new__(
-            mod.HuggingFaceJobsStepOperator
+    def test_wait_polls_running_then_completed_with_plain_string_stage(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        fake_hf = _install_hf_module(monkeypatch)
+        fake_hf.inspect_job.side_effect = [
+            _make_job_info("SCHEDULING"),
+            _make_job_info("RUNNING"),
+            _make_job_info("COMPLETED"),
+        ]
+        monkeypatch.setattr(
+            "zenml.step_operators.base_step_operator.time.sleep",
+            lambda _s: None,
         )
-        operator._config = config
 
+        operator = _make_operator()
+        step_run = MagicMock()
+        step_run.id = uuid4()
+        step_run.run_metadata = {
+            mod.STEP_JOB_ID_METADATA_KEY: "job-123",
+            mod._HF_JOB_NAMESPACE_METADATA_KEY: "alice",
+        }
+
+        assert operator.wait(step_run) == ExecutionStatus.COMPLETED
+        assert fake_hf.inspect_job.call_count == 3
+        fake_hf.cancel_job.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "exc_cls",
+        [KeyboardInterrupt, RunStoppedException, RunInterruptedException],
+    )
+    def test_wait_cancels_job_on_stop_or_interrupt(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        exc_cls: type[BaseException],
+    ) -> None:
+        fake_hf = _install_hf_module(monkeypatch)
+        fake_hf.inspect_job.return_value = _make_job_info("RUNNING")
+
+        def _raise_on_sleep(_seconds: float) -> None:
+            raise exc_cls("stopped")
+
+        monkeypatch.setattr(
+            "zenml.step_operators.base_step_operator.time.sleep",
+            _raise_on_sleep,
+        )
+
+        operator = _make_operator()
+        step_run = MagicMock()
+        step_run.id = uuid4()
+        step_run.run_metadata = {
+            mod.STEP_JOB_ID_METADATA_KEY: "job-stop",
+            mod._HF_JOB_NAMESPACE_METADATA_KEY: "alice",
+        }
+
+        with pytest.raises(exc_cls):
+            operator.wait(step_run)
+
+        fake_hf.cancel_job.assert_called_once_with(
+            job_id="job-stop",
+            namespace="alice",
+            token="hf_operator_token",
+        )
+
+    def test_wait_cancels_job_when_base_wait_returns_stopped(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        fake_hf = _install_hf_module(monkeypatch)
+        monkeypatch.setattr(
+            BaseStepOperator,
+            "wait",
+            lambda _self, _step_run: ExecutionStatus.STOPPED,
+        )
+
+        operator = _make_operator()
         step_run = MagicMock()
         step_run.run_metadata = {
-            mod.STEP_JOB_NAME_METADATA_KEY: "job-456",
+            mod.STEP_JOB_ID_METADATA_KEY: "job-stopped",
+            mod._HF_JOB_NAMESPACE_METADATA_KEY: "alice",
+        }
+
+        assert operator.wait(step_run) == ExecutionStatus.STOPPED
+        fake_hf.cancel_job.assert_called_once_with(
+            job_id="job-stopped",
+            namespace="alice",
+            token="hf_operator_token",
+        )
+
+
+class TestCancelAndJobIdentity:
+    """Tests for cancel() and _get_job_identity()."""
+
+    def test_cancel_calls_cancel_job(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        fake_hf = _install_hf_module(monkeypatch)
+        operator = _make_operator()
+        step_run = MagicMock()
+        step_run.run_metadata = {
+            mod.STEP_JOB_ID_METADATA_KEY: "job-456",
             mod._HF_JOB_NAMESPACE_METADATA_KEY: "zenml-org",
         }
 
@@ -512,81 +695,32 @@ class TestCancel:
         fake_hf.cancel_job.assert_called_once_with(
             job_id="job-456",
             namespace="zenml-org",
-            token="hf_test_token",
+            token="hf_operator_token",
         )
 
-    def test_cancel_suppresses_errors(self, monkeypatch):
-        """cancel() should not raise even if cancel_job fails."""
-        fake_hf = _stub_huggingface_hub(monkeypatch, token="hf_test_token")
-        mod = _reload_step_operator_module()
+    def test_cancel_suppresses_errors(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        fake_hf = _install_hf_module(monkeypatch)
         fake_hf.cancel_job.side_effect = RuntimeError("API down")
 
-        config = MagicMock(spec=HuggingFaceJobsStepOperatorConfig)
-        config.token = "hf_test_token"
-
-        operator = mod.HuggingFaceJobsStepOperator.__new__(
-            mod.HuggingFaceJobsStepOperator
-        )
-        operator._config = config
-
+        operator = _make_operator()
         step_run = MagicMock()
-        step_run.run_metadata = {
-            mod.STEP_JOB_NAME_METADATA_KEY: "job-789",
-        }
+        step_run.run_metadata = {mod.STEP_JOB_ID_METADATA_KEY: "job-789"}
 
-        # Should not raise
         operator.cancel(step_run)
 
-
-class TestGetJobIdentity:
-    """Tests for the _get_job_identity() helper."""
-
-    def test_reads_primary_key(self, monkeypatch):
-        _stub_huggingface_hub(monkeypatch)
-        mod = _reload_step_operator_module()
-
-        operator = mod.HuggingFaceJobsStepOperator.__new__(
-            mod.HuggingFaceJobsStepOperator
-        )
-
+    def test_fallback_to_orchestrator_run_id(self) -> None:
+        operator = _make_operator()
         step_run = MagicMock()
-        step_run.run_metadata = {
-            mod.STEP_JOB_NAME_METADATA_KEY: "job-abc",
-            mod._HF_JOB_NAMESPACE_METADATA_KEY: "org-x",
-        }
-
-        job_id, namespace = operator._get_job_identity(step_run)
-        assert job_id == "job-abc"
-        assert namespace == "org-x"
-
-    def test_fallback_to_orchestrator_run_id(self, monkeypatch):
-        """Falls back to METADATA_ORCHESTRATOR_RUN_ID."""
-        _stub_huggingface_hub(monkeypatch)
-        mod = _reload_step_operator_module()
-
-        from zenml.constants import METADATA_ORCHESTRATOR_RUN_ID
-
-        operator = mod.HuggingFaceJobsStepOperator.__new__(
-            mod.HuggingFaceJobsStepOperator
-        )
-
-        step_run = MagicMock()
-        step_run.run_metadata = {
-            METADATA_ORCHESTRATOR_RUN_ID: "job-fallback",
-        }
+        step_run.run_metadata = {METADATA_ORCHESTRATOR_RUN_ID: "job-fallback"}
 
         job_id, namespace = operator._get_job_identity(step_run)
         assert job_id == "job-fallback"
         assert namespace is None
 
-    def test_missing_metadata_raises(self, monkeypatch):
-        _stub_huggingface_hub(monkeypatch)
-        mod = _reload_step_operator_module()
-
-        operator = mod.HuggingFaceJobsStepOperator.__new__(
-            mod.HuggingFaceJobsStepOperator
-        )
-
+    def test_missing_metadata_raises(self) -> None:
+        operator = _make_operator()
         step_run = MagicMock()
         step_run.run_metadata = {}
 

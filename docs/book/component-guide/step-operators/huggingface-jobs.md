@@ -4,7 +4,7 @@ description: Executing individual steps as Hugging Face Jobs.
 
 # Hugging Face Jobs Step Operator
 
-[Hugging Face Jobs](https://huggingface.co/docs/hub/jobs) lets you run Docker containers on Hugging Face infrastructure with access to a range of CPU and GPU hardware. ZenML's Hugging Face Jobs step operator submits individual pipeline steps as HF Jobs, polls until completion, and streams logs back to ZenML.
+[Hugging Face Jobs](https://huggingface.co/docs/hub/jobs) lets you run Docker containers on Hugging Face infrastructure with access to a range of CPU and GPU hardware. ZenML's Hugging Face Jobs step operator submits individual pipeline steps as HF Jobs, monitors them until completion, and records direct links to each job in step run metadata.
 
 ### When to use it
 
@@ -20,10 +20,10 @@ To use the Hugging Face Jobs step operator you need:
 
 * A [Hugging Face account](https://huggingface.co/join) with Jobs access (Pro, Team, or Enterprise plan).
 * A Hugging Face API token with appropriate permissions. You can create one at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens).
-* `huggingface_hub >= 0.30.0` — the Jobs API was introduced in this version. The ZenML `huggingface` integration installs `huggingface_hub`, but the base integration minimum (`>0.19.0`) may resolve to an older version. If you see an error about the Jobs API not being available, upgrade explicitly:
+* `huggingface_hub >= 0.34.0, < 2.0.0` — the Jobs API was introduced in `0.34.0`. The ZenML `huggingface` integration installs `huggingface_hub`, but the base integration minimum (`>0.19.0`) may resolve to an older version. If you see an error about the Jobs API not being available, upgrade explicitly:
 
 ```shell
-pip install 'huggingface_hub>=0.30.0'
+pip install 'huggingface_hub>=0.34.0,<2.0.0'
 ```
 
 ### How to use it
@@ -105,33 +105,33 @@ ZenML builds a Docker image that includes your code and uses it to run your step
 
 #### Token resolution
 
-The operator resolves the HF token using this priority chain:
+The operator resolves the HF token used to call the Hugging Face Jobs API (`run_job`, `inspect_job`, `cancel_job`) in this order:
 
 1. **Component config** — the `token` field on the step operator registration (supports `{{secret.key}}` references).
-2. **Environment variable** — `HF_TOKEN` or `HUGGING_FACE_HUB_TOKEN`.
-3. **Cached login** — token saved by `huggingface-cli login`.
+2. **`huggingface_hub.get_token()`** — checks OIDC, the `HF_TOKEN` environment variable, and cached credentials from `hf auth login` (or `huggingface-cli login`).
+3. **Legacy environment variable** — `HUGGING_FACE_HUB_TOKEN`.
 
-If none of these are available, the step will fail with a clear error message.
+If none of these are available, the step fails with a clear error message.
+
+The operator token is **not** automatically injected into step containers. If your step code needs to push or pull private models or datasets on the Hub, pass a scoped `HF_TOKEN` to that step via ZenML secrets or step environment variables.
 
 #### Environment variables and secrets
 
 By default (`pass_env_as_secrets=True`), all ZenML-provided environment variables — which may include cloud credentials for your artifact store — are sent as **HF encrypted secrets**. These are encrypted server-side and are not visible in job specs.
 
-Set `pass_env_as_secrets=False` if you prefer to send them as plain environment variables instead. Regardless of this setting, the HF token is always injected as an encrypted secret and is never sent as a plain environment variable.
+Set `pass_env_as_secrets=False` if you prefer to send them as plain environment variables instead. Even when `pass_env_as_secrets=False`, any step-supplied `HF_TOKEN` or `HUGGING_FACE_HUB_TOKEN` is always routed to HF encrypted secrets rather than plain environment variables.
 
-#### Log streaming
+{% hint style="warning" %}
+Avoid running with `HF_DEBUG=1` when submitting jobs containing secrets. `huggingface_hub` logs the beginning of HTTP request bodies in debug mode, which can expose step secrets in local logs.
+{% endhint %}
 
-By default, log streaming is **disabled** (`stream_logs=False`). Enable it on the component config if you want real-time job output streamed to ZenML logs during execution:
+#### Logs and job monitoring
 
-```shell
-zenml step-operator update <NAME> --stream_logs=True
-```
-
-Note that enabling log streaming increases HF API calls during polling and may produce transient errors while the job is initializing.
+ZenML captures step logs through its normal logging pipeline and saves a direct link to the Hugging Face Job page in the step run's metadata (`orchestrator_url` and `orchestrator_logs_url`). You can open that URL from the ZenML dashboard to view live container output on Hugging Face.
 
 #### Using GPU hardware
 
-When you request GPU hardware via `hardware_flavor` (e.g. `a10g-small`, `a100-large`), the HF Job runs on a machine with a GPU — but your Docker image also needs the CUDA runtime for PyTorch, TensorFlow, or other GPU libraries to detect it.
+When you request GPU hardware via `hardware_flavor` (e.g., `a10g-small`, `a100-large`, `h200`), the HF Job runs on a machine with a GPU — but your Docker image also needs the CUDA runtime for PyTorch, TensorFlow, or other GPU libraries to detect it.
 
 By default, ZenML uses a plain Python base image (`zenmldocker/zenml:...`), which does **not** include CUDA. To use GPUs, specify a CUDA-enabled parent image via `DockerSettings`:
 
@@ -173,7 +173,7 @@ def gpu_trainer(...) -> ...:
 Without a CUDA-enabled parent image, GPU hardware will be available but invisible to your code — `torch.cuda.is_available()` will return `False`. Always pair GPU hardware flavors with a matching CUDA base image.
 {% endhint %}
 
-For more details on building CUDA-enabled images and multi-GPU training, see the [Train with GPUs and Accelerate](../../user-guide/tutorial/distributed-training.md) guide.
+Note that ZenML's generic `ResourceSettings` (such as `gpu_count`) are ignored by the Hugging Face Jobs step operator; always specify hardware via `hardware_flavor`. For more details on building CUDA-enabled images and multi-GPU training, see the [Train with GPUs and Accelerate](https://docs.zenml.io/user-guides/tutorial/distributed-training/) guide.
 
 #### Additional configuration
 
@@ -203,26 +203,24 @@ def gpu_trainer(...) -> ...:
 
 **Component-level configuration** (`HuggingFaceJobsStepOperatorConfig`):
 
-| Field                   | Type             | Default | Description                                              |
-| ----------------------- | ---------------- | ------- | -------------------------------------------------------- |
-| `token`                 | `Optional[str]`  | `None`  | HF API token (supports `{{secret.key}}` references)      |
-| `hardware_flavor`       | `Optional[str]`  | `None`  | Default hardware flavor for all steps                    |
-| `timeout`               | `Optional`       | `None`  | Default job timeout (seconds or string like `30m`, `2h`) |
-| `namespace`             | `Optional[str]`  | `None`  | HF namespace (user or organization)                      |
-| `pass_env_as_secrets`   | `bool`           | `True`  | Route env vars through HF encrypted secrets              |
-| `stream_logs`           | `bool`           | `False` | Stream job logs during execution (opt-in)                |
-| `poll_interval_seconds` | `float`          | `10.0`  | Seconds between job status polls                         |
+| Field                 | Type            | Default | Description                                              |
+| --------------------- | --------------- | ------- | -------------------------------------------------------- |
+| `token`               | `Optional[str]` | `None`  | HF API token (supports `{{secret.key}}` references)      |
+| `hardware_flavor`     | `Optional[str]` | `None`  | Default hardware flavor for all steps                    |
+| `timeout`             | `Optional`      | `None`  | Default job timeout (seconds or string like `30m`, `2h`) |
+| `namespace`           | `Optional[str]` | `None`  | HF namespace (user or organization)                      |
+| `pass_env_as_secrets` | `bool`          | `True`  | Route env vars through HF encrypted secrets              |
 
 **Per-step overrides** (`HuggingFaceJobsStepOperatorSettings`):
 
-| Field              | Type            | Default | Description                                               |
-| ------------------ | --------------- | ------- | --------------------------------------------------------- |
-| `hardware_flavor`  | `Optional[str]` | `None`  | e.g. `cpu-basic`, `a10g-small`, `a100-large`              |
-| `timeout`          | `Optional`      | `None`  | Job timeout (seconds or duration string like `30m`, `2h`) |
-| `namespace`        | `Optional[str]` | `None`  | HF namespace for this job                                 |
+| Field             | Type            | Default | Description                                               |
+| ----------------- | --------------- | ------- | --------------------------------------------------------- |
+| `hardware_flavor` | `Optional[str]` | `None`  | e.g., `cpu-basic`, `a10g-small`, `a100-large`, `h200`     |
+| `timeout`         | `Optional`      | `None`  | Job timeout (seconds or duration string like `30m`, `2h`) |
+| `namespace`       | `Optional[str]` | `None`  | HF namespace for this job                                 |
 
 {% hint style="info" %}
-Per-step settings override component-level defaults. Run `hf jobs hardware` (from the `huggingface_hub` CLI) to see the full list of available hardware flavors.
+Per-step settings override component-level defaults. See the [Hugging Face Jobs documentation](https://huggingface.co/docs/hub/jobs) for the full list of available hardware flavors.
 {% endhint %}
 
 Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-huggingface.html) for the full API reference.

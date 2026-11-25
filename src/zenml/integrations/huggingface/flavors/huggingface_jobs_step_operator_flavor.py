@@ -38,35 +38,35 @@ class HuggingFaceJobsStepOperatorSettings(BaseSettings):
 
     Attributes:
         hardware_flavor: HF Jobs hardware flavor for this step (e.g.,
-            'cpu-basic', 'a10g-small', 'a100-large'). Overrides the
-            component default. Run `hf jobs hardware` for available options
+            'cpu-basic', 'a10g-small', 'a100-large', 'h200'). Overrides the
+            component default.
         timeout: Job timeout override. Accepts seconds as int/float or
             a duration string like '2h', '30m', '1d'. Overrides component
-            default
+            default.
         namespace: HF namespace (user or organization) under which to run
-            this job. Overrides the component default
+            this job. Overrides the component default.
     """
 
     hardware_flavor: Optional[str] = Field(
         default=None,
         description="HF Jobs hardware flavor for step execution. Controls "
         "compute resources (CPU, GPU type and count, memory). Examples: "
-        "'cpu-basic' (2 vCPU, 16GB), 'a10g-small' (1x A10G GPU), "
-        "'a100-large' (1x A100 GPU). Run `hf jobs hardware` for the full "
-        "list. Overrides the component-level default",
+        "'cpu-basic', 'a10g-small', 'a100-large', 'h200'. Passed directly to "
+        "Hugging Face Jobs; see https://huggingface.co/docs/hub/jobs for "
+        "available options. Overrides the component-level default.",
     )
     timeout: Optional[Union[int, float, str]] = Field(
         default=None,
         description="Maximum duration for this job before automatic "
         "termination. Accepts seconds as int/float or a string with units: "
         "'5m' (minutes), '2h' (hours), '1d' (days). Examples: 300, '30m', "
-        "'2h'. Default HF timeout is 30 minutes if unset",
+        "'2h'. Default HF timeout is 30 minutes if unset.",
     )
     namespace: Optional[str] = Field(
         default=None,
         description="Hugging Face namespace (username or organization) under "
         "which to run this job. Overrides the component default. Example: "
-        "'my-org' runs the job under the 'my-org' organization account",
+        "'my-org' runs the job under the 'my-org' organization account.",
     )
 
 
@@ -77,40 +77,28 @@ class HuggingFaceJobsStepOperatorConfig(
 
     Attributes:
         token: Hugging Face API token with Jobs permissions. Required for
-            Pro/Team/Enterprise accounts
+            Pro/Team/Enterprise accounts. Used only for HF Jobs API calls,
+            not automatically injected into job containers.
         pass_env_as_secrets: If True, ZenML environment variables are sent
-            as HF encrypted secrets rather than plain env vars
-        stream_logs: If True, poll and stream job logs during execution
-        poll_interval_seconds: Interval between job status polls in seconds
+            as HF encrypted secrets rather than plain env vars.
     """
 
     token: Optional[str] = SecretField(
         default=None,
         description="Hugging Face API token for authenticating Jobs API "
-        "calls. Requires Pro/Team/Enterprise account with Jobs access. "
-        "Can reference a ZenML secret: '{{hf_secret.token}}'. If not "
-        "provided, falls back to the HF_TOKEN environment variable or "
-        "locally cached token from `huggingface-cli login`",
+        "calls. Requires a Pro, Team, or Enterprise account with Jobs access. "
+        "Can reference a ZenML secret: '{{hf_secret.token}}'. Used only for "
+        "HF Jobs management API calls and not automatically injected into "
+        "step containers. If omitted, falls back to `huggingface_hub.get_token()` "
+        "(HF_TOKEN or cached login from `hf auth login`).",
     )
     pass_env_as_secrets: bool = Field(
         default=True,
         description="Controls whether ZenML environment variables (which "
         "may contain cloud credentials) are passed as HF encrypted secrets "
         "or plain environment variables. HF secrets are encrypted server-side "
-        "and not visible in job specs. Defaults to True for security",
-    )
-    stream_logs: bool = Field(
-        default=False,
-        description="Controls whether job logs are periodically fetched and "
-        "streamed to the ZenML log output during execution. Enabling this "
-        "increases HF API calls and may cause transient log-fetch errors "
-        "during job initialization. Enable for real-time step visibility",
-    )
-    poll_interval_seconds: float = Field(
-        default=10.0,
-        description="Interval in seconds between job status polls during "
-        "execution. Lower values provide faster feedback but increase API "
-        "calls. Reasonable range: 5-60 seconds",
+        "and not visible in job specs. Step-supplied HF tokens are always "
+        "passed as encrypted secrets. Defaults to True for security.",
     )
 
     @property
