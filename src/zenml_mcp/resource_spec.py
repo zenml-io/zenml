@@ -22,6 +22,7 @@ records themselves are in `resource_catalog.py`.
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import re
 import uuid
@@ -33,6 +34,18 @@ from types import MappingProxyType
 from typing import Any, Literal, cast
 
 from zenml_mcp.client import ZenMLBadRequest
+
+
+def _no_entries() -> Mapping[str, Any]:
+    """An empty read-only mapping, as a dataclass field's default.
+
+    Python 3.11 refuses an unhashable default such as a `MappingProxyType`.
+
+    Returns:
+        A new empty mapping.
+    """
+    return MappingProxyType({})
+
 
 Mutation = Literal["create", "update", "delete"]
 Operation = Literal["list", "get", "create", "update", "delete"]
@@ -585,13 +598,17 @@ class Rest:
 
     route: str
     # What the SDK's list method sends when the caller leaves a filter out.
-    list_defaults: Mapping[str, Any] = MappingProxyType({})
+    list_defaults: Mapping[str, Any] = dataclasses.field(
+        default_factory=_no_entries
+    )
     # What the SDK's get method changes in `list_defaults` when it searches.
-    lookup_overrides: Mapping[str, Any] = MappingProxyType({})
+    lookup_overrides: Mapping[str, Any] = dataclasses.field(
+        default_factory=_no_entries
+    )
     # Sent with every request for the type.
-    always: Mapping[str, Any] = MappingProxyType({})
+    always: Mapping[str, Any] = dataclasses.field(default_factory=_no_entries)
     # Filters the SDK sends under another name, applied in order.
-    renames: Mapping[str, str] = MappingProxyType({})
+    renames: Mapping[str, str] = dataclasses.field(default_factory=_no_entries)
     lookup: Lookup = "name"
     name_prefix: bool = True
 
@@ -614,13 +631,21 @@ class ResourceSpec:
     get_fields: tuple[str, ...] | None
     get_required: tuple[str, ...] = ("resource_id",)
     non_paginated: bool = False
-    mutations: Mapping[str, MutationSpec] = MappingProxyType({})
-    actions: Mapping[str, ActionSpec] = MappingProxyType({})
+    mutations: Mapping[str, MutationSpec] = dataclasses.field(
+        default_factory=_no_entries
+    )
+    actions: Mapping[str, ActionSpec] = dataclasses.field(
+        default_factory=_no_entries
+    )
     # Upstream operations and actions this server leaves out, and why.
-    not_offered: Mapping[str, str] = MappingProxyType({})
+    not_offered: Mapping[str, str] = dataclasses.field(
+        default_factory=_no_entries
+    )
     # The field a write carries its secret in. With a secret page, a tool call
     # offers the write only through the page, which asks for that field.
-    secret_fields: Mapping[str, str] = MappingProxyType({})
+    secret_fields: Mapping[str, str] = dataclasses.field(
+        default_factory=_no_entries
+    )
     noop_when_empty: frozenset[str] = frozenset()
     noop_when_false: frozenset[str] = frozenset()
     # The parent a get and a write name: the argument, and the response's key.
@@ -786,12 +811,16 @@ class MutationSpec:
     """Static contract for one ordinary create, update, or delete operation."""
 
     operation: Mutation
-    payload_properties: Mapping[str, dict[str, Any]] = MappingProxyType({})
+    payload_properties: Mapping[str, dict[str, Any]] = dataclasses.field(
+        default_factory=_no_entries
+    )
     required_payload: tuple[str, ...] = ()
     parent_fields: tuple[str, ...] = ()
     payload_required: bool = False
     description: str = ""
-    payload_constraints: Mapping[str, Any] = MappingProxyType({})
+    payload_constraints: Mapping[str, Any] = dataclasses.field(
+        default_factory=_no_entries
+    )
     example_payload: Mapping[str, Any] | None = None
 
     def payload_schema(self, resource: ResourceSpec) -> dict[str, Any]:
@@ -930,7 +959,9 @@ class ActionSpec:
     resource_type: str
     action: str
     sdk_method: str
-    payload_properties: Mapping[str, dict[str, Any]] = MappingProxyType({})
+    payload_properties: Mapping[str, dict[str, Any]] = dataclasses.field(
+        default_factory=_no_entries
+    )
     required_payload: tuple[str, ...] = ()
     prerequisites: tuple[str, ...] = ()
     # The SDK method returns what ZenML answered; the others return nothing.
