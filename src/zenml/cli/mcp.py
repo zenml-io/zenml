@@ -19,7 +19,7 @@ import os
 import ssl
 import sys
 import time
-from typing import TYPE_CHECKING, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 import click
 import requests
@@ -357,12 +357,10 @@ def _login(store: RestZenStore) -> "ZenMLAuth":
             self._lock = asyncio.Lock()
             self._current: Optional[str] = None
             self._known = False
-            # The renewal in flight and the token it replaces. Requests
+            # The renewals in flight, by the token each replaces. Requests
             # rejected with that token share its outcome, a failure too;
             # once it ends, the next rejection renews again.
-            self._renewing: Optional[
-                Tuple[Optional[str], "asyncio.Task[str]"]
-            ] = None
+            self._renewing: Dict[Optional[str], "asyncio.Task[str]"] = {}
 
         async def token(self) -> Optional[str]:
             # Asked again each time, so an expired login shows; the store
@@ -373,12 +371,16 @@ def _login(store: RestZenStore) -> "ZenMLAuth":
                 return self._current
 
         async def renew(self, rejected: Optional[str]) -> str:
-            if self._renewing is None or self._renewing[0] != rejected:
+            renewal = self._renewing.get(rejected)
+            if renewal is None:
                 renewal = asyncio.ensure_future(self._renewed(rejected))
-                self._renewing = (rejected, renewal)
+                # Its error is read even when every request waiting on it
+                # was cancelled, so asyncio doesn't report it as unread.
+                renewal.add_done_callback(_read_outcome)
+                self._renewing[rejected] = renewal
             # A waiter's cancellation must not cancel the renewal that the
             # other rejected requests wait on.
-            return await asyncio.shield(self._renewing[1])
+            return await asyncio.shield(renewal)
 
         async def _renewed(self, rejected: Optional[str]) -> str:
             try:
@@ -398,13 +400,20 @@ def _login(store: RestZenStore) -> "ZenMLAuth":
                     self._current, self._known = token, True
                     return token
             finally:
-                if (
-                    self._renewing is not None
-                    and self._renewing[1] is asyncio.current_task()
-                ):
-                    self._renewing = None
+                if self._renewing.get(rejected) is asyncio.current_task():
+                    del self._renewing[rejected]
 
     return StoredLogin()
+
+
+def _read_outcome(task: "asyncio.Task[str]") -> None:
+    """Read a finished renewal's error, if any, so it never goes unread.
+
+    Args:
+        task: The finished renewal.
+    """
+    if not task.cancelled():
+        task.exception()
 
 
 async def _owned(

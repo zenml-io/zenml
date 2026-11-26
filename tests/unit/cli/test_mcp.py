@@ -14,6 +14,7 @@
 """`zenml mcp`: its stored login, its TLS settings and its start-up."""
 
 import asyncio
+import gc
 import importlib
 import ssl
 import sys
@@ -337,6 +338,85 @@ def test_a_failed_renewal_is_tried_again_by_a_later_call() -> None:
     first, second = asyncio.run(run())
     assert isinstance(first, ZenMLUnavailable)
     assert second == {"ok": True}
+
+
+def test_a_renewal_is_shared_across_a_rejection_of_another_token() -> None:
+    """Requests rejected with one token share its renewal, a failure too.
+
+    A rejection of an older token in between doesn't split it: the second
+    request rejected with B waits on B's renewal instead of signing in again.
+    """
+    release = threading.Event()
+    forced: List[str] = []
+
+    class Overlapping(_Store):
+        active = "B"
+
+        def get_or_generate_api_token(self) -> str:
+            return self.active
+
+        def authenticate(self, force: bool = False) -> None:
+            if not force:
+                return
+            forced.append(self.active)
+            if len(forced) == 1:
+                release.wait(5)
+                raise requests.ConnectionError("down for a moment")
+            self.active = "C"
+
+    async def run() -> List[Any]:
+        auth = mcp_cli._login(Overlapping())  # type: ignore[arg-type]
+        first = asyncio.ensure_future(auth.renew("B"))
+        await asyncio.sleep(0)
+        older = asyncio.ensure_future(auth.renew("A"))
+        await asyncio.sleep(0)
+        second = asyncio.ensure_future(auth.renew("B"))
+        await asyncio.sleep(0)
+        release.set()
+        return await asyncio.gather(
+            first, older, second, return_exceptions=True
+        )
+
+    first, _, second = asyncio.run(run())
+    assert isinstance(first, ZenMLUnavailable)
+    assert isinstance(second, ZenMLUnavailable)
+    assert forced == ["B"]
+
+
+def test_a_renewal_no_request_waits_for_fails_without_a_report() -> None:
+    """A renewal whose requests were all cancelled leaves no unread error."""
+    release = threading.Event()
+    reports: List[str] = []
+
+    class Failing(_Store):
+        def authenticate(self, force: bool = False) -> None:
+            if force:
+                release.wait(5)
+                raise requests.ConnectionError("down for a moment")
+
+    async def run() -> None:
+        loop = asyncio.get_running_loop()
+        loop.set_exception_handler(
+            lambda _, context: reports.append(context["message"])
+        )
+        auth = mcp_cli._login(Failing(tokens=["old"]))  # type: ignore[arg-type]
+        waiter = asyncio.ensure_future(auth.renew("old"))
+        await asyncio.sleep(0)
+        (renewal,) = [
+            task
+            for task in asyncio.all_tasks()
+            if task.get_coro().__qualname__.endswith("._renewed")
+        ]
+        waiter.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await waiter
+        release.set()
+        await asyncio.wait({renewal})
+        del renewal, waiter
+        gc.collect()
+
+    asyncio.run(run())
+    assert reports == []
 
 
 def test_a_token_refused_after_renewal_is_not_sent_again() -> None:
