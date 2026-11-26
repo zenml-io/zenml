@@ -52,6 +52,9 @@ _SENSITIVE_SEGMENTS = frozenset(
         "apikey",
     }
 )
+# Nouns that name a credential only as a key's last segment: `Authorization`
+# and `Proxy-Authorization` carry one, `authorization_mode` does not.
+_SENSITIVE_LAST = frozenset({"authorization"})
 _SENSITIVE_PAIRS = frozenset(
     {
         ("api", "key"),
@@ -73,14 +76,19 @@ def is_sensitive_key(key: Any) -> bool:
         key: The key; anything but a string is read as its `str()`.
 
     Returns:
-        Whether a segment, or a pair of adjacent segments, names a credential.
+        Whether a segment, a pair of adjacent segments, or the last segment
+        names a credential.
     """
     spaced = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", str(key))
     segments = [
         part for part in re.split(r"[^a-z0-9]+", spaced.lower()) if part
     ]
-    return any(part in _SENSITIVE_SEGMENTS for part in segments) or any(
-        pair in _SENSITIVE_PAIRS for pair in zip(segments, segments[1:])
+    return (
+        any(part in _SENSITIVE_SEGMENTS for part in segments)
+        or any(
+            pair in _SENSITIVE_PAIRS for pair in zip(segments, segments[1:])
+        )
+        or bool(segments and segments[-1] in _SENSITIVE_LAST)
     )
 
 

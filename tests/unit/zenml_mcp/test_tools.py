@@ -43,6 +43,10 @@ from zenml_mcp.client import (  # noqa: E402
     ZenMLRestClient,
 )
 from zenml_mcp.common import encoded_size  # noqa: E402
+from zenml_mcp.credentials import (  # noqa: E402
+    credential_like_keys,
+    redact,
+)
 
 GOLDEN = golden("generic_read.json")
 WRITE_GOLDEN = golden("generic_write.json")
@@ -1928,3 +1932,28 @@ def test_step_code_comes_back_with_its_own_line_endings(
     asyncio.run(run())
     assert len(parts) > 1
     assert "".join(parts) == "".join(rows[:end_line])
+
+
+@pytest.mark.parametrize(
+    ("key", "credential"),
+    [
+        ("Authorization", True),
+        ("Proxy-Authorization", True),
+        ("x_authorization", True),
+        ("authorization_mode", False),
+        ("exclusive_replacement_authorized", False),
+    ],
+)
+def test_an_authorization_header_is_a_credential(
+    key: str, credential: bool
+) -> None:
+    """A key that ends in `authorization` is masked and refused; one that
+    only starts with it, such as a mode, is not.
+
+    Args:
+        key: The key.
+        credential: Whether it names a credential.
+    """
+    masked = redact({"headers": {key: "Bearer sample"}})
+    assert (masked["headers"][key] == "***") is credential
+    assert bool(credential_like_keys({key: "Bearer sample"})) is credential
