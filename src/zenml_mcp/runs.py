@@ -20,6 +20,7 @@ import logging
 import math
 import statistics
 from collections import Counter
+from collections.abc import Coroutine
 from typing import Any
 
 from zenml_mcp.client import ZenMLRestClient
@@ -202,10 +203,12 @@ async def started_run(
         # Not even started: any await here could let the host's own timer
         # end the call first and lose the run's id with it.
         return run_summary(run)
-    # `asyncio.wait_for` rather than `asyncio.timeout_at`, which Python
-    # 3.10 lacks; a timeout of None waits without a bound.
     try:
-        url: str | None = await asyncio.wait_for(run_url(client, run), left)
+        url: str | None = (
+            await run_url(client, run)
+            if left is None
+            else await _within(run_url(client, run), left)
+        )
     except Exception as error:
         logger.warning(
             "Reading the started run's dashboard link failed (%s).",
@@ -213,6 +216,48 @@ async def started_run(
         )
         url = None
     return run_summary(run, url)
+
+
+async def _within(lookup: Coroutine[Any, Any, str], seconds: float) -> str:
+    """The lookup's result, if it ends within `seconds`.
+
+    It runs as its own task, cancelled when the time runs out or the caller
+    is cancelled. `asyncio.wait` never turns the caller's cancellation into
+    a result, which `asyncio.wait_for` does on Python 3.10 and 3.11 when the
+    cancellation arrives as the lookup ends; `asyncio.timeout_at` would not,
+    but needs 3.11.
+
+    Args:
+        lookup: The lookup to run.
+        seconds: How long it may take.
+
+    Returns:
+        The lookup's result.
+
+    Raises:
+        asyncio.TimeoutError: When it didn't end in time.
+    """
+    task = asyncio.ensure_future(lookup)
+    # Its error is read even when nobody waits for it any more.
+    task.add_done_callback(_read_error)
+    try:
+        await asyncio.wait({task}, timeout=seconds)
+    finally:
+        if not task.done():
+            task.cancel()
+    if not task.done() or task.cancelled():
+        raise asyncio.TimeoutError("The dashboard link took too long.")
+    return task.result()
+
+
+def _read_error(task: asyncio.Future[str]) -> None:
+    """Read a finished lookup's error, if any, so it never goes unread.
+
+    Args:
+        task: The finished lookup.
+    """
+    if not task.cancelled():
+        task.exception()
 
 
 async def resolve_run(

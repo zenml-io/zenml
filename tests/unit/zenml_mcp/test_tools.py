@@ -610,6 +610,55 @@ def test_a_started_run_past_its_deadline_comes_back_without_waiting(
     assert looked_up == []
 
 
+@pytest.mark.parametrize("turns", range(5))
+@pytest.mark.parametrize("left", [None, 60.0])
+def test_a_cancelled_run_start_is_never_answered_as_started(
+    monkeypatch: pytest.MonkeyPatch, left: Optional[float], turns: int
+) -> None:
+    """A cancellation the call accepts propagates, even as the lookup ends.
+
+    The link lookup finishes, then the caller is cancelled `turns` event
+    loop turns later, before or after the call could answer. An accepted
+    cancellation must not come back as a started run (on Python 3.10 and
+    3.11, `asyncio.wait_for` could return the result instead).
+
+    Args:
+        monkeypatch: Replaces the link lookup with one that waits on a gate,
+            as a shared server info read does.
+        left: Seconds to the deadline, or None for no deadline.
+        turns: Event loop turns between the lookup's end and the cancel.
+    """
+    run = WRITE_GOLDEN["entities"]["pipeline_run"]
+
+    async def drive() -> str:
+        loop = asyncio.get_running_loop()
+        gate: asyncio.Future[str] = loop.create_future()
+
+        async def lookup(client: Any, run: Any) -> str:
+            return await asyncio.shield(gate)
+
+        monkeypatch.setattr(runs, "run_url", lookup)
+        deadline = None if left is None else loop.time() + left
+        call = asyncio.ensure_future(
+            runs.started_run(None, run, deadline)  # type: ignore[arg-type]
+        )
+        for _ in range(5):
+            await asyncio.sleep(0)
+        gate.set_result("https://dashboard.example/run")
+        for _ in range(turns):
+            await asyncio.sleep(0)
+        if not call.cancel():
+            await call
+            return "answered before the cancel"
+        try:
+            await call
+        except asyncio.CancelledError:
+            return "cancelled"
+        return "answered after accepting the cancel"
+
+    assert asyncio.run(drive()) in {"cancelled", "answered before the cancel"}
+
+
 def test_starting_a_run_refuses_credentials_and_a_missing_target() -> None:
     """Credentials, no target, internal fields and two targets at once."""
     value = _never_echoed()
