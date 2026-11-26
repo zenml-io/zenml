@@ -644,7 +644,14 @@ async def _update_schedule_trigger(
         },
         **{
             field: _or_existing(payload, trigger, field)
-            for field in ("active", "concurrency", "start_time", "end_time")
+            for field in ("start_time", "end_time")
+        },
+        # ZenML keeps what an update leaves out of these, so an update that
+        # doesn't name them can't undo a change made since the read.
+        **{
+            field: payload[field]
+            for field in ("active", "concurrency")
+            if payload.get(field) is not None
         },
     }
     return {
