@@ -43,13 +43,20 @@ class SingleFlightCache(Generic[V]):
         self._inflight: dict[str, asyncio.Task[V]] = {}
 
     async def get(
-        self, key: str, load: Callable[[], Awaitable[tuple[V, float]]]
+        self,
+        key: str,
+        load: Callable[[], Awaitable[tuple[V, float]]],
+        *,
+        flight: str | None = None,
     ) -> V:
         """The value under `key`, loaded once by whichever caller asks first.
 
         Args:
             key: The cache key.
             load: Loads the value and says how many seconds it stays valid.
+            flight: Which concurrent misses share a load, `key` by default.
+                A value loaded in any flight is kept under `key`; a failure
+                reaches only the calls of its own flight.
 
         Returns:
             The cached or loaded value.
@@ -61,17 +68,21 @@ class SingleFlightCache(Generic[V]):
                 self._entries.move_to_end(key)
                 return value
             del self._entries[key]
-        task = self._inflight.get(key)
+        shared = key if flight is None else flight
+        task = self._inflight.get(shared)
         if task is None:
             # Its own task, so cancelling the caller that started a load does
             # not cancel it for the other callers waiting on it.
-            task = asyncio.create_task(self._load(key, load))
+            task = asyncio.create_task(self._load(key, shared, load))
             task.add_done_callback(_retrieve_exception)
-            self._inflight[key] = task
+            self._inflight[shared] = task
         return await asyncio.shield(task)
 
     async def _load(
-        self, key: str, load: Callable[[], Awaitable[tuple[V, float]]]
+        self,
+        key: str,
+        shared: str,
+        load: Callable[[], Awaitable[tuple[V, float]]],
     ) -> V:
         try:
             value, ttl = await asyncio.wait_for(load(), LOAD_TIMEOUT_S)
@@ -80,7 +91,7 @@ class SingleFlightCache(Generic[V]):
                 f"ZenML did not answer within {LOAD_TIMEOUT_S:.0f} s. Try again."
             ) from None
         finally:
-            self._inflight.pop(key, None)
+            self._inflight.pop(shared, None)
         if ttl > 0:
             self._entries[key] = (time.monotonic() + ttl, value)
             self._entries.move_to_end(key)

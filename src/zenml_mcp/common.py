@@ -32,7 +32,6 @@ from mcp.types import CallToolResult, TextContent, ToolAnnotations
 from zenml_mcp.cache import SingleFlightCache
 from zenml_mcp.call import Sensitive
 from zenml_mcp.client import (
-    ZenMLAuthError,
     ZenMLBadRequest,
     ZenMLNotFound,
     ZenMLRestClient,
@@ -229,24 +228,21 @@ def _user_key(client: ZenMLRestClient, suffix: str = "") -> str:
 async def server_info(client: ZenMLRestClient) -> ServerInfo:
     """The server's version, edition and dashboard, cached per server URL.
 
-    Concurrent callers share one read, signed in as whoever asked first.
-    When that sign-in fails, each other caller reads again as itself.
+    The facts are public and the same for every caller, so one caller's
+    read serves them all once it succeeded. A read is shared only by the
+    concurrent calls of one caller, though: it signs in as that caller, so
+    a failure, such as a refused sign-in or an unreachable session, is
+    never another caller's answer.
 
     Args:
         client: The client for the server to read.
 
     Returns:
         The server's info.
-
-    Raises:
-        ZenMLAuthError: When this caller's own sign-in is refused.
     """
     url = client.server_url
-    loaded = False
 
     async def load() -> tuple[ServerInfo, float]:
-        nonlocal loaded
-        loaded = True
         info = await client.get("/info", what="Reading ZenML server info")
         meta = info.get("metadata") or {}
         dashboard = (
@@ -263,14 +259,9 @@ async def server_info(client: ZenMLRestClient) -> ServerInfo:
             or meta.get("organization_name"),
         ), _CACHE_TTL_S
 
-    try:
-        return await _server_info.get(url, load)
-    except ZenMLAuthError:
-        if loaded:
-            raise
-        # The read this call waited on signed in as another caller, whose
-        # sign-in failed; this caller reads it again as itself.
-        return await _server_info.get(url, load)
+    return await _server_info.get(
+        url, load, flight=_user_key(client, "server info")
+    )
 
 
 async def project(client: ZenMLRestClient, explicit: str | None) -> str:

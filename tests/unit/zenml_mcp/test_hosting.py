@@ -941,23 +941,44 @@ def test_a_pipeline_without_runs_is_described_with_none() -> None:
     assert described["step_health_runs"] == 0
 
 
-class _RefusedOnceWaitedOn(ZenMLAuth):
-    """A caller whose sign-in fails once another caller waits on its read."""
+class _FailsOnceWaitedOn(ZenMLAuth):
+    """A caller whose session fails once other callers wait on its read."""
 
-    def __init__(self, release: asyncio.Event) -> None:
+    def __init__(self, release: asyncio.Event, error: Exception) -> None:
         super().__init__()
         self._release = release
+        self._error = error
 
     async def token(self) -> str:
         await self._release.wait()
-        raise ZenMLAuthError("ZenML refused this caller's sign-in.")
+        raise self._error
 
     async def renew(self, rejected: Optional[str]) -> str:
-        raise ZenMLAuthError("ZenML refused this caller's sign-in.")
+        raise self._error
 
 
-def test_one_callers_failed_sign_in_is_not_the_others_answer() -> None:
-    """Server info is read once for every caller, as whoever asks first."""
+@pytest.mark.parametrize(
+    "failures",
+    [
+        [
+            ZenMLAuthError("ZenML refused A's sign-in."),
+            ZenMLAuthError("ZenML refused B's sign-in."),
+        ],
+        [ZenMLUnavailable("A's session can't be reached.")],
+    ],
+    ids=["two_refused", "session_unavailable"],
+)
+def test_one_callers_failed_read_is_never_anothers_answer(
+    failures: list[Exception],
+) -> None:
+    """Server info is the same for every caller, but a failure is a caller's own.
+
+    Callers whose sessions fail before any request start reading first; a
+    healthy caller that asks while they wait still gets the server's info.
+
+    Args:
+        failures: How each failing caller's session fails.
+    """
 
     def answer(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json={"version": "0.99.0"})
@@ -967,22 +988,29 @@ def test_one_callers_failed_sign_in_is_not_the_others_answer() -> None:
         release = asyncio.Event()
         transport = httpx.MockTransport(answer)
         async with httpx.AsyncClient(transport=transport) as http:
-            refused = ZenMLRestClient(
-                url, _RefusedOnceWaitedOn(release), http=http, cache_key="a"
+            reads = []
+            for index, failure in enumerate(failures):
+                failing = ZenMLRestClient(
+                    url,
+                    _FailsOnceWaitedOn(release, failure),
+                    http=http,
+                    cache_key=f"failing-{index}",
+                )
+                reads.append(asyncio.ensure_future(server_info(failing)))
+                await asyncio.sleep(0)
+            healthy = ZenMLRestClient(
+                url, BearerToken("token-sample"), http=http, cache_key="ok"
             )
-            signed = ZenMLRestClient(
-                url, BearerToken("token-sample"), http=http, cache_key="b"
-            )
-            first = asyncio.ensure_future(server_info(refused))
-            await asyncio.sleep(0)
-            second = asyncio.ensure_future(server_info(signed))
+            reads.append(asyncio.ensure_future(server_info(healthy)))
             await asyncio.sleep(0)
             release.set()
-            return await asyncio.gather(first, second, return_exceptions=True)
+            return await asyncio.gather(*reads, return_exceptions=True)
 
-    first, second = asyncio.run(run())
-    assert isinstance(first, ZenMLAuthError)
-    assert second.version == "0.99.0"
+    *failed, healthy = asyncio.run(run())
+    assert [error.message for error in failed] == [
+        failure.message for failure in failures
+    ]
+    assert healthy.version == "0.99.0"
 
 
 def test_a_project_name_is_resolved_once_per_run_start() -> None:
