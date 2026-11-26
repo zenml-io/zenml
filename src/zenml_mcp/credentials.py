@@ -62,6 +62,7 @@ _SENSITIVE_PAIRS = frozenset(
         ("private", "key"),
         ("secret", "key"),
         ("auth", "key"),
+        ("authorization", "header"),
     }
 )
 

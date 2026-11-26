@@ -1940,6 +1940,8 @@ def test_step_code_comes_back_with_its_own_line_endings(
         ("Authorization", True),
         ("Proxy-Authorization", True),
         ("x_authorization", True),
+        ("authorization_header", True),
+        ("authorizationHeader", True),
         ("authorization_mode", False),
         ("exclusive_replacement_authorized", False),
     ],
