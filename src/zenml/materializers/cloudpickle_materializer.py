@@ -23,11 +23,7 @@ from zenml.enums import ArtifactType
 from zenml.environment import Environment
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.utils.io_utils import (
-    CallbackWriter,
-    read_file_contents_as_string,
-    write_file_contents_as_string,
-)
+from zenml.utils.io_utils import CallbackWriter
 
 logger = get_logger(__name__)
 
@@ -101,8 +97,9 @@ class CloudpickleMaterializer(BaseMaterializer):
             The Python version that was used to materialize the artifact.
         """
         filepath = os.path.join(self.uri, DEFAULT_PYTHON_VERSION_FILENAME)
-        if os.path.exists(filepath):
-            return read_file_contents_as_string(filepath)
+        if self.artifact_store.exists(filepath):
+            with self.artifact_store.open(filepath, "r") as fid:
+                return fid.read().strip()
         return "unknown"
 
     def save(self, data: Any) -> None:
@@ -138,7 +135,8 @@ class CloudpickleMaterializer(BaseMaterializer):
         """Saves the Python version used to materialize the artifact."""
         filepath = os.path.join(self.uri, DEFAULT_PYTHON_VERSION_FILENAME)
         current_python_version = Environment().python_version()
-        write_file_contents_as_string(filepath, current_python_version)
+        with self.artifact_store.open(filepath, "w") as fid:
+            fid.write(current_python_version)
 
     def compute_content_hash(self, data: Any) -> Optional[str]:
         """Returns the content hash of the stored data.
