@@ -98,16 +98,21 @@ def _record_run_ended_events(
     return events
 
 
-def _reset_run(client: Client, run_id: UUID) -> None:
-    """Put a finished run back into the running state.
+def _reset_run(
+    client: Client,
+    run_id: UUID,
+    status: ExecutionStatus = ExecutionStatus.RUNNING,
+) -> None:
+    """Put a finished run back into progress.
 
     Args:
         client: The client whose store holds the run.
         run_id: The ID of the run.
+        status: The status the run has while in progress.
     """
     with Session(client.zen_store.engine) as session:
         run_schema = session.get(PipelineRunSchema, run_id)
-        run_schema.status = ExecutionStatus.RUNNING.value
+        run_schema.status = status.value
         run_schema.in_progress = True
         run_schema.end_time = None
         session.add(run_schema)
@@ -162,6 +167,24 @@ def test_run_ended_is_sent_once_when_the_run_fails(
 
     assert len(events) == 1
     assert events[0]["status"] == ExecutionStatus.FAILED
+
+
+def test_run_ended_is_sent_when_a_failed_run_stops_being_in_progress(
+    clean_client: Client,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A run that failed while other steps still ran ends once they stop."""
+    run = single_step_pipeline()
+    _reset_run(clean_client, run.id, status=ExecutionStatus.FAILED)
+    events = _record_run_ended_events(monkeypatch)
+    store = clean_client.zen_store
+
+    store.update_run(run.id, PipelineRunUpdate(status=ExecutionStatus.FAILED))
+    store.update_run(run.id, PipelineRunUpdate(status=ExecutionStatus.FAILED))
+
+    assert len(events) == 1
+    assert events[0]["status"] == ExecutionStatus.FAILED
+    assert events[0]["end_time"] is not None
 
 
 @pytest.mark.parametrize(
