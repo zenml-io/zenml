@@ -20,7 +20,7 @@ import ssl
 import sys
 import threading
 from types import SimpleNamespace
-from typing import Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import anyio
 import httpx
@@ -31,7 +31,10 @@ from click.testing import CliRunner
 pytest.importorskip("mcp")
 
 from zenml.cli.cli import cli  # noqa: E402
-from zenml.constants import ENV_ZENML_ACTIVE_PROJECT_ID  # noqa: E402
+from zenml.constants import (  # noqa: E402
+    ENV_ZENML_ACTIVE_PROJECT_ID,
+    ENV_ZENML_SERVER,
+)
 from zenml.enums import AuthScheme  # noqa: E402
 from zenml.exceptions import (  # noqa: E402
     AuthorizationException,
@@ -531,35 +534,42 @@ def test_a_renewal_cancelled_by_its_task_group_waits_without_spinning(
     assert len(waits) <= 2
 
 
-def _served(
+def _start_mcp(
     monkeypatch: pytest.MonkeyPatch,
     *arguments: str,
-    active: Optional[str] = None,
     variable: Optional[str] = None,
-) -> Any:
-    """The `ZenMLCall` that `zenml mcp` serves with, without stdio or a server.
+    repo: Optional[str] = None,
+    globally: Optional[str] = None,
+    server: bool = False,
+) -> Tuple[Any, List[Any]]:
+    """Run `zenml mcp` without stdio or a server, with a project selection.
+
+    Any project lookup fails as a server error does, so a selection read
+    through one shows as a failure or a wrong project.
 
     Args:
-        monkeypatch: Replaces the client, the store, the start-up check and
-            the server.
+        monkeypatch: Replaces the client, the global configuration, the
+            store, the start-up check and the server.
         *arguments: The command's options.
-        active: The project `zenml project set` chose, if any.
-        variable: The `ZENML_ACTIVE_PROJECT_ID` set, if any; a lookup of it
-            fails as a server error does.
+        variable: The `ZENML_ACTIVE_PROJECT_ID` set, if any.
+        repo: The repository's project, as validated when the store
+            connected, if the command runs in a repository.
+        globally: The global configuration's project, if any.
+        server: Whether the command runs in a ZenML server's environment.
 
     Returns:
-        The call the server was built with.
+        The command's result, and the calls the server was built with.
     """
     built: List[Any] = []
 
     class Configured:
+        uses_local_configuration = repo is not None
+
         @property
         def active_project(self) -> Any:
-            if variable is not None:
+            if repo is None:
                 raise RuntimeError("500 Server Error: upstream unavailable")
-            if active is None:
-                raise RuntimeError("No active project is configured.")
-            return SimpleNamespace(id=active)
+            return SimpleNamespace(id=repo)
 
     class Served:
         async def run_stdio_async(self) -> None:
@@ -576,14 +586,39 @@ def _served(
         url="http://127.0.0.1:8237", session=SimpleNamespace(verify=True)
     )
     monkeypatch.setattr(mcp_cli, "Client", Configured)
+    monkeypatch.setattr(
+        mcp_cli,
+        "GlobalConfiguration",
+        lambda: SimpleNamespace(active_project_id=globally),
+    )
     if variable is None:
         monkeypatch.delenv(ENV_ZENML_ACTIVE_PROJECT_ID, raising=False)
     else:
         monkeypatch.setenv(ENV_ZENML_ACTIVE_PROJECT_ID, variable)
+    if server:
+        monkeypatch.setenv(ENV_ZENML_SERVER, "true")
+    else:
+        monkeypatch.delenv(ENV_ZENML_SERVER, raising=False)
     monkeypatch.setattr(mcp_cli, "_connected_store", lambda delay: store)
     monkeypatch.setattr("zenml_mcp.server.check_server", checked)
     monkeypatch.setattr("zenml_mcp.server.build_server", build)
-    result = CliRunner().invoke(cli, ["mcp", *arguments])
+    return CliRunner().invoke(cli, ["mcp", *arguments]), built
+
+
+def _served(
+    monkeypatch: pytest.MonkeyPatch, *arguments: str, **selection: Any
+) -> Any:
+    """The `ZenMLCall` that `zenml mcp` serves with, without stdio or a server.
+
+    Args:
+        monkeypatch: Replaces what `_start_mcp` replaces.
+        *arguments: The command's options.
+        **selection: The project selection, as `_start_mcp` takes it.
+
+    Returns:
+        The call the server was built with.
+    """
+    result, built = _start_mcp(monkeypatch, *arguments, **selection)
     assert result.exit_code == 0, result.output
     return built[0]
 
@@ -596,22 +631,130 @@ def test_read_only_reaches_the_call_the_server_runs_with(
     assert _served(monkeypatch).read_only is False
 
 
-def test_the_active_project_scopes_the_calls_that_name_none(
+_PROJECT_A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+_PROJECT_B = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+
+
+@pytest.mark.parametrize(
+    ("selection", "selected"),
+    [
+        ({"variable": _PROJECT_A, "repo": _PROJECT_B}, _PROJECT_A),
+        ({"variable": "team-alpha"}, "team-alpha"),
+        ({"variable": "", "globally": _PROJECT_A}, _PROJECT_A),
+        ({"server": True, "globally": _PROJECT_B}, "default"),
+        ({"repo": _PROJECT_A, "globally": _PROJECT_B}, _PROJECT_A),
+        ({"globally": _PROJECT_A}, _PROJECT_A),
+        ({}, None),
+    ],
+    ids=[
+        "variable",
+        "variable-name",
+        "empty-variable",
+        "server",
+        "repository",
+        "global",
+        "none",
+    ],
+)
+def test_the_selected_project_is_read_without_a_lookup(
     monkeypatch: pytest.MonkeyPatch,
+    selection: Dict[str, Any],
+    selected: Optional[str],
 ) -> None:
-    """`zenml project set` picks the project, else the server's default."""
-    chosen = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
-    assert _served(monkeypatch, active=chosen).client.project == chosen
-    assert _served(monkeypatch).client.project is None
+    """The project the SDK selects scopes the calls that name none.
 
+    It is read in the SDK's order without a request, so a lookup that
+    fails can't switch every call to the caller's default project. Only no
+    selection at all leaves the server's default.
 
-def test_a_project_set_in_the_environment_is_used_without_a_lookup(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """A lookup that fails can't switch the server to another project.
-
-    The project is passed as set; a call that uses a project ZenML can't
-    find then fails with a typed error.
+    Args:
+        monkeypatch: Replaces the client and the server.
+        selection: How the project is selected.
+        selected: The project the calls are scoped to.
     """
-    chosen = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
-    assert _served(monkeypatch, variable=chosen).client.project == chosen
+    assert _served(monkeypatch, **selection).client.project == selected
+
+
+def test_a_blank_project_variable_ends_the_start(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The SDK reads a blank variable as set, so it names no project here."""
+    result, built = _start_mcp(
+        monkeypatch, variable="   ", globally=_PROJECT_B
+    )
+    assert result.exit_code != 0 and built == []
+    assert ENV_ZENML_ACTIVE_PROJECT_ID in result.output
+    assert "Traceback" not in result.output
+
+
+@pytest.mark.parametrize(
+    ("selection", "started"),
+    [
+        ({"globally": _PROJECT_A}, "snapshot-a"),
+        ({"server": True}, "snapshot-a"),
+        ({"repo": _PROJECT_A, "globally": _PROJECT_B}, "snapshot-a"),
+        ({}, "snapshot-b"),
+    ],
+    ids=["global", "server", "repository", "none"],
+)
+def test_a_named_snapshot_starts_in_the_selected_project(
+    monkeypatch: pytest.MonkeyPatch,
+    selection: Dict[str, Any],
+    started: str,
+) -> None:
+    """Two projects hold a snapshot named `nightly`; the selected one runs.
+
+    The caller's default project on the server is B, and `default` is A.
+
+    Args:
+        monkeypatch: Replaces the client and the server.
+        selection: How the project is selected.
+        started: The snapshot that must be started.
+    """
+    from zenml_mcp.call import ZenMLCall
+    from zenml_mcp.client import BearerToken
+    from zenml_mcp.tools import TOOL_SPECS
+
+    project = _served(monkeypatch, **selection).client.project
+    # ZenML takes a project's ID or name wherever it takes a project.
+    snapshots = {
+        _PROJECT_A: "snapshot-a",
+        "default": "snapshot-a",
+        _PROJECT_B: "snapshot-b",
+    }
+    posted: List[str] = []
+
+    def answer(request: httpx.Request) -> httpx.Response:
+        path = request.url.path.removeprefix("/api/v1")
+        if path == "/current-user":
+            body = {"default_project_id": _PROJECT_B}
+            return httpx.Response(200, json={"body": body})
+        if path == "/projects/default":
+            return httpx.Response(200, json={"id": _PROJECT_A})
+        if path == "/pipeline_snapshots":
+            chosen = snapshots[request.url.params["project"]]
+            return httpx.Response(
+                200, json={"items": [{"id": chosen}], "total": 1}
+            )
+        posted.append(path)
+        return httpx.Response(200, json={"id": "run", "body": {}})
+
+    async def trigger() -> None:
+        transport = httpx.MockTransport(answer)
+        async with httpx.AsyncClient(transport=transport) as http:
+            client = ZenMLRestClient(
+                "https://zenml.example",
+                BearerToken("token-sample"),
+                http=http,
+                cache_key=f"selection-{started}-{project}",
+                project=project,
+            )
+            spec = next(
+                s for s in TOOL_SPECS if s.name == "zenml_trigger_pipeline"
+            )
+            await spec.run(
+                ZenMLCall(client), {"snapshot_name_or_id": "nightly"}
+            )
+
+    asyncio.run(trigger())
+    assert posted == [f"/pipeline_snapshots/{started}/runs"]

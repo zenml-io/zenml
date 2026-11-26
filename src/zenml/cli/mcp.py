@@ -28,7 +28,12 @@ import urllib3
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.client import Client
-from zenml.constants import ENV_ZENML_ACTIVE_PROJECT_ID
+from zenml.config.global_config import GlobalConfiguration
+from zenml.constants import (
+    DEFAULT_PROJECT_NAME,
+    ENV_ZENML_ACTIVE_PROJECT_ID,
+    ENV_ZENML_SERVER,
+)
 from zenml.enums import AuthScheme
 from zenml.exceptions import AuthorizationException, CredentialsNotValid
 from zenml.logger import ZenMLConsoleHandler
@@ -201,28 +206,45 @@ def _connected_store(retry_delay: float) -> RestZenStore:
 
 
 def _active_project() -> Optional[str]:
-    """The project `zenml project set` chose, for calls that name none.
+    """The project the SDK selects, for calls that name none.
 
-    `ZENML_ACTIVE_PROJECT_ID` is passed as set, without a lookup: a lookup
-    that failed could only end the start or switch every call to another
-    project. A project ZenML can't find then fails each call that uses it
-    with a typed error. Otherwise the repository's or the global
-    configuration's project, which the store validated when it connected,
-    is read without a request.
+    It is read in the SDK's order, as configured and without a request: a
+    lookup that failed could only end the start or switch every call to
+    the caller's default project. A project ZenML can't find then fails
+    each call that uses it with a typed error.
+
+    - `ZENML_ACTIVE_PROJECT_ID`, as set; the SDK reads an empty one as
+      unset, and a blank one ends the start.
+    - In a ZenML server's environment, the project named `default`.
+    - The repository's project, else the global configuration's. The store
+      validated both when it connected.
 
     Returns:
-        The project's ID, or None when none is configured, to use the
-        caller's default project on the server.
+        The project's ID or name, or None when no project is selected, to
+        use the caller's default project on the server.
     """
-    configured = os.environ.get(ENV_ZENML_ACTIVE_PROJECT_ID, "").strip()
-    if configured:
-        return configured
-    try:
-        return str(Client().active_project.id)
-    except RuntimeError:
-        # Without the variable, nothing is read from the server here, so
-        # this is "no active project is configured".
-        return None
+    variable = os.environ.get(ENV_ZENML_ACTIVE_PROJECT_ID)
+    if variable:
+        if not variable.strip():
+            cli_utils.error(
+                f"{ENV_ZENML_ACTIVE_PROJECT_ID} is blank. Set it to a "
+                "project's ID or name, or unset it, and start the MCP server "
+                "again."
+            )
+        return variable.strip()
+    if ENV_ZENML_SERVER in os.environ:
+        return DEFAULT_PROJECT_NAME
+    client = Client()
+    if client.uses_local_configuration:
+        # The repository's project is the one the store validated when it
+        # connected; the SDK reads it without a request and raises when
+        # the repository has none.
+        try:
+            return str(client.active_project.id)
+        except RuntimeError:
+            return None
+    selected = GlobalConfiguration().active_project_id
+    return None if selected is None else str(selected)
 
 
 def _verify(store: RestZenStore) -> Union[bool, ssl.SSLContext]:
