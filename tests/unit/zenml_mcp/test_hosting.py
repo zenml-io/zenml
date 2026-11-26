@@ -218,6 +218,16 @@ _SNAPSHOT = "4c5dd2b9-c31a-42da-a776-418993f24a6e"
             },
             "Changing a schedule trigger",
         ),
+        (
+            "zenml_update_resource",
+            {
+                "resource_type": "webhook",
+                "resource_id": "a57684e2-c51e-4278-be08-ff69b9c0ea4a",
+                "project_id": PROJECT,
+                "payload": {"active": True},
+            },
+            "Switching a webhook on",
+        ),
     ],
 )
 def test_a_write_that_can_start_runs_asks_the_host_first(
@@ -254,6 +264,9 @@ def test_every_write_that_can_start_runs_is_declared_sensitive() -> None:
         assert all(m.sensitive for m in spec.mutations.values()), spec
         assert spec.actions["attach"].sensitive, spec
     assert RESOURCE_REGISTRY["pipeline_run"].actions["replay"].sensitive
+    # A webhook's triggers dispatch runs only while it is on.
+    webhook = RESOURCE_REGISTRY["webhook"].mutations["update"].sensitive
+    assert webhook is not None and webhook.when_set == ("active",)
 
 
 def test_a_read_only_call_refuses_a_write_tool_before_sending() -> None:

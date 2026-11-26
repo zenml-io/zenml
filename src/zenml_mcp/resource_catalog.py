@@ -1258,7 +1258,15 @@ _RESOURCE_SPECS = (
                 },
                 required=("name", "webhook_type"),
             ),
-            _mutation("update", {"name": _NONEMPTY, "active": _BOOL}),
+            _mutation(
+                "update",
+                {"name": _NONEMPTY, "active": _BOOL},
+                # ZenML dispatches a webhook's events to its triggers, which
+                # start runs, only while the webhook is on.
+                sensitive=Sensitive(
+                    "Switching a webhook on", when_set=("active",)
+                ),
+            ),
             _DELETE,
         ),
     ),
