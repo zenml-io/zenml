@@ -39,7 +39,11 @@ from zenml.config.step_configurations import (  # noqa: E402
 from zenml.enums import StackComponentType  # noqa: E402
 from zenml.integrations.registry import integration_registry  # noqa: E402
 from zenml.model.model import Model  # noqa: E402
-from zenml.models.v2.core.triggers import ScheduleTriggerUpdate  # noqa: E402
+from zenml.models.v2.core.triggers import (  # noqa: E402
+    PlatformEventTriggerUpdate,
+    ScheduleTriggerUpdate,
+    TriggerUpdate,
+)
 from zenml.stack.flavor_registry import FlavorRegistry  # noqa: E402
 from zenml.stack.stack_component import StackComponentConfig  # noqa: E402
 from zenml.zen_stores.schemas.trigger_schemas import TriggerSchema  # noqa: E402
@@ -217,32 +221,52 @@ def test_a_local_component_is_found_as_zenml_finds_it() -> None:
     assert set(_CONFIGURATIONS) <= checked
 
 
-def test_a_schedule_update_that_names_no_state_keeps_the_stored_one() -> None:
+_RENAMES: list[tuple[type[TriggerUpdate], dict[str, Any]]] = [
+    (
+        ScheduleTriggerUpdate,
+        {
+            "type": "schedule",
+            "flavor": "native schedule",
+            "cron_expression": "0 * * * *",
+        },
+    ),
+    (
+        PlatformEventTriggerUpdate,
+        {
+            "type": "platform_event",
+            "flavor": "platform event",
+            "source_entity": {"type": "pipeline", "id": str(uuid.uuid4())},
+            "target_events": ["run_completed"],
+        },
+    ),
+]
+
+
+@pytest.mark.parametrize(("update", "rest"), _RENAMES)
+def test_a_trigger_update_that_names_no_state_keeps_the_stored_one(
+    update: type[TriggerUpdate], rest: dict[str, Any]
+) -> None:
     """D25: ZenML applies only the trigger fields an update sets.
 
     A rename that leaves out `active` and `concurrency` keeps what ZenML
     holds, not the update model's defaults (`active=True`), which would
-    switch a disabled schedule on.
+    switch a disabled trigger on.
+
+    Args:
+        update: The update model ZenML parses the PUT body into.
+        rest: The rest of the body this server sends for a rename.
     """
     stored = TriggerSchema(
         name="nightly",
         active=False,
         concurrency="submit",
-        type="schedule",
-        flavor="native schedule",
+        type=rest["type"],
+        flavor=rest["flavor"],
         configuration="{}",
         is_archived=False,
         project_id=uuid.uuid4(),
     )
-    renamed = ScheduleTriggerUpdate.model_validate(
-        {
-            "name": "renamed",
-            "type": "schedule",
-            "flavor": "native schedule",
-            "cron_expression": "0 * * * *",
-        }
-    )
-    stored.update(renamed)
+    stored.update(update.model_validate({"name": "renamed", **rest}))
     assert (stored.name, stored.active, stored.concurrency) == (
         "renamed",
         False,

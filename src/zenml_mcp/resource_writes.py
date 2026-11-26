@@ -622,6 +622,26 @@ async def _update_code_repository(
     return body
 
 
+def _named_state(payload: Mapping[str, Any]) -> dict[str, Any]:
+    """A trigger's `active` and `concurrency`, as far as an update names them.
+
+    ZenML keeps what a schedule or platform event trigger update leaves out
+    of these, so an update that doesn't name them can't undo a change made
+    since the read.
+
+    Args:
+        payload: The update's payload.
+
+    Returns:
+        The ones the update names.
+    """
+    return {
+        field: payload[field]
+        for field in ("active", "concurrency")
+        if payload.get(field) is not None
+    }
+
+
 async def _update_schedule_trigger(
     request: WriteRequest, trigger: Any
 ) -> dict[str, Any]:
@@ -645,13 +665,7 @@ async def _update_schedule_trigger(
             field: _or_existing(payload, trigger, field)
             for field in ("start_time", "end_time")
         },
-        # ZenML keeps what an update leaves out of these, so an update that
-        # doesn't name them can't undo a change made since the read.
-        **{
-            field: payload[field]
-            for field in ("active", "concurrency")
-            if payload.get(field) is not None
-        },
+        **_named_state(payload),
     }
     return {
         **body,
@@ -698,8 +712,7 @@ async def _update_platform_event_trigger(
         "name": payload.get("name") or field_of(trigger, "name"),
         "type": trigger_kind["type"],
         "flavor": trigger_kind["flavor"],
-        "active": _or_existing(payload, trigger, "active"),
-        "concurrency": _or_existing(payload, trigger, "concurrency"),
+        **_named_state(payload),
         # Checked before the write, in `_send`.
         "source_entity": {
             "type": payload["source_type"],

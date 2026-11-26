@@ -154,18 +154,19 @@ def test_generic_writes_send_what_the_standalone_server_sends() -> None:
     assert not differing, differing[0]
 
 
-def test_a_schedule_update_sends_active_and_concurrency_only_when_named() -> (
+def test_a_trigger_update_sends_active_and_concurrency_only_when_named() -> (
     None
 ):
-    """D25: the recorded schedule updates, without the echoed fields.
+    """D25: the recorded trigger updates, without the echoed fields.
 
+    These are the schedule and platform event trigger updates.
     ZenML keeps the `active` and `concurrency` an update leaves out, so a
     rename can't undo a change another writer made since the read.
     """
     recorded = golden("generic_write.json")
     cases = []
     for case in recorded["cases"]:
-        if not case["name"].startswith("update schedule_trigger:"):
+        if not case.get("declared", "").startswith("D25:"):
             continue
         named = case["arguments"]["payload"]
         for exchange in case["exchanges"]:
@@ -174,7 +175,7 @@ def test_a_schedule_update_sends_active_and_concurrency_only_when_named() -> (
                     if field not in named:
                         del exchange["body"][field]
         cases.append({k: v for k, v in case.items() if k != "declared"})
-    assert len(cases) == 4
+    assert len(cases) == 5
     differing = asyncio.run(replay({**recorded, "cases": cases}))
     assert not differing, differing[0]
 
