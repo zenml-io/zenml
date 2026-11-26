@@ -983,3 +983,39 @@ def test_one_callers_failed_sign_in_is_not_the_others_answer() -> None:
     first, second = asyncio.run(run())
     assert isinstance(first, ZenMLAuthError)
     assert second.version == "0.99.0"
+
+
+def test_a_project_name_is_resolved_once_per_run_start() -> None:
+    """The snapshot is looked up in the project the name named first.
+
+    The name is renamed away to another project between two reads; one run
+    start must not use both.
+    """
+    first, second = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", PROJECT
+    owner = {"team": first}
+    snapshots = {first: "snapshot-a", second: "snapshot-b"}
+    posted: list[str] = []
+
+    def answer(request: httpx.Request) -> httpx.Response:
+        path = request.url.path.removeprefix("/api/v1")
+        if path == "/projects/team":
+            found = owner["team"]
+            owner["team"] = second
+            return httpx.Response(200, json={"id": found})
+        if path == "/pipeline_snapshots":
+            asked = request.url.params["project"]
+            chosen = snapshots[owner.get(asked, asked)]
+            return httpx.Response(
+                200, json={"items": [{"id": chosen}], "total": 1}
+            )
+        posted.append(path)
+        return httpx.Response(200, json={"id": "run", "body": {}})
+
+    _run(
+        "zenml_trigger_pipeline",
+        {"snapshot_name_or_id": "nightly"},
+        answer,
+        cache_key="renamed",
+        project="team",
+    )
+    assert posted == ["/pipeline_snapshots/snapshot-a/runs"]

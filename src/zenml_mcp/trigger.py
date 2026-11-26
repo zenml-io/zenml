@@ -92,7 +92,7 @@ _SDK_OBJECT_DEFAULTS: dict[str, dict[str, Any]] = {
 
 
 async def _snapshot(
-    client: ZenMLRestClient, snapshot: str, pipeline: str | None
+    client: ZenMLRestClient, snapshot: str, pipeline: str | None, project: str
 ) -> dict[str, Any]:
     """The snapshot the SDK's `trigger_pipeline` would run.
 
@@ -103,6 +103,7 @@ async def _snapshot(
         client: The caller's ZenML client.
         snapshot: The snapshot's id or exact name.
         pipeline: A pipeline name or ID that narrows a name, or None.
+        project: The ID of the project a name is looked up in.
 
     Returns:
         The snapshot, not hydrated.
@@ -122,7 +123,7 @@ async def _snapshot(
         params={
             "name": snapshot,
             "pipeline": pipeline,
-            "project": await common.project(client, None),
+            "project": project,
             "hydrate": False,
             "size": 1,
         },
@@ -343,7 +344,7 @@ async def _refuse_unrunnable_stack(
 
 
 async def _newest_runnable_snapshot(
-    client: ZenMLRestClient, pipeline: str, stack: str | None
+    client: ZenMLRestClient, pipeline: str, stack: str | None, project: str
 ) -> dict[str, Any]:
     """The newest named, runnable snapshot of a pipeline, as the SDK chooses it.
 
@@ -354,6 +355,7 @@ async def _newest_runnable_snapshot(
         client: The caller's ZenML client.
         pipeline: The pipeline's name or ID.
         stack: A stack name or ID to run on, or None.
+        project: The ID of the project the pipeline is looked up in.
 
     Returns:
         The snapshot.
@@ -363,7 +365,7 @@ async def _newest_runnable_snapshot(
             than 400 or 422.
         ZenMLNotFound: If no runnable snapshot is found in the search.
     """
-    found = await find(client, "pipeline", pipeline)
+    found = await find(client, "pipeline", pipeline, project_id=project)
     on_stack = (
         await find(client, "stack", stack, name_prefix=False)
         if stack
@@ -574,6 +576,7 @@ def _unknown_start(pipeline: str | None, project_id: str) -> CallToolResult:
 
 async def _start(
     client: ZenMLRestClient,
+    project_id: str,
     snapshot_name_or_id: str | None,
     pipeline_name_or_id: str | None,
     stack_name_or_id: str | None,
@@ -595,11 +598,14 @@ async def _start(
         }
     if snapshot_name_or_id:
         snapshot = await _snapshot(
-            client, snapshot_name_or_id, pipeline_name_or_id
+            client, snapshot_name_or_id, pipeline_name_or_id, project_id
         )
     else:
         snapshot = await _newest_runnable_snapshot(
-            client, cast(str, pipeline_name_or_id), stack_name_or_id
+            client,
+            cast(str, pipeline_name_or_id),
+            stack_name_or_id,
+            project_id,
         )
     if configuration is not None:
         _refuse_unrunnable_configuration(
@@ -694,10 +700,13 @@ def register(tools: Tools) -> None:
         refuse_run_credentials(run_configuration)
         configuration = _as_the_sdk_sends(run_configuration)
         client = call.client
+        # Resolved once: a project name that moves to another project during
+        # the start can't split the lookups from the reconciliation.
         project_id = await default_project_id(client)
         try:
             return await _start(
                 client,
+                project_id,
                 snapshot_name_or_id,
                 pipeline_name_or_id,
                 stack_name_or_id,

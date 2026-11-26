@@ -707,6 +707,7 @@ async def find(
     name_or_id: str,
     *,
     name_prefix: bool = True,
+    project_id: str | None = None,
 ) -> Any:
     """A hydrated pipeline in the caller's default project, or a stack.
 
@@ -718,12 +719,14 @@ async def find(
         resource_type: The entity's type.
         name_or_id: The id, id prefix, name or name prefix to find.
         name_prefix: Whether a name prefix may match.
+        project_id: The ID of the project a pipeline is found in, when the
+            caller resolved it already; else the caller's default project.
 
     Returns:
         The entity as ZenML answered it.
     """
     spec = get_resource_spec(resource_type)
-    _, project = await _effective_scope(client, spec, None)
+    _, project = await _effective_scope(client, spec, project_id)
     return await find_entity(
         client,
         spec,
