@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZenML Pipeline Runs</title>
+  <style>
+    /* ============================================================
+       ZenML Design Tokens (from react-component-library/tailwind)
+       ============================================================ */
+    :root {
+      /* Primary / brand */
+      --color-primary-50:  #eef2ff;
+      --color-primary-100: #e0e7ff;
+      --color-primary-400: #818cf8;
+      --color-primary-500: #6366f1;
+      --color-primary-600: #4f46e5;
+      --color-primary-700: #4338ca;
+
+      /* Success (green) */
+      --color-success-50:  #f0fdf4;
+      --color-success-100: #dcfce7;
+      --color-success-500: #22c55e;
+      --color-success-600: #16a34a;
+      --color-success-700: #15803d;
+
+      /* Error (red) */
+      --color-error-50:  #fef2f2;
+      --color-error-100: #fee2e2;
+      --color-error-500: #ef4444;
+      --color-error-600: #dc2626;
+      --color-error-700: #b91c1c;
+
+      /* Warning (amber) */
+      --color-warning-50:  #fffbeb;
+      --color-warning-100: #fef3c7;
+      --color-warning-500: #f59e0b;
+      --color-warning-600: #d97706;
+
+      /* Neutral */
+      --color-neutral-50:  #fafafa;
+      --color-neutral-100: #f5f5f5;
+      --color-neutral-200: #e5e5e5;
+      --color-neutral-300: #d4d4d4;
+      --color-neutral-400: #a3a3a3;
+      --color-neutral-500: #737373;
+      --color-neutral-600: #525252;
+      --color-neutral-700: #404040;
+      --color-neutral-800: #262626;
+      --color-neutral-900: #171717;
+
+      /* Blue */
+      --color-blue-50:  #eff6ff;
+      --color-blue-500: #3b82f6;
+
+      /* Theme */
+      --color-bg: #ffffff;
+      --color-surface: #fafafa;
+      --color-text: #171717;
+      --color-text-secondary: #525252;
+      --color-text-tertiary: #737373;
+      --color-border: #e5e5e5;
+      --color-border-light: #f5f5f5;
+
+      /* Typography */
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+
+      /* Spacing */
+      --radius: 8px;
+      --radius-sm: 6px;
+    }
+
+    /* Dark mode */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --color-bg: #0a0a0a;
+        --color-surface: #171717;
+        --color-text: #fafafa;
+        --color-text-secondary: #a3a3a3;
+        --color-text-tertiary: #737373;
+        --color-border: #262626;
+        --color-border-light: #1a1a1a;
+      }
+    }
+
+    /* ============================================================
+       Base Styles
+       ============================================================ */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-bg);
+      color: var(--color-text);
+      line-height: 1.5;
+      font-size: 14px;
+      padding: 16px;
+      min-height: 100vh;
+    }
+
+    /* ============================================================
+       Header
+       ============================================================ */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo {
+      width: 28px;
+      height: 28px;
+    }
+
+    .header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ============================================================
+       Controls / Filters
+       ============================================================ */
+    .controls {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .filter-input, .filter-select {
+      padding: 6px 10px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--color-surface);
+      color: var(--color-text);
+      font-size: 13px;
+      font-family: var(--font-sans);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .filter-input:focus, .filter-select:focus {
+      border-color: var(--color-primary-500);
+    }
+
+    .filter-input { width: 200px; }
+
+    .btn {
+      padding: 6px 14px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--color-surface);
+      color: var(--color-text);
+      font-size: 13px;
+      font-family: var(--font-sans);
+      cursor: pointer;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn:hover { background: var(--color-border-light); border-color: var(--color-neutral-300); }
+    .btn:active { transform: scale(0.98); }
+
+    .btn-primary {
+      background: var(--color-primary-600);
+      color: #fff;
+      border-color: var(--color-primary-700);
+    }
+    .btn-primary:hover { background: var(--color-primary-700); }
+
+    .btn-sm { padding: 4px 8px; font-size: 12px; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    .summary-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .summary-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--color-text-secondary);
+    }
+
+    .summary-count {
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    /* ============================================================
+       Status Colors (mirroring ExecutionStatus.tsx)
+       ============================================================ */
+    .status-completed   { background: var(--color-success-50);  color: var(--color-success-700); }
+    .status-failed      { background: var(--color-error-50);    color: var(--color-error-700); }
+    .status-running     { background: var(--color-warning-50);  color: var(--color-warning-600); }
+    .status-initializing,
+    .status-provisioning{ background: var(--color-primary-50);  color: var(--color-primary-700); }
+    .status-cached,
+    .status-stopped,
+    .status-stopping,
+    .status-retried     { background: var(--color-neutral-100); color: var(--color-neutral-600); }
+    .status-unknown     { background: var(--color-blue-50);     color: var(--color-blue-500); }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .dot-completed    { background: var(--color-success-500); }
+    .dot-failed       { background: var(--color-error-500); }
+    .dot-running      { background: var(--color-warning-500); animation: pulse 1.5s ease-in-out infinite; }
+    .dot-initializing,
+    .dot-provisioning { background: var(--color-primary-400); animation: pulse 1.5s ease-in-out infinite; }
+    .dot-cached, .dot-stopped, .dot-stopping, .dot-retried { background: var(--color-neutral-400); }
+    .dot-unknown      { background: var(--color-blue-500); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* ============================================================
+       Table
+       ============================================================ */
+    .table-container {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead th {
+      text-align: left;
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    tbody td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--color-border-light);
+      font-size: 13px;
+      vertical-align: top;
+    }
+
+    tbody tr:last-child td { border-bottom: none; }
+
+    tbody tr:hover { background: var(--color-surface); }
+
+    .run-name {
+      font-weight: 500;
+      color: var(--color-text);
+    }
+
+    .run-id {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--color-text-tertiary);
+    }
+
+    .pipeline-name {
+      color: var(--color-primary-600);
+      font-weight: 500;
+    }
+
+    .timestamp {
+      color: var(--color-text-secondary);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .expand-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      color: var(--color-text-tertiary);
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+    }
+
+    .expand-btn:hover { background: var(--color-neutral-100); color: var(--color-text); }
+
+    .expand-btn svg {
+      transition: transform 0.2s;
+    }
+
+    .expand-btn.expanded svg {
+      transform: rotate(90deg);
+    }
+
+    /* ============================================================
+       Expanded Steps Panel
+       ============================================================ */
+    .steps-row td {
+      padding: 0;
+      background: var(--color-surface);
+    }
+
+    .steps-panel {
+      padding: 12px 14px 12px 48px;
+    }
+
+    .steps-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .steps-header h3 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+    }
+
+    .step-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--color-border-light);
+      background: var(--color-bg);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .step-item:hover {
+      border-color: var(--color-border);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+
+    .step-item.selected {
+      border-color: var(--color-primary-400);
+      background: var(--color-primary-50);
+      color: var(--color-primary-700);
+    }
+    .step-item.selected .step-duration {
+      color: var(--color-primary-400);
+    }
+
+    .step-name { font-weight: 500; flex: 1; }
+    .step-duration {
+      font-size: 12px;
+      color: var(--color-text-tertiary);
+      font-family: var(--font-mono);
+    }
+
+    /* ============================================================
+       Logs Panel
+       ============================================================ */
+    .logs-panel {
+      margin-top: 10px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    .logs-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border-light);
+    }
+
+    .logs-header h4 {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+    }
+
+    .logs-content {
+      max-height: 300px;
+      overflow-y: auto;
+      padding: 12px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--color-text-secondary);
+      white-space: pre-wrap;
+      word-break: break-all;
+      background: var(--color-bg);
+    }
+
+    .logs-content.empty {
+      color: var(--color-text-tertiary);
+      font-style: italic;
+      font-family: var(--font-sans);
+    }
+
+    /* ============================================================
+       Loading / Empty / Error States
+       ============================================================ */
+    .state-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 24px;
+      text-align: center;
+      color: var(--color-text-secondary);
+    }
+
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border: 3px solid var(--color-border);
+      border-top-color: var(--color-primary-500);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-bottom: 12px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-box {
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      background: var(--color-error-50);
+      color: var(--color-error-700);
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+
+    /* ============================================================
+       Pagination
+       ============================================================ */
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      font-size: 13px;
+      color: var(--color-text-secondary);
+    }
+
+    .pagination-info { font-size: 12px; }
+
+    .pagination-btns {
+      display: flex;
+      gap: 4px;
+    }
+
+    /* ============================================================
+       Responsive
+       ============================================================ */
+    @media (max-width: 640px) {
+      body { padding: 8px; font-size: 13px; }
+      .header h1 { font-size: 16px; }
+      .filter-input { width: 140px; }
+      .steps-panel { padding-left: 16px; }
+      thead th, tbody td { padding: 8px 10px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <svg class="logo" xmlns="http://www.w3.org/2000/svg" fill="#431D93" viewBox="0 0 32 32" width="32" height="32"><path d="M31.2 21.009a16.05 16.05 0 0 0-1.275-12.895l-11.007-.279v-.138l10.595-.268a16.1 16.1 0 0 0-5.011-4.99L16 2.226v-.137l7.556-.191A15.994 15.994 0 0 0 4.37 5.014l9.51.24v.138l-10.078.253A15.95 15.95 0 0 0 0 16c0 .172 0 .338.009.507v.034l3.798.096v.138L.02 16.87v.034a15.9 15.9 0 0 0 2.116 7.09l6.33.16v.137l-6.059.154a16.07 16.07 0 0 0 6.65 5.974V17.13h1.535a.45.45 0 0 1 .45.449v13.638a16.08 16.08 0 0 0 9.914 0V17.579a.45.45 0 0 1 .45-.45h1.534v13.293q.3-.144.593-.302a16 16 0 0 0 4.187-3.227l-3.974-.1v-.138l4.287-.109a16 16 0 0 0 3.017-5.104l-5.722-.145v-.138zm-6.04-4.302H6.84l-.331-1.322h2.549v-1.418h.52a1.416 1.416 0 0 1 1.416 1.416h4.015v-1.888H5.282c-.19-1.511-1.086-2.692-1.086-2.692 2.644.613 11.804.66 11.804.66s9.16-.047 11.803-.66c0 0-.896 1.18-1.085 2.692h-9.726v1.889h4.015a1.417 1.417 0 0 1 1.416-1.417h.52v1.416h2.55z"></path></svg>
+      <h1 id="dashboardTitle">Recent Pipeline Runs</h1>
+    </div>
+    <div class="header-right">
+      <button class="btn btn-sm" id="refreshBtn" title="Refresh">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Summary bar -->
+  <div class="summary-bar" id="summaryBar" style="display:none"></div>
+
+  <!-- Filters -->
+  <div class="controls">
+    <input class="filter-input" type="text" id="pipelineFilter" placeholder="Filter by pipeline name..." />
+    <select class="filter-select" id="statusFilter">
+      <option value="">All statuses</option>
+      <option value="completed">Completed</option>
+      <option value="failed">Failed</option>
+      <option value="running">Running</option>
+      <option value="initializing">Initializing</option>
+      <option value="cached">Cached</option>
+    </select>
+    <select class="filter-select" id="pageSizeSelect">
+      <option value="10">10 per page</option>
+      <option value="25" selected>25 per page</option>
+      <option value="50">50 per page</option>
+    </select>
+  </div>
+
+  <!-- Main content -->
+  <div id="content">
+    <div class="state-container">
+      <div class="spinner"></div>
+      <div>Loading pipeline runs...</div>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination" id="pagination" style="display:none">
+    <span class="pagination-info" id="pageInfo"></span>
+    <div class="pagination-btns">
+      <button class="btn btn-sm" id="prevBtn" disabled>Previous</button>
+      <button class="btn btn-sm" id="nextBtn" disabled>Next</button>
+    </div>
+  </div>
+
+  <script type="module">
+    // =================================================================
+    // MCP App SDK — loaded from unpkg CDN (bundled with dependencies)
+    // =================================================================
+    import { App } from "https://unpkg.com/@modelcontextprotocol/ext-apps@1.0.1/app-with-deps";
+
+    const app = new App({ name: "ZenML Pipeline Runs Dashboard", version: "1.0.0" });
+
+    // =================================================================
+    // State
+    // =================================================================
+    let state = {
+      runs: [],           // current page from server
+      total: 0,
+      page: 1,
+      size: 25,
+      pipelineFilter: "",
+      statusFilter: "",
+      expandedRunId: null,
+      steps: {},          // runId -> steps array
+      stepsLoading: {},   // runId -> boolean
+      selectedStepId: null,
+      logs: {},           // stepId -> logs string
+      logsLoading: {},    // stepId -> boolean
+      loading: true,
+      error: null,
+
+    };
+
+    // =================================================================
+    // DOM References
+    // =================================================================
+    const $ = (id) => document.getElementById(id);
+    const content = $("content");
+    const paginationEl = $("pagination");
+    const pageInfoEl = $("pageInfo");
+    const prevBtn = $("prevBtn");
+    const nextBtn = $("nextBtn");
+    const refreshBtn = $("refreshBtn");
+    const pipelineFilter = $("pipelineFilter");
+    const statusFilter = $("statusFilter");
+    const pageSizeSelect = $("pageSizeSelect");
+    const summaryBar = $("summaryBar");
+    const dashboardTitle = $("dashboardTitle");
+
+    // =================================================================
+    // Helpers
+    // =================================================================
+    function formatDate(dateStr) {
+      if (!dateStr) return "—";
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return "—";
+      const now = new Date();
+      const diff = now - d;
+
+      // Less than 1 minute
+      if (diff < 60000) return "just now";
+      // Less than 1 hour
+      if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+      // Less than 24 hours
+      if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+      // Same year
+      if (d.getFullYear() === now.getFullYear()) {
+        return d.toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+      }
+      return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+    }
+
+    function formatDuration(startStr, endStr) {
+      if (!startStr) return "—";
+      const start = new Date(startStr);
+      if (isNaN(start.getTime())) return "—";
+      const end = endStr ? new Date(endStr) : new Date();
+      if (isNaN(end.getTime())) return "—";
+      const diff = Math.max(0, end - start);
+      const secs = Math.floor(diff / 1000);
+      if (secs < 60) return `${secs}s`;
+      const mins = Math.floor(secs / 60);
+      const remSecs = secs % 60;
+      if (mins < 60) return `${mins}m ${remSecs}s`;
+      const hrs = Math.floor(mins / 60);
+      const remMins = mins % 60;
+      return `${hrs}h ${remMins}m`;
+    }
+
+    function getStatusClass(status) {
+      const s = (status || "unknown").toLowerCase();
+      const map = {
+        completed: "completed", failed: "failed", running: "running",
+        initializing: "initializing", provisioning: "provisioning",
+        cached: "cached", stopped: "stopped", stopping: "stopping",
+        retried: "retried",
+      };
+      return map[s] || "unknown";
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement("div");
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function escapeAttr(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    /** Pick the first non-empty string from candidates. */
+    function pickStr(...candidates) {
+      for (const v of candidates) {
+        if (typeof v === "string" && v.trim()) return v;
+      }
+      return "";
+    }
+
+    function extractRunData(run) {
+      // Handle both hydrated and non-hydrated ZenML response shapes.
+      // ZenML uses body/metadata/resources tiers. With hydrate=True,
+      // related entities (pipeline, stack) live in run.resources.
+      const body = run?.body ?? {};
+      const metadata = run?.metadata ?? {};
+      const resources = run?.resources ?? {};
+
+      const id = pickStr(run?.id, body?.id);
+      const name = pickStr(run?.name, body?.name, id);
+      const status = pickStr(body?.status, run?.status, metadata?.status) || "unknown";
+
+      // Pipeline name: resources.pipeline.name is the hydrated location
+      const pipelineName = pickStr(
+        resources?.pipeline?.name,
+        run?.pipeline?.name,
+        body?.pipeline?.name,
+        metadata?.pipeline?.name,
+        run?.pipeline_name,
+        body?.pipeline_name,
+        metadata?.pipeline_name,
+      ) || "—";
+
+      const created = pickStr(body?.created, run?.created, metadata?.created);
+
+      // Duration: prefer metadata timestamps (hydrated), fall back to body, then root
+      const startTime = pickStr(metadata?.start_time, body?.start_time, run?.start_time);
+      const endTime = pickStr(metadata?.end_time, body?.end_time, run?.end_time);
+
+      const stackName = pickStr(
+        resources?.stack?.name,
+        metadata?.stack?.name,
+        body?.stack?.name,
+        run?.stack?.name,
+      );
+
+      return { name, status, pipelineName, created, startTime, endTime, stackName, id };
+    }
+
+    function extractStepData(step) {
+      const body = step.body || {};
+      const metadata = step.metadata || {};
+      const name = step.name || body.name || step.id;
+      const status = body.status || step.status || "unknown";
+      const startTime = metadata.start_time || body.start_time || "";
+      const endTime = metadata.end_time || body.end_time || "";
+      const id = step.id || "";
+
+      return { name, status, startTime, endTime, id };
+    }
+
+    // =================================================================
+    // Data Fetching
+    // =================================================================
+
+    /** Parse an MCP tool result, preferring structuredContent over text. */
+    function parseToolResult(result) {
+      if (!result) return null;
+      // Prefer structured content (new MCP structured output format)
+      const structured = result.structuredContent ?? result.structured_content;
+      if (structured != null) return structured;
+      // Fall back to text content blocks
+      if (result.content && Array.isArray(result.content)) {
+        for (const c of result.content) {
+          if (c.type === "text") {
+            try { return JSON.parse(c.text); } catch { return c.text; }
+          }
+        }
+      }
+      return result;
+    }
+
+    // Auto-detect: try callServerTool on first use, disable after repeated failures.
+    let serverToolCallsEnabled = true;
+    let consecutiveFailures = 0;
+    let lastToolErrorMessage = null;
+    const MAX_FAILURES = 3;
+
+    /** Check if a parsed result is a structured error envelope. */
+    function isErrorEnvelope(data) {
+      return data && typeof data === "object"
+        && data.error && typeof data.error === "object"
+        && typeof data.error.tool === "string"
+        && typeof data.error.message === "string"
+        && typeof data.error.type === "string";
+    }
+
+    /** Call a server tool with a timeout. Returns parsed result or null. */
+    async function callServerToolSafe(toolName, args, timeoutMs = 10000) {
+      if (!serverToolCallsEnabled) return null;
+      lastToolErrorMessage = null;
+      let timeoutId;
+      try {
+        const result = await Promise.race([
+          app.callServerTool({ name: toolName, arguments: args }),
+          new Promise((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error("timeout")), timeoutMs);
+          }),
+        ]);
+        consecutiveFailures = 0; // Reset on success
+        const parsed = parseToolResult(result);
+        if (isErrorEnvelope(parsed)) {
+          lastToolErrorMessage = parsed.error.message;
+          console.warn(`[ZenML] Tool ${toolName} error:`, parsed.error.message);
+          return null;
+        }
+        return parsed;
+      } catch {
+        lastToolErrorMessage = "The tool call failed or timed out.";
+        consecutiveFailures++;
+        if (consecutiveFailures >= MAX_FAILURES) {
+          serverToolCallsEnabled = false;
+          console.warn("[ZenML] callServerTool disabled after repeated failures");
+        } else {
+          console.warn(`[ZenML] callServerTool failed (${consecutiveFailures}/${MAX_FAILURES})`);
+        }
+        return null;
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
+
+    /** Fetch steps for a run via callServerTool. */
+    async function fetchSteps(runId) {
+      state.stepsLoading[runId] = true;
+      state.steps[runId] = undefined;
+      render();
+
+      const data = await callServerToolSafe("zenml_list_resources", {
+        resource_type: "run_step",
+        filters: { pipeline_run_id: runId },
+        size: 200,
+      });
+      state.stepsLoading[runId] = false;
+      if (data?.items) {
+        state.steps[runId] = data.items;
+      } else if (Array.isArray(data)) {
+        state.steps[runId] = data;
+      } else {
+        state.steps[runId] = [];
+      }
+      render();
+    }
+
+    /** Fetch logs for a step via callServerTool. */
+    async function fetchLogs(stepId) {
+      state.logsLoading[stepId] = true;
+      render();
+
+      const data = await callServerToolSafe("get_step_logs", { step_run_id: stepId });
+      state.logsLoading[stepId] = false;
+      if (typeof data === "string") {
+        state.logs[stepId] = data || "(empty)";
+      } else if (Array.isArray(data?.logs)) {
+        // ZenML returns [{message: "..."}, ...] — join into a single string
+        const text = data.logs.map(e => e.message ?? JSON.stringify(e)).join("\n");
+        state.logs[stepId] = text || "(empty)";
+      } else if (typeof data?.logs === "string") {
+        state.logs[stepId] = data.logs || "(empty)";
+      } else if (Array.isArray(data)) {
+        const text = data.map(e => e.message ?? JSON.stringify(e)).join("\n");
+        state.logs[stepId] = text || "(empty)";
+      } else {
+        state.logs[stepId] = "(no logs available)";
+      }
+      render();
+    }
+
+    /** Fetch a page of runs from the server with current filters. */
+    async function refreshRuns() {
+      state.error = null;
+      state.loading = true;
+      state.expandedRunId = null;
+      state.selectedStepId = null;
+      state.steps = {};
+      state.logs = {};
+      render();
+
+      const filters = {
+        sort_by: "desc:created",
+      };
+      if (state.pipelineFilter) filters.pipeline_name = state.pipelineFilter;
+      if (state.statusFilter) filters.status = state.statusFilter;
+      const params = {
+        resource_type: "pipeline_run",
+        filters,
+        page: state.page,
+        size: state.size,
+      };
+
+      const data = await callServerToolSafe("zenml_list_resources", params);
+
+      if (data == null) {
+        state.error = lastToolErrorMessage || (serverToolCallsEnabled
+          ? "Could not load pipeline runs. The request timed out or returned an error."
+          : "Could not load pipeline runs. Your MCP host may not support callServerTool yet.");
+        state.runs = [];
+        state.total = 0;
+        state.loading = false;
+        updateTitle();
+        render();
+        return;
+      }
+
+      if (data.items) {
+        state.runs = data.items;
+        state.total = data.total ?? data.items.length;
+      } else {
+        // Unexpected response shape — clear stale data rather than silently keeping it
+        state.runs = [];
+        state.total = 0;
+      }
+      state.loading = false;
+      updateTitle();
+      render();
+    }
+
+    // =================================================================
+    // Title
+    // =================================================================
+    function updateTitle() {
+      const parts = [];
+      if (state.pipelineFilter) parts.push(state.pipelineFilter);
+      if (state.statusFilter) parts.push(state.statusFilter);
+      dashboardTitle.textContent = parts.length
+        ? `Pipeline Runs: ${parts.join(" · ")}`
+        : "Recent Pipeline Runs";
+    }
+
+    // =================================================================
+    // Rendering
+    // =================================================================
+    function render() {
+      if (state.loading) {
+        content.innerHTML = `
+          <div class="state-container">
+            <div class="spinner"></div>
+            <div>Loading pipeline runs...</div>
+          </div>`;
+        paginationEl.style.display = "none";
+        summaryBar.style.display = "none";
+        return;
+      }
+
+      if (state.error) {
+        content.innerHTML = `
+          <div class="error-box">${escapeHtml(state.error)}</div>
+          <div class="state-container">
+            <div>Could not load pipeline runs.</div>
+            <button class="btn btn-primary retry-btn" style="margin-top:12px">Retry</button>
+          </div>`;
+        paginationEl.style.display = "none";
+        summaryBar.style.display = "none";
+        return;
+      }
+
+      if (state.runs.length === 0) {
+        content.innerHTML = `
+          <div class="state-container">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-neutral-300)" stroke-width="1.5">
+              <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+              <rect x="9" y="3" width="6" height="4" rx="2"/>
+            </svg>
+            <div style="margin-top:12px; font-weight:500">No pipeline runs found</div>
+            <div style="font-size:12px; margin-top:4px; color:var(--color-text-tertiary)">
+              ${state.pipelineFilter || state.statusFilter ? "Try adjusting your filters." : "Runs will appear here once pipelines are executed."}
+            </div>
+          </div>`;
+        paginationEl.style.display = "none";
+        renderSummary();
+        return;
+      }
+
+      // Render summary
+      renderSummary();
+
+      // Build table
+      let rows = "";
+      for (const run of state.runs) {
+        const rd = extractRunData(run);
+        const sc = getStatusClass(rd.status);
+        const isExpanded = state.expandedRunId === rd.id;
+
+        rows += `
+          <tr>
+            <td>
+              <button class="expand-btn ${isExpanded ? "expanded" : ""}" data-run-id="${escapeAttr(rd.id)}" title="Expand steps">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+            </td>
+            <td>
+              <div class="run-name">${escapeHtml(rd.name)}</div>
+              <div class="run-id">${escapeHtml(rd.id.substring(0, 8))}</div>
+            </td>
+            <td><span class="pipeline-name">${escapeHtml(rd.pipelineName)}</span></td>
+            <td>
+              <span class="badge status-${sc}">
+                <span class="status-dot dot-${sc}"></span>
+                ${escapeHtml(rd.status)}
+              </span>
+            </td>
+            <td class="timestamp">${formatDuration(rd.startTime, rd.endTime)}</td>
+            <td class="timestamp">${formatDate(rd.created)}</td>
+          </tr>`;
+
+        if (isExpanded) {
+          rows += renderStepsRow(rd.id);
+        }
+      }
+
+      content.innerHTML = `
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:40px"></th>
+                <th>Run</th>
+                <th>Pipeline</th>
+                <th>Status</th>
+                <th>Duration</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+
+      // Pagination
+      const totalPages = Math.ceil(state.total / state.size);
+      if (totalPages > 1) {
+        paginationEl.style.display = "flex";
+        const start = (state.page - 1) * state.size + 1;
+        const end = Math.min(state.page * state.size, state.total);
+        pageInfoEl.textContent = `${start}-${end} of ${state.total} runs (page ${state.page}/${totalPages})`;
+        prevBtn.disabled = state.page <= 1;
+        nextBtn.disabled = state.page >= totalPages;
+      } else {
+        paginationEl.style.display = state.total > 0 ? "flex" : "none";
+        pageInfoEl.textContent = `${state.total} run${state.total !== 1 ? "s" : ""} total`;
+        prevBtn.disabled = true;
+        nextBtn.disabled = true;
+      }
+
+      // Attach expand listeners
+      content.querySelectorAll(".expand-btn").forEach(btn => {
+        btn.addEventListener("click", () => toggleExpand(btn.dataset.runId));
+      });
+    }
+
+    function renderSummary() {
+      if (state.runs.length === 0 && !state.pipelineFilter && !state.statusFilter) {
+        summaryBar.style.display = "none";
+        return;
+      }
+
+      const statusCounts = {};
+      for (const run of state.runs) {
+        const rd = extractRunData(run);
+        const s = rd.status.toLowerCase();
+        statusCounts[s] = (statusCounts[s] || 0) + 1;
+      }
+
+      const items = Object.entries(statusCounts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([status, count]) => {
+          const sc = getStatusClass(status);
+          return `<div class="summary-item">
+            <span class="status-dot dot-${sc}"></span>
+            <span class="summary-count">${count}</span>
+            <span>${escapeHtml(status)}</span>
+          </div>`;
+        }).join("");
+
+      summaryBar.innerHTML = items;
+      summaryBar.style.display = items ? "flex" : "none";
+    }
+
+    function renderStepsRow(runId) {
+      const isLoading = state.stepsLoading[runId];
+      const steps = state.steps[runId];
+
+      if (isLoading || !steps) {
+        return `<tr class="steps-row"><td colspan="6">
+          <div class="steps-panel">
+            <div style="display:flex;align-items:center;gap:8px;color:var(--color-text-secondary)">
+              <div class="spinner" style="width:16px;height:16px;border-width:2px;margin:0"></div>
+              Loading steps...
+            </div>
+          </div>
+        </td></tr>`;
+      }
+
+      if (steps.length === 0) {
+        return `<tr class="steps-row"><td colspan="6">
+          <div class="steps-panel" style="color:var(--color-text-tertiary);font-style:italic">
+            No steps found for this run.
+          </div>
+        </td></tr>`;
+      }
+
+      let stepItems = "";
+      for (const step of steps) {
+        const sd = extractStepData(step);
+        const sc = getStatusClass(sd.status);
+        const isSel = state.selectedStepId === sd.id;
+
+        stepItems += `
+          <div class="step-item ${isSel ? "selected" : ""}" data-step-id="${escapeAttr(sd.id)}">
+            <span class="status-dot dot-${sc}"></span>
+            <span class="step-name">${escapeHtml(sd.name)}</span>
+            <span class="badge status-${sc}" style="font-size:11px">${escapeHtml(sd.status)}</span>
+            <span class="step-duration">${formatDuration(sd.startTime, sd.endTime)}</span>
+          </div>`;
+      }
+
+      // Logs panel
+      let logsPanel = "";
+      if (state.selectedStepId) {
+        const isLogsLoading = state.logsLoading[state.selectedStepId];
+        const logs = state.logs[state.selectedStepId];
+
+        if (isLogsLoading) {
+          logsPanel = `
+            <div class="logs-panel">
+              <div class="logs-header"><h4>Step Logs</h4></div>
+              <div class="logs-content" style="display:flex;align-items:center;gap:8px">
+                <div class="spinner" style="width:14px;height:14px;border-width:2px;margin:0"></div>
+                Loading logs...
+              </div>
+            </div>`;
+        } else if (logs !== undefined) {
+          logsPanel = `
+            <div class="logs-panel">
+              <div class="logs-header">
+                <h4>Step Logs</h4>
+                <button class="btn btn-sm copy-logs-btn" data-step-id="${escapeAttr(state.selectedStepId)}">Copy</button>
+              </div>
+              <div class="logs-content${logs === '(empty)' || logs === '(no logs available)' ? ' empty' : ''}">${escapeHtml(logs)}</div>
+            </div>`;
+        }
+      }
+
+      return `<tr class="steps-row"><td colspan="6">
+        <div class="steps-panel">
+          <div class="steps-header">
+            <h3>Steps (${steps.length})</h3>
+          </div>
+          <div class="step-list">${stepItems}</div>
+          ${logsPanel}
+        </div>
+      </td></tr>`;
+    }
+
+    // =================================================================
+    // Event Handlers
+    // =================================================================
+    function toggleExpand(runId) {
+      if (state.expandedRunId === runId) {
+        state.expandedRunId = null;
+        state.selectedStepId = null;
+        render();
+      } else {
+        state.expandedRunId = runId;
+        state.selectedStepId = null;
+        if (!state.steps[runId]) {
+          fetchSteps(runId);
+        } else {
+          render();
+        }
+      }
+    }
+
+    function selectStep(stepId) {
+      if (state.selectedStepId === stepId) {
+        state.selectedStepId = null;
+        render();
+      } else {
+        state.selectedStepId = stepId;
+        if (!state.logs[stepId] && !state.logsLoading[stepId]) {
+          fetchLogs(stepId);
+        } else {
+          render();
+        }
+      }
+    }
+
+    // Delegation for step clicks, copy button, and retry
+    document.addEventListener("click", (e) => {
+      const target = e.target instanceof Element ? e.target : null;
+      if (!target) return;
+      const retryBtn = target.closest(".retry-btn");
+      if (retryBtn) {
+        serverToolCallsEnabled = true;
+        consecutiveFailures = 0;
+        refreshRuns();
+        return;
+      }
+      const stepItem = target.closest(".step-item");
+      if (stepItem) {
+        selectStep(stepItem.dataset.stepId);
+        return;
+      }
+      const copyBtn = target.closest(".copy-logs-btn");
+      if (copyBtn) {
+        const stepId = copyBtn.dataset.stepId;
+        if (stepId && state.logs[stepId]) {
+          navigator.clipboard.writeText(state.logs[stepId]).catch(() => {});
+        }
+      }
+    });
+
+    // Filter handlers — server-side pagination
+    let filterTimeout;
+    pipelineFilter.addEventListener("input", () => {
+      clearTimeout(filterTimeout);
+      filterTimeout = setTimeout(() => {
+        state.pipelineFilter = pipelineFilter.value.trim();
+        state.page = 1;
+        refreshRuns();
+      }, 400);
+    });
+
+    statusFilter.addEventListener("change", () => {
+      state.statusFilter = statusFilter.value;
+      state.page = 1;
+      refreshRuns();
+    });
+
+    pageSizeSelect.addEventListener("change", () => {
+      state.size = parseInt(pageSizeSelect.value, 10);
+      state.page = 1;
+      refreshRuns();
+    });
+
+    prevBtn.addEventListener("click", () => {
+      if (state.page > 1) {
+        state.page--;
+        refreshRuns();
+      }
+    });
+
+    nextBtn.addEventListener("click", () => {
+      const totalPages = Math.ceil(state.total / state.size);
+      if (state.page < totalPages) {
+        state.page++;
+        refreshRuns();
+      }
+    });
+
+    refreshBtn.addEventListener("click", () => refreshRuns());
+
+    // =================================================================
+    // MCP App Lifecycle
+    // =================================================================
+    let hasFetched = false;
+
+    app.ontoolresult = () => {
+      // The tool result is intentionally minimal (no data) to prevent Claude
+      // from re-rendering runs as text below the app. Fetch data via callServerTool.
+      hasFetched = true;
+      refreshRuns();
+    };
+
+    app.onerror = (err) => {
+      const msg = err?.message || "An unexpected error occurred.";
+      // Suppress noisy SDK messages that aren't real errors
+      if (msg.includes("unknown message ID")) {
+        console.warn("[ZenML] Ignoring stale message:", msg);
+        return;
+      }
+      state.error = msg.includes("Canceled")
+        ? "Connection was interrupted. Click Retry to reconnect."
+        : msg;
+      state.loading = false;
+      render();
+    };
+
+    // Apply host theme if provided
+    app.onhostcontextchanged = (ctx) => {
+      if (ctx?.theme === "dark") {
+        document.documentElement.style.setProperty("--color-bg", "#0a0a0a");
+        document.documentElement.style.setProperty("--color-surface", "#171717");
+        document.documentElement.style.setProperty("--color-text", "#fafafa");
+        document.documentElement.style.setProperty("--color-text-secondary", "#a3a3a3");
+        document.documentElement.style.setProperty("--color-text-tertiary", "#737373");
+        document.documentElement.style.setProperty("--color-border", "#262626");
+        document.documentElement.style.setProperty("--color-border-light", "#1a1a1a");
+        document.documentElement.style.setProperty("--color-primary-50", "#1e1b4b");
+        document.documentElement.style.setProperty("--color-primary-100", "#312e81");
+        document.documentElement.style.setProperty("--color-primary-700", "#c7d2fe");
+      } else if (ctx?.theme === "light") {
+        document.documentElement.style.setProperty("--color-bg", "#ffffff");
+        document.documentElement.style.setProperty("--color-surface", "#fafafa");
+        document.documentElement.style.setProperty("--color-text", "#171717");
+        document.documentElement.style.setProperty("--color-text-secondary", "#525252");
+        document.documentElement.style.setProperty("--color-text-tertiary", "#737373");
+        document.documentElement.style.setProperty("--color-border", "#e5e5e5");
+        document.documentElement.style.setProperty("--color-border-light", "#f5f5f5");
+      }
+    };
+
+    // Connect and start (must await to complete handshake)
+    await app.connect();
+
+    // Kick off initial fetch (in case client opens the resource directly
+    // without going through the open_pipeline_run_dashboard tool).
+    // The guard prevents a redundant fetch if ontoolresult already fired.
+    if (!hasFetched) {
+      hasFetched = true;
+      refreshRuns();
+    }
+
+    // Fallback: if data hasn't loaded within 15s, show a helpful message
+    setTimeout(() => {
+      if (state.loading) {
+        state.loading = false;
+        state.error = "Could not load pipeline run data. The server tool call may have timed out.";
+        render();
+      }
+    }, 15000);
+  </script>
+</body>
+</html>
