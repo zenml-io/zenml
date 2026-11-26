@@ -26,7 +26,6 @@ from typing import Any, cast
 
 from mcp.types import CallToolResult
 
-from zenml_mcp import common
 from zenml_mcp.call import Sensitive, ZenMLCall
 from zenml_mcp.client import (
     UNREADABLE,

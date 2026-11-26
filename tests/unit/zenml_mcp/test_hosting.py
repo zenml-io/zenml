@@ -1008,7 +1008,7 @@ class _FailsOnceWaitedOn(ZenMLAuth):
     ],
     ids=["two_refused", "session_unavailable"],
 )
-def test_one_callers_failed_read_is_never_anothers_answer(
+def test_one_callers_failed_read_is_never_the_others_answer(
     failures: list[Exception],
 ) -> None:
     """Server info is the same for every caller, but a failure is a caller's own.
