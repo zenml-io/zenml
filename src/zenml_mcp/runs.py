@@ -15,12 +15,13 @@
 
 from __future__ import annotations
 
+import logging
 import math
 import statistics
 from collections import Counter
 from typing import Any
 
-from zenml_mcp.client import ZenMLRestClient, ZenMLRestError
+from zenml_mcp.client import ZenMLRestClient
 from zenml_mcp.common import (
     body_of,
     by_name_or_id,
@@ -35,6 +36,8 @@ from zenml_mcp.common import (
     server_info,
 )
 from zenml_mcp.credentials import redact
+
+logger = logging.getLogger(__name__)
 
 TRACEBACK_MAX_LINES = 40
 METADATA_MAX_KEYS = 40
@@ -172,9 +175,10 @@ async def started_run(
 ) -> dict[str, Any]:
     """A run ZenML just started, with its dashboard link when it can be read.
 
-    The run exists once ZenML answered the start, so a failed link lookup
-    leaves the link out rather than failing a call a client might retry,
-    which would start a second run.
+    The run exists once ZenML answered the start, so a link lookup that
+    fails in any way leaves the link out rather than failing a call a
+    client might retry, which would start a second run. Only cancellation
+    passes through.
 
     Args:
         client: The client of the server the run is on.
@@ -185,7 +189,11 @@ async def started_run(
     """
     try:
         url: str | None = await run_url(client, run)
-    except ZenMLRestError:
+    except Exception as error:
+        logger.warning(
+            "Reading the started run's dashboard link failed (%s).",
+            type(error).__name__,
+        )
         url = None
     return run_summary(run, url)
 

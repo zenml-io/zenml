@@ -422,10 +422,18 @@ def test_a_platform_event_trigger_is_switched_off_with_its_stored_source() -> (
 
 
 @pytest.mark.parametrize(
+    "info",
+    [
+        lambda: _json({"detail": "down"}, 503),
+        lambda: httpx.Response(200, text="<html>proxy sign-in</html>"),
+    ],
+    ids=["unavailable", "not_json"],
+)
+@pytest.mark.parametrize(
     "tool", ["zenml_run_snapshot", "zenml_replay_pipeline_run"]
 )
 def test_a_started_run_is_returned_when_its_link_cannot_be_read(
-    tool: str,
+    tool: str, info: Callable[[], httpx.Response]
 ) -> None:
     """The run exists once ZenML started it; only its link is left out.
 
@@ -433,6 +441,7 @@ def test_a_started_run_is_returned_when_its_link_cannot_be_read(
 
     Args:
         tool: A tool that starts a run.
+        info: Builds ZenML's answer to the server info read for the link.
     """
     run = WRITE_GOLDEN["entities"]["pipeline_run"]
     snapshot = str(uuid.uuid4())
@@ -443,7 +452,7 @@ def test_a_started_run_is_returned_when_its_link_cannot_be_read(
             ),
             f"/api/v1/runs/{run['id']}": lambda _: _json(run),
             f"/api/v1/runs/{run['id']}/replay": lambda _: _json(run),
-            "/api/v1/info": lambda _: _json({"detail": "down"}, 503),
+            "/api/v1/info": lambda _: info(),
         }
     )
     arguments = (
