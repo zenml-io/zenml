@@ -448,6 +448,7 @@ class ZenMLRestClient:
         *,
         http: httpx.AsyncClient,
         cache_key: str,
+        project: str | None = None,
     ) -> None:
         """Call `server_url` as the caller `auth` signs in.
 
@@ -456,11 +457,15 @@ class ZenMLRestClient:
             auth: Signs each request in as the caller.
             http: The client that sends the requests.
             cache_key: Names the caller and the server, for per-user caches.
+            project: The project, by name or id, of a call that names none,
+                such as the CLI's active project. None uses the caller's
+                default project on the server.
         """
         self.server_url = server_url.rstrip("/")
         self.auth = auth
         self.http = http
         self.cache_key = cache_key
+        self.project = project
 
     def url(self, path: str) -> str:
         """The URL of an API path.

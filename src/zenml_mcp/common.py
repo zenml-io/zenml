@@ -256,8 +256,9 @@ async def project(client: ZenMLRestClient, explicit: str | None) -> str:
     """Resolve the project for a project-scoped call.
 
     ZenML Pro rejects project-scoped lists without a project, and OSS silently
-    uses `default`, so always send one: the tool argument, else the caller's
-    default project, else their only project, else `default`.
+    uses `default`, so always send one: the tool argument, else the client's
+    project, else the caller's default project, else their only project,
+    else `default`.
 
     Args:
         client: The caller's client.
@@ -268,6 +269,8 @@ async def project(client: ZenMLRestClient, explicit: str | None) -> str:
     """
     if explicit and explicit.strip():
         return explicit.strip()
+    if client.project:
+        return client.project
 
     async def load() -> tuple[str, float]:
         user = await client.get(

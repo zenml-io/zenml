@@ -450,17 +450,30 @@ def test_a_renewal_cancelled_by_its_task_group_waits_without_spinning(
     assert len(waits) <= 2
 
 
-def _served(monkeypatch: pytest.MonkeyPatch, *arguments: str) -> Any:
+def _served(
+    monkeypatch: pytest.MonkeyPatch,
+    *arguments: str,
+    active: Optional[str] = None,
+) -> Any:
     """The `ZenMLCall` that `zenml mcp` serves with, without stdio or a server.
 
     Args:
-        monkeypatch: Replaces the store, the start-up check and the server.
+        monkeypatch: Replaces the client, the store, the start-up check and
+            the server.
         *arguments: The command's options.
+        active: The project `zenml project set` chose, if any.
 
     Returns:
         The call the server was built with.
     """
     built: List[Any] = []
+
+    class Configured:
+        @property
+        def active_project(self) -> Any:
+            if active is None:
+                raise RuntimeError("No active project is configured.")
+            return SimpleNamespace(id=active)
 
     class Served:
         async def run_stdio_async(self) -> None:
@@ -476,6 +489,7 @@ def _served(monkeypatch: pytest.MonkeyPatch, *arguments: str) -> Any:
     store = SimpleNamespace(
         url="http://127.0.0.1:8237", session=SimpleNamespace(verify=True)
     )
+    monkeypatch.setattr(mcp_cli, "Client", Configured)
     monkeypatch.setattr(mcp_cli, "_connected_store", lambda delay: store)
     monkeypatch.setattr("zenml_mcp.server.check_server", checked)
     monkeypatch.setattr("zenml_mcp.server.build_server", build)
@@ -490,3 +504,12 @@ def test_read_only_reaches_the_call_the_server_runs_with(
     """`--read-only` makes every tool call read-only, not only the listing."""
     assert _served(monkeypatch, "--read-only").read_only is True
     assert _served(monkeypatch).read_only is False
+
+
+def test_the_active_project_scopes_the_calls_that_name_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`zenml project set` picks the project, else the server's default."""
+    chosen = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+    assert _served(monkeypatch, active=chosen).client.project == chosen
+    assert _served(monkeypatch).client.project is None

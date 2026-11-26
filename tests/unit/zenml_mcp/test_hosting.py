@@ -74,6 +74,7 @@ def _run(
     *,
     cache_key: str = "caller",
     token: str = "token-sample",
+    project: Optional[str] = None,
     **decisions: Any,
 ) -> tuple[Any, list[httpx.Request]]:
     """Run a tool as a host does and return its answer and the requests sent.
@@ -84,6 +85,7 @@ def _run(
         answer: Answers each request; by default ZenML is unreachable.
         cache_key: The caller's cache key.
         token: The caller's token.
+        project: The client's project for calls that name none.
         **decisions: The `ZenMLCall`'s host decisions.
 
     Returns:
@@ -102,7 +104,11 @@ def _run(
         transport = httpx.MockTransport(respond)
         async with httpx.AsyncClient(transport=transport) as http:
             client = ZenMLRestClient(
-                SERVER_URL, BearerToken(token), http=http, cache_key=cache_key
+                SERVER_URL,
+                BearerToken(token),
+                http=http,
+                cache_key=cache_key,
+                project=project,
             )
             call = ZenMLCall(client, **decisions)
             return await _spec(name).run(call, arguments)
@@ -343,6 +349,22 @@ def test_callers_never_share_a_cached_default_project() -> None:
         projects.append(parse_qs(urlsplit(str(listed.url)).query)["project"])
     alice, bob = [_PROJECTS["alice"]], [_PROJECTS["bob"]]
     assert projects == [alice, bob, alice]
+
+
+def test_a_client_project_scopes_the_calls_that_name_none() -> None:
+    """The project `zenml project set` chose wins over the server's default."""
+    _, sent = _run(
+        "zenml_list_resources",
+        {"resource_type": "pipeline"},
+        _default_project_by_token,
+        cache_key="key-chosen",
+        token="alice",
+        project=_PROJECTS["bob"],
+    )
+    listed = next(r for r in sent if r.url.path == "/api/v1/pipelines")
+    query = parse_qs(urlsplit(str(listed.url)).query)
+    assert query["project"] == [_PROJECTS["bob"]]
+    assert all(r.url.path != "/api/v1/current-user" for r in sent)
 
 
 def test_feedback_drafts_a_zenml_issue_and_cuts_a_long_one() -> None:

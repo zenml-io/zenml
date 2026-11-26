@@ -74,7 +74,7 @@ def mcp(read_only: bool) -> None:
             handler.setStream(sys.stderr)
     store = _connected_store(START_RETRY_DELAY_S)
     try:
-        asyncio.run(_serve(store, read_only))
+        asyncio.run(_serve(store, read_only, _active_project()))
     except ZenMLRestError as error:
         cli_utils.error(error.message)
 
@@ -199,6 +199,19 @@ def _connected_store(retry_delay: float) -> RestZenStore:
     raise RuntimeError("Unreachable: the second attempt always returns.")
 
 
+def _active_project() -> Optional[str]:
+    """The project `zenml project set` chose, for calls that name none.
+
+    Returns:
+        Its ID, or None when none is set, to use the caller's default
+        project on the server.
+    """
+    try:
+        return str(Client().active_project.id)
+    except RuntimeError:
+        return None
+
+
 def _verify(store: RestZenStore) -> Union[bool, ssl.SSLContext]:
     """The TLS check the REST store's requests make, for httpx.
 
@@ -226,12 +239,16 @@ def _verify(store: RestZenStore) -> Union[bool, ssl.SSLContext]:
     return bool(verify)
 
 
-async def _serve(store: RestZenStore, read_only: bool) -> None:
+async def _serve(
+    store: RestZenStore, read_only: bool, project: Optional[str]
+) -> None:
     """Serve over stdio until the client disconnects.
 
     Args:
         store: The REST store, with the stored login.
         read_only: Offer only the tools that change nothing.
+        project: The project of a call that names none, or None for the
+            caller's default project on the server.
     """
     import httpx
 
@@ -243,7 +260,11 @@ async def _serve(store: RestZenStore, read_only: bool) -> None:
         verify=_verify(store), timeout=httpx.Timeout(30.0, connect=10.0)
     ) as http:
         client = ZenMLRestClient(
-            store.url, _login(store), http=http, cache_key=store.url
+            store.url,
+            _login(store),
+            http=http,
+            cache_key=store.url,
+            project=project,
         )
         await check_server(client)
         # The CLI points `sys.stdout` at stderr to keep logs out of piped
