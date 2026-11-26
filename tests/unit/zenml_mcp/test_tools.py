@@ -387,6 +387,40 @@ def test_an_artifact_version_that_runs_use_keeps_its_metadata() -> None:
     assert "DELETE" not in {r["method"] for r in zenml.seen}
 
 
+def test_a_platform_event_trigger_is_switched_off_with_its_stored_source() -> (
+    None
+):
+    """An update that names no source keeps the one ZenML holds."""
+    trigger = WRITE_GOLDEN["entities"]["platform_event_trigger"]
+    pipeline = WRITE_GOLDEN["entities"]["pipeline"]
+    source = trigger["body"]["source_entity"]
+    assert (source["type"], source["id"]) == ("pipeline", pipeline["id"])
+    zenml = _ZenML(
+        {
+            f"/api/v1/triggers/{trigger['id']}": lambda _: _json(trigger),
+            f"/api/v1/pipelines/{pipeline['id']}": lambda _: _json(pipeline),
+        }
+    )
+
+    async def run() -> Any:
+        async with connected(zenml) as mcp:
+            return await mcp.call_tool(
+                "zenml_update_resource",
+                {
+                    "resource_type": "platform_event_trigger",
+                    "resource_id": trigger["id"],
+                    "project_id": WRITE_GOLDEN["project"],
+                    "payload": {"active": False},
+                },
+            )
+
+    result = asyncio.run(run())
+    assert not result.is_error, result.structured_content
+    (put,) = [r for r in zenml.seen if r["method"] == "PUT"]
+    assert put["body"]["source_entity"] == source
+    assert put["body"]["active"] is False
+
+
 def test_starting_a_run_refuses_credentials_and_a_missing_target() -> None:
     """Credentials, no target, internal fields and two targets at once."""
     value = _never_echoed()

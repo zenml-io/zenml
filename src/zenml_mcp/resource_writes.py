@@ -654,11 +654,11 @@ async def _update_schedule_trigger(
 
 
 def _event_source(payload: Mapping[str, Any], item: Any) -> tuple[str, str]:
-    """The source upstream checks before it updates a platform event trigger.
+    """The source a platform event trigger has after an update.
 
-    Upstream looks in the trigger for `source_type` and `source_id`. ZenML
-    0.97.0 returns `source_entity` instead, so an update that does not name
-    both is refused, as it is upstream.
+    What the payload names, else the trigger's `source_entity`. Upstream
+    looked for flat `source_type` and `source_id` keys, which ZenML doesn't
+    return, and so refused any update that didn't name both.
 
     Args:
         payload: The update's payload.
@@ -671,12 +671,9 @@ def _event_source(payload: Mapping[str, Any], item: Any) -> tuple[str, str]:
         ZenMLBadRequest: When the source is not known, or its type is not a
             platform event source.
     """
-    source_type = payload.get("source_type") or find_nested_value(
-        item, "source_type"
-    )
-    source_id = payload.get("source_id") or find_nested_value(
-        item, "source_id"
-    )
+    stored = field_of(item, "source_entity") or {}
+    source_type = payload.get("source_type") or stored.get("type")
+    source_id = payload.get("source_id") or stored.get("id")
     if source_type is None or source_id is None:
         raise ZenMLBadRequest(
             "Unable to validate the effective platform-event source"
@@ -691,16 +688,16 @@ async def _update_platform_event_trigger(
 ) -> dict[str, Any]:
     payload = request.payload
     trigger_kind = request.spec.rest.list_defaults
-    current = field_of(trigger, "source_entity") or {}
     return {
         "name": payload.get("name") or field_of(trigger, "name"),
         "type": trigger_kind["type"],
         "flavor": trigger_kind["flavor"],
         "active": _or_existing(payload, trigger, "active"),
         "concurrency": _or_existing(payload, trigger, "concurrency"),
+        # Checked before the write, in `_send`.
         "source_entity": {
-            "type": payload.get("source_type") or current.get("type"),
-            "id": payload.get("source_id") or current.get("id"),
+            "type": payload["source_type"],
+            "id": payload["source_id"],
         },
         "target_events": payload.get("target_events")
         or field_of(trigger, "target_events"),
@@ -1094,6 +1091,15 @@ async def _send(request: WriteRequest, operation: str) -> Any:
             request.payload, existing["item"]
         )
         await request.checked(_EVENT_SOURCES[source_type], source_id)
+        # The update sends the source checked here, not one read again later.
+        request = replace(
+            request,
+            payload={
+                **request.payload,
+                "source_type": source_type,
+                "source_id": source_id,
+            },
+        )
     if (resource_type, operation) == ("project", "delete") and (
         target == await request.default_project()
     ):
