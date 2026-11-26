@@ -21,6 +21,7 @@ refuses before starting, and starts the run as the calling user.
 from __future__ import annotations
 
 import re
+from collections.abc import Callable, Mapping
 from typing import Any, cast
 
 from mcp.types import CallToolResult
@@ -74,8 +75,8 @@ _TEMPLATE_DEPRECATION = (
 # defaults, and ZenML applies the ones that are not null: a named step that
 # sets no heartbeat threshold gets 30, a `retry` given only `max_retries` gets
 # a delay of 0. Sent here too, so a run is configured as one started through
-# mcp-zenml is. These are ZenML 0.97.0's defaults; the recorded fixture holds
-# what the SDK sends and its check shows when they change.
+# mcp-zenml is. These are ZenML 0.97.0's defaults; `test_contract.py` checks
+# them against the models in zenml core.
 _SDK_STEP_DEFAULTS = {"heartbeat_healthy_threshold": 30, "outputs": {}}
 _SDK_OBJECT_DEFAULTS: dict[str, dict[str, Any]] = {
     "retry": {"max_retries": 1, "delay": 0, "backoff": 0},
@@ -173,25 +174,81 @@ _LOCAL_COMPONENT = (
 )
 
 
-# ZenML 0.97.0's own flavors whose configuration is always local (`is_local`).
-_LOCAL_FLAVORS = frozenset(
-    {
-        "zenml.orchestrators.local.local_orchestrator.LocalOrchestratorFlavor",
-        "zenml.orchestrators.local_docker.local_docker_orchestrator."
-        "LocalDockerOrchestratorFlavor",
-        "zenml.artifact_stores.local_artifact_store.LocalArtifactStoreFlavor",
-        "zenml.deployers.local.local_deployer.LocalDeployerFlavor",
-        "zenml.deployers.docker.docker_deployer.DockerDeployerFlavor",
-        "zenml.sandboxes.docker_sandbox.DockerSandboxFlavor",
-        "zenml.sandboxes.local_sandbox.LocalSandboxFlavor",
-    }
+_LOCAL_REGISTRY = re.compile(r"localhost:[0-9]{4,5}")
+_LOCAL_KUBERNETES_CONTEXTS = (
+    "k3d-",
+    "kind-",
+    "minikube",
+    "docker-desktop",
+    "colima",
+    "rancher-desktop",
 )
 
 
-_LOCAL_REGISTRY = re.compile(r"localhost:[0-9]{4,5}")
+def _always(configuration: Mapping[str, Any]) -> bool:
+    return True
 
 
-def _is_local(flavor: dict[str, Any], configuration: dict[str, Any]) -> bool:
+def _set_to(field: str, default: bool) -> Callable[[Mapping[str, Any]], bool]:
+    return lambda configuration: bool(configuration.get(field, default))
+
+
+def _local_kubernetes_deployer(configuration: Mapping[str, Any]) -> bool:
+    context = str(configuration.get("kubernetes_context") or "").lower()
+    return bool(configuration.get("local")) or any(
+        marker in context for marker in _LOCAL_KUBERNETES_CONTEXTS
+    )
+
+
+def _local_feature_store(configuration: Mapping[str, Any]) -> bool:
+    host = configuration.get("online_host", "localhost")
+    return host in ("localhost", "127.0.0.1")
+
+
+def _local_data_context(configuration: Mapping[str, Any]) -> bool:
+    return configuration.get("context_root_dir") is not None
+
+
+def _local_mlflow_tracking(configuration: Mapping[str, Any]) -> bool:
+    uri = str(configuration.get("tracking_uri") or "")
+    return not (uri.startswith(("http://", "https://")) or uri == "databricks")
+
+
+_FLAVORS = "zenml.integrations"
+# ZenML 0.97.0's own flavors whose components can be local (`is_local`), by
+# the flavor's source, with how a component's configuration decides it, its
+# fields' defaults included. Container registries are decided by type below.
+# `test_contract.py` checks the table against the flavors in zenml core.
+_LOCAL_WHEN: Mapping[str, Callable[[Mapping[str, Any]], bool]] = {
+    "zenml.orchestrators.local.local_orchestrator.LocalOrchestratorFlavor": _always,
+    "zenml.orchestrators.local_docker.local_docker_orchestrator."
+    "LocalDockerOrchestratorFlavor": _always,
+    "zenml.artifact_stores.local_artifact_store.LocalArtifactStoreFlavor": _always,
+    "zenml.deployers.local.local_deployer.LocalDeployerFlavor": _always,
+    "zenml.deployers.docker.docker_deployer.DockerDeployerFlavor": _always,
+    "zenml.sandboxes.docker_sandbox.DockerSandboxFlavor": _always,
+    "zenml.sandboxes.local_sandbox.LocalSandboxFlavor": _always,
+    f"{_FLAVORS}.airflow.flavors.airflow_orchestrator_flavor."
+    "AirflowOrchestratorFlavor": _set_to("local", True),
+    f"{_FLAVORS}.kubernetes.flavors.kubernetes_orchestrator_flavor."
+    "KubernetesOrchestratorFlavor": _set_to("local", False),
+    f"{_FLAVORS}.kubernetes.flavors.kubernetes_deployer_flavor."
+    "KubernetesDeployerFlavor": _local_kubernetes_deployer,
+    f"{_FLAVORS}.feast.flavors.feast_feature_store_flavor."
+    "FeastFeatureStoreFlavor": _local_feature_store,
+    f"{_FLAVORS}.great_expectations.flavors."
+    "great_expectations_data_validator_flavor."
+    "GreatExpectationsDataValidatorFlavor": _local_data_context,
+    f"{_FLAVORS}.mlflow.flavors.mlflow_model_deployer_flavor."
+    "MLFlowModelDeployerFlavor": _always,
+    f"{_FLAVORS}.mlflow.flavors.mlflow_experiment_tracker_flavor."
+    "MLFlowExperimentTrackerFlavor": _local_mlflow_tracking,
+}
+
+
+def _is_local(
+    flavor: Mapping[str, Any], configuration: Mapping[str, Any]
+) -> bool:
     """A component's `is_local`, as the SDK decides it.
 
     The SDK reads it from the flavor's class installed next to it. This
@@ -204,13 +261,12 @@ def _is_local(flavor: dict[str, Any], configuration: dict[str, Any]) -> bool:
     Returns:
         Whether the component is local.
     """
-    source = body_of(flavor).get("source") or ""
-    if source in _LOCAL_FLAVORS:
-        return True
-    if source.startswith("zenml.container_registries."):
+    body = body_of(flavor)
+    if body.get("type") == "container_registry":
         uri = str(configuration.get("uri") or "").rstrip("/")
         return bool(_LOCAL_REGISTRY.fullmatch(uri))
-    return False
+    local_when = _LOCAL_WHEN.get(body.get("source") or "")
+    return local_when is not None and local_when(configuration)
 
 
 async def _refuse_unrunnable_stack(
@@ -226,16 +282,19 @@ async def _refuse_unrunnable_stack(
         stack: The stack to check.
 
     Raises:
-        RuntimeError: Where the SDK's assertions fail: a type with several
-            components, or a flavor not found exactly once.
-        ZenMLBadRequest: If a component has a custom flavor or is local.
+        ZenMLBadRequest: If a component has a custom flavor or is local, or
+            where the SDK's assertions fail: a type with several components,
+            or a flavor not found exactly once.
     """
     stack = await _hydrated(client, "/stacks", stack)
     for components in (meta_of(stack).get("components") or {}).values():
-        # The SDK asserts one component per type and one flavor per component,
-        # and an assertion that fails ends the whole start.
+        # The SDK asserts one component per type and one flavor per component;
+        # where its assertion would fail, the stack is refused as invalid.
         if len(components) != 1:
-            raise RuntimeError("a stack with several components of one type")
+            raise ZenMLBadRequest(
+                "Unable to run pipeline from the server on a stack with "
+                "several components of one type."
+            )
         for component in components:
             flavors = await client.get(
                 "/flavors",
@@ -249,8 +308,9 @@ async def _refuse_unrunnable_stack(
             )
             found = flavors.get("items") or []
             if len(found) != 1:
-                raise RuntimeError(
-                    "a component whose flavor is not found once"
+                raise ZenMLBadRequest(
+                    "Unable to run pipeline from the server on a stack with "
+                    "a component whose flavor is not found exactly once."
                 )
             if body_of(found[0]).get("is_custom"):
                 raise ZenMLBadRequest(_CUSTOM_FLAVOR)

@@ -162,6 +162,8 @@ _ENUM_FILTERS: Mapping[tuple[str, str], tuple[str, ...]] = MappingProxyType(
             "cancelled",
             "rejected",
             "released",
+            "expired",
+            "no_matching_pool",
         ),
         ("run_wait_condition", "status"): ("pending", "resolved"),
         ("model_version", "stage"): (*MODEL_STAGES, "latest"),

@@ -128,6 +128,22 @@ def test_starting_a_run_sends_what_the_sdk_sends() -> None:
     assert not differing, differing[0]
 
 
+def test_a_stack_the_sdk_would_assert_on_is_refused_as_invalid() -> None:
+    """D26: the recorded start, answered as an invalid request."""
+    recorded = golden("trigger_pipeline.json")
+    cases = [
+        {
+            **{k: v for k, v in case.items() if k != "declared"},
+            "error": "invalid_request",
+        }
+        for case in recorded["cases"]
+        if case.get("declared", "").startswith("D26:")
+    ]
+    assert len(cases) == 1
+    differing = asyncio.run(replay({**recorded, "cases": cases}))
+    assert not differing, differing[0]
+
+
 def test_generic_writes_send_what_the_standalone_server_sends() -> None:
     """Each read, the one write with its body, and the result.
 
@@ -217,6 +233,7 @@ def test_the_resource_catalog_matches_the_standalone_server(
                 if (
                     entry.get("read_only", False) != read_only
                     or "mode" in entry
+                    or "declared" in entry
                 ):
                     continue
                 arguments = entry["arguments"]
