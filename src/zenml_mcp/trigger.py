@@ -202,7 +202,8 @@ def _flag(value: Any) -> bool:
         takes the component as local and refuses it.
     """
     if isinstance(value, str):
-        return value.strip().lower() not in _FALSE_TEXT
+        # Not stripped: pydantic refuses padded text, so it fails closed.
+        return value.lower() not in _FALSE_TEXT
     return bool(value)
 
 

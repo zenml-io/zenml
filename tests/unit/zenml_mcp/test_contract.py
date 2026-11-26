@@ -27,7 +27,7 @@ import pytest
 
 pytest.importorskip("mcp")
 
-from pydantic import BaseModel  # noqa: E402
+from pydantic import BaseModel, ValidationError  # noqa: E402
 
 from zenml import enums  # noqa: E402
 from zenml.config.cache_policy import CachePolicy  # noqa: E402
@@ -38,6 +38,9 @@ from zenml.config.step_configurations import (  # noqa: E402
 )
 from zenml.constants import API, VERSION_1  # noqa: E402
 from zenml.enums import StackComponentType  # noqa: E402
+from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (  # noqa: E402
+    KubernetesOrchestratorFlavor,
+)
 from zenml.integrations.registry import integration_registry  # noqa: E402
 from zenml.model.model import Model  # noqa: E402
 from zenml.models.v2.core.triggers import (  # noqa: E402
@@ -318,3 +321,18 @@ def test_a_trigger_update_that_names_no_state_keeps_the_stored_one(
         False,
         "submit",
     )
+
+
+@pytest.mark.parametrize("text", [" off ", "FALSE ", "maybe"])
+def test_a_stored_flag_zenml_cant_read_counts_as_local(text: str) -> None:
+    """Text that ZenML's config refuses fails closed: the stack is local.
+
+    Args:
+        text: A stored `local` that pydantic doesn't read as a boolean.
+    """
+    flavor = KubernetesOrchestratorFlavor()
+    with pytest.raises(ValidationError):
+        flavor.config_class(local=text)
+    source = f"{type(flavor).__module__}.{type(flavor).__qualname__}"
+    body = {"source": source, "type": flavor.type.value}
+    assert trigger._is_local({"body": body}, {"local": text})
