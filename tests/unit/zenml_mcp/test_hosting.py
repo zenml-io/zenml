@@ -25,6 +25,7 @@ import json
 import logging
 import shutil
 import subprocess
+import uuid
 from collections.abc import Sequence
 from typing import Any, Optional
 from urllib.parse import parse_qs, urlsplit
@@ -46,6 +47,7 @@ from zenml_mcp.client import (  # noqa: E402
     ZenMLRestClient,
     ZenMLUnavailable,
 )
+from zenml_mcp.common import server_info  # noqa: E402
 from zenml_mcp.registry import ToolSpec
 from zenml_mcp.resource_catalog import RESOURCE_REGISTRY  # noqa: E402
 from zenml_mcp.tools import TOOL_SPECS  # noqa: E402
@@ -886,3 +888,47 @@ def test_a_pipeline_without_runs_is_described_with_none() -> None:
     assert described["runs"] == []
     assert described["latest_run"] is None
     assert described["step_health_runs"] == 0
+
+
+class _RefusedOnceWaitedOn(ZenMLAuth):
+    """A caller whose sign-in fails once another caller waits on its read."""
+
+    def __init__(self, release: asyncio.Event) -> None:
+        super().__init__()
+        self._release = release
+
+    async def token(self) -> str:
+        await self._release.wait()
+        raise ZenMLAuthError("ZenML refused this caller's sign-in.")
+
+    async def renew(self, rejected: Optional[str]) -> str:
+        raise ZenMLAuthError("ZenML refused this caller's sign-in.")
+
+
+def test_one_callers_failed_sign_in_is_not_the_others_answer() -> None:
+    """Server info is read once for every caller, as whoever asks first."""
+
+    def answer(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"version": "0.99.0"})
+
+    async def run() -> list[Any]:
+        url = f"https://{uuid.uuid4().hex}.example"
+        release = asyncio.Event()
+        transport = httpx.MockTransport(answer)
+        async with httpx.AsyncClient(transport=transport) as http:
+            refused = ZenMLRestClient(
+                url, _RefusedOnceWaitedOn(release), http=http, cache_key="a"
+            )
+            signed = ZenMLRestClient(
+                url, BearerToken("token-sample"), http=http, cache_key="b"
+            )
+            first = asyncio.ensure_future(server_info(refused))
+            await asyncio.sleep(0)
+            second = asyncio.ensure_future(server_info(signed))
+            await asyncio.sleep(0)
+            release.set()
+            return await asyncio.gather(first, second, return_exceptions=True)
+
+    first, second = asyncio.run(run())
+    assert isinstance(first, ZenMLAuthError)
+    assert second.version == "0.99.0"

@@ -32,6 +32,7 @@ from mcp.types import CallToolResult, TextContent, ToolAnnotations
 from zenml_mcp.cache import SingleFlightCache
 from zenml_mcp.call import Sensitive
 from zenml_mcp.client import (
+    ZenMLAuthError,
     ZenMLBadRequest,
     ZenMLNotFound,
     ZenMLRestClient,
@@ -228,15 +229,24 @@ def _user_key(client: ZenMLRestClient, suffix: str = "") -> str:
 async def server_info(client: ZenMLRestClient) -> ServerInfo:
     """The server's version, edition and dashboard, cached per server URL.
 
+    Concurrent callers share one read, signed in as whoever asked first.
+    When that sign-in fails, each other caller reads again as itself.
+
     Args:
         client: The client for the server to read.
 
     Returns:
         The server's info.
+
+    Raises:
+        ZenMLAuthError: When this caller's own sign-in is refused.
     """
     url = client.server_url
+    loaded = False
 
     async def load() -> tuple[ServerInfo, float]:
+        nonlocal loaded
+        loaded = True
         info = await client.get("/info", what="Reading ZenML server info")
         meta = info.get("metadata") or {}
         dashboard = (
@@ -253,7 +263,14 @@ async def server_info(client: ZenMLRestClient) -> ServerInfo:
             or meta.get("organization_name"),
         ), _CACHE_TTL_S
 
-    return await _server_info.get(url, load)
+    try:
+        return await _server_info.get(url, load)
+    except ZenMLAuthError:
+        if loaded:
+            raise
+        # The read this call waited on signed in as another caller, whose
+        # sign-in failed; this caller reads it again as itself.
+        return await _server_info.get(url, load)
 
 
 async def project(client: ZenMLRestClient, explicit: str | None) -> str:
