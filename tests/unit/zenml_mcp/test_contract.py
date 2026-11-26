@@ -159,19 +159,32 @@ def _flavors() -> list[Any]:
     return found
 
 
+# The stored configurations that decide `is_local`, as ZenML keeps them: a
+# boolean can be stored as text, which ZenML's config parses.
 _CONFIGURATIONS: dict[str, list[dict[str, Any]]] = {
-    "AirflowOrchestratorFlavor": [{}, {"local": False}],
-    "KubernetesOrchestratorFlavor": [{}, {"local": True}],
+    "AirflowOrchestratorFlavor": [
+        {},
+        {"local": False},
+        {"local": "false"},
+        {"local": "No"},
+    ],
+    "KubernetesOrchestratorFlavor": [
+        {},
+        {"local": True},
+        {"local": "true"},
+        {"local": "0"},
+    ],
     "KubernetesDeployerFlavor": [
         {},
         {"local": True},
+        {"local": "off"},
         {"kubernetes_context": "kind-dev"},
         {"kubernetes_context": "gke_prod"},
     ],
     "FeastFeatureStoreFlavor": [
-        {},
-        {"online_host": "127.0.0.1"},
-        {"online_host": "redis.internal"},
+        {"feast_repo": "repo"},
+        {"feast_repo": "repo", "online_host": "127.0.0.1"},
+        {"feast_repo": "repo", "online_host": "redis.internal"},
     ],
     "GreatExpectationsDataValidatorFlavor": [
         {},
@@ -180,10 +193,24 @@ _CONFIGURATIONS: dict[str, list[dict[str, Any]]] = {
     "MLFlowExperimentTrackerFlavor": [
         {},
         {"tracking_uri": "file:///mlruns"},
-        {"tracking_uri": "https://mlflow.example"},
-        {"tracking_uri": "databricks"},
+        {
+            "tracking_uri": "https://mlflow.example",
+            "tracking_username": "sample",
+            "tracking_password": "sample",
+        },
+        {
+            "tracking_uri": "databricks",
+            "tracking_username": "sample",
+            "tracking_password": "sample",
+            "databricks_host": "https://dbc.example",
+        },
     ],
 }
+
+
+# Its validator needs a real data context, and `is_local` only checks that
+# the path is set.
+_NOT_PARSED = {"GreatExpectationsDataValidatorFlavor"}
 
 
 def test_a_local_component_is_found_as_zenml_finds_it() -> None:
@@ -191,6 +218,8 @@ def test_a_local_component_is_found_as_zenml_finds_it() -> None:
 
     Every flavor whose config class decides `is_local` itself is checked:
     with its defaults, and with the configurations that change the answer.
+    Those are validated as ZenML parses them; the other flavors decide it
+    without reading a field that needs parsing.
     """
     checked = set()
     for flavor_class in _flavors():
@@ -212,9 +241,17 @@ def test_a_local_component_is_found_as_zenml_finds_it() -> None:
             ]
         else:
             configurations = _CONFIGURATIONS.get(flavor_class.__name__, [{}])
+        parsed = (
+            flavor_class.__name__ in _CONFIGURATIONS
+            and flavor_class.__name__ not in _NOT_PARSED
+        )
         for configuration in configurations:
-            # Built unvalidated: only the fields `is_local` reads matter.
-            expected = config_class.model_construct(**configuration).is_local
+            config = (
+                config_class(**configuration)
+                if parsed
+                else config_class.model_construct(**configuration)
+            )
+            expected = config.is_local
             found = trigger._is_local({"body": body}, configuration)
             assert found == expected, (source, configuration)
         checked.add(flavor_class.__name__)

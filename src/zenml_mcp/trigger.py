@@ -185,17 +185,37 @@ _LOCAL_KUBERNETES_CONTEXTS = (
 )
 
 
+# The text pydantic reads as false. ZenML keeps a stored configuration as
+# sent, and its config class parses the text when it reads the component.
+_FALSE_TEXT = frozenset({"0", "f", "false", "n", "no", "off"})
+
+
+def _flag(value: Any) -> bool:
+    """A stored boolean as ZenML's config reads it: `"false"` is false.
+
+    Args:
+        value: The stored value.
+
+    Returns:
+        The boolean ZenML reads; text it can't read counts as true, which
+        takes the component as local and refuses it.
+    """
+    if isinstance(value, str):
+        return value.strip().lower() not in _FALSE_TEXT
+    return bool(value)
+
+
 def _always(configuration: Mapping[str, Any]) -> bool:
     return True
 
 
 def _set_to(field: str, default: bool) -> Callable[[Mapping[str, Any]], bool]:
-    return lambda configuration: bool(configuration.get(field, default))
+    return lambda configuration: _flag(configuration.get(field, default))
 
 
 def _local_kubernetes_deployer(configuration: Mapping[str, Any]) -> bool:
     context = str(configuration.get("kubernetes_context") or "").lower()
-    return bool(configuration.get("local")) or any(
+    return _flag(configuration.get("local", False)) or any(
         marker in context for marker in _LOCAL_KUBERNETES_CONTEXTS
     )
 
