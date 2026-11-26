@@ -2,7 +2,7 @@
 set -x
 
 # Initialize default source directories
-default_src="src/zenml tests examples docs/mkdocstrings_helper.py docs/link_checker.py scripts"
+default_src="src/zenml src/zenml_mcp tests examples docs/mkdocstrings_helper.py docs/link_checker.py scripts"
 # Initialize SRC as an empty string
 SRC=""
 
