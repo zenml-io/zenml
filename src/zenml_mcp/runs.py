@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import math
 import statistics
@@ -171,24 +172,35 @@ async def run_with_url(
 
 
 async def started_run(
-    client: ZenMLRestClient, run: dict[str, Any]
+    client: ZenMLRestClient,
+    run: dict[str, Any],
+    deadline: float | None = None,
 ) -> dict[str, Any]:
     """A run ZenML just started, with its dashboard link when it can be read.
 
     The run exists once ZenML answered the start, so a link lookup that
-    fails in any way leaves the link out rather than failing a call a
-    client might retry, which would start a second run. Only cancellation
-    passes through.
+    fails in any way, or is still waiting at the host's deadline, leaves
+    the link out rather than failing a call a client might retry, which
+    would start a second run. Only cancellation passes through.
 
     Args:
         client: The client of the server the run is on.
         run: The run ZenML answered the start with.
+        deadline: The event loop time the link lookup must end by, or None
+            for no bound.
 
     Returns:
         The run's summary, with `dashboard_url` when it could be built.
     """
+    # `asyncio.wait_for` rather than `asyncio.timeout_at`, which Python
+    # 3.10 lacks; a timeout of None waits without a bound.
+    left = (
+        None
+        if deadline is None
+        else max(deadline - asyncio.get_running_loop().time(), 0.0)
+    )
     try:
-        url: str | None = await run_url(client, run)
+        url: str | None = await asyncio.wait_for(run_url(client, run), left)
     except Exception as error:
         logger.warning(
             "Reading the started run's dashboard link failed (%s).",

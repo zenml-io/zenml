@@ -38,6 +38,7 @@ from tests.unit.zenml_mcp.replay import (  # noqa: E402
 )
 from zenml_mcp.call import ZenMLCall  # noqa: E402
 from zenml_mcp.client import (  # noqa: E402
+    BearerToken,
     ZenMLAuth,
     ZenMLAuthError,
     ZenMLRestClient,
@@ -47,6 +48,7 @@ from zenml_mcp.credentials import (  # noqa: E402
     credential_like_keys,
     redact,
 )
+from zenml_mcp.tools import TOOL_SPECS  # noqa: E402
 
 GOLDEN = golden("generic_read.json")
 WRITE_GOLDEN = golden("generic_write.json")
@@ -476,6 +478,96 @@ def test_a_started_run_is_returned_when_its_link_cannot_be_read(
     assert result.structured_content["outcome"] == "started"
     assert result.structured_content["run"]["id"] == run["id"]
     assert "dashboard_url" not in result.structured_content["run"]
+
+
+def _hanging_info(
+    snapshot: str, asked: asyncio.Event, unanswered: asyncio.Event
+) -> _ZenML:
+    """ZenML that starts a run, then never answers the server info read.
+
+    Args:
+        snapshot: The snapshot the run starts from.
+        asked: Set when the server info read arrives.
+        unanswered: Never set: the read waits on it.
+
+    Returns:
+        The fake ZenML.
+    """
+    run = WRITE_GOLDEN["entities"]["pipeline_run"]
+
+    async def hang(request: httpx.Request) -> httpx.Response:
+        asked.set()
+        await unanswered.wait()
+        raise AssertionError("the server info read was answered")
+
+    return _ZenML(
+        {
+            f"/api/v1/pipeline_snapshots/{snapshot}/runs": lambda _: _json(
+                run
+            ),
+            "/api/v1/info": hang,
+        }
+    )
+
+
+def test_a_started_run_is_returned_when_its_link_outlasts_the_deadline() -> (
+    None
+):
+    """A host's deadline ends the link lookup, not the call: the run's id
+    comes back without its link instead of an unknown outcome.
+    """
+    run = WRITE_GOLDEN["entities"]["pipeline_run"]
+    snapshot = str(uuid.uuid4())
+
+    async def start() -> Any:
+        zenml = _hanging_info(snapshot, asyncio.Event(), asyncio.Event())
+
+        def bounded(client: ZenMLRestClient) -> ZenMLCall:
+            loop = asyncio.get_running_loop()
+            return ZenMLCall(client, deadline=loop.time() + 0.2)
+
+        cold = f"https://{uuid.uuid4().hex}.example"
+        async with connected(zenml, server_url=cold, call=bounded) as mcp:
+            return await mcp.call_tool(
+                "zenml_run_snapshot", {"snapshot_id": snapshot}
+            )
+
+    # The outer bound only keeps a regression from hanging the suite.
+    result = asyncio.run(asyncio.wait_for(start(), 10))
+    assert not result.is_error, result.structured_content
+    assert result.structured_content["run"]["id"] == run["id"]
+    assert "dashboard_url" not in result.structured_content["run"]
+
+
+def test_a_run_start_cancelled_during_its_link_lookup_stays_cancelled() -> (
+    None
+):
+    """Cancelling the call cancels it, deadline or not: it isn't answered."""
+    snapshot = str(uuid.uuid4())
+    spec = next(s for s in TOOL_SPECS if s.name == "zenml_run_snapshot")
+
+    async def start() -> None:
+        asked = asyncio.Event()
+        zenml = _hanging_info(snapshot, asked, asyncio.Event())
+        transport = httpx.MockTransport(zenml)
+        async with httpx.AsyncClient(transport=transport) as http:
+            client = ZenMLRestClient(
+                f"https://{uuid.uuid4().hex}.example",
+                BearerToken("token-sample"),
+                http=http,
+                cache_key="cancelled",
+            )
+            loop = asyncio.get_running_loop()
+            call = ZenMLCall(client, deadline=loop.time() + 3600)
+            running = asyncio.ensure_future(
+                spec.run(call, {"snapshot_id": snapshot})
+            )
+            await asked.wait()
+            running.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await running
+
+    asyncio.run(asyncio.wait_for(start(), 10))
 
 
 def test_starting_a_run_refuses_credentials_and_a_missing_target() -> None:

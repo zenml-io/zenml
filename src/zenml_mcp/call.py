@@ -91,12 +91,18 @@ class ZenMLCall:
         read_only: Whether the host offers no write tool: every tool not
             marked read-only refuses the call, and the resource catalog
             describes reads only.
+        deadline: The event loop time (`loop.time()`) by which the host
+            needs the call's answer, or None for no deadline, as the local
+            server has. The optional reads after a run start that ZenML
+            accepted end by then: the started run comes back without its
+            dashboard link rather than as an unknown outcome.
     """
 
     client: ZenMLRestClient
     secret_page: SecretPage | None = None
     sensitive_write: Callable[[str], None] = field(default=_allow)
     read_only: bool = False
+    deadline: float | None = None
 
 
 @dataclass(frozen=True)

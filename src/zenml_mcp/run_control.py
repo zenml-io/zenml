@@ -175,7 +175,7 @@ def register_snapshots(tools: Tools) -> None:
         )
         return {
             "outcome": "started",
-            "run": await started_run(client, run),
+            "run": await started_run(client, run, call.deadline),
         }
 
 
@@ -222,7 +222,7 @@ def register_run_control(tools: Tools) -> None:
         return {
             "outcome": "started",
             "replayed_run_id": original["id"],
-            "run": await started_run(client, new_run),
+            "run": await started_run(client, new_run, call.deadline),
         }
 
     @write_tool(
