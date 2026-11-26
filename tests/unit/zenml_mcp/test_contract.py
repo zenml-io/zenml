@@ -29,13 +29,14 @@ pytest.importorskip("mcp")
 
 from pydantic import BaseModel  # noqa: E402
 
-from zenml import constants, enums  # noqa: E402
+from zenml import enums  # noqa: E402
 from zenml.config.cache_policy import CachePolicy  # noqa: E402
 from zenml.config.retry_config import StepRetryConfig  # noqa: E402
 from zenml.config.step_configurations import (  # noqa: E402
     GroupInfo,
     StepConfigurationUpdate,
 )
+from zenml.constants import API, VERSION_1  # noqa: E402
 from zenml.enums import StackComponentType  # noqa: E402
 from zenml.integrations.registry import integration_registry  # noqa: E402
 from zenml.model.model import Model  # noqa: E402
@@ -72,6 +73,12 @@ _RUN_CONFIGURATION = resource_catalog._TRIGGER_RUN_CONFIGURATION
         (
             _ENUMS[("run_wait_condition", "status")],
             enums.RunWaitConditionStatus,
+        ),
+        (
+            RESOURCE_REGISTRY["service"]
+            .mutations["update"]
+            .payload_properties["admin_state"]["enum"],
+            enums.ServiceState,
         ),
         (
             _RUN_CONFIGURATION["properties"]["execution_mode"]["enum"],
@@ -136,15 +143,17 @@ def test_the_sdk_defaults_a_run_configuration_gets_are_cores() -> None:
     }
 
 
-def test_every_catalog_route_is_a_zenml_api_route() -> None:
-    """A route ZenML renamed or dropped fails here, not on a user's call."""
-    routes = {
-        value
-        for value in vars(constants).values()
-        if isinstance(value, str) and value.startswith("/")
-    }
-    catalog = {spec.rest.route for spec in RESOURCE_REGISTRY.values()}
-    assert catalog <= routes
+def test_every_catalog_route_is_a_route_the_server_serves() -> None:
+    """A route ZenML renamed or dropped fails here, not on a user's call.
+
+    Each catalog route must be a list route the ZenML server mounts. This
+    needs the server extra and is skipped without it.
+    """
+    server = pytest.importorskip("zenml.zen_server.zen_server_api")
+    paths = server.app.openapi()["paths"]
+    for spec in RESOURCE_REGISTRY.values():
+        mounted = paths.get(f"{API}{VERSION_1}{spec.rest.route}", {})
+        assert "get" in mounted, spec.resource_type
 
 
 def _flavors() -> list[Any]:
