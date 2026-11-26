@@ -187,18 +187,23 @@ async def started_run(
         client: The client of the server the run is on.
         run: The run ZenML answered the start with.
         deadline: The event loop time the link lookup must end by, or None
-            for no bound.
+            for no bound. When it has passed, no lookup starts and the run
+            comes back without awaiting anything.
 
     Returns:
         The run's summary, with `dashboard_url` when it could be built.
     """
-    # `asyncio.wait_for` rather than `asyncio.timeout_at`, which Python
-    # 3.10 lacks; a timeout of None waits without a bound.
     left = (
         None
         if deadline is None
-        else max(deadline - asyncio.get_running_loop().time(), 0.0)
+        else deadline - asyncio.get_running_loop().time()
     )
+    if left is not None and left <= 0:
+        # Not even started: any await here could let the host's own timer
+        # end the call first and lose the run's id with it.
+        return run_summary(run)
+    # `asyncio.wait_for` rather than `asyncio.timeout_at`, which Python
+    # 3.10 lacks; a timeout of None waits without a bound.
     try:
         url: str | None = await asyncio.wait_for(run_url(client, run), left)
     except Exception as error:

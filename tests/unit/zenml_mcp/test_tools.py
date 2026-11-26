@@ -36,6 +36,7 @@ from tests.unit.zenml_mcp.replay import (  # noqa: E402
     golden,
     result_of,
 )
+from zenml_mcp import runs  # noqa: E402
 from zenml_mcp.call import ZenMLCall  # noqa: E402
 from zenml_mcp.client import (  # noqa: E402
     BearerToken,
@@ -568,6 +569,45 @@ def test_a_run_start_cancelled_during_its_link_lookup_stays_cancelled() -> (
                 await running
 
     asyncio.run(asyncio.wait_for(start(), 10))
+
+
+@pytest.mark.parametrize("left", [0.0, -5.0])
+def test_a_started_run_past_its_deadline_comes_back_without_waiting(
+    monkeypatch: pytest.MonkeyPatch, left: float
+) -> None:
+    """With no time left, no link lookup starts and nothing is awaited.
+
+    Any wait would let the host's own timer end the call first, and the
+    started run's id would be lost with it.
+
+    Args:
+        monkeypatch: Records the link lookups.
+        left: Seconds from now to the deadline.
+    """
+    looked_up: list[Any] = []
+
+    async def lookup(client: Any, run: Any) -> str:
+        looked_up.append(run)
+        return "https://dashboard.example/run"
+
+    monkeypatch.setattr(runs, "run_url", lookup)
+    run = WRITE_GOLDEN["entities"]["pipeline_run"]
+
+    async def drive() -> Any:
+        loop = asyncio.get_running_loop()
+        started = runs.started_run(None, run, loop.time() + left)  # type: ignore[arg-type]
+        try:
+            # A coroutine that never yields finishes on its first step.
+            with pytest.raises(StopIteration) as finished:
+                started.send(None)
+        finally:
+            started.close()
+        return finished.value.value
+
+    summary = asyncio.run(drive())
+    assert summary["id"] == run["id"]
+    assert "dashboard_url" not in summary
+    assert looked_up == []
 
 
 def test_starting_a_run_refuses_credentials_and_a_missing_target() -> None:
