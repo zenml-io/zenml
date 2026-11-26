@@ -24,9 +24,9 @@ from zenml.models import ModelRequest
 
 def _model_created_events(tracked: Any) -> List[Dict[str, Any]]:
     return [
-        call.args[1]
+        call.kwargs["properties"]
         for call in tracked.call_args_list
-        if call.args[0] == AnalyticsEvent.CREATED_MODEL
+        if call.kwargs["event"] == AnalyticsEvent.CREATED_MODEL
     ]
 
 
@@ -35,7 +35,7 @@ def test_get_or_create_model_tracks_only_real_creations(
 ) -> None:
     """An existing model must not emit a failed `Model created` event."""
     store = clean_client.zen_store
-    tracked = mocker.patch("zenml.analytics.utils.track")
+    tracked = mocker.patch("zenml.analytics.context.AnalyticsContext.track")
     request = ModelRequest(
         name="implicit_model",
         project=clean_client.active_project.id,

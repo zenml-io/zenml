@@ -15037,6 +15037,17 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The newly created model.
+        """
+        return self._create_model(model)
+
+    def _create_model(self, model: ModelRequest) -> ModelResponse:
+        """Creates a new model without tracking an analytics event.
+
+        Args:
+            model: the Model to be created.
+
+        Returns:
+            The newly created model.
 
         Raises:
             EntityExistsError: If a model with the given name already exists.
@@ -15246,24 +15257,20 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A boolean whether the model was created or not, and the model.
         """
-        # Look up first: every run with a configured model calls this, and a
-        # failed `create_model` call still emits a `Model created` event.
         try:
-            return False, self.get_model_by_name_or_id(
-                model_name_or_id=model_request.name,
-                project=model_request.project,
-            )
-        except KeyError:
-            pass
-
-        try:
-            return True, self.create_model(model_request)
+            model = self._create_model(model_request)
         except EntityExistsError:
-            # Another run created the model concurrently.
             return False, self.get_model_by_name_or_id(
                 model_name_or_id=model_request.name,
                 project=model_request.project,
             )
+
+        # Tracked here instead of via `create_model`, whose decorator would
+        # also report every attempt that fails because the model exists.
+        metadata = model_request.get_analytics_metadata()
+        metadata.update(model.get_analytics_metadata())
+        track(event=AnalyticsEvent.CREATED_MODEL, metadata=metadata)
+        return True, model
 
     def _get_next_numeric_version_for_model(
         self, session: Session, model_id: UUID
