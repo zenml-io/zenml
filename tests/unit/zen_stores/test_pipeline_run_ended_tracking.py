@@ -98,17 +98,16 @@ def _record_run_ended_events(
     return events
 
 
-def _reset_run(client: Client, run_id: UUID, status: ExecutionStatus) -> None:
-    """Put a finished run back into the state it had before it ended.
+def _reset_run(client: Client, run_id: UUID) -> None:
+    """Put a finished run back into the running state.
 
     Args:
         client: The client whose store holds the run.
         run_id: The ID of the run.
-        status: The status the run had before it ended.
     """
     with Session(client.zen_store.engine) as session:
         run_schema = session.get(PipelineRunSchema, run_id)
-        run_schema.status = status.value
+        run_schema.status = ExecutionStatus.RUNNING.value
         run_schema.in_progress = True
         run_schema.end_time = None
         session.add(run_schema)
@@ -121,7 +120,7 @@ def test_run_ended_is_sent_only_when_the_run_ends(
 ) -> None:
     """Updates of an already finished run don't send the event again."""
     run = single_step_pipeline()
-    _reset_run(clean_client, run.id, ExecutionStatus.RUNNING)
+    _reset_run(clean_client, run.id)
     events = _record_run_ended_events(monkeypatch)
     store = clean_client.zen_store
 
@@ -148,13 +147,13 @@ def test_run_ended_is_sent_only_when_the_run_ends(
     assert len(events) == 1
 
 
-def test_run_ended_is_sent_when_a_failed_run_gets_its_end_time(
+def test_run_ended_is_sent_once_when_the_run_fails(
     clean_client: Client,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A run that failed while steps were still running ends once they stop."""
+    """Publishing the failed status again doesn't send the event again."""
     run = single_step_pipeline()
-    _reset_run(clean_client, run.id, ExecutionStatus.FAILED)
+    _reset_run(clean_client, run.id)
     events = _record_run_ended_events(monkeypatch)
     store = clean_client.zen_store
 

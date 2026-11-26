@@ -13479,7 +13479,7 @@ class SqlZenStore(BaseZenStore):
         session: Session,
         requested_status: Optional[ExecutionStatus] = None,
         status_reason: Optional[str] = None,
-    ) -> Tuple[bool, PipelineRunSchema, ExecutionStatus, Optional[datetime]]:
+    ) -> Tuple[bool, PipelineRunSchema, ExecutionStatus]:
         """Update a pipeline run status without committing the transaction.
 
         Args:
@@ -13490,8 +13490,7 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             A tuple containing whether the schema was updated, the updated
-            pipeline run schema, the previous status and the previous end
-            time.
+            pipeline run schema and the previous status.
         """
         pipeline_run = session.exec(
             select(PipelineRunSchema).where(
@@ -13499,12 +13498,11 @@ class SqlZenStore(BaseZenStore):
             )
         ).one()
         previous_status = ExecutionStatus(pipeline_run.status)
-        previous_end_time = pipeline_run.end_time
         did_update = pipeline_run.update_status(
             requested_status=requested_status, status_reason=status_reason
         )
         session.add(pipeline_run)
-        return did_update, pipeline_run, previous_status, previous_end_time
+        return did_update, pipeline_run, previous_status
 
     def _update_pipeline_run_status(
         self,
@@ -13524,7 +13522,7 @@ class SqlZenStore(BaseZenStore):
         # Make sure we start with a fresh transaction before locking the
         # pipeline run
         session.commit()
-        did_update, pipeline_run, previous_status, previous_end_time = (
+        did_update, pipeline_run, previous_status = (
             self._update_pipeline_run_status_no_commit(
                 pipeline_run_id=pipeline_run_id,
                 session=session,
@@ -13553,15 +13551,7 @@ class SqlZenStore(BaseZenStore):
                     )
                 )
 
-        # Finished runs keep receiving status updates, so only the update that
-        # ended the run counts. That is the one that finished it, or the one
-        # that set its end time for a run that failed while steps still ran.
-        # The status check covers runs created with an end time already set.
-        if (
-            new_status.is_finished
-            and pipeline_run.end_time
-            and (not previous_status.is_finished or previous_end_time is None)
-        ):
+        if new_status.is_finished and pipeline_run.end_time:
             if pipeline_run.start_time:
                 duration_time = pipeline_run.end_time - pipeline_run.start_time
                 duration_seconds = duration_time.total_seconds()
@@ -13579,24 +13569,30 @@ class SqlZenStore(BaseZenStore):
                 str(component.type): component.flavor
                 for component in stack.components
             }
-            with track_handler(
-                AnalyticsEvent.RUN_PIPELINE_ENDED
-            ) as analytics_handler:
-                analytics_handler.metadata = {
-                    "project_id": pipeline_run.project_id,
-                    "pipeline_run_id": pipeline_run_id,
-                    "source_snapshot_id": pipeline_run.snapshot.source_snapshot_id,
-                    "status": new_status,
-                    "num_steps": pipeline_run.snapshot.step_count,
-                    "start_time": start_time_str,
-                    "end_time": pipeline_run.end_time.strftime(
-                        "%Y-%m-%dT%H:%M:%S.%fZ"
-                    ),
-                    "duration_seconds": duration_seconds,
-                    "dynamic": pipeline_run.snapshot.is_dynamic,
-                    "trigger_execution": pipeline_run.trigger is not None,
-                    **stack_metadata,
-                }
+            # Finished runs keep receiving status updates, for example late
+            # step updates or the orchestrator publishing its final status, so
+            # only the update that finished the run sends the event. A run that
+            # fails while other steps still run gets its end time on a later
+            # update and therefore sends no event.
+            if not previous_status.is_finished:
+                with track_handler(
+                    AnalyticsEvent.RUN_PIPELINE_ENDED
+                ) as analytics_handler:
+                    analytics_handler.metadata = {
+                        "project_id": pipeline_run.project_id,
+                        "pipeline_run_id": pipeline_run_id,
+                        "source_snapshot_id": pipeline_run.snapshot.source_snapshot_id,
+                        "status": new_status,
+                        "num_steps": pipeline_run.snapshot.step_count,
+                        "start_time": start_time_str,
+                        "end_time": pipeline_run.end_time.strftime(
+                            "%Y-%m-%dT%H:%M:%S.%fZ"
+                        ),
+                        "duration_seconds": duration_seconds,
+                        "dynamic": pipeline_run.snapshot.is_dynamic,
+                        "trigger_execution": pipeline_run.trigger is not None,
+                        **stack_metadata,
+                    }
 
             completed_onboarding_steps: Set[str] = {
                 OnboardingStep.PIPELINE_RUN,
