@@ -28,6 +28,7 @@ import urllib3
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.client import Client
+from zenml.constants import ENV_ZENML_ACTIVE_PROJECT_ID
 from zenml.enums import AuthScheme
 from zenml.exceptions import AuthorizationException, CredentialsNotValid
 from zenml.logger import ZenMLConsoleHandler
@@ -202,13 +203,25 @@ def _connected_store(retry_delay: float) -> RestZenStore:
 def _active_project() -> Optional[str]:
     """The project `zenml project set` chose, for calls that name none.
 
+    `ZENML_ACTIVE_PROJECT_ID` is passed as set, without a lookup: a lookup
+    that failed could only end the start or switch every call to another
+    project. A project ZenML can't find then fails each call that uses it
+    with a typed error. Otherwise the repository's or the global
+    configuration's project, which the store validated when it connected,
+    is read without a request.
+
     Returns:
-        Its ID, or None when none is set, to use the caller's default
-        project on the server.
+        The project's ID, or None when none is configured, to use the
+        caller's default project on the server.
     """
+    configured = os.environ.get(ENV_ZENML_ACTIVE_PROJECT_ID, "").strip()
+    if configured:
+        return configured
     try:
         return str(Client().active_project.id)
     except RuntimeError:
+        # Without the variable, nothing is read from the server here, so
+        # this is "no active project is configured".
         return None
 
 

@@ -30,6 +30,7 @@ from click.testing import CliRunner
 pytest.importorskip("mcp")
 
 from zenml.cli.cli import cli  # noqa: E402
+from zenml.constants import ENV_ZENML_ACTIVE_PROJECT_ID  # noqa: E402
 from zenml.enums import AuthScheme  # noqa: E402
 from zenml.exceptions import (  # noqa: E402
     AuthorizationException,
@@ -454,6 +455,7 @@ def _served(
     monkeypatch: pytest.MonkeyPatch,
     *arguments: str,
     active: Optional[str] = None,
+    variable: Optional[str] = None,
 ) -> Any:
     """The `ZenMLCall` that `zenml mcp` serves with, without stdio or a server.
 
@@ -462,6 +464,8 @@ def _served(
             the server.
         *arguments: The command's options.
         active: The project `zenml project set` chose, if any.
+        variable: The `ZENML_ACTIVE_PROJECT_ID` set, if any; a lookup of it
+            fails as a server error does.
 
     Returns:
         The call the server was built with.
@@ -471,6 +475,8 @@ def _served(
     class Configured:
         @property
         def active_project(self) -> Any:
+            if variable is not None:
+                raise RuntimeError("500 Server Error: upstream unavailable")
             if active is None:
                 raise RuntimeError("No active project is configured.")
             return SimpleNamespace(id=active)
@@ -490,6 +496,10 @@ def _served(
         url="http://127.0.0.1:8237", session=SimpleNamespace(verify=True)
     )
     monkeypatch.setattr(mcp_cli, "Client", Configured)
+    if variable is None:
+        monkeypatch.delenv(ENV_ZENML_ACTIVE_PROJECT_ID, raising=False)
+    else:
+        monkeypatch.setenv(ENV_ZENML_ACTIVE_PROJECT_ID, variable)
     monkeypatch.setattr(mcp_cli, "_connected_store", lambda delay: store)
     monkeypatch.setattr("zenml_mcp.server.check_server", checked)
     monkeypatch.setattr("zenml_mcp.server.build_server", build)
@@ -513,3 +523,15 @@ def test_the_active_project_scopes_the_calls_that_name_none(
     chosen = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
     assert _served(monkeypatch, active=chosen).client.project == chosen
     assert _served(monkeypatch).client.project is None
+
+
+def test_a_project_set_in_the_environment_is_used_without_a_lookup(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A lookup that fails can't switch the server to another project.
+
+    The project is passed as set; a call that uses a project ZenML can't
+    find then fails with a typed error.
+    """
+    chosen = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+    assert _served(monkeypatch, variable=chosen).client.project == chosen
