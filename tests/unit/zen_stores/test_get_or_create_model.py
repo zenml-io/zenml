@@ -47,7 +47,7 @@ def test_get_or_create_model_tracks_only_real_creations(
     events = _model_created_events(tracked)
     assert len(events) == 1
     assert events[0]["event_success"] is True
-    assert events[0]["project_id"] == model.project_id
+    assert events[0]["entity_id"] == model.id
 
     tracked.reset_mock()
     created_again, existing_model = store._get_or_create_model(request)

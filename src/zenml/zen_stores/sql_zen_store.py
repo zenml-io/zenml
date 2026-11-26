@@ -15261,7 +15261,7 @@ class SqlZenStore(BaseZenStore):
             model = self._create_model(model_request)
             track(
                 event=AnalyticsEvent.CREATED_MODEL,
-                metadata={"project_id": model.project_id},
+                metadata=model.get_analytics_metadata(),
             )
             return True, model
         except EntityExistsError:
