@@ -15028,8 +15028,20 @@ class SqlZenStore(BaseZenStore):
 
     # ----------------------------- Models -----------------------------
 
+    @track_decorator(AnalyticsEvent.CREATED_MODEL)
     def create_model(self, model: ModelRequest) -> ModelResponse:
         """Creates a new model.
+
+        Args:
+            model: the Model to be created.
+
+        Returns:
+            The newly created model.
+        """
+        return self._create_model(model)
+
+    def _create_model(self, model: ModelRequest) -> ModelResponse:
+        """Creates a new model without tracking an analytics event.
 
         Args:
             model: the Model to be created.
@@ -15071,16 +15083,10 @@ class SqlZenStore(BaseZenStore):
             )
 
             session.refresh(model_schema)
-            created_model = model_schema.to_model(
+
+            return model_schema.to_model(
                 include_metadata=True, include_resources=True
             )
-
-        # Not `track_decorator`: it also reports failed calls, and run creation
-        # calls this for models that usually exist already.
-        metadata = model.get_analytics_metadata()
-        metadata.update(created_model.get_analytics_metadata())
-        track(event=AnalyticsEvent.CREATED_MODEL, metadata=metadata)
-        return created_model
 
     def get_model(
         self,
@@ -15252,7 +15258,12 @@ class SqlZenStore(BaseZenStore):
             A boolean whether the model was created or not, and the model.
         """
         try:
-            return True, self.create_model(model_request)
+            model = self._create_model(model_request)
+            track(
+                event=AnalyticsEvent.CREATED_MODEL,
+                metadata={"project_id": model.project_id},
+            )
+            return True, model
         except EntityExistsError:
             return False, self.get_model_by_name_or_id(
                 model_name_or_id=model_request.name,
