@@ -47,6 +47,7 @@ from zenml_mcp.client import (  # noqa: E402
     ZenMLUnavailable,
 )
 from zenml_mcp.registry import ToolSpec
+from zenml_mcp.resource_catalog import RESOURCE_REGISTRY  # noqa: E402
 from zenml_mcp.tools import TOOL_SPECS  # noqa: E402
 
 PROJECT = "11111111-1111-4111-8111-111111111111"
@@ -239,6 +240,20 @@ def test_a_write_that_can_start_runs_asks_the_host_first(
         _run(tool, arguments, unreachable, sensitive_write=_refuse)
     assert str(refused.value) == what
     assert sent == []
+
+
+def test_every_write_that_can_start_runs_is_declared_sensitive() -> None:
+    """A trigger type added to the catalog is gated without being listed."""
+    triggers = [
+        spec
+        for spec in RESOURCE_REGISTRY.values()
+        if spec.rest.route == "/triggers"
+    ]
+    assert triggers
+    for spec in triggers:
+        assert all(m.sensitive for m in spec.mutations.values()), spec
+        assert spec.actions["attach"].sensitive, spec
+    assert RESOURCE_REGISTRY["pipeline_run"].actions["replay"].sensitive
 
 
 def test_a_read_only_call_refuses_a_write_tool_before_sending() -> None:
