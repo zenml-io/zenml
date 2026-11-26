@@ -109,6 +109,16 @@ _LIST_PAGE = r"""    /** Page `args.page` of `args.size` items, read on through 
     }
 
 """
+# The run chart reads pages of 100 until one comes back short. With exactly a
+# multiple of 100 runs, it stops at the list's total instead, as ZenML refuses
+# a page past the last item.
+_CHART_PAGES = (
+    (
+        "        if (data.items.length < pageSize) break;\n",
+        "        if (data.items.length < pageSize) break;\n"
+        "        if (page * pageSize >= data.total) break;\n",
+    ),
+)
 _ENVELOPE_CHECK = (
     "    /** Check if a parsed result is a structured error envelope. */"
 )
@@ -179,9 +189,11 @@ def _ext_apps() -> str:
 def _view(name: str) -> str:
     html = (_UI_ROOT / name / "index.html").read_text("utf-8")
     logs = _BOUNDED_LOGS if name == "pipeline-runs" else ()
+    chart = _CHART_PAGES if name == "run-activity-chart" else ()
     for upstream, here in (
         *_ERROR_FIELDS,
         *logs,
+        *chart,
         *_WHOLE_PAGES,
         *_IN_WORKSPACE,
     ):

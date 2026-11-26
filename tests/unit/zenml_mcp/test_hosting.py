@@ -650,6 +650,57 @@ def test_a_view_reads_no_page_past_the_last_item() -> None:
     assert read["asked"] == [[1, 20], [2, 5], [3, 5]]
 
 
+# Exactly 100 runs in the chart's 30 days, which it reads 100 at a time; a
+# page past the last one is refused, as ZenML refuses it.
+_CHART_RUNS = r"""
+const runs = Array.from({ length: 100 }, (_, i) => ({ id: i }));
+const asked = [];
+let error = null, loading = true, cappedAt1000 = false;
+const lastToolErrorMessage = null, serverToolCallsEnabled = true;
+const render = () => {};
+const cutoffDate = "2026-01-01";
+const extractCreatedDate = () => "2026-01-02";
+async function callServerToolSafe(name, args) {
+  asked.push(args.page);
+  const start = (args.page - 1) * args.size;
+  if (start >= runs.length) return null;
+  return { items: runs.slice(start, start + args.size), total: runs.length,
+           page: args.page, size: args.size };
+}
+"""
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="needs Node.js")
+def test_the_run_chart_reads_no_page_past_the_last_run() -> None:
+    """A multiple of 100 runs ends the read at its total, not in an error."""
+    html = views._view("run-activity-chart")
+    loop = html[
+        html.index(
+            "      // Accumulate runs from paginated requests"
+        ) : html.index("      // Bucket by date")
+    ]
+    script = (
+        views._LIST_PAGE
+        + _CHART_RUNS
+        + "(async () => {\n"
+        + loop
+        + "console.log(JSON.stringify({ count: allRuns.length, asked, error }));"
+        + "\n})();"
+    )
+    out = subprocess.run(
+        ["node", "-e", script],
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=60,
+    )
+    assert json.loads(out.stdout or "null") == {
+        "count": 100,
+        "asked": [1],
+        "error": None,
+    }
+
+
 def test_a_connector_update_keeps_its_stored_secrets_out_of_errors(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
