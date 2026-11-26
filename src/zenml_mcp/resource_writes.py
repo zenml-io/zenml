@@ -77,11 +77,11 @@ from zenml_mcp.credentials import (
 from zenml_mcp.resource_catalog import (
     EVENT_SOURCE_TYPES,
     FLAVOR_TEXT_FIELDS,
-    RESOURCE_REGISTRY,
     get_resource_spec,
 )
 from zenml_mcp.resource_spec import (
     COMPONENT_TYPES,
+    ask_if_sensitive,
     catalog_type,
     validate_mutation_payload,
 )
@@ -972,6 +972,7 @@ async def _checked_request(
     spec = get_resource_spec(resource_type)
     mutation = spec.mutation(operation)
     checked = validate_mutation_payload(spec, operation, payload)
+    ask_if_sensitive(call, mutation, checked)
     scope: dict[str, Any] = {"kind": "global"}
     project = None
     if spec.scope == "global":
@@ -1188,15 +1189,6 @@ def _unknown_mutation(
     )
 
 
-# Resource types whose create or update can start paid runs: every trigger
-# type, read from the catalog so that a new one is not left out.
-RUN_STARTING = frozenset(
-    resource_type
-    for resource_type, spec in RESOURCE_REGISTRY.items()
-    if spec.rest.route == "/triggers"
-)
-
-
 async def mutate(
     call: ZenMLCall,
     resource_type: str,
@@ -1226,19 +1218,6 @@ async def mutate(
         ZenMLRestError: When ZenML refused or failed the write.
     """  # noqa: DOC503
     through = through_the_page(call)
-    if resource_type in RUN_STARTING:
-        # A trigger attached to a pipeline starts runs when it is switched on,
-        # rescheduled or reconfigured, so its writes are sensitive whatever
-        # the tool's annotations say.
-        call.sensitive_write(f"Changing a {resource_type.replace('_', ' ')}")
-    if (resource_type, operation) == ("model_version", "update") and (
-        (payload or {}).get("stage") is not None
-        or (payload or {}).get("force")
-    ):
-        # A stage change decides what counts as production and can archive
-        # the version that held the stage, as `zenml_set_model_version_stage`
-        # does, so it is as sensitive through this tool.
-        call.sensitive_write("Changing a model version's stage")
     request, scope = await _checked_request(
         call,
         resource_type,

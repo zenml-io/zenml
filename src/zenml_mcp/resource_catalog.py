@@ -24,6 +24,7 @@ ZenML SDK reaches the type over REST, and what its writes send (ZenML 0.97.0,
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import replace
 from itertools import combinations
 from types import MappingProxyType
 from typing import Any
@@ -42,6 +43,7 @@ from zenml_mcp.resource_spec import (
     ResourceSpec,
     Rest,
     ScopeKind,
+    Sensitive,
 )
 
 _STR = {"type": "string"}
@@ -108,6 +110,7 @@ def _mutation(
     payload_required: bool | None = None,
     constraints: Mapping[str, Any] | None = None,
     example: Mapping[str, Any] | None = None,
+    sensitive: Sensitive | None = None,
 ) -> MutationSpec:
     return MutationSpec(
         operation=operation,
@@ -121,6 +124,7 @@ def _mutation(
         example_payload=MappingProxyType(dict(example))
         if example is not None
         else None,
+        sensitive=sensitive,
     )
 
 
@@ -227,6 +231,7 @@ def _action(
     *,
     required: tuple[str, ...] = (),
     returns: bool = False,
+    sensitive: Sensitive | None = None,
 ) -> ActionSpec:
     return ActionSpec(
         resource_type=resource_type,
@@ -235,6 +240,7 @@ def _action(
         payload_properties=MappingProxyType(dict(properties or {})),
         required_payload=required,
         returns=returns,
+        sensitive=sensitive,
     )
 
 
@@ -309,7 +315,9 @@ def _trigger(
     """A trigger type.
 
     The trigger types share one route, where the SDK tells them apart by
-    `type` and `flavor`, and the same three actions.
+    `type` and `flavor`, and the same three actions. A trigger attached to a
+    snapshot starts runs when it is switched on, rescheduled or
+    reconfigured, so each of its writes is sensitive, as is attaching it.
 
     Args:
         resource_type: The type's catalog name.
@@ -322,6 +330,7 @@ def _trigger(
     Returns:
         The type's record.
     """
+    label = resource_type.replace("_", " ")
     return _resource(
         resource_type,
         description,
@@ -344,6 +353,7 @@ def _trigger(
                     "run_configuration": _TRIGGER_RUN_CONFIGURATION,
                 },
                 required=("snapshot_id",),
+                sensitive=Sensitive(f"Attaching a {label} to a snapshot"),
             ),
             _action(
                 resource_type,
@@ -362,7 +372,10 @@ def _trigger(
         named_response=False,
         not_read_first=("delete",),
         filters=filters,
-        mutations=mutations,
+        mutations=tuple(
+            replace(mutation, sensitive=Sensitive(f"Changing a {label}"))
+            for mutation in mutations
+        ),
     )
 
 
@@ -641,6 +654,7 @@ _RESOURCE_SPECS = (
                 "replay_pipeline_run",
                 {"run_configuration": _REPLAY_CONFIGURATION},
                 returns=True,
+                sensitive=Sensitive("Replaying a pipeline run"),
             ),
         ),
         default_size=10,
@@ -1048,6 +1062,12 @@ _RESOURCE_SPECS = (
                     **_TAG_UPDATES,
                 },
                 parents=("model_id",),
+                # A stage change decides what counts as production and can
+                # archive the version that held the stage.
+                sensitive=Sensitive(
+                    "Changing a model version's stage",
+                    when_set=("stage", "force"),
+                ),
             ),
             _mutation("delete", parents=("model_id",), payload_required=False),
         ),

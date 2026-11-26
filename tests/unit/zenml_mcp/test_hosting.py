@@ -170,6 +170,93 @@ def test_a_stage_change_asks_the_host_before_anything_is_sent() -> None:
         _run("zenml_update_resource", arguments, sensitive_write=_refuse)
 
 
+_TRIGGER = "5824096b-e808-40aa-8d4e-44d7249b4499"
+_SNAPSHOT = "4c5dd2b9-c31a-42da-a776-418993f24a6e"
+
+
+@pytest.mark.parametrize(
+    ("tool", "arguments", "what"),
+    [
+        (
+            "zenml_action_resource",
+            {
+                "resource_type": "pipeline_run",
+                "action": "replay",
+                "resource_id": "c6a6047f-0c8d-4950-9a7a-d51093e4321b",
+                "project_id": PROJECT,
+            },
+            "Replaying a pipeline run",
+        ),
+        (
+            "zenml_action_resource",
+            {
+                "resource_type": "schedule_trigger",
+                "action": "attach",
+                "resource_id": _TRIGGER,
+                "project_id": PROJECT,
+                "payload": {"snapshot_id": _SNAPSHOT},
+            },
+            "Attaching a schedule trigger to a snapshot",
+        ),
+        (
+            "zenml_update_resource",
+            {
+                "resource_type": "schedule_trigger",
+                "resource_id": _TRIGGER,
+                "project_id": PROJECT,
+                "payload": {"active": True},
+            },
+            "Changing a schedule trigger",
+        ),
+    ],
+)
+def test_a_write_that_can_start_runs_asks_the_host_first(
+    tool: str, arguments: dict[str, Any], what: str
+) -> None:
+    """A host that refuses run-starting writes stops them before any request.
+
+    Args:
+        tool: The generic write tool.
+        arguments: A write that starts runs or arms a trigger.
+        what: What the host is told the write does.
+    """
+    sent: list[httpx.Request] = []
+
+    def unreachable(request: httpx.Request) -> httpx.Response:
+        sent.append(request)
+        raise httpx.ConnectError("unreachable")
+
+    with pytest.raises(_Refused) as refused:
+        _run(tool, arguments, unreachable, sensitive_write=_refuse)
+    assert str(refused.value) == what
+    assert sent == []
+
+
+def test_a_read_only_call_refuses_a_write_tool_before_sending() -> None:
+    """`ToolSpec.run` refuses writes itself, whatever tools a host lists."""
+    arguments = {
+        "resource_type": "tag",
+        "payload": {"name": "reviewed"},
+    }
+    answer, sent = _run("zenml_create_resource", arguments, read_only=True)
+    assert answer.is_error
+    assert answer.structured_content["error"]["kind"] == "permission_denied"
+    assert sent == []
+
+
+def test_a_read_only_server_lists_no_write_tool() -> None:
+    """What `zenml mcp --read-only` builds offers only the read tools."""
+
+    async def listed() -> set[str]:
+        async with connected(_unreachable, read_only=True) as mcp:
+            return {tool.name for tool in (await mcp.list_tools()).tools}
+
+    reads = {
+        spec.name for spec in TOOL_SPECS if spec.annotations.read_only_hint
+    }
+    assert asyncio.run(listed()) == reads
+
+
 def test_a_write_that_is_not_sensitive_does_not_ask_the_host() -> None:
     """Renaming a model version is no stage change."""
     seen: list[str] = []

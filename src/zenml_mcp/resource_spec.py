@@ -33,6 +33,7 @@ from datetime import datetime
 from types import MappingProxyType
 from typing import Any, Literal, cast
 
+from zenml_mcp.call import ZenMLCall
 from zenml_mcp.client import ZenMLBadRequest
 
 
@@ -807,6 +808,46 @@ class ResourceSpec:
 
 
 @dataclass(frozen=True)
+class Sensitive:
+    """A write a host may refuse: it can start runs or move a model stage.
+
+    Attributes:
+        what: What the write does, as the host's `sensitive_write` is told.
+        when_set: The payload fields that make the write sensitive when one
+            is set to anything but null or false; empty when it always is.
+    """
+
+    what: str
+    when_set: tuple[str, ...] = ()
+
+
+def ask_if_sensitive(
+    call: ZenMLCall,
+    write: MutationSpec | ActionSpec,
+    payload: Mapping[str, Any],
+) -> None:
+    """Ask the call's host before a sensitive write; it raises to refuse it.
+
+    This is the one place `sensitive_write` is called, so a write is gated
+    by what its spec declares, not by each tool remembering to ask.
+
+    Args:
+        call: The tool call, with its host's check.
+        write: The operation or action about to be sent.
+        payload: Its validated payload.
+    """
+    sensitive = write.sensitive
+    if sensitive is None:
+        return
+    if sensitive.when_set and all(
+        payload.get(name) is None or payload.get(name) is False
+        for name in sensitive.when_set
+    ):
+        return
+    call.sensitive_write(sensitive.what)
+
+
+@dataclass(frozen=True)
 class MutationSpec:
     """Static contract for one ordinary create, update, or delete operation."""
 
@@ -822,6 +863,7 @@ class MutationSpec:
         default_factory=_no_entries
     )
     example_payload: Mapping[str, Any] | None = None
+    sensitive: Sensitive | None = None
 
     def payload_schema(self, resource: ResourceSpec) -> dict[str, Any]:
         """The operation's payload as a JSON schema.
@@ -966,6 +1008,7 @@ class ActionSpec:
     prerequisites: tuple[str, ...] = ()
     # The SDK method returns what ZenML answered; the others return nothing.
     returns: bool = False
+    sensitive: Sensitive | None = None
 
     def schema(self) -> dict[str, Any]:
         """The action's input as a JSON schema.

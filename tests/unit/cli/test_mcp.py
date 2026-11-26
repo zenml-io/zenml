@@ -409,3 +409,45 @@ def test_a_renewal_cancelled_by_its_task_group_waits_without_spinning(
     asyncio.run(run())
     assert release.is_set()
     assert len(waits) <= 2
+
+
+def _served(monkeypatch: pytest.MonkeyPatch, *arguments: str) -> Any:
+    """The `ZenMLCall` that `zenml mcp` serves with, without stdio or a server.
+
+    Args:
+        monkeypatch: Replaces the store, the start-up check and the server.
+        *arguments: The command's options.
+
+    Returns:
+        The call the server was built with.
+    """
+    built: List[Any] = []
+
+    class Served:
+        async def run_stdio_async(self) -> None:
+            return None
+
+    async def checked(client: Any) -> Any:
+        return {}
+
+    def build(call: Any) -> Served:
+        built.append(call)
+        return Served()
+
+    store = SimpleNamespace(
+        url="http://127.0.0.1:8237", session=SimpleNamespace(verify=True)
+    )
+    monkeypatch.setattr(mcp_cli, "_connected_store", lambda delay: store)
+    monkeypatch.setattr("zenml_mcp.server.check_server", checked)
+    monkeypatch.setattr("zenml_mcp.server.build_server", build)
+    result = CliRunner().invoke(cli, ["mcp", *arguments])
+    assert result.exit_code == 0, result.output
+    return built[0]
+
+
+def test_read_only_reaches_the_call_the_server_runs_with(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`--read-only` makes every tool call read-only, not only the listing."""
+    assert _served(monkeypatch, "--read-only").read_only is True
+    assert _served(monkeypatch).read_only is False

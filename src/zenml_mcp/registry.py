@@ -36,7 +36,7 @@ from mcp.server.mcpserver.utilities.func_metadata import (
 from mcp.types import CallToolResult, TextContent, ToolAnnotations
 
 from zenml_mcp.call import ZenMLCall
-from zenml_mcp.client import ZenMLRestError
+from zenml_mcp.client import ZenMLPermissionDenied, ZenMLRestError
 
 
 class Handler(Protocol):
@@ -168,14 +168,22 @@ class ToolSpec:
     async def run(self, call: ZenMLCall, arguments: Mapping[str, Any]) -> Any:
         """Run the tool once.
 
+        A read-only call refuses every tool not marked read-only here, so a
+        host need not filter write tools to keep them from running.
+
         Args:
             call: The call's client and its host's decisions.
             arguments: The tool's arguments, as the client sent them.
 
         Returns:
-            The tool's answer, or an error result when ZenML refused or
-            failed the call.
+            The tool's answer, or an error result when the call is read-only
+            and the tool writes, or ZenML refused or failed the call.
         """
+        if call.read_only and self.annotations.read_only_hint is not True:
+            return error_result(
+                ZenMLPermissionDenied.kind,
+                f"{self.name} changes ZenML, and this server is read-only.",
+            )
         validated = self.arguments.model_validate(dict(arguments))
         try:
             return await self.handler(call, **validated.model_dump_one_level())
