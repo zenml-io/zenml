@@ -299,6 +299,45 @@ def test_requests_rejected_together_share_a_failed_renewal() -> None:
     assert store.signed_in == 2
 
 
+def test_a_failed_renewal_is_tried_again_by_a_later_call() -> None:
+    """A renewal that failed once doesn't fail every later call with it."""
+
+    class Flaky(_Store):
+        def authenticate(self, force: bool = False) -> None:
+            if self.signed_in == 0:
+                self.signed_in += 1
+                raise requests.ConnectionError("down for a moment")
+            super().authenticate(force)
+
+    store = Flaky(tokens=["old", "new"])
+
+    def answer(request: httpx.Request) -> httpx.Response:
+        if request.headers["Authorization"] == "Bearer old":
+            return httpx.Response(401, json={"detail": "expired"})
+        return httpx.Response(200, json={"ok": True})
+
+    async def run() -> List[Any]:
+        transport = httpx.MockTransport(answer)
+        async with httpx.AsyncClient(transport=transport) as http:
+            client = ZenMLRestClient(
+                store.url,
+                mcp_cli._login(store),  # type: ignore[arg-type]
+                http=http,
+                cache_key="k",
+            )
+            reads: List[Any] = []
+            for _ in range(2):
+                try:
+                    reads.append(await client.get("/info", what="Reading"))
+                except ZenMLUnavailable as error:
+                    reads.append(error)
+            return reads
+
+    first, second = asyncio.run(run())
+    assert isinstance(first, ZenMLUnavailable)
+    assert second == {"ok": True}
+
+
 def test_a_token_refused_after_renewal_is_not_sent_again() -> None:
     """The next call renews instead of resending the refused token."""
     store = _Store(tokens=["old", "new", "newer"])

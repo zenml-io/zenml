@@ -313,7 +313,7 @@ def _login(store: RestZenStore) -> "ZenMLAuth":
     Returns:
         An auth that signs in and renews as the REST store does.
     """
-    from zenml_mcp.client import ZenMLAuth, ZenMLRestError
+    from zenml_mcp.client import ZenMLAuth
 
     class StoredLogin(ZenMLAuth):
         """One sign-in at a time: requests rejected together renew once."""
@@ -323,8 +323,12 @@ def _login(store: RestZenStore) -> "ZenMLAuth":
             self._lock = asyncio.Lock()
             self._current: Optional[str] = None
             self._known = False
-            # A renewal's failure, for the requests that waited on it.
-            self._failed: Optional[Tuple[Optional[str], Exception]] = None
+            # The renewal in flight and the token it replaces. Requests
+            # rejected with that token share its outcome, a failure too;
+            # once it ends, the next rejection renews again.
+            self._renewing: Optional[
+                Tuple[Optional[str], "asyncio.Task[str]"]
+            ] = None
 
         async def token(self) -> Optional[str]:
             # Asked again each time, so an expired login shows; the store
@@ -335,23 +339,36 @@ def _login(store: RestZenStore) -> "ZenMLAuth":
                 return self._current
 
         async def renew(self, rejected: Optional[str]) -> str:
-            async with self._lock:
-                current = self._current
-                if self._known and current is not None and current != rejected:
-                    # Another request renewed it while this one waited.
-                    return current
-                if self._failed is not None and self._failed[0] == rejected:
-                    raise self._failed[1]
-                self._known = False
-                try:
+            if self._renewing is None or self._renewing[0] != rejected:
+                renewal = asyncio.ensure_future(self._renewed(rejected))
+                self._renewing = (rejected, renewal)
+            # A waiter's cancellation must not cancel the renewal that the
+            # other rejected requests wait on.
+            return await asyncio.shield(self._renewing[1])
+
+        async def _renewed(self, rejected: Optional[str]) -> str:
+            try:
+                async with self._lock:
+                    current = self._current
+                    if (
+                        self._known
+                        and current is not None
+                        and current != rejected
+                    ):
+                        # Another request renewed it while this one waited.
+                        return current
+                    self._known = False
                     token = await _owned(store, rejected, True)
-                except ZenMLRestError as error:
-                    self._failed = (rejected, error)
-                    raise
-                if token is None:
-                    raise RuntimeError("A renewed sign-in gave no token.")
-                self._current, self._known, self._failed = token, True, None
-                return token
+                    if token is None:
+                        raise RuntimeError("A renewed sign-in gave no token.")
+                    self._current, self._known = token, True
+                    return token
+            finally:
+                if (
+                    self._renewing is not None
+                    and self._renewing[1] is asyncio.current_task()
+                ):
+                    self._renewing = None
 
     return StoredLogin()
 
