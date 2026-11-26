@@ -40,6 +40,7 @@ from zenml_mcp.call import Asked, ZenMLCall  # noqa: E402
 from zenml_mcp.client import (  # noqa: E402
     BearerToken,
     ZenMLAuth,
+    ZenMLAuthError,
     ZenMLRestClient,
     ZenMLUnavailable,
 )
@@ -406,21 +407,24 @@ def test_feedback_refuses_an_empty_field() -> None:
 
 
 def _start(
-    answers: list[Any], monkeypatch: pytest.MonkeyPatch
+    answers: list[Any], monkeypatch: pytest.MonkeyPatch, user: int = 200
 ) -> tuple[Any, list[httpx.Request]]:
     """Check a server whose `/info` answers come from `answers`, in order.
 
     Args:
         answers: An exception to raise or a status to answer, per request.
         monkeypatch: Removes the retry's wait.
+        user: The status `/current-user` answers with.
 
     Returns:
-        The check's answer or exception, and the requests sent.
+        The check's answer or exception, and the `/info` requests sent.
     """
     monkeypatch.setattr(server, "START_RETRY_DELAY_S", 0.0)
     sent: list[httpx.Request] = []
 
     def respond(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/api/v1/current-user":
+            return httpx.Response(user, json={"detail": "revoked"})
         sent.append(request)
         answer = answers.pop(0)
         if isinstance(answer, Exception):
@@ -435,10 +439,18 @@ def _start(
             )
             try:
                 return await server.check_server(client)
-            except ZenMLUnavailable as error:
+            except (ZenMLUnavailable, ZenMLAuthError) as error:
                 return error
 
     return asyncio.run(check()), sent
+
+
+def test_start_up_refuses_a_token_the_server_no_longer_accepts(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`/info` needs no sign-in, so the check reads the signed-in user too."""
+    refused, _ = _start([200], monkeypatch, user=401)
+    assert isinstance(refused, ZenMLAuthError)
 
 
 def test_start_up_retries_once_after_a_network_stall(

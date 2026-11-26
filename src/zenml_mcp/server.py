@@ -210,7 +210,7 @@ def _refuse_unknown_arguments(server: MCPServer) -> None:
 
 
 async def check_server(client: ZenMLRestClient) -> dict[str, Any]:
-    """Read the server's info and sign in, retrying once after a stall.
+    """Read the server's info and the signed-in user, retrying once after a stall.
 
     Start-up only reads and signs in, so a retry is safe. Only a request
     that couldn't connect or got no answer in time is retried: a refusal,
@@ -243,5 +243,7 @@ async def _signed_in_info(client: ZenMLRestClient) -> dict[str, Any]:
     info: dict[str, Any] = await client.get(
         "/info", what="Reading server info"
     )
-    await client.auth.token()
+    # `/info` needs no sign-in, and a token the server revoked still looks
+    # valid locally until it expires: only the server can refuse it.
+    await client.get("/current-user", what="Reading the signed-in user")
     return info
