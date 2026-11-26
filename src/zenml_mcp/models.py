@@ -19,7 +19,7 @@ import re
 from typing import Any, Literal
 
 from zenml_mcp import common
-from zenml_mcp.call import ZenMLCall
+from zenml_mcp.call import Sensitive, ZenMLCall
 from zenml_mcp.client import (
     ZenMLBadRequest,
     ZenMLNotFound,
@@ -246,7 +246,12 @@ def register(tools: Tools) -> None:
             ],
         }
 
-    @write_tool(tools, "Change a model version's stage", destructive=True)
+    @write_tool(
+        tools,
+        "Change a model version's stage",
+        destructive=True,
+        sensitive=Sensitive("Changing a model version's stage"),
+    )
     async def zenml_set_model_version_stage(
         call: ZenMLCall,
         model: str,

@@ -18,7 +18,7 @@ from __future__ import annotations
 from typing import Any, Literal
 
 from zenml_mcp import common
-from zenml_mcp.call import ZenMLCall
+from zenml_mcp.call import Sensitive, ZenMLCall
 from zenml_mcp.client import ZenMLRestError
 from zenml_mcp.common import (
     body_of,
@@ -132,7 +132,13 @@ def register_snapshots(tools: Tools) -> None:
             ),
         }
 
-    @write_tool(tools, "Run a snapshot", destructive=True, open_world=True)
+    @write_tool(
+        tools,
+        "Run a snapshot",
+        destructive=True,
+        open_world=True,
+        sensitive=Sensitive("Starting a pipeline run"),
+    )
     async def zenml_run_snapshot(
         call: ZenMLCall,
         snapshot_id: str,
@@ -181,7 +187,11 @@ def register_run_control(tools: Tools) -> None:
     """
 
     @write_tool(
-        tools, "Rerun a pipeline run", destructive=True, open_world=True
+        tools,
+        "Rerun a pipeline run",
+        destructive=True,
+        open_world=True,
+        sensitive=Sensitive("Replaying a pipeline run"),
     )
     async def zenml_replay_pipeline_run(
         call: ZenMLCall,
@@ -215,7 +225,12 @@ def register_run_control(tools: Tools) -> None:
             "run": await started_run(client, new_run),
         }
 
-    @write_tool(tools, "Stop a pipeline run", destructive=True)
+    @write_tool(
+        tools,
+        "Stop a pipeline run",
+        destructive=True,
+        sensitive=Sensitive("Stopping a pipeline run"),
+    )
     async def zenml_stop_pipeline_run(
         call: ZenMLCall, run: str, project: str | None = None
     ) -> dict[str, Any]:
@@ -283,7 +298,12 @@ def register_run_control(tools: Tools) -> None:
         )
         return common.fit_page(answer, page=page, size=size)
 
-    @write_tool(tools, "Answer a paused run", destructive=True)
+    @write_tool(
+        tools,
+        "Answer a paused run",
+        destructive=True,
+        sensitive=Sensitive("Resuming or stopping a paused run"),
+    )
     async def zenml_resolve_run_input(
         call: ZenMLCall,
         wait_condition_id: str,

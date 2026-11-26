@@ -42,7 +42,7 @@ from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import replace
 from typing import Any
 
-from zenml_mcp.call import ZenMLCall
+from zenml_mcp.call import ZenMLCall, ask_if_sensitive
 from zenml_mcp.client import (
     UNREADABLE,
     ZenMLAlreadyExists,
@@ -81,7 +81,6 @@ from zenml_mcp.resource_catalog import (
 )
 from zenml_mcp.resource_spec import (
     COMPONENT_TYPES,
-    ask_if_sensitive,
     catalog_type,
     validate_mutation_payload,
 )
@@ -976,7 +975,7 @@ async def _checked_request(
     spec = get_resource_spec(resource_type)
     mutation = spec.mutation(operation)
     checked = validate_mutation_payload(spec, operation, payload)
-    ask_if_sensitive(call, mutation, checked)
+    ask_if_sensitive(call, mutation.sensitive, checked)
     scope: dict[str, Any] = {"kind": "global"}
     project = None
     if spec.scope == "global":

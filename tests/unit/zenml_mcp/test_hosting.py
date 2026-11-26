@@ -182,6 +182,8 @@ def test_a_stage_change_asks_the_host_before_anything_is_sent() -> None:
 
 _TRIGGER = "5824096b-e808-40aa-8d4e-44d7249b4499"
 _SNAPSHOT = "4c5dd2b9-c31a-42da-a776-418993f24a6e"
+_RUN = "c6a6047f-0c8d-4950-9a7a-d51093e4321b"
+_WAITING = "0f4d4a2e-3b51-4d6c-9a43-7c1d2f0b8e21"
 
 
 @pytest.mark.parametrize(
@@ -228,6 +230,43 @@ _SNAPSHOT = "4c5dd2b9-c31a-42da-a776-418993f24a6e"
             },
             "Switching a webhook on",
         ),
+        (
+            "zenml_action_resource",
+            {
+                "resource_type": "run_wait_condition",
+                "action": "resolve",
+                "resource_id": _WAITING,
+                "project_id": PROJECT,
+                "payload": {"resolution": "CONTINUE"},
+            },
+            "Resuming or stopping a paused run",
+        ),
+        (
+            "zenml_resolve_run_input",
+            {"wait_condition_id": _WAITING, "action": "continue"},
+            "Resuming or stopping a paused run",
+        ),
+        ("zenml_stop_pipeline_run", {"run": _RUN}, "Stopping a pipeline run"),
+        (
+            "zenml_replay_pipeline_run",
+            {"run": _RUN},
+            "Replaying a pipeline run",
+        ),
+        (
+            "zenml_run_snapshot",
+            {"snapshot_id": _SNAPSHOT},
+            "Starting a pipeline run",
+        ),
+        (
+            "zenml_trigger_pipeline",
+            {"snapshot_name_or_id": "nightly"},
+            "Starting a pipeline run",
+        ),
+        (
+            "zenml_set_model_version_stage",
+            {"model": "churn", "version": "3", "stage": "production"},
+            "Changing a model version's stage",
+        ),
     ],
 )
 def test_a_write_that_can_start_runs_asks_the_host_first(
@@ -253,7 +292,10 @@ def test_a_write_that_can_start_runs_asks_the_host_first(
 
 
 def test_every_write_that_can_start_runs_is_declared_sensitive() -> None:
-    """A trigger type added to the catalog is gated without being listed."""
+    """Each write that starts, resumes, stops or arms runs asks the host.
+
+    A trigger type added to the catalog is gated without being listed.
+    """
     triggers = [
         spec
         for spec in RESOURCE_REGISTRY.values()
@@ -267,6 +309,17 @@ def test_every_write_that_can_start_runs_is_declared_sensitive() -> None:
     # A webhook's triggers dispatch runs only while it is on.
     webhook = RESOURCE_REGISTRY["webhook"].mutations["update"].sensitive
     assert webhook is not None and webhook.when_set == ("active",)
+    assert RESOURCE_REGISTRY["run_wait_condition"].actions["resolve"].sensitive
+    run_control = {
+        "zenml_run_snapshot",
+        "zenml_replay_pipeline_run",
+        "zenml_trigger_pipeline",
+        "zenml_stop_pipeline_run",
+        "zenml_resolve_run_input",
+        "zenml_set_model_version_stage",
+    }
+    declared = {spec.name for spec in TOOL_SPECS if spec.sensitive}
+    assert run_control <= declared
 
 
 def test_a_read_only_call_refuses_a_write_tool_before_sending() -> None:

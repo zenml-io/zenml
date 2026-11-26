@@ -27,7 +27,7 @@ from typing import Any, cast
 from mcp.types import CallToolResult
 
 from zenml_mcp import common
-from zenml_mcp.call import ZenMLCall
+from zenml_mcp.call import Sensitive, ZenMLCall
 from zenml_mcp.client import (
     UNREADABLE,
     ZenMLBadRequest,
@@ -652,6 +652,7 @@ def register(tools: Tools) -> None:
         destructive=True,
         open_world=True,
         description=_TRIGGER_PIPELINE,
+        sensitive=Sensitive("Starting a pipeline run"),
     )
     async def zenml_trigger_pipeline(
         call: ZenMLCall,

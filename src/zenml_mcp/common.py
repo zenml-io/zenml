@@ -30,6 +30,7 @@ import pydantic_core
 from mcp.types import CallToolResult, TextContent, ToolAnnotations
 
 from zenml_mcp.cache import SingleFlightCache
+from zenml_mcp.call import Sensitive
 from zenml_mcp.client import (
     ZenMLBadRequest,
     ZenMLNotFound,
@@ -169,6 +170,7 @@ def write_tool(
     open_world: bool = False,
     description: str | None = None,
     secret_writes: SecretWrites | None = None,
+    sensitive: Sensitive | None = None,
 ) -> Callable[..., Any]:
     """Register a write tool.
 
@@ -179,6 +181,7 @@ def write_tool(
         open_world: Whether it may reach beyond the ZenML server.
         description: Replaces its docstring.
         secret_writes: The writes a secret page may run.
+        sensitive: What the host is asked before every call, if anything.
 
     Returns:
         The decorator that registers it.
@@ -193,6 +196,7 @@ def write_tool(
             open_world_hint=open_world,
         ),
         secret_writes=secret_writes,
+        sensitive=sensitive,
     )
 
 

@@ -31,7 +31,7 @@ from typing import Any
 
 from mcp.types import CallToolResult
 
-from zenml_mcp.call import ZenMLCall
+from zenml_mcp.call import ZenMLCall, ask_if_sensitive
 from zenml_mcp.client import (
     UNREADABLE,
     ZenMLBadRequest,
@@ -52,7 +52,6 @@ from zenml_mcp.resource_catalog import get_resource_spec
 from zenml_mcp.resource_spec import (
     TAGGABLE_RESOURCE,
     ResourceSpec,
-    ask_if_sensitive,
     catalog_type,
     validate_action_payload,
 )
@@ -393,7 +392,7 @@ async def act(
     spec = get_resource_spec(resource_type)
     action_spec = spec.action(action)
     checked = validate_action_payload(action_spec, payload)
-    ask_if_sensitive(call, action_spec, checked)
+    ask_if_sensitive(call, action_spec.sensitive, checked)
     if resource_type == "tag":
         _check_tag_parents(action, checked)
     target = exact_uuid("resource_id", resource_id)

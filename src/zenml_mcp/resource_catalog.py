@@ -29,6 +29,7 @@ from itertools import combinations
 from types import MappingProxyType
 from typing import Any
 
+from zenml_mcp.call import Sensitive
 from zenml_mcp.client import ZenMLBadRequest
 from zenml_mcp.resource_spec import (
     _ENUM_FILTERS,
@@ -43,7 +44,6 @@ from zenml_mcp.resource_spec import (
     ResourceSpec,
     Rest,
     ScopeKind,
-    Sensitive,
 )
 
 _STR = {"type": "string"}
@@ -1425,6 +1425,7 @@ _RESOURCE_SPECS = (
                 },
                 required=("resolution",),
                 returns=True,
+                sensitive=Sensitive("Resuming or stopping a paused run"),
             ),
         ),
         default_size=10,

@@ -35,7 +35,7 @@ from mcp.server.mcpserver.utilities.func_metadata import (
 )
 from mcp.types import CallToolResult, TextContent, ToolAnnotations
 
-from zenml_mcp.call import ZenMLCall
+from zenml_mcp.call import Sensitive, ZenMLCall, ask_if_sensitive
 from zenml_mcp.client import ZenMLPermissionDenied, ZenMLRestError
 
 
@@ -127,6 +127,9 @@ class ToolSpec:
         needs_server: Whether the tool reads ZenML. A host may run one that
             doesn't without a server or a sign-in: it never uses its call's
             client.
+        sensitive: Whether every call of the tool starts, resumes, stops or
+            arms runs, or moves a model stage, so `run` asks the host first.
+            The generic write tools declare it per resource type instead.
     """
 
     name: str
@@ -137,6 +140,7 @@ class ToolSpec:
     structured_output: bool | None = None
     secret_writes: SecretWrites | None = None
     needs_server: bool = True
+    sensitive: Sensitive | None = None
 
     @cached_property
     def signature(self) -> inspect.Signature:
@@ -185,8 +189,10 @@ class ToolSpec:
                 f"{self.name} changes ZenML, and this server is read-only.",
             )
         validated = self.arguments.model_validate(dict(arguments))
+        given = validated.model_dump_one_level()
+        ask_if_sensitive(call, self.sensitive, given)
         try:
-            return await self.handler(call, **validated.model_dump_one_level())
+            return await self.handler(call, **given)
         except ZenMLRestError as error:
             return error_result(error.kind, error.message)
 
@@ -235,6 +241,7 @@ class Tools:
         structured_output: bool | None = None,
         secret_writes: SecretWrites | None = None,
         needs_server: bool = True,
+        sensitive: Sensitive | None = None,
     ) -> Callable[[Handler], Handler]:
         """Register a tool under its handler's name.
 
@@ -246,6 +253,7 @@ class Tools:
             structured_output: Passed to the MCP SDK.
             secret_writes: The writes a secret page may run.
             needs_server: Whether it reads ZenML.
+            sensitive: What the host is asked before every call, if anything.
 
         Returns:
             A decorator that registers the handler and returns it.
@@ -262,6 +270,7 @@ class Tools:
                     structured_output=structured_output,
                     secret_writes=secret_writes,
                     needs_server=needs_server,
+                    sensitive=sensitive,
                 )
             )
             return handler

@@ -21,7 +21,7 @@ before a sensitive write, and whether it offers write tools at all.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
@@ -82,13 +82,12 @@ class ZenMLCall:
         client: The caller's client, built for this call.
         secret_page: Where the user types a write's secret. Without one, a
             secret in the arguments is sent to ZenML, as a local server does.
-        sensitive_write: Called before a generic write or action that can
-            start runs (any trigger write, attaching a trigger to a snapshot,
-            replaying a run) or changes which model version holds a stage,
-            with what it does; it raises to refuse the write. The resource
-            catalog declares which writes these are. The tools that start
-            runs themselves don't call it: a host restricts them by their
-            annotations.
+        sensitive_write: Called before a write that starts, resumes, stops
+            or arms runs (the run tools, any trigger write, attaching a
+            trigger to a snapshot, switching a webhook on, answering a paused
+            run) or changes which model version holds a stage, with what it
+            does; it raises to refuse the write. Each tool or resource
+            catalog entry declares which writes these are (`Sensitive`).
         read_only: Whether the host offers no write tool: every tool not
             marked read-only refuses the call, and the resource catalog
             describes reads only.
@@ -98,3 +97,46 @@ class ZenMLCall:
     secret_page: SecretPage | None = None
     sensitive_write: Callable[[str], None] = field(default=_allow)
     read_only: bool = False
+
+
+@dataclass(frozen=True)
+class Sensitive:
+    """A write a host may refuse.
+
+    It starts, resumes, stops or arms runs, or moves a model version's stage.
+
+    Attributes:
+        what: What the write does, as the host's `sensitive_write` is told.
+        when_set: The arguments or payload fields that make the write
+            sensitive when one is set to anything but null or false; empty
+            when it always is.
+    """
+
+    what: str
+    when_set: tuple[str, ...] = ()
+
+
+def ask_if_sensitive(
+    call: ZenMLCall,
+    sensitive: Sensitive | None,
+    given: Mapping[str, Any],
+) -> None:
+    """Ask the call's host before a sensitive write; it raises to refuse it.
+
+    This is the one place `sensitive_write` is called, so a write is gated
+    by what its tool or catalog entry declares, not by each tool remembering
+    to ask.
+
+    Args:
+        call: The tool call, with its host's check.
+        sensitive: What the write declares, or None when it isn't sensitive.
+        given: The write's validated arguments or payload.
+    """
+    if sensitive is None:
+        return
+    if sensitive.when_set and all(
+        given.get(name) is None or given.get(name) is False
+        for name in sensitive.when_set
+    ):
+        return
+    call.sensitive_write(sensitive.what)
