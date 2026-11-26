@@ -181,7 +181,9 @@ class ToolSpec:
 
         Returns:
             The tool's answer, or an error result when the call is read-only
-            and the tool writes, or ZenML refused or failed the call.
+            and the tool writes, or the host or ZenML refused the call with
+            a ZenML error, or ZenML failed it. Any other error the host
+            raises to refuse a sensitive write propagates.
         """
         if call.read_only and self.annotations.read_only_hint is not True:
             return error_result(
@@ -190,8 +192,10 @@ class ToolSpec:
             )
         validated = self.arguments.model_validate(dict(arguments))
         given = validated.model_dump_one_level()
-        ask_if_sensitive(call, self.sensitive, given)
         try:
+            # Asked here as the generic writes ask in their handler, so a
+            # host's refusal is answered the same whichever tool wrote.
+            ask_if_sensitive(call, self.sensitive, given)
             return await self.handler(call, **given)
         except ZenMLRestError as error:
             return error_result(error.kind, error.message)

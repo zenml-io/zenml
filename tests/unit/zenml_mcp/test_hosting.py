@@ -44,6 +44,7 @@ from zenml_mcp.client import (  # noqa: E402
     BearerToken,
     ZenMLAuth,
     ZenMLAuthError,
+    ZenMLPermissionDenied,
     ZenMLRestClient,
     ZenMLUnavailable,
 )
@@ -322,6 +323,45 @@ def test_every_write_that_can_start_runs_is_declared_sensitive() -> None:
     }
     declared = {spec.name for spec in TOOL_SPECS if spec.sensitive}
     assert run_control <= declared
+
+
+def _deny(what: str) -> None:
+    raise ZenMLPermissionDenied(f"Refused: {what}.")
+
+
+@pytest.mark.parametrize(
+    ("tool", "arguments"),
+    [
+        ("zenml_stop_pipeline_run", {"run": _RUN}),
+        (
+            "zenml_update_resource",
+            {
+                "resource_type": "webhook",
+                "resource_id": "a57684e2-c51e-4278-be08-ff69b9c0ea4a",
+                "project_id": PROJECT,
+                "payload": {"active": True},
+            },
+        ),
+    ],
+    ids=["run_tool", "generic_write"],
+)
+def test_a_typed_refusal_is_answered_the_same_by_every_write(
+    tool: str, arguments: dict[str, Any]
+) -> None:
+    """A host that refuses with a ZenML error gets that error's answer.
+
+    A run tool and a generic write answer it the same way, as a tool error
+    of its kind, and send nothing. Any other exception, such as a host's
+    own, still propagates (see the test above).
+
+    Args:
+        tool: The write tool.
+        arguments: A sensitive write.
+    """
+    answer, sent = _run(tool, arguments, sensitive_write=_deny)
+    assert answer.is_error
+    assert answer.structured_content["error"]["kind"] == "permission_denied"
+    assert sent == []
 
 
 def test_a_read_only_call_refuses_a_write_tool_before_sending() -> None:
