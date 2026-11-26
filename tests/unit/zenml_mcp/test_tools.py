@@ -421,6 +421,50 @@ def test_a_platform_event_trigger_is_switched_off_with_its_stored_source() -> (
     assert put["body"]["active"] is False
 
 
+@pytest.mark.parametrize(
+    "tool", ["zenml_run_snapshot", "zenml_replay_pipeline_run"]
+)
+def test_a_started_run_is_returned_when_its_link_cannot_be_read(
+    tool: str,
+) -> None:
+    """The run exists once ZenML started it; only its link is left out.
+
+    An error here would invite a retry, which starts a second run.
+
+    Args:
+        tool: A tool that starts a run.
+    """
+    run = WRITE_GOLDEN["entities"]["pipeline_run"]
+    snapshot = str(uuid.uuid4())
+    zenml = _ZenML(
+        {
+            f"/api/v1/pipeline_snapshots/{snapshot}/runs": lambda _: _json(
+                run
+            ),
+            f"/api/v1/runs/{run['id']}": lambda _: _json(run),
+            f"/api/v1/runs/{run['id']}/replay": lambda _: _json(run),
+            "/api/v1/info": lambda _: _json({"detail": "down"}, 503),
+        }
+    )
+    arguments = (
+        {"snapshot_id": snapshot}
+        if tool == "zenml_run_snapshot"
+        else {"run": run["id"]}
+    )
+
+    async def start() -> Any:
+        # A server of its own: no other test's server info is cached for it.
+        cold = f"https://{uuid.uuid4().hex}.example"
+        async with connected(zenml, server_url=cold) as mcp:
+            return await mcp.call_tool(tool, arguments)
+
+    result = asyncio.run(start())
+    assert not result.is_error, result.structured_content
+    assert result.structured_content["outcome"] == "started"
+    assert result.structured_content["run"]["id"] == run["id"]
+    assert "dashboard_url" not in result.structured_content["run"]
+
+
 def test_starting_a_run_refuses_credentials_and_a_missing_target() -> None:
     """Credentials, no target, internal fields and two targets at once."""
     value = _never_echoed()

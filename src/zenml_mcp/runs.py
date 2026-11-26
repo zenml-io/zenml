@@ -20,7 +20,7 @@ import statistics
 from collections import Counter
 from typing import Any
 
-from zenml_mcp.client import ZenMLRestClient
+from zenml_mcp.client import ZenMLRestClient, ZenMLRestError
 from zenml_mcp.common import (
     body_of,
     by_name_or_id,
@@ -165,6 +165,29 @@ async def run_with_url(
         The run's summary, with `dashboard_url`.
     """
     return run_summary(run, await run_url(client, run))
+
+
+async def started_run(
+    client: ZenMLRestClient, run: dict[str, Any]
+) -> dict[str, Any]:
+    """A run ZenML just started, with its dashboard link when it can be read.
+
+    The run exists once ZenML answered the start, so a failed link lookup
+    leaves the link out rather than failing a call a client might retry,
+    which would start a second run.
+
+    Args:
+        client: The client of the server the run is on.
+        run: The run ZenML answered the start with.
+
+    Returns:
+        The run's summary, with `dashboard_url` when it could be built.
+    """
+    try:
+        url: str | None = await run_url(client, run)
+    except ZenMLRestError:
+        url = None
+    return run_summary(run, url)
 
 
 async def resolve_run(

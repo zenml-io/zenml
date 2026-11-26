@@ -33,7 +33,7 @@ from zenml_mcp.common import (
 )
 from zenml_mcp.credentials import redact, refuse_run_credentials
 from zenml_mcp.registry import Tools
-from zenml_mcp.runs import resolve_run, run_with_url
+from zenml_mcp.runs import resolve_run, started_run
 
 _TEMPLATE_KEYS = ("run_name", "enable_cache", "parameters", "tags")
 
@@ -169,7 +169,7 @@ def register_snapshots(tools: Tools) -> None:
         )
         return {
             "outcome": "started",
-            "run": await run_with_url(client, run),
+            "run": await started_run(client, run),
         }
 
 
@@ -212,7 +212,7 @@ def register_run_control(tools: Tools) -> None:
         return {
             "outcome": "started",
             "replayed_run_id": original["id"],
-            "run": await run_with_url(client, new_run),
+            "run": await started_run(client, new_run),
         }
 
     @write_tool(tools, "Stop a pipeline run", destructive=True)
