@@ -23,6 +23,8 @@ import asyncio
 import copy
 import json
 import logging
+import shutil
+import subprocess
 from collections.abc import Sequence
 from typing import Any, Optional
 from urllib.parse import parse_qs, urlsplit
@@ -35,7 +37,7 @@ pytest.importorskip("mcp")
 from pydantic import ValidationError  # noqa: E402
 
 from tests.unit.zenml_mcp.replay import connected, golden  # noqa: E402
-from zenml_mcp import server  # noqa: E402
+from zenml_mcp import server, views  # noqa: E402
 from zenml_mcp.call import Asked, ZenMLCall  # noqa: E402
 from zenml_mcp.client import (  # noqa: E402
     BearerToken,
@@ -523,6 +525,46 @@ def test_a_view_loads_nothing_from_another_origin(uri: str) -> None:
     assert "const { App } = (() => {" in html
     assert "callOpenedIn(toolName, args)" in html
     assert "app.ontoolinput" in html
+
+
+# A list of 15 items read 20 at a time, where a page of 20 doesn't fit in one
+# answer and is cut to 5: as `zenml_list_resources` answers.
+_PAGED_LIST = r"""
+const items = Array.from({ length: 15 }, (_, i) => ({ id: i }));
+const asked = [];
+async function callServerToolSafe(name, args) {
+  asked.push([args.page, args.size]);
+  const start = (args.page - 1) * args.size;
+  if (start >= items.length) {
+    return { error: { kind: "invalid_request", message: "page out of range" } };
+  }
+  const page = items.slice(start, start + args.size);
+  if (args.size === 20) {
+    return { items: page.slice(0, 5), total: 15, page: 1, size: 20,
+             truncated: true, next: { size: 5, page: 2 } };
+  }
+  return { items: page, total: 15, page: args.page, size: args.size };
+}
+listPage({ resource_type: "pipeline_run", page: 1, size: 20 }).then(
+  (result) => console.log(JSON.stringify({ result, asked })),
+);
+"""
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="needs Node.js")
+def test_a_view_reads_no_page_past_the_last_item() -> None:
+    """A short last page ends the read; ZenML refuses a page past the end."""
+    script = views._LIST_PAGE + _PAGED_LIST
+    out = subprocess.run(
+        ["node", "-e", script],
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=60,
+    )
+    read = json.loads(out.stdout)
+    assert [item["id"] for item in read["result"]["items"]] == list(range(15))
+    assert read["asked"] == [[1, 20], [2, 5], [3, 5]]
 
 
 def test_a_connector_update_keeps_its_stored_secrets_out_of_errors(

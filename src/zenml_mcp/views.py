@@ -77,7 +77,8 @@ _BOUNDED_LOGS = (
 # A list answer too large for one tool result is cut, and its `next` holds the
 # size and page of the call that reads on. The views count the items of the
 # pages they ask for, so each of their list calls follows `next` until its page
-# is whole.
+# is whole, or until the list's `total` ends it: ZenML refuses a page past the
+# last item.
 _LIST_PAGE = r"""    /** Page `args.page` of `args.size` items, read on through cut answers. */
     async function listPage(args) {
       const size = args.size;
@@ -94,7 +95,10 @@ _LIST_PAGE = r"""    /** Page `args.page` of `args.size` items, read on through 
         items.push(...data.items);
         if (data.next) {
           next = { size: data.next.size, page: data.next.page };
-        } else if (data.items.length === next.size) {
+        } else if (
+          data.items.length === next.size &&
+          next.page * next.size < data.total
+        ) {
           next = { size: next.size, page: next.page + 1 };
         } else {
           break;
