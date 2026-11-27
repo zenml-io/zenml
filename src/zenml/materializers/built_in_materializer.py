@@ -251,6 +251,23 @@ def _is_serializable(obj: Any) -> bool:
     return False
 
 
+def _restore_tuple_key(key: Any) -> Any:
+    """Turn a dict key that was stored as a JSON array back into a tuple.
+
+    Dict keys are hashable, so a list among the loaded keys can only be a
+    tuple key that JSON wrote as an array.
+
+    Args:
+        key: A dict key as loaded from the artifact store.
+
+    Returns:
+        The key, with lists converted back to tuples.
+    """
+    if isinstance(key, list):
+        return tuple(_restore_tuple_key(item) for item in key)
+    return key
+
+
 def _custom_json_converter(obj: Any) -> Any:
     """Custom JSON converter that handles sets and tuples.
 
@@ -420,6 +437,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         # Cast the data to the correct type.
         if issubclass(data_type, dict) and not isinstance(outputs, dict):
             keys, values = outputs
+            keys = [_restore_tuple_key(key) for key in keys]
             if issubclass(data_type, defaultdict):
                 return dict(zip(keys, values))
             if issubclass(data_type, Counter):
