@@ -18,6 +18,11 @@ from zenml.integrations.huggingface.flavors.huggingface_deployer_flavor import (
     HuggingFaceDeployerFlavor,
     HuggingFaceDeployerSettings,
 )
+from zenml.integrations.huggingface.flavors.huggingface_jobs_step_operator_flavor import (  # noqa
+    HuggingFaceJobsStepOperatorConfig,
+    HuggingFaceJobsStepOperatorFlavor,
+    HuggingFaceJobsStepOperatorSettings,
+)
 from zenml.integrations.huggingface.flavors.huggingface_model_deployer_flavor import (  # noqa
     HuggingFaceModelDeployerConfig,
     HuggingFaceModelDeployerFlavor,
@@ -27,8 +32,11 @@ from zenml.integrations.huggingface.flavors.huggingface_model_deployer_flavor im
 __all__ = [
     "HuggingFaceDeployerConfig",
     "HuggingFaceDeployerFlavor",
+    "HuggingFaceDeployerSettings",
+    "HuggingFaceJobsStepOperatorConfig",
+    "HuggingFaceJobsStepOperatorFlavor",
+    "HuggingFaceJobsStepOperatorSettings",
     "HuggingFaceModelDeployerConfig",
     "HuggingFaceModelDeployerFlavor",
     "HuggingFaceBaseConfig",
-    "HuggingFaceDeployerSettings",
 ]
