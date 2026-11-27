@@ -1161,3 +1161,78 @@ def test_step_with_keyword_only_arguments_works():
 
     with does_not_raise():
         test_pipeline()
+
+
+def test_step_source_code_hash_matches_the_caching_parameter():
+    """The hash a step run stores is the one `caching_parameters` publishes.
+
+    Regression test for #5324: the hash was computed in two places, and the
+    replay check compared a digest against raw source. One property now backs
+    both, so they cannot drift apart again.
+    """
+    import hashlib
+
+    from zenml.constants import CODE_HASH_PARAMETER_NAME
+
+    @step
+    def test_step():
+        pass
+
+    expected = hashlib.sha256(
+        test_step.source_code_cache_value.encode("utf-8")
+    ).hexdigest()
+
+    assert test_step.source_code_hash == expected
+    assert (
+        test_step.caching_parameters[CODE_HASH_PARAMETER_NAME]
+        == test_step.source_code_hash
+    )
+
+
+def test_step_source_code_hash_is_not_the_source_itself():
+    """The stored value is a digest, which is what made the replay check wrong.
+
+    The comparison in `BaseStep.load_step_run_inputs` used to test
+    `step_run.code_hash != self.source_code_cache_value`, which could never be
+    equal. Pinning the two apart keeps that mistake from coming back.
+    """
+
+    @step
+    def test_step():
+        pass
+
+    assert test_step.source_code_hash != test_step.source_code_cache_value
+    assert len(test_step.source_code_hash) == 64
+
+
+def test_step_code_hash_lives_in_caching_parameters_not_parameters():
+    """Pins which dict publishes the code hash.
+
+    `StepRunRequestFactory.populate_request` read it from
+    `step.config.parameters`, where it has never been, so every step run was
+    stored with `code_hash=None`. `parameters` carries the user's own step
+    inputs; the hash is published by `caching_parameters`. If that ever moves,
+    this fails rather than silently returning `None` again.
+    """
+    from zenml.constants import CODE_HASH_PARAMETER_NAME
+
+    @step
+    def test_step():
+        pass
+
+    assert CODE_HASH_PARAMETER_NAME in test_step.caching_parameters
+    assert CODE_HASH_PARAMETER_NAME not in test_step.configuration.parameters
+
+
+def test_step_source_code_hash_changes_with_the_code():
+    """Two different step bodies hash differently."""
+
+    @step
+    def step_a():
+        pass
+
+    @step
+    def step_b():
+        return 1
+
+    assert step_a.source_code_hash != step_b.source_code_hash
