@@ -65,7 +65,7 @@ jobs:
           fetch-depth: 1
       - name: Run Claude Code
         id: claude
-        uses: anthropics/claude-code-action@4845bacbb38b3c4b15d948f035349786f678e068  # v1.0.267
+        uses: anthropics/claude-code-action@cc98b3ae241b0fcfb6a42a2690751afffecb4452  # v1.0.278
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         with:
@@ -141,6 +141,6 @@ jobs:
             - Use top-level comments for general observations or praise.
             - Use `gh pr comment` to post your review comment to the PR.
             Be constructive and helpful in your feedback.
-          claude_args: --allowed-tools "mcp__github_inline_comment__create_inline_comment,Bash(gh
+          claude_args: --permission-mode default --allowed-tools "mcp__github_inline_comment__create_inline_comment,Bash(gh
             issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh
             pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(bash scripts/format.sh:*)"

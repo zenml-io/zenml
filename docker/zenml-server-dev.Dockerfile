@@ -81,6 +81,7 @@ COPY --chown=$USERNAME:$USER_GID  README.md pyproject.toml ./
 # the dependencies when the source code changes but the dependencies don't.
 COPY --chown=$USERNAME:$USER_GID src/zenml/__init__.py ./src/zenml/
 COPY --chown=$USERNAME:$USER_GID src/zenml_cli/__init__.py ./src/zenml_cli/
+COPY --chown=$USERNAME:$USER_GID src/zenml_mcp/__init__.py ./src/zenml_mcp/
 
 # Run pip install before copying the source files to install dependencies in
 # the virtual environment. Also create a requirements.txt file to keep track of

@@ -159,7 +159,7 @@ This will return a response like this (the short-lived API token is the `access_
 * Tokens are temporary and will expire after a configured duration (typically 1 hour, but it depends on how the server is configured)
 * You can request a new short-lived API token at any time using the same API key
 * For security reasons, you should handle short-lived API tokens carefully and never share them
-* If your API key is compromised, you can rotate it using the ZenML dashboard or by running the `zenml service-account api-key <SERVICE_ACCOUNT_NAME> rotate` command
+* If your API key is compromised, you can rotate it using the ZenML UI or by running the `zenml service-account api-key <SERVICE_ACCOUNT_NAME> rotate` command
 {% endhint %}
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

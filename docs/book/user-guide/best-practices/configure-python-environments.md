@@ -32,7 +32,7 @@ Please note that the `@pipeline` function in your code is **only ever called** i
 
 ## ZenML Server Environment
 
-The ZenML server environment is a FastAPI application managing pipelines and metadata. It includes the ZenML Dashboard and is accessed when you [deploy ZenML](https://docs.zenml.io/deploying-zenml/deploying-zenml). To manage dependencies, install them during [ZenML deployment](https://docs.zenml.io/deploying-zenml/deploying-zenml), but only if you have custom integrations, as most are built-in.
+The ZenML server environment is a FastAPI application managing pipelines and metadata. It includes the ZenML UI and is accessed when you [deploy ZenML](https://docs.zenml.io/deploying-zenml/deploying-zenml). To manage dependencies, install them during [ZenML deployment](https://docs.zenml.io/deploying-zenml/deploying-zenml), but only if you have custom integrations, as most are built-in.
 
 ## Execution Environments
 

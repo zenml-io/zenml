@@ -14,7 +14,7 @@ zenml login https://...
 This command starts a browser flow to validate the device you are connecting from. You can choose whether to mark the device as trusted. If you don’t trust the device, a 24‑hour token is issued; if you do, a 30‑day token is issued.
 
 {% hint style="warning" %}
-Managing authorized devices for ZenML Pro workspaces is not yet supported in the dashboard. CLI device management is available.
+Managing authorized devices for ZenML Pro workspaces is not yet supported in the UI. CLI device management is available.
 {% endhint %}
 
 To see all devices you've permitted, use the following command:

@@ -55,6 +55,7 @@ from zenml.models import (
     PipelineRunTriggerInfo,
     PipelineRunUpdate,
     RunMetadataEntry,
+    StepRunUpdate,
 )
 from zenml.models.v2.core.pipeline_run import PipelineRunResponseResources
 from zenml.utils.run_utils import (
@@ -104,6 +105,12 @@ if TYPE_CHECKING:
 
 
 logger = get_logger(__name__)
+
+# Fields of a step run update that can't affect the status of its pipeline
+# run: the cache expiration, links to saved or loaded artifacts, and logs.
+_RUN_STATUS_INDEPENDENT_STEP_RUN_UPDATE_FIELDS = frozenset(
+    {"cache_expires_at", "outputs", "loaded_artifact_versions", "add_logs"}
+)
 
 
 class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
@@ -957,6 +964,31 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         self.updated = utc_now()
         return self
 
+    @staticmethod
+    def step_run_update_affects_status(step_run_update: StepRunUpdate) -> bool:
+        """Check whether a step run update can affect the status of a run.
+
+        Steps can update some fields after their run finished, for example to
+        expire their cache. Such updates shouldn't depend on deriving the
+        status of the finished run again.
+
+        Args:
+            step_run_update: The update of one of the steps of the run.
+
+        Returns:
+            False if the update only sets fields in
+            `_RUN_STATUS_INDEPENDENT_STEP_RUN_UPDATE_FIELDS`, True otherwise.
+            Empty updates and updates that set any other field, including
+            fields added to `StepRunUpdate` later, return True. A field counts
+            as set even when it's set to `None`.
+        """
+        updated_fields = step_run_update.model_fields_set
+        return not (
+            updated_fields
+            and updated_fields
+            <= _RUN_STATUS_INDEPENDENT_STEP_RUN_UPDATE_FIELDS
+        )
+
     def update_status(
         self,
         requested_status: Optional[ExecutionStatus],
@@ -1016,6 +1048,17 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             # This could happen if the orchestrator starts running the pipeline
             # before the client environment can update the status to provisioning.
             return False
+
+        if (
+            current_status == ExecutionStatus.STOPPING
+            and requested_status is not None
+            and not requested_status.is_finished
+        ):
+            # Orchestrators usually keep reporting a stopping run as running
+            # until its job is gone, which must not undo the stop request. Only
+            # the requested status is dropped, so that the step statuses can
+            # still settle the run at stopped.
+            requested_status = None
 
         # Snapshot always exists for pipeline runs of newer versions
         assert self.snapshot
@@ -1349,7 +1392,13 @@ def _compute_static_pipeline_run_status(
     Returns:
         The status of the pipeline run.
     """
-    if run_status == ExecutionStatus.STOPPING:
+    if run_status == ExecutionStatus.STOPPED:
+        # A stopped run stays stopped, and a requested stopped status stops the
+        # run, for example from a status refresh when the job of the run is
+        # gone. Its steps might never report a final status then, so they
+        # can't move the run out of stopped.
+        return ExecutionStatus.STOPPED
+    elif run_status == ExecutionStatus.STOPPING:
         if all(status.is_finished for status in step_statuses):
             return ExecutionStatus.STOPPED
         else:

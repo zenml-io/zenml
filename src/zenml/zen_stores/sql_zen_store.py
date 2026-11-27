@@ -13166,7 +13166,14 @@ class SqlZenStore(BaseZenStore):
                 ExecutionStatus.FAILED,
                 ExecutionStatus.CANCELLED,
             }:
-                can_retry = existing_step_run.is_retriable
+                # A step that is already `RETRYING` only fails again when the
+                # orchestrator decided not to retry it after all, so that
+                # failure is final.
+                can_retry = (
+                    existing_step_run.is_retriable
+                    and existing_step_run.status
+                    != ExecutionStatus.RETRYING.value
+                )
 
                 if can_retry:
                     run_status = ExecutionStatus(
@@ -13234,10 +13241,13 @@ class SqlZenStore(BaseZenStore):
                     session, existing_step_run.id
                 )
 
-            self._update_pipeline_run_status(
-                pipeline_run_id=existing_step_run.pipeline_run_id,
-                session=session,
-            )
+            if PipelineRunSchema.step_run_update_affects_status(
+                step_run_update
+            ):
+                self._update_pipeline_run_status(
+                    pipeline_run_id=existing_step_run.pipeline_run_id,
+                    session=session,
+                )
 
             # Add logs if specified
             if step_run_update.add_logs:
@@ -14022,8 +14032,8 @@ class SqlZenStore(BaseZenStore):
             The updated user.
 
         Raises:
-            IllegalOperationError: If the request tries to update the username
-                for the default user account.
+            IllegalOperationError: If the request would demote the only admin
+                in a store without external authentication.
             EntityExistsError: If the request tries to update the username to
                 a name that is already taken by another user or service account.
         """
@@ -14032,11 +14042,17 @@ class SqlZenStore(BaseZenStore):
                 user_id, session=session, service_account=False
             )
 
+            # External authentication supplies the admin role, so the workspace
+            # can have zero local admins when no external admins have logged in.
             if (
                 existing_user.is_admin is True
                 and user_update.is_admin is False
+                and not (
+                    handle_bool_env_var(ENV_ZENML_SERVER)
+                    and ServerConfiguration.get_server_config().auth_scheme
+                    == AuthScheme.EXTERNAL
+                )
             ):
-                # There must be at least one admin account configured
                 admin_accounts_count = session.scalar(
                     select(func.count(UserSchema.id)).where(  # type: ignore[arg-type]
                         UserSchema.is_admin == True  # noqa: E712

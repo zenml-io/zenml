@@ -5,7 +5,7 @@ icon: waveform-lines
 
 # Leveraging MCP
 
-ZenML server supports a chat interface that allows you to interact with the server using natural language through the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/). This feature enables you to query your ML pipelines, analyze performance metrics, and generate reports using conversational language instead of traditional CLI commands or dashboard interfaces.
+ZenML server supports a chat interface that allows you to interact with the server using natural language through the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/). This feature enables you to query your ML pipelines, analyze performance metrics, and generate reports using conversational language instead of traditional CLI commands or the UI.
 
 ![ZenML MCP Server Overview](../../.gitbook/assets/mcp-zenml.png)
 
@@ -23,7 +23,7 @@ MCP follows a client-server architecture where:
 
 The ZenML MCP Server offers several advantages for developers and teams:
 
-1. **Natural Language Interaction**: Query your ZenML metadata, code and logs using conversational language instead of memorizing CLI commands or navigating dashboard interfaces.
+1. **Natural Language Interaction**: Query your ZenML metadata, code and logs using conversational language instead of memorizing CLI commands or navigating the UI.
 2. **Contextual Development**: Get insights about failing pipelines or performance metrics without switching away from your development environment.
 3. **Accessible Analytics**: Generate custom reports and visualizations about your pipelines directly through conversation.
 4. **Streamlined Workflows**: Trigger pipeline runs via natural language requests when you're ready to execute.
@@ -55,18 +55,18 @@ It also allows you to trigger new pipeline runs through existing run templates.
 
 ## Getting Started
 
-The easiest way to set up the ZenML MCP Server is through the **MCP Settings page** in the ZenML dashboard. This provides a guided experience for configuring your IDE or AI assistant to connect to your ZenML server.
+The easiest way to set up the ZenML MCP Server is through the **MCP Settings page** in the ZenML UI. This provides a guided experience for configuring your IDE or AI assistant to connect to your ZenML server.
 
-### Using the Dashboard Settings Page (Recommended)
+### Using the UI Settings Page (Recommended)
 
 Both ZenML OSS and ZenML Pro include an MCP settings page that generates the correct configuration for your environment.
 
-![MCP Settings Page](../../.gitbook/assets/mcp-settings-page.gif)
+![MCP Settings Page](../../.gitbook/assets/mcp-settings-page.png)
 
-Navigate to **Settings → MCP** in your ZenML dashboard to access the configuration page. The page provides:
+Navigate to **Settings → Workspace → MCP** (ZenML Pro) or **Settings → MCP** (ZenML OSS) in your ZenML UI to access the configuration page. The page provides:
 
-* **Token configuration**: Enter or generate the API token needed for authentication
-* **IDE-specific instructions**: Tabbed configuration for VS Code, Claude Desktop, Cursor, Claude Code, OpenAI Codex, and other MCP clients
+* **Token**: Paste a token, or select **New token** in ZenML Pro
+* **IDE-specific instructions**: Tabbed configuration for VS Code, Claude Desktop, Cursor, Claude Code, OpenAI Codex and Other Clients
 * **Multiple installation methods**: Deep links for automatic setup, CLI commands, and manual JSON configuration options
 * **Docker and uv options**: Choose your preferred runtime for the MCP server
 
@@ -74,12 +74,12 @@ Navigate to **Settings → MCP** in your ZenML dashboard to access the configura
 
 | Feature | ZenML Pro | ZenML OSS |
 |---------|-----------|-----------|
-| Token generation | One-click PAT generation within the settings page | Paste a service account token (create via Settings → Service Accounts) |
+| Token generation | One-click PAT generation with **New token** | Paste a service account token (create via Settings → Service Accounts) |
 | Project selection | Select which project to connect to | Single project (automatic) |
 | Configuration output | Includes project ID in generated configs | Simplified configuration |
 
 {% hint style="info" %}
-**ZenML Pro users** can generate a Personal Access Token (PAT) directly from the MCP settings page with a single click. The token will be automatically included in the generated configuration snippets.
+**ZenML Pro users** can generate a Personal Access Token (PAT) directly from the MCP settings page with **New token**. The token will be automatically included in the generated configuration snippets.
 
 **ZenML OSS users** need to first create a service account token via **Settings → Service Accounts**, then paste it into the MCP settings page.
 {% endhint %}

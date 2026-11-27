@@ -23,7 +23,9 @@ from pydantic import (
     BeforeValidator,
     ConfigDict,
     PlainSerializer,
+    SerializationInfo,
     SerializeAsAny,
+    SerializerFunctionWrapHandler,
     WrapSerializer,
     field_validator,
 )
@@ -490,7 +492,9 @@ SourceWithValidator = Annotated[
 
 
 def _serialize_source_optionally_as_string(
-    value: Any, handler: Any, info: Any
+    value: Any,
+    handler: SerializerFunctionWrapHandler,
+    info: SerializationInfo,
 ) -> Any:
     """Optionally serialize a source as an import path string.
 
@@ -509,7 +513,7 @@ def _serialize_source_optionally_as_string(
     if context and context.get(SERIALIZE_AS_STRING_CONTEXT_KEY):
         return value.import_path
 
-    return handler(value, info)
+    return handler(value)
 
 
 StringSerializableSource = Annotated[
