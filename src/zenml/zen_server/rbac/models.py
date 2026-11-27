@@ -38,6 +38,9 @@ class Action(StrEnum):
     # Service connectors
     CLIENT = "client"
 
+    # Stack components and service connectors
+    ATTACH = "attach"
+
     # Models
     PROMOTE = "promote"
 

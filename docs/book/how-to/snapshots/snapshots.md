@@ -5,7 +5,7 @@ icon: print
 
 # Pipeline Snapshots
 
-A **Pipeline Snapshot** is an immutable snapshot of your pipeline that includes the pipeline DAG, code, configuration, and container images. Snapshots can be run from the SDK, CLI, ZenML dashboard or via a REST API. Additionally, snapshots can also be [deployed](../deployment/deployment.md).
+A **Pipeline Snapshot** is an immutable snapshot of your pipeline that includes the pipeline DAG, code, configuration, and container images. Snapshots can be run from the SDK, CLI, ZenML UI or via a REST API. Additionally, snapshots can also be [deployed](../deployment/deployment.md).
 
 {% hint style="info" %}
 Snapshots are the successor and replacement of ZenML run templates.
@@ -53,7 +53,7 @@ Without snapshots, each scenario would require:
 ```bash
   curl -X POST 'https://your-zenml-server/api/v1/pipeline_snapshots/<ID>/runs' -H 'Authorization: Bearer <TOKEN>' -d '{"run_configuration": {...}}'
 ```
-- **Through Browser** (Pro feature): Non-technical stakeholders can run snapshots directly from the ZenML dashboard by simply filling in a form with the required parameters - no coding required!
+- **Through Browser** (Pro feature): Non-technical stakeholders can run snapshots directly from the ZenML UI by simply filling in a form with the required parameters - no coding required!
 
 This enables your team to standardize execution patterns while maintaining flexibility - perfect for production ML workflows that need to be triggered from various systems.
 
@@ -61,7 +61,7 @@ This enables your team to standardize execution patterns while maintaining flexi
 
 Snapshots and [Deployments](../deployment/deployment.md) both let you execute pipelines beyond direct Python calls, but they serve different purposes:
 
-- **Snapshots** launch a **batch-style pipeline run** each time they are triggered. There is no persistent service — the ZenML server creates a runner job, executes the pipeline, and the job exits. Use snapshots for scheduled retraining, CI/CD-triggered runs, or when non-engineers need to run pipelines from the dashboard.
+- **Snapshots** launch a **batch-style pipeline run** each time they are triggered. There is no persistent service — the ZenML server creates a runner job, executes the pipeline, and the job exits. Use snapshots for scheduled retraining, CI/CD-triggered runs, or when non-engineers need to run pipelines from the UI.
 
 - **Deployments** create a **long-running HTTP service** with a stable URL, request/response semantics, custom endpoints, middleware, and shared state across calls. Use deployments for real-time inference, agents, interactive APIs, or any scenario needing an always-on endpoint. Deployments are available in both OSS and Pro.
 
@@ -71,7 +71,7 @@ While the simplest way to execute a ZenML pipeline is to directly call your pipe
 
 * **Standardization**: Ensure all pipeline runs follow a consistent configuration pattern
 * **Parameterization**: Easily modify inputs and settings without changing code
-* **Remote Execution**: Trigger pipelines through the dashboard or API without code access
+* **Remote Execution**: Trigger pipelines through the UI or API without code access
 * **Team Collaboration**: Share ready-to-use pipeline configurations with team members
 * **Automation**: Integrate with CI/CD systems or other automated processes
 
@@ -105,18 +105,18 @@ zenml pipeline snapshot create <PIPELINE-SOURCE-PATH> --name=<SNAPSHOT-NAME>
 If you later want to run this snapshot, you need to have an active **remote stack** while running this command or you can specify one with the `--stack` option.
 {% endhint %}
 
-### Using the Dashboard
+### Using the UI
 
-To create a snapshot through the ZenML dashboard:
+To create a snapshot through the ZenML UI:
 
 1. Navigate to a pipeline run
-2. Click on `...` in the top right, and then on `+ New Snapshot`
-3. Enter a name for the snapshot
-4. Click `Create`
+2. Select `More run actions`, then `New snapshot`
+3. Enter a `Name`
+4. Select `Create snapshot`
 
-![Create Snapshots on the dashboard](../../.gitbook/assets/create-snapshot-1.png)
+![Create Snapshots in the UI](../../.gitbook/assets/create-snapshot-1.png)
 
-![Snapshot Details](../../.gitbook/assets/create-snapshot-2.png)
+![New snapshot](../../.gitbook/assets/create-snapshot-2.png)
 
 ## Running Pipeline Snapshots
 
@@ -149,17 +149,15 @@ zenml pipeline snapshot run <SNAPSHOT-NAME-OR-ID>
 # If you want to run the snapshot with a modified configuration, use the `--config=...` parameter
 ```
 
-### Using the Dashboard
+### Using the UI
 
-To run a snapshot from the dashboard:
+To run a snapshot from the UI:
 
-1. Either click `Run a Pipeline` on the main `Pipelines` page, or navigate to a specific snapshot and click `Run Snapshot`
-2. On the `Run Details` page, you can:
-   * Modify the configuration using the built-in editor
-   * Upload a `.yaml` configuration file
-3. Click `Run` to start the pipeline run
+1. Either select `Run pipeline` on the main `Pipelines` page, or open a specific snapshot and select `Run snapshot`
+2. On the `New run` page, select `Editor` to modify the configuration or upload a `.yaml` configuration file
+3. Select `Start`
 
-![Run Details](../../.gitbook/assets/run-snapshot.png)
+![New run](../../.gitbook/assets/run-snapshot.png)
 
 Once you run the snapshot, a new run will be executed on the same stack as the original run.
 
@@ -332,7 +330,7 @@ Read more about:
 7. **Monitor snapshot usage** to understand how your team is using them
 
 {% hint style="warning" %}
-**Important:** You need to recreate your snapshots after upgrading your ZenML server. Snapshots are tied to specific server versions and may not work correctly after an upgrade.
+**Important:** You need to recreate your snapshots after upgrading your ZenML server. Snapshots are tied to specific server versions and may not work correctly after an upgrade. The [Compatibility](https://docs.zenml.io/changelog/compatibility) page shows what each release changes for snapshots built with an older ZenML version.
 {% endhint %}
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -78,8 +78,14 @@ For the HashiCorp Vault:
 
 It is common practice to install additional infrastructure-related services in a Kubernetes cluster to support the deployment and long-term management of applications. For example:
 
-* an Ingress service like [nginx-ingress](https://kubernetes.github.io/ingress-nginx/deploy/) is recommended if you want to expose HTTP services to the internet. An Ingress is required if you want to use secure HTTPS for your ZenML deployment. The alternative is to use a LoadBalancer service to expose the ZenML service using plain HTTP, but this is not recommended for production.
-* a [cert-manager](https://cert-manager.io/docs/installation/) is recommended if you want to generate and manage TLS certificates for your ZenML deployment. It can be used to automatically provision TLS certificates from a certificate authority (CA) of your choice, such as [Let's Encrypt](https://letsencrypt.org/). As an alternative, the ZenML Helm chart can be configured to auto-generate self-signed or you can generate the certificates yourself and provide them to the Helm chart, but this makes it more difficult to manage the certificates and you need to manually renew them when they expire.
+* A Gateway API controller is recommended for new deployments that expose ZenML over HTTPS. If your cluster uses Ingress, use a maintained Ingress controller and its TLS configuration. See [Getting started with Gateway API](https://gateway-api.sigs.k8s.io/guides/getting-started/introduction/).
+* cert-manager can provision and renew TLS certificates from a certificate authority such as Let's Encrypt. See the [cert-manager installation guide](https://cert-manager.io/docs/installation/).
+
+{% hint style="warning" %}
+Kubernetes retired the community `ingress-nginx` controller in March 2026, ending security updates. See the [Kubernetes retirement announcement](https://kubernetes.io/blog/2025/11/11/ingress-nginx-retirement/).
+
+The final stock release bundles NGINX 1.27.1, which falls within the affected version ranges for CVE-2026-123007 and CVE-2026-123633. Both vulnerabilities require client-facing HTTP/2. See the [controller version table](https://github.com/kubernetes/ingress-nginx#supported-versions-table) and [NGINX security advisories](https://nginx.org/en/security_advisories.html). If you still use this controller, follow [Migrate to Gateway API](migrate-to-gateway-api.md).
+{% endhint %}
 
 ## ZenML Helm Installation
 
@@ -98,10 +104,7 @@ In most cases, you’ll need to change the following configuration values in `cu
 * the database configuration, if you mean to use an external database:
   * the database URL, formatted as `mysql://<username>:<password>@<hostname>:<port>/<database>`
   * CA and/or client TLS certificates, if you’re using SSL to secure the connection to the database can be provided in the `database.sslCa`, `database.sslCert` and `database.sslKey` fields as either an inline value or a secret reference (in the latter case, the secret(s) must be created in the same namespace as the ZenML server before the deployment).
-* the Ingress configuration, if enabled:
-  * enabling TLS
-  * enabling self-signed certificates
-  * configuring the hostname that will be used to access the ZenML server, if different from the IP address or hostname associated with the Ingress service installed in your cluster
+* the routing configuration, if exposing ZenML over HTTPS. For Gateway API, set the hostname and HTTPS listener in `server.gateway`. For Ingress, set the hostname, TLS settings, and the maintained controller's IngressClass in `server.ingress`.
 
 ### Install the Helm chart
 
@@ -120,7 +123,7 @@ The Helm chart should print out a message with the URL of the deployed ZenML ser
 To connect your local client to the ZenML server, you can run:
 
 ```bash
-zenml login https://zenml.example.com:8080 --no-verify-ssl
+zenml login https://zenml.example.com
 ```
 
 To disconnect from the current ZenML server and revert to using the local default database, use the following command:
@@ -151,7 +154,7 @@ kubectl -n zenml-server port-forward svc/zenml-server 8080:8080
 zenml login http://localhost:8080
 ```
 
-This is just a simple example only fit for testing and evaluation purposes. For production deployments, you should use an external database and an Ingress service with TLS certificates to secure and expose the ZenML server to the internet.
+This example is for testing and evaluation. For production, use an external database and expose ZenML over HTTPS through a Gateway or a maintained Ingress controller.
 
 ### Deployment with persistent local database
 
@@ -177,120 +180,40 @@ If you override `podSecurityContext` in your custom values, ensure that `fsGroup
 
 This configuration is also required when using persistent volumes for database backup dumps. See the [Database backup and recovery](deploy-with-helm.md#database-backup-and-recovery) section for more details.
 
+### Pod security
+
+By default, every pod the chart creates satisfies the Kubernetes Pod Security [`restricted` profile](https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted): containers run as UID 1000, cannot gain privileges, drop all Linux capabilities and use the `RuntimeDefault` seccomp profile. The same `securityContext` and `podSecurityContext` values apply to the server, the database migration job, worker deployments, the CA certificate init containers and the `helm test` pod.
+
+```yaml
+podSecurityContext:
+  fsGroup: 1000
+  fsGroupChangePolicy: "OnRootMismatch"
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+```
+
+Your values are merged on top of these defaults. To remove a single default, set it to `null`. Some overrides need extra care:
+
+* `securityContext.privileged: true`, or adding the `CAP_SYS_ADMIN` capability, also requires `allowPrivilegeEscalation: true`, otherwise Kubernetes rejects the pods.
+* With `securityContext.runAsUser: 0`, root no longer bypasses file permissions, because all capabilities are dropped. Add back the capabilities your image needs, such as `DAC_OVERRIDE` or `CHOWN`.
+* Custom worker images that rely on `sudo` or other setuid binaries need `allowPrivilegeEscalation: true`.
+* On OpenShift, set `securityContext.runAsUser` and `podSecurityContext.fsGroup` to `null` so the security context constraints can assign them.
+
 ### Basic deployment with local database
 
-This deployment use-case still uses a local database, but it exposes the ZenML server to the internet using an Ingress service with TLS certificates generated by the cert-manager and signed by Let's Encrypt.
+This example exposes ZenML over HTTPS through Gateway API and uses the chart's default local SQLite database. The cluster needs a maintained Gateway API controller and the `gateway.networking.k8s.io/v1` CRDs. See [Getting started with Gateway API](https://gateway-api.sigs.k8s.io/guides/getting-started/introduction/).
 
-First, you need to install cert-manager and nginx-ingress in your Kubernetes cluster. You can use the following commands to install them with their default configuration:
+Provision a `Gateway` with an HTTPS listener named `https` and a TLS certificate valid for your ZenML hostname. If the Gateway is in a different namespace, configure the listener's `allowedRoutes.namespaces` to permit routes from the ZenML release namespace. For automatic certificate provisioning, see [cert-manager's Gateway configuration](https://cert-manager.io/docs/usage/gateway/).
 
-```bash
-helm repo add jetstack https://charts.jetstack.io
-helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-helm repo update
-helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --set installCRDs=true
-helm install nginx-ingress ingress-nginx/ingress-nginx --namespace nginx-ingress --create-namespace
-```
-
-Next, you need to create a ClusterIssuer resource that will be used by cert-manager to generate TLS certificates with Let's Encrypt:
-
-```bash
-cat <<EOF | kubectl apply -f -
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: letsencrypt-staging
-  namespace: cert-manager
-spec:
-  acme:
-    server: https://acme-v02.api.letsencrypt.org/directory
-    email: <your email address here>
-    privateKeySecretRef:
-      name: letsencrypt-staging
-    solvers:
-    - http01:
-        ingress:
-          class: nginx
-EOF
-```
-
-Finally, you can deploy the ZenML server with the following Helm values:
-
-```yaml
-server:
-
-  ingress:
-    enabled: true
-    annotations:
-      cert-manager.io/cluster-issuer: "letsencrypt-staging"
-    tls:
-      enabled: true
-      generateCerts: false
-```
-
-> **Note** This use-case exposes ZenML at the root URL path of the IP address or hostname of the Ingress service. You cannot share the same Ingress hostname and URL path for multiple applications. See the next section for a solution to this problem.
-
-### Shared Ingress controller
-
-If the root URL path of your Ingress controller is already in use by another application, you cannot use it for ZenML. This section presents three possible solutions to this problem.
-
-#### Use a dedicated Ingress hostname for ZenML
-
-If you know the IP address of the load balancer in use by your Ingress controller, you can use a service like https://nip.io/ to create a new DNS name associated with it and expose ZenML at this new root URL path. For example, if your Ingress controller has the IP address `192.168.10.20`, you can use a DNS name like `zenml.192.168.10.20.nip.io` to expose ZenML at the root URL path `https://zenml.192.168.10.20.nip.io`.
-
-To find the IP address of your Ingress controller, you can use a command like the following:
-
-```bash
-kubectl -n nginx-ingress get svc nginx-ingress-ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
-```
-
-You can deploy the ZenML server with the following Helm values:
-
-```yaml
-server:
-
-  ingress:
-    enabled: true
-    annotations:
-      cert-manager.io/cluster-issuer: "letsencrypt-staging"
-    host: zenml.<nginx ingress IP address>.nip.io
-    tls:
-      enabled: true
-      generateCerts: false
-```
-
-> **Note** This method does not work if your Ingress controller is behind a load balancer that uses a hostname mapped to several IP addresses instead of an IP address.
-
-#### Use a dedicated Ingress URL path for ZenML
-
-If you cannot use a dedicated Ingress hostname for ZenML, you can use a dedicated Ingress URL path instead. For example, you can expose ZenML at the URL path `https://<your ingress hostname>/zenml`.
-
-To deploy the ZenML server with a dedicated Ingress URL path, you can use the following Helm values:
-
-```yaml
-server:
-
-  ingress:
-    enabled: true
-    annotations:
-      cert-manager.io/cluster-issuer: "letsencrypt-staging"
-      nginx.ingress.kubernetes.io/rewrite-target: /$1
-    path: /zenml/?(.*)
-    tls:
-      enabled: true
-      generateCerts: false
-```
-
-> **Note** This method has one current limitation: the ZenML UI does not support URL rewriting and will not work properly if you use a dedicated Ingress URL path. You can still connect your client to the ZenML server and use it to run pipelines as usual, but you will not be able to use the ZenML UI.
-
-#### Use a DNS service to map a different hostname to the Ingress controller
-
-This method requires you to configure a DNS service like AWS Route 53 or Google Cloud DNS to map a different hostname to the Ingress controller. For example, you can map the hostname `zenml.<subdomain>` to the Ingress controller's IP address or hostname. Then, simply use the new hostname to expose ZenML at the root URL path.
-
-### Gateway API configuration
-
-ZenML also supports Kubernetes Gateway API through `HTTPRoute` resources. This is useful when your platform team manages shared Gateway infrastructure and your application chart only needs to attach routes.
-
-Use the following values pattern:
+Deploy ZenML with these values, substituting your Gateway name, namespace, listener name, and hostname. The chart creates an `HTTPRoute` that attaches to the HTTPS listener.
 
 ```yaml
 server:
@@ -298,14 +221,43 @@ server:
     enabled: false
   gateway:
     enabled: true
-    annotations: {}
     gatewayRef:
       name: zenml-gateway
       namespace: gateway-infra
-    sectionName: https-backend
+    sectionName: https
     host: zenml.example.com
     path: /
 ```
+
+Point the hostname's DNS record to the Gateway's external address. Use `kubectl describe httproute -n <zenml-namespace>` to confirm that the route reports `Accepted=True` and `ResolvedRefs=True` for the target Gateway. Then open `https://zenml.example.com` to activate the server.
+
+### Shared Ingress controller
+
+If your cluster already uses a maintained Ingress controller, you can give ZenML its own hostname on the shared controller.
+
+#### Use a dedicated Ingress hostname for ZenML
+
+Point your ZenML hostname to the controller's external address. Use `kubectl get ingressclass` to find the controller's IngressClass name, and create a TLS Secret for your hostname in the ZenML release namespace. Substitute the class name, hostname, and Secret name in these Helm values.
+
+```yaml
+server:
+  ingress:
+    enabled: true
+    className: your-ingress-class
+    host: zenml.example.com
+    tls:
+      enabled: true
+      generateCerts: false
+      secretName: zenml-tls-certs
+```
+
+#### Use a dedicated Ingress URL path for ZenML
+
+For client-only access on a shared hostname, set `server.ingress.path` to a dedicated path such as `/zenml`. Configure the rewrite using your controller's documentation so it strips the prefix before forwarding requests to ZenML. Use a dedicated hostname and the root path if you need the ZenML UI.
+
+### Gateway API configuration
+
+Use the [basic deployment values](#basic-deployment-with-local-database) to attach ZenML to a shared Gateway. If your Gateway controller requires annotations on the `HTTPRoute`, set them in `server.gateway.annotations`.
 
 Both `server.ingress.enabled` and `server.gateway.enabled` can be set to `true` simultaneously. This is useful during migration periods: the chart renders both an Ingress and an HTTPRoute, allowing traffic to flow through whichever controller DNS points to. Kubernetes controllers only act on resources they own — an ingress controller ignores HTTPRoutes and a Gateway controller ignores Ingresses — so enabling both creates no conflict.
 

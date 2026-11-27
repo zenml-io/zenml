@@ -18,6 +18,7 @@ import gc
 import json
 import logging
 import os
+import socketserver
 import subprocess
 import sys
 import threading
@@ -81,6 +82,21 @@ def _create_store(
     )
 
 
+class _LocalHTTPServer(ThreadingHTTPServer):
+    """HTTP server that skips the hostname lookup during bind."""
+
+    def server_bind(self) -> None:
+        """Bind without `HTTPServer.server_bind`'s `socket.getfqdn` call.
+
+        The reverse DNS lookup can stall for seconds on macOS CI runners,
+        which pushes the shutdown probes past their timeout.
+        """
+        socketserver.TCPServer.server_bind(self)
+        host, port = self.server_address[:2]
+        self.server_name = str(host)
+        self.server_port = port
+
+
 @contextmanager
 def _storage_endpoint(
     stall: bool = False,
@@ -128,12 +144,12 @@ def _storage_endpoint(
             self.send_header(
                 "Location",
                 f"http://127.0.0.1:"
-                f"{cast(ThreadingHTTPServer, self.server).server_port}/upload",
+                f"{cast(_LocalHTTPServer, self.server).server_port}/upload",
             )
             self.end_headers()
             self.wfile.write(body)
 
-    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    server = _LocalHTTPServer(("127.0.0.1", 0), Handler)
     worker = threading.Thread(target=server.serve_forever, daemon=True)
     worker.start()
     try:

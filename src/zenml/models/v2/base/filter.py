@@ -418,7 +418,7 @@ class StrFilter(Filter):
         Returns:
             The query condition.
         """
-        from sqlalchemy import and_
+        from sqlalchemy import and_, true
 
         conditions = []
 
@@ -432,7 +432,9 @@ class StrFilter(Filter):
             else:
                 conditions.append(column != value)
 
-        return and_(*conditions)
+        # An empty `and_()` is deprecated and used to be dropped from the
+        # WHERE clause, so an empty list keeps matching everything.
+        return and_(*conditions) if conditions else true()
 
     def _handle_startswith(self, column: Any, is_json_encoded: bool) -> Any:
         """Handle the STARTSWITH operation.

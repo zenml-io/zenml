@@ -519,7 +519,8 @@ class DockerSettings(BaseSettings):
                 "`DockerSettings.replicate_local_python_environment=True`. "
                 "If you want to export requirements from a pyproject.toml "
                 "file, use `DockerSettings.pyproject_path` and "
-                "`DockerSettings.pyproject_export_command` instead."
+                "`DockerSettings.pyproject_export_command` instead.",
+                self.replicate_local_python_environment,
             )
             _docker_settings_warnings_logged.append(
                 "replicate_local_python_environment"

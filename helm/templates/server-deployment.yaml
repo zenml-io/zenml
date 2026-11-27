@@ -35,6 +35,8 @@ spec:
         - name: update-ca-certificates
           image: "{{ $server.image.repository }}:{{ $server.image.tag | default .Chart.Version }}"
           imagePullPolicy: {{ $server.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
           command: ["/bin/sh", "-c"]
           args:
             - |

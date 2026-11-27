@@ -90,7 +90,7 @@ def summarize_prompt(prompt: str) -> str:
 
 The current step types are `StepType.TOOL_CALL`, `StepType.LLM_CALL`, and
 `StepType.MEMORY_CALL`. Think of this as a label on the step run: it does not
-change how your Python function executes, but it gives the dashboard, DAG
+change how your Python function executes, but it gives the UI, DAG
 metadata, and downstream consumers a clearer story about what kind of work the
 step represents.
 
@@ -363,7 +363,7 @@ def my_step() -> Tuple[int, ...]:
 
 ## Step output names
 
-By default, ZenML uses the output name `output` for single output steps and `output_0, output_1, ...` for steps with multiple outputs. These output names are used to display your outputs in the dashboard and [fetch them after your pipeline is finished](https://docs.zenml.io/user-guides/tutorial/fetching-pipelines).
+By default, ZenML uses the output name `output` for single output steps and `output_0, output_1, ...` for steps with multiple outputs. These output names are used to display your outputs in the UI and [fetch them after your pipeline is finished](https://docs.zenml.io/user-guides/tutorial/fetching-pipelines).
 
 If you want to use custom output names for your steps, use the `Annotated` type annotation:
 
@@ -385,7 +385,7 @@ def divide(a: int, b: int) -> Tuple[
 ```
 
 {% hint style="info" %}
-If you do not give your outputs custom names, the created artifacts will be named `{pipeline_name}::{step_name}::output` or `{pipeline_name}::{step_name}::output_{i}` in the dashboard. See the [documentation on artifact versioning and configuration](https://docs.zenml.io/user-guides/starter-guide/manage-artifacts) for more information.
+If you do not give your outputs custom names, the created artifacts will be named `{pipeline_name}::{step_name}::output` or `{pipeline_name}::{step_name}::output_{i}` in the UI. See the [documentation on artifact versioning and configuration](https://docs.zenml.io/user-guides/starter-guide/manage-artifacts) for more information.
 {% endhint %}
 
 ## Workflow Patterns
@@ -655,7 +655,7 @@ if __name__ == "__main__":
     )
 
     # Run the fan-out/fan-in pipeline with the snapshot
-    #  You can also get the snapshot ID from the dashboard
+    #  You can also get the snapshot ID from the UI
     fan_out_fan_in_pipeline(snapshot_id=snapshot.id)
 ```
 

@@ -144,7 +144,7 @@ Weights & Biases comes with a web-based UI that you can use to find further deta
 
 Every ZenML step that uses Weights & Biases should create a separate experiment run which you can inspect in the Weights & Biases UI:
 
-![WandB UI](../../.gitbook/assets/WandBUI.png)
+![ZenML step Metadata tab showing a Weights & Biases experiment link](../../.gitbook/assets/WandBUI.png)
 
 You can find the URL of the Weights & Biases experiment linked to a specific ZenML run via the metadata of the step in which the experiment tracker was used:
 
@@ -157,9 +157,9 @@ tracking_url = trainer_step.run_metadata["experiment_tracker_url"].value
 print(tracking_url)
 ```
 
-Or on the ZenML dashboard as metadata of a step that uses the tracker:
+Or on the ZenML UI as metadata of a step that uses the tracker:
 
-![WandB UI](../../.gitbook/assets/wandb_dag.png)
+![ZenML step Metadata tab showing a Weights & Biases experiment link](../../.gitbook/assets/wandb_dag.png)
 
 Alternatively, you can see an overview of all experiment runs at https://wandb.ai/{ENTITY\_NAME}/{PROJECT\_NAME}/runs/.
 
@@ -224,7 +224,7 @@ wandb_settings = WandbExperimentTrackerSettings(
 
 ZenML truncates W&B tags to 64 characters and removes duplicates after truncation, so long tags with the same first 64 characters collapse into one W&B tag.
 
-When ZenML metadata is enabled, W&B config receives flat keys such as `zenml_pipeline_name`, `zenml_pipeline_run_name`, `zenml_pipeline_run_id`, `zenml_step_name`, `zenml_latest_step_run_id`, and `zenml_latest_step_run_version`. ZenML dashboard links are added when they can be derived from the active server. These values are written to W&B config, not W&B summary, so metric summaries stay focused on experiment results.
+When ZenML metadata is enabled, W&B config receives flat keys such as `zenml_pipeline_name`, `zenml_pipeline_run_name`, `zenml_pipeline_run_id`, `zenml_step_name`, `zenml_latest_step_run_id`, and `zenml_latest_step_run_version`. ZenML UI links are added when they can be derived from the active server. These values are written to W&B config, not W&B summary, so metric summaries stay focused on experiment results.
 
 To use W&B in a minimal mode without ZenML-added grouping, tags, or config, disable metadata:
 

@@ -382,7 +382,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
         scheme = re.search("^([a-z0-9]+://)", url)
         if scheme is None or scheme.group() not in ("https://", "http://"):
             raise ValueError(
-                "Invalid URL for REST store: {url}. Should be in the form "
+                f"Invalid URL for REST store: {url}. Should be in the form "
                 "https://hostname[:port] or http://hostname[:port]."
             )
 
@@ -568,8 +568,10 @@ class RestZenStore(BaseZenStore):
             logger.warning(
                 "Your ZenML client version (%s) does not match the server "
                 "version (%s). This version mismatch might lead to errors or "
-                "unexpected behavior. \nTo disable this warning message, set "
-                "the environment variable `%s=True`",
+                "unexpected behavior. Check "
+                "https://docs.zenml.io/changelog/compatibility to see whether "
+                "these versions work together. \nTo disable this warning "
+                "message, set the environment variable `%s=True`",
                 client_version,
                 server_version,
                 ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
@@ -3285,6 +3287,10 @@ class RestZenStore(BaseZenStore):
         Args:
             connector_models: The service connector or resource models to
                 populate.
+
+        Raises:
+            TypeError: If a model is neither a `ServiceConnectorResponse` nor
+                a `ServiceConnectorResourcesModel`.
         """
         for service_connector in connector_models:
             # Mark the remote connector type as being only remotely available
@@ -3315,8 +3321,8 @@ class RestZenStore(BaseZenStore):
             elif isinstance(service_connector, ServiceConnectorResourcesModel):
                 service_connector.connector_type = connector_type
             else:
-                TypeError(
-                    "The service connector must be an instance of either"
+                raise TypeError(
+                    "The service connector must be an instance of either "
                     "`ServiceConnectorResponse` or "
                     "`ServiceConnectorResourcesModel`."
                 )

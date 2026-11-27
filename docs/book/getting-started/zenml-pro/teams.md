@@ -28,31 +28,30 @@ To create a team:
 {% step %}
 **Go to the Organization Settings**
 
-Click on the **Settings** tab from your **Organization** page.
+Select **Settings** at the foot of the rail, then open the **Organization** pages.
 
-<figure><img src=".gitbook/assets/image (2).png" alt=""><figcaption></figcaption></figure>
+<figure><img src=".gitbook/assets/image (2).png" alt="Organization settings"><figcaption></figcaption></figure>
 {% endstep %}
 
 {% step %}
-**Click on the Teams tab**
+**Open Teams**
 
-Go to the **Members** section from the sidebar and select the **Teams** tab.
+Open **Settings**, then **Teams** under **Organization**.
 
-![Create Team](.gitbook/assets/create_team.png)
+![Teams settings with the Add Team button](.gitbook/assets/create_team.png)
 {% endstep %}
 
 {% step %}
 **Add a New Team**
 
-Use the **Add team** button to add a new team.
+Select **Add Team**.
 
-<figure><img src=".gitbook/assets/image (3).png" alt="" width="271"><figcaption></figcaption></figure>
+<figure><img src=".gitbook/assets/image (3).png" alt="Teams list"><figcaption></figcaption></figure>
 
 When creating a team, you'll need to provide:
 
-* Team name
+* Team Name
 * Description (optional)
-* Initial team members
 {% endstep %}
 {% endstepper %}
 
@@ -62,7 +61,7 @@ To add users to an existing team:
 
 {% stepper %}
 {% step %}
-Go to the **Teams** tab in **Organization** settings
+Open **Settings**, then **Teams** under **Organization**
 {% endstep %}
 
 {% step %}
@@ -70,7 +69,7 @@ Select the team you want to modify
 {% endstep %}
 
 {% step %}
-Click on **Add Members**
+Select **Add members**
 {% endstep %}
 
 {% step %}
@@ -86,15 +85,15 @@ Teams can be assigned to workspaces just like individual users. To add a team to
 
 {% stepper %}
 {% step %}
-Go to the **Workspace Settings** page
+Open **Settings**, then **Access** under **Organization**
 {% endstep %}
 
 {% step %}
-Click on **Members** tab and click on the **Teams** tab.
+Pick the workspace in the **Workspace** picker.
 {% endstep %}
 
 {% step %}
-Select **Add Team**
+Select **Add people**
 {% endstep %}
 
 {% step %}
@@ -106,9 +105,9 @@ Choose the team and assign a role
 
 ## Team Roles and Permissions
 
-When you assign a role to a team within a workspace, all members of that team inherit the permissions associated with that role. This can be a predefined role (Admin, Editor, Viewer) or a custom role you've created.
+When you assign a role to a team within a workspace, all members of that team inherit the permissions associated with that role. This can be a system role (Workspace Admin, Workspace Developer, Workspace Contributor, Workspace Viewer) or a custom role you've created.
 
-For example, if you assign the "Editor" role to a team in a specific workspace, all members of that team will have Editor permissions in that workspace.
+For example, if you assign the Workspace Developer role to a team on a workspace, all members of that team are Workspace Developers on that workspace.
 
 ![Team Roles](.gitbook/assets/team_roles.png)
 

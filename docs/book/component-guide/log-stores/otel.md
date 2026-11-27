@@ -11,7 +11,7 @@ This page covers pipeline and step log export through a ZenML stack component. Z
 {% endhint %}
 
 {% hint style="warning" %}
-The OTEL Log Store is a **write-only** log store. It can export logs to an OTEL-compatible endpoint, but it cannot fetch logs back for display in the ZenML dashboard. If you need log retrieval capabilities, you can extend this log store and implement the `fetch()` method for your backend. See [Develop a Custom Log Store](custom.md) for details on how to do this.
+The OTEL Log Store is a **write-only** log store. It can export logs to an OTEL-compatible endpoint, but it cannot fetch logs back for display in the ZenML UI. If you need log retrieval capabilities, you can extend this log store and implement the `fetch()` method for your backend. See [Develop a Custom Log Store](custom.md) for details on how to do this.
 {% endhint %}
 
 ### When to use it
@@ -145,9 +145,9 @@ This ensures reliable log delivery even in unstable network conditions.
 
 ### Limitations
 
-1. **No log fetching**: The OTEL Log Store cannot retrieve logs for display in the ZenML dashboard. You must use your observability platform's native interface to view logs.
+1. **No log fetching**: The OTEL Log Store cannot retrieve logs for display in the ZenML UI. You must use your observability platform's native interface to view logs.
 
-2. **Dashboard integration**: Since logs cannot be fetched, the ZenML dashboard will show "Logs not available" for steps using this log store.
+2. **UI integration**: Since logs cannot be fetched, the ZenML UI will show "No logs available yet." for steps using this log store.
 
 3. **Endpoint compatibility**: Your endpoint must support OTLP/HTTP with JSON encoding. Protobuf-only endpoints are not supported.
 
