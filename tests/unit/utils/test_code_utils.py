@@ -14,9 +14,84 @@
 """Unit tests for code_utils.py."""
 
 import os
+import tarfile
+from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock, patch
 
+import pytest
+from git import Repo
+
 from zenml.utils.code_utils import CodeArchive
+
+
+@pytest.mark.parametrize(
+    "filename",
+    [
+        "my step.py",
+        "model assets/weights.bin",
+        "caf\u00e9.py",
+        "\u6a21\u578b.py",
+    ],
+)
+@pytest.mark.parametrize("tracked", [False, True])
+def test_get_files_preserves_git_filenames(
+    tmp_path: Path, filename: str, tracked: bool
+) -> None:
+    """Check that Git-backed archives preserve complete filenames.
+
+    Args:
+        tmp_path: Temporary directory for the Git repository.
+        filename: Filename to include in the code archive.
+        tracked: Whether to stage the file in Git.
+    """
+    repo = Repo.init(tmp_path)
+    file_path = tmp_path / filename
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    file_path.write_bytes(b"pipeline data")
+    if tracked:
+        repo.index.add([filename])
+
+    files = CodeArchive(root=str(tmp_path)).get_files()
+    assert {name: Path(path) for name, path in files.items()} == {
+        os.path.normpath(filename): file_path
+    }
+
+
+def test_code_archive_preserves_git_file_contents(tmp_path: Path) -> None:
+    """Check packaged contents and ignore rules with a real Git repository.
+
+    Args:
+        tmp_path: Temporary directory for the repository and output archive.
+    """
+    root = tmp_path / "repo"
+    root.mkdir()
+    repo = Repo.init(root)
+    (root / ".gitignore").write_text("ignored.bin\n")
+    (root / "ignored.bin").write_bytes(b"ignored")
+    (root / "tracked step.py").write_bytes(b"original")
+    repo.index.add([".gitignore", "tracked step.py"])
+    (root / "tracked step.py").write_bytes(b"modified")
+    (root / "new model.bin").write_bytes(b"\x00\xff\x01")
+    (root / ".zen").mkdir()
+    (root / ".zen" / "config.yaml").write_text("local configuration")
+
+    archive_path = tmp_path / "code.tar.gz"
+    with archive_path.open("w+b") as output:
+        CodeArchive(root=str(root)).write_archive(output)
+
+    with tarfile.open(archive_path) as archive:
+        assert set(archive.getnames()) == {
+            ".gitignore",
+            "tracked step.py",
+            "new model.bin",
+        }
+        for filename, contents in {
+            "tracked step.py": b"modified",
+            "new model.bin": b"\x00\xff\x01",
+        }.items():
+            extracted = archive.extractfile(filename)
+            assert extracted is not None
+            assert extracted.read() == contents
 
 
 def test_get_files_uses_recurse_submodules(tmp_path):
@@ -36,7 +111,7 @@ def test_get_files_uses_recurse_submodules(tmp_path):
     # Second call: --others --modified returns nothing extra
     mock_repo.git.ls_files = MagicMock(
         side_effect=[
-            "main.py\nexternal/lib.py",
+            "main.py\0external/lib.py\0",
             "",
         ]
     )
@@ -55,11 +130,13 @@ def test_get_files_uses_recurse_submodules(tmp_path):
     first_call_args = mock_repo.git.ls_files.call_args_list[0][0]
     assert "--recurse-submodules" in first_call_args
     assert "--cached" in first_call_args
+    assert "-z" in first_call_args
 
     second_call_args = mock_repo.git.ls_files.call_args_list[1][0]
     assert "--others" in second_call_args
     assert "--modified" in second_call_args
     assert "--recurse-submodules" not in second_call_args
+    assert "-z" in second_call_args
 
     assert "main.py" in files
     assert os.path.join("external", "lib.py") in files
@@ -77,8 +154,8 @@ def test_get_files_includes_untracked_files(tmp_path):
     mock_repo.working_dir = str(tmp_path)
     mock_repo.git.ls_files = MagicMock(
         side_effect=[
-            "tracked.py",
-            "new_file.py",
+            "tracked.py\0",
+            "new_file.py\0",
         ]
     )
 
