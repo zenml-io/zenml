@@ -14,11 +14,7 @@
 """Schema-level round-trip tests for the hook invocation tables."""
 
 from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Iterator
 from uuid import uuid4
-
-import pytest
 
 from zenml.enums import ExecutionStatus, HookType
 from zenml.models import ProjectFilter, UserFilter
@@ -32,22 +28,7 @@ from zenml.zen_stores.schemas import (
 from zenml.zen_stores.sql_zen_store import (
     Session,
     SqlZenStore,
-    SqlZenStoreConfiguration,
 )
-
-
-@pytest.fixture
-def sql_store(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> Iterator[SqlZenStore]:
-    """Create a fresh SQLite-backed SqlZenStore for tests."""
-    db_dir = tmp_path / "zenml-cfg"
-    db_dir.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("ZENML_CONFIG_PATH", str(db_dir))
-    db_path = db_dir / "test.db"
-    config = SqlZenStoreConfiguration(url=f"sqlite:///{db_path}")
-    store = SqlZenStore(config=config, skip_default_registrations=False)
-    yield store
 
 
 def test_hook_invocation_schema_round_trip(sql_store: SqlZenStore) -> None:

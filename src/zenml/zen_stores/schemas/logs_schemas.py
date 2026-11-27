@@ -30,7 +30,10 @@ from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
-from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.schema_utils import (
+    build_foreign_key_field,
+    build_index,
+)
 from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 
@@ -44,6 +47,19 @@ class LogsSchema(BaseSchema, table=True):
     """SQL Model for logs."""
 
     __tablename__ = "logs"
+    __table_args__ = (
+        # Deleting a pipeline run or a step run cascades onto these columns.
+        # Without an index, SQLite has to scan the whole table once per
+        # deleted parent row to find the children.
+        build_index(
+            table_name=__tablename__,
+            column_names=["pipeline_run_id"],
+        ),
+        build_index(
+            table_name=__tablename__,
+            column_names=["step_run_id"],
+        ),
+    )
 
     # Fields
     uri: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))

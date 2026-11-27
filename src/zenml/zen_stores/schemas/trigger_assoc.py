@@ -22,7 +22,10 @@ from sqlmodel import Field, SQLModel
 
 from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.utils.time_utils import utc_now
-from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.schema_utils import (
+    build_foreign_key_field,
+    build_index,
+)
 
 if TYPE_CHECKING:
     from zenml.models import TriggerSnapshotDispatchState
@@ -106,6 +109,12 @@ class TriggerExecutionSchema(SQLModel, table=True):
             "trigger_id",
             "pipeline_run_id",
             name="unique_trigger_execution",
+        ),
+        # `pipeline_run_id` is the trailing column of the constraint above, so
+        # the cascade from a deleted run could not use it.
+        build_index(
+            table_name=__tablename__,
+            column_names=["pipeline_run_id"],
         ),
     )
 
