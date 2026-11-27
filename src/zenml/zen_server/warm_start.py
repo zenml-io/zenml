@@ -20,9 +20,7 @@ workspace, and the process finishes starting. The same path runs on every later
 restart, which then doesn't wait.
 """
 
-import ast
 import importlib
-import importlib.util
 import os
 import signal
 import sys
@@ -31,7 +29,7 @@ import time
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from types import FrameType
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterator, Optional, Tuple
 from uuid import UUID
 
 import requests
@@ -46,12 +44,22 @@ ORGANIZATION_ID_ENV = "ZENML_SERVER_PRO_ORGANIZATION_ID"
 ORGANIZATION_NAME_ENV = "ZENML_SERVER_PRO_ORGANIZATION_NAME"
 WORKSPACE_NAME_ENV = "ZENML_SERVER_PRO_WORKSPACE_NAME"
 RESOURCE_POOL_SOURCE_ENV = "ZENML_SERVER_RESOURCE_POOL_IMPLEMENTATION_SOURCE"
-ASK_INTERVAL_SECONDS = 1.0
+ASK_INTERVAL_SECONDS = 2.0
 # Only the server decides when a workspace opens, so workers can ask less often.
 WORKER_ASK_INTERVAL_SECONDS = 10.0
 HTTP_TIMEOUT_SECONDS = 10
 READY_REPORT_MAX_INTERVAL_SECONDS = 60.0
 MAX_WAITING_THREADS = 32
+# What `API_MODULE` imports, except its routers: they import
+# `zenml.zen_server.auth`, which reads the server settings when imported.
+SERVER_MODULES = (
+    "zenml.zen_server.cloud_utils",
+    "zenml.zen_server.exceptions",
+    "zenml.zen_server.middleware",
+    "zenml.zen_server.otel",
+    "zenml.zen_server.secure_headers",
+    "zenml.zen_server.utils",
+)
 
 
 class WorkspaceIdentity(BaseModel):
@@ -194,6 +202,8 @@ class _WaitingHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", "0")
         self.end_headers()
 
+    do_HEAD = do_GET
+
     def log_message(self, format: str, *args: Any) -> None:
         """Keep health checks out of the logs.
 
@@ -216,11 +226,14 @@ def _exit_on_signal(signum: int, frame: Optional[FrameType]) -> None:
     sys.exit(0)
 
 
-def _ask_until_answered(api: _ProApi) -> WorkspaceIdentity:
+def _ask_until_answered(
+    api: _ProApi, ask_interval_seconds: float
+) -> WorkspaceIdentity:
     """Ask for the identity until the ZenML Pro API gives a usable answer.
 
     Args:
         api: The API connection.
+        ask_interval_seconds: How long to wait after a failed ask.
 
     Returns:
         The identity of this workspace.
@@ -237,7 +250,7 @@ def _ask_until_answered(api: _ProApi) -> WorkspaceIdentity:
             TypeError,
         ) as e:
             print(f"Could not get the workspace identity: {e!r}", flush=True)
-            time.sleep(ASK_INTERVAL_SECONDS)
+            time.sleep(ask_interval_seconds)
 
 
 def wait_for_identity(
@@ -263,7 +276,7 @@ def wait_for_identity(
     threading.Thread(target=server.serve_forever, daemon=True).start()
     api = _ProApi()
 
-    identity = _ask_until_answered(api)
+    identity = _ask_until_answered(api, ask_interval_seconds)
     if not identity.claimed:
         if on_unclaimed:
             on_unclaimed()
@@ -273,7 +286,7 @@ def wait_for_identity(
         server.answer_ready = True
         while not identity.claimed:
             time.sleep(ask_interval_seconds)
-            identity = _ask_until_answered(api)
+            identity = _ask_until_answered(api, ask_interval_seconds)
 
     os.environ[ORGANIZATION_ID_ENV] = str(identity.organization_id)
     if identity.organization_name:
@@ -325,29 +338,6 @@ def _reading_settings_fails() -> Iterator[None]:
             setattr(config_class, "get_server_config", original)
 
 
-def _modules_imported_by(module_name: str) -> List[str]:
-    """List what a module imports, without importing the module.
-
-    Args:
-        module_name: The module to inspect.
-
-    Returns:
-        The names of the imported modules.
-    """
-    spec = importlib.util.find_spec(module_name)
-    assert spec is not None and spec.origin is not None
-    with open(spec.origin, encoding="utf-8") as module_file:
-        tree = ast.parse(module_file.read())
-
-    modules: List[str] = []
-    for node in tree.body:
-        if isinstance(node, ast.ImportFrom) and node.module and not node.level:
-            modules.append(node.module)
-        elif isinstance(node, ast.Import):
-            modules.extend(alias.name for alias in node.names)
-    return modules
-
-
 def load_server_code() -> None:
     """Do the slow part of starting a server that needs no settings.
 
@@ -355,7 +345,7 @@ def load_server_code() -> None:
     workspace from being built, so no customer ever gets it.
     """
     with _reading_settings_fails():
-        for module_name in _modules_imported_by(API_MODULE):
+        for module_name in SERVER_MODULES:
             importlib.import_module(module_name)
 
         from zenml.service_connectors.service_connector_registry import (
