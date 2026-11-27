@@ -137,9 +137,11 @@ class ArtifactLogExporter(LogRecordExporter):
 
         if log_record.attributes:
             attrs = dict(log_record.attributes)
-            filename = attrs.get("code.filepath", None)
-            lineno = attrs.get("code.lineno", None)
-            module = attrs.get("code.function", None)
+            filename = attrs.get("code.file.path", attrs.get("code.filepath"))
+            lineno = attrs.get("code.line.number", attrs.get("code.lineno"))
+            module = attrs.get(
+                "code.function.name", attrs.get("code.function")
+            )
 
         message_bytes = message.encode("utf-8")
         if len(message_bytes) <= DEFAULT_MESSAGE_SIZE:
@@ -348,6 +350,20 @@ class ArtifactLogExporter(LogRecordExporter):
                     self.artifact_store.remove(
                         os.path.join(log_uri, str(file))
                     )
+
+    def force_flush(self, timeout_millis: int = 30000) -> bool:
+        """Confirm that no logs remain buffered in the exporter.
+
+        Exports are synchronous; buffering is handled by the log processor.
+
+        Args:
+            timeout_millis: Maximum time to wait in milliseconds. Unused because
+                this exporter does not buffer records.
+
+        Returns:
+            True because exports complete synchronously.
+        """
+        return True
 
     def shutdown(self) -> None:
         """Shutdown the exporter."""

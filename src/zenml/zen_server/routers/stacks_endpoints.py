@@ -84,6 +84,7 @@ def create_stack(
         The created stack.
     """
     rbac_read_checks: List[BaseModel] = []
+    rbac_attach_checks: List[BaseModel] = []
 
     # Check the service connector creation
     is_connector_create_needed = False
@@ -93,6 +94,7 @@ def create_stack(
                 connector_id_or_info, hydrate=False
             )
             rbac_read_checks.append(service_connector)
+            rbac_attach_checks.append(service_connector)
         else:
             is_connector_create_needed = True
 
@@ -109,6 +111,7 @@ def create_stack(
                     component_id_or_info, hydrate=False
                 )
                 rbac_read_checks.append(component)
+                rbac_attach_checks.append(component)
             else:
                 is_component_create_needed = True
     if is_component_create_needed:
@@ -126,6 +129,9 @@ def create_stack(
         stack.secrets = [secret.id for secret in secrets]
 
     batch_verify_permissions_for_models(rbac_read_checks, action=Action.READ)
+    batch_verify_permissions_for_models(
+        rbac_attach_checks, action=Action.ATTACH
+    )
 
     # Check the stack creation
     verify_permission_for_model(model=stack, action=Action.CREATE)
@@ -217,14 +223,14 @@ def update_stack(
         The updated stack.
     """
     rbac_read_checks: List[BaseModel] = []
+    components: List[BaseModel] = []
     if stack_update.components:
-        rbac_read_checks.extend(
-            [
-                zen_store().get_stack_component(id)
-                for ids in stack_update.components.values()
-                for id in ids
-            ]
-        )
+        components = [
+            zen_store().get_stack_component(id)
+            for ids in stack_update.components.values()
+            for id in ids
+        ]
+        rbac_read_checks.extend(components)
 
     if stack_update.add_secrets:
         secrets = [
@@ -235,6 +241,7 @@ def update_stack(
         stack_update.add_secrets = [secret.id for secret in secrets]
 
     batch_verify_permissions_for_models(rbac_read_checks, action=Action.READ)
+    batch_verify_permissions_for_models(components, action=Action.ATTACH)
 
     return verify_permissions_and_update_entity(
         id=stack_id,

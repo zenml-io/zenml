@@ -20,9 +20,10 @@ from pydantic import (
     BaseModel,
     ValidationError,
     ValidationInfo,
-    ValidatorFunctionWrapHandler,
     model_validator,
 )
+from pydantic.functional_validators import ModelWrapValidatorHandler
+from typing_extensions import Self
 
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -50,9 +51,9 @@ class FileSyncModel(BaseModel):
     def config_validator(
         cls,
         data: Any,
-        handler: ValidatorFunctionWrapHandler,
+        handler: ModelWrapValidatorHandler[Self],
         info: ValidationInfo,
-    ) -> "FileSyncModel":
+    ) -> Self:
         """Wrap model validator to infer the config_file during initialization.
 
         Args:

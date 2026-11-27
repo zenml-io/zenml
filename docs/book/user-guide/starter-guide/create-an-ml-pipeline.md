@@ -15,7 +15,7 @@ Before starting this guide, make sure you have [installed ZenML](https://docs.ze
 
 ```shell
 pip install "zenml[server]"
-zenml login --local  # Will launch the dashboard locally
+zenml login --local  # Will launch the UI locally
 ```
 
 It is also highly recommended that you run [`zenml init`](https://docs.zenml.io/how-to/project-setup-and-management/setting-up-a-project-repository/set-up-repository#zen) at your project root directory when starting a new project. This will tell ZenML which files to include when
@@ -88,19 +88,17 @@ Pipeline visualization can be seen in the ZenML Dashboard. Run zenml login --loc
 ```
 {% endcode %}
 
-### Explore the dashboard
+### Explore the UI
 
-Once the pipeline has finished its execution, use the `zenml login --local` command to view the results in the ZenML Dashboard. Using that command will open up the browser automatically.
+Once the pipeline has finished its execution, use the `zenml login --local` command to view the results in the ZenML UI. Using that command will open up the browser automatically.
 
-<figure><img src="../../.gitbook/assets/landingpage.png" alt=""><figcaption><p>Landing Page of the Dashboard</p></figcaption></figure>
-
-Usually, the dashboard is accessible at [http://127.0.0.1:8237/](http://127.0.0.1:8237/). Log in with the default username **"default"** (password not required) and see your recently run pipeline. Browse through the pipeline components, such as the execution history and artifacts produced by your steps. Use the DAG or Timeline visualization to understand the flow of data and to ensure all steps are completed successfully. ZenML offers two visualization modes: the **DAG view** for understanding pipeline structure and dependencies, and the **Timeline view** for analyzing execution performance. For pipelines with many steps, the Timeline view provides a cleaner interface for performance optimization. [Learn more](../../how-to/dashboard/dashboard-features.md#timeline-view).
+Usually, the UI is accessible at [http://127.0.0.1:8237/](http://127.0.0.1:8237/). Log in with the default username **"default"** (password not required) and see your recently run pipeline. Browse through the pipeline components, such as the execution history and artifacts produced by your steps. Use the DAG or Timeline visualization to understand the flow of data and to ensure all steps are completed successfully. ZenML offers two visualization modes: the **DAG view** for understanding pipeline structure and dependencies, and the **Timeline view** for analyzing execution performance. For pipelines with many steps, the Timeline view provides a cleaner interface for performance optimization. [Learn more](../../how-to/dashboard/dashboard-features.md#timeline-view).
 
 <figure><img src="../../.gitbook/assets/DAGofRun.png" alt=""><figcaption><p>Diagram view of the run, with the runtime attributes of step 2.</p></figcaption></figure>
 
 For further insights, explore the logging and artifact information associated with each step, which can reveal details about the data and intermediate results.
 
-If you have closed the browser tab with the ZenML dashboard, you can always reopen it by running `zenml show` in your terminal.
+If you have closed the browser tab with the ZenML UI, you can always reopen it by running `zenml show` in your terminal.
 
 ## Understanding steps and artifacts
 
@@ -168,7 +166,7 @@ def training_data_loader() -> Tuple[
 ```
 
 {% hint style="info" %}
-ZenML records the root python logging handler's output into the artifact store as a side-effect of running a step. Therefore, when writing steps, use the `logging` module to record logs, to ensure that these logs then show up in the ZenML dashboard.
+ZenML records the root python logging handler's output into the artifact store as a side-effect of running a step. Therefore, when writing steps, use the `logging` module to record logs, to ensure that these logs then show up in the ZenML UI.
 {% endhint %}
 
 ### Create a parameterized training step
@@ -235,7 +233,7 @@ Running `python run.py` should look somewhat like this in the terminal:
 Pipeline run `training_pipeline-2023_04_29-09_19_54_273710` has finished in 0.236s.
 </code></pre>
 
-In the dashboard, you should now be able to see this new run, along with its runtime configuration and a visualization of the training data.
+In the UI, you should now be able to see this new run, along with its runtime configuration and a visualization of the training data.
 
 <figure><img src="../../.gitbook/assets/RunWithVisualization.png" alt=""><figcaption><p>Run created by the code in this section along with a visualization of the ground-truth distribution.</p></figcaption></figure>
 

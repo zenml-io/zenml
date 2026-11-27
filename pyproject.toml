@@ -14,11 +14,11 @@ exclude-newer = "3 days"
 exclude-newer-package = { zenml = false }
 
 [tool.uv.build-backend]
-module-name = ["zenml", "zenml_cli"]
+module-name = ["zenml", "zenml_cli", "zenml_mcp"]
 
 [project]
 name = "zenml"
-version = "0.98.1"
+version = "0.99.0"
 description = "ZenML: MLOps for Reliable AI: from Classical AI to Agents."
 authors = [{name = "ZenML GmbH", email = "info@zenml.io"}]
 readme = "README.md"
@@ -44,14 +44,18 @@ requires-python = ">=3.10,<3.15"
 
 dependencies = [
     "asgiref~=3.10.0",
+    # Not imported by ZenML; it arrives through docker -> requests. The floor
+    # makes upgrading ZenML also upgrade certifi, because older bundles trust
+    # the compromised emSign ECC Root CA - G3 (GHSA-6q48-6c7w-9gw2).
+    "certifi>=2026.10.19",
     "click>=8.3.3,<=8.5.0",
     "cloudpickle>=2.0.0",
     "distro>=1.6.0,<2.0.0",
     "docker~=7.1.0",
     "gitpython>=3.1.18,<4.0.0",
     "jsonref",
-    "opentelemetry-instrumentation-logging==0.64b0",
-    "opentelemetry-sdk==1.43.0",
+    "opentelemetry-instrumentation-logging==0.66b1",
+    "opentelemetry-sdk==1.45.1",
     "packaging>=24.1",
     "psutil>=5.0.0",
     "pydantic>=2.0,<=2.12.5",
@@ -89,7 +93,7 @@ server = [
     "fastapi>=0.138.0,<0.139.0",
     "uvicorn[standard]>=0.17.5",
     "python-multipart~=0.0.9",
-    "pyjwt[crypto]>=2.15.1,<2.16.0",
+    "pyjwt[crypto]==2.15.1",
     "Jinja2",
     "ipinfo>=4.4.3",
     "secure~=1.0.1",
@@ -100,12 +104,15 @@ server = [
 ]
 otel = [
     # Install otel dependencies to enable OpenTelemetry instrumentation in server processes
-    "opentelemetry-exporter-otlp-proto-http>=1.43.0,<1.44.0",
-    "opentelemetry-instrumentation-fastapi>=0.64b0,<0.65b0",
-    "opentelemetry-instrumentation-requests>=0.64b0,<0.65b0",
-    "opentelemetry-instrumentation-sqlalchemy>=0.64b0,<0.65b0",
+    "opentelemetry-exporter-otlp-proto-http>=1.45.1,<1.46.0",
+    "opentelemetry-instrumentation-fastapi>=0.66b1,<0.67b0",
+    "opentelemetry-instrumentation-requests>=0.66b1,<0.67b0",
+    "opentelemetry-instrumentation-sqlalchemy>=0.66b1,<0.67b0",
 ]
 server-streaming = ["redis>=7.1.0,<8.0.0"]
+# The ZenML MCP server (`zenml_mcp`), which imports no ZenML core module. It
+# uses MCP SDK internals that a minor release may move, hence the cap.
+mcp = ["mcp>=2.3.0,<2.4.0", "httpx>=0.28.0,<1.0.0"]
 jupyter = ["rich[jupyter]>=12.0.0"]
 templates = ["copier>=8.1.0", "jinja2-time>=0.2.0,<0.3.0", "ruff>=0.1.7", "pyyaml-include<2.0"]
 terraform = ["python-terraform"]
@@ -149,6 +156,7 @@ azureml = [
     "azure-ai-ml>=1.23.1,<2.0.0",
 ]
 dev = [
+    "zenml[mcp]",  # so the unit tests and mypy cover `zenml_mcp`
     "bandit>=1.7.5,<2.0.0",
     "ruff>=0.1.7",
     "yamlfix>=1.16.0",
@@ -166,7 +174,7 @@ dev = [
     "tox>=3.24.3",
     "hypothesis>=6.43.1",
     "typing-extensions>=3.7.4",
-    "pydoclint>=0.8.3",
+    "pydoclint==0.10.1",
     "pytest-randomly>=3.10.1,<4.0.0",
     "pytest-mock>=3.6.1,<4.0.0",
     "pytest-clarity>=1.0.1,<2.0.0",
@@ -454,3 +462,8 @@ warn_unused_ignores = false
 module = ["mlx.core.*"]  # workaround for failing mypy stub parsing (mlx==0.29.4 version)
 follow_imports = 'skip'
 follow_imports_for_stubs = true
+
+[[tool.mypy.overrides]]
+# The MCP tools pass on JSON the ZenML REST API answers, which is `Any`.
+module = ["zenml_mcp.*"]
+warn_return_any = false

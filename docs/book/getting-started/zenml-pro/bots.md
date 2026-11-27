@@ -69,7 +69,8 @@ agent can also ping you on Slack.
 
 Automations start a chat with a fixed prompt and bot on a cron schedule, or
 whenever you run them by hand. Use them for recurring work such as a daily
-check of failed pipeline runs.
+check of failed pipeline runs. You can also ask the agent in a chat to set up
+or change an automation for you.
 
 ### Give agents access to more tools
 

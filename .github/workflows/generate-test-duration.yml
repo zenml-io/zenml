@@ -2,16 +2,25 @@
 name: Generate test duration file
 on:
   workflow_call:
+  workflow_dispatch:
   schedule:
     - cron: 0 8 * * 1  # Run every Monday at 8 am
+concurrency:
+  group: generate-test-duration-file
+  cancel-in-progress: false
 env:
   ZENML_DEBUG: 1
   ZENML_LOGGING_VERBOSITY: debug
   ZENML_ANALYTICS_OPT_IN: false
 jobs:
   generate-test-duration-file:
+    if: github.repository == 'zenml-io/zenml'
     name: Generate test duration file
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      checks: write
     strategy:
       fail-fast: false
     env:
@@ -38,16 +47,56 @@ jobs:
             # Ubuntu integration tests run as 6 shards
         run: |
           bash scripts/test-coverage-xml.sh "" default "" "" store-durations
-      - name: Check difference in .test_durations
+      - name: Open a pull request with the new durations
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          git diff --quiet || echo "Changes found"
-          if [ -n "$(git status --porcelain)" ]; then
-            # Commit changes directly to the specified branch
-            git add .test_durations
-            git commit -m "Update with new changes for test duration file at $(date +'%Y%m%d-%H%M%S')"
-            git push origin develop
-          else
+          if [ -z "$(git status --porcelain -- .test_durations)" ]; then
             echo "No changes in .test_durations"
+            exit 0
+          fi
+          # develop only accepts changes through pull requests, so a direct push
+          # is rejected. Without this file the CI shards are split by test
+          # count instead of duration and finish minutes apart.
+          # A fixed branch keeps unmerged weekly refreshes on one pull request.
+          branch=ci/update-test-durations
+          git checkout -b "$branch"
+          git add .test_durations
+          git commit -m "Update test duration file"
+          git push --force origin "$branch"
+          pr=$(gh pr list --head "$branch" --state open --json number --jq '.[].number')
+          if [ -z "$pr" ]; then
+            if ! pr=$(gh pr create --base develop --head "$branch" \
+              --title "Update test duration file" \
+              --body "Refreshes .test_durations so the CI test shards stay balanced. The generator checks the release label automatically on this PR's exact commit; the test suites ignore a change to this file alone. Monday's scheduled run uses the workflow on the default branch, main, so this automation must reach main to take effect on the schedule." \
+              --label no-release-notes); then
+              echo '::error::PR creation failed. Check the repository setting "Allow GitHub Actions to create and approve pull requests" and the error above.'
+              exit 1
+            fi
+          fi
+          sha=$(git rev-parse HEAD)
+          metadata=$(gh pr view "$pr" --json state,isCrossRepository,baseRefName,headRefName,headRefOid,files)
+          if ! jq -e --arg sha "$sha" --arg branch "$branch" '
+            .state == "OPEN" and .isCrossRepository == false and
+            .baseRefName == "develop" and .headRefName == $branch and
+            .headRefOid == $sha and [.files[].path] == [".test_durations"]
+          ' <<< "$metadata" > /dev/null; then
+            echo '::error::Refusing to check a PR that does not match the generated duration-only commit.'
+            exit 1
+          fi
+          label_filter='[.labels[].name | select(. == "release-notes" or . == "no-release-notes")] | length == 1'
+          check_id=$(gh api --method POST "repos/$GITHUB_REPOSITORY/check-runs" \
+            -f name=check-label -f head_sha="$sha" -f status=in_progress --jq .id)
+          conclusion=failure
+          if latest=$(gh pr view "$pr" --json state,headRefOid,labels) && jq -e \
+            --arg sha "$sha" ".state == \"OPEN\" and .headRefOid == \$sha and ($label_filter)" <<< "$latest" > /dev/null; then
+            conclusion=success
+          fi
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/check-runs/$check_id" \
+            -f status=completed -f conclusion="$conclusion" > /dev/null
+          if [ "$conclusion" != success ]; then
+            echo '::error::The PR must be open at the generated commit with exactly one of release-notes or no-release-notes. Verification failed.'
+            exit 1
           fi
       - name: Verify Python Env unaffected
         run: |-

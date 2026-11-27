@@ -21,9 +21,9 @@ ZenML Pro includes two distinct APIs:
 
 ### Server URL
 
-For Pro users, the `server_url` for the Workspace API is the URL of your workspace, which can be found in the ZenML Pro dashboard:
+For Pro users, the `server_url` for the Workspace API is the URL of your workspace, which can be found in the ZenML Pro UI:
 
-**Note:** The workspace URL can be found in the ZenML Pro dashboard and typically looks like `https://1bfe8d94-zenml.cloudinfra.zenml.io`.
+**Note:** The workspace URL can be found in the ZenML Pro UI and typically looks like `https://1bfe8d94-zenml.cloudinfra.zenml.io`.
 
 ![ZenML workspace URL](../../.gitbook/assets/workspace_url.png)
 

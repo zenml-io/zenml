@@ -14,7 +14,6 @@
 """Utility functions for the orchestrator."""
 
 import os
-import random
 import shlex
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 from uuid import UUID
@@ -32,11 +31,13 @@ from zenml.constants import (
     ENV_ZENML_PIPELINE_RUN_API_TOKEN_EXPIRATION,
     ENV_ZENML_SERVER,
     ENV_ZENML_STORE_PREFIX,
+    ENV_ZENML_USE_GLOBAL_RANDOM_SEED,
     ZENML_PIPELINE_RUN_API_TOKEN_EXPIRATION,
 )
 from zenml.enums import APITokenType, AuthScheme, StackComponentType, StoreType
 from zenml.logger import get_logger
 from zenml.stack import StackComponent
+from zenml.utils.string_utils import random_hex_str
 
 logger = get_logger(__name__)
 
@@ -80,7 +81,7 @@ def get_orchestrator_run_name(
         suffix_length = min(32, max(8, max_length - len(pipeline_name)))
         pipeline_name = pipeline_name[: (max_length - suffix_length)]
 
-    suffix = "".join(random.choices("0123456789abcdef", k=suffix_length))
+    suffix = random_hex_str(suffix_length)
 
     return f"{pipeline_name}{suffix}"
 
@@ -231,6 +232,13 @@ def get_config_environment_vars(
     environment_vars[ENV_ZENML_ACTIVE_PROJECT_ID] = str(
         Client().active_project.id
     )
+
+    # Names generated in the orchestration environment (e.g. Kubernetes step
+    # jobs) should follow the same setting as the client that submitted them.
+    if (
+        use_global_seed := os.getenv(ENV_ZENML_USE_GLOBAL_RANDOM_SEED)
+    ) is not None:
+        environment_vars[ENV_ZENML_USE_GLOBAL_RANDOM_SEED] = use_global_seed
 
     return environment_vars, secrets
 

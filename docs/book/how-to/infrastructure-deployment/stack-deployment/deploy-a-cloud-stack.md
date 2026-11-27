@@ -19,35 +19,35 @@ If you have the required infrastructure pieces already deployed on your cloud, y
 
 The first thing that you need in order to use this feature is a deployed instance of ZenML (not a local server via `zenml login --local`). If you do not already have it set up for you, feel free to learn how to do so [here](https://docs.zenml.io/getting-started/deploying-zenml).
 
-Once you are connected to your deployed ZenML instance, you can use the 1-click deployment tool either through the dashboard or the CLI:
+Once you are connected to your deployed ZenML instance, you can use the 1-click deployment tool either through the UI or the CLI:
 
 {% tabs %}
-{% tab title="Dashboard" %}
-In order to create a remote stack over the dashboard, go to the stacks page\
-on the dashboard and click "+ New Stack".
+{% tab title="UI" %}
+In order to create a remote stack over the UI, open **Infra** > **Stacks**\
+and select **New stack**.
 
-![The new stacks page](../../../.gitbook/assets/register_stack_button.png)
+![The Stacks page](../../../.gitbook/assets/register_stack_button.png)
 
-Since we will be deploying it from scratch, select "New Infrastructure" on the\
+Since we will be deploying it from scratch, select **Deploy in your cloud** on the\
 next page:
 
-![Options for registering a stack](../../../.gitbook/assets/register_stack_page.png)
+![New stack options](../../../.gitbook/assets/register_stack_page.png)
 
-![Choosing a cloud provider](../../../.gitbook/assets/deploy_stack_selection.png)
+![Pick a cloud](../../../.gitbook/assets/deploy_stack_selection.png)
 
 <details>
 
 <summary>AWS</summary>
 
-If you choose `aws` as your provider, you will see a page where you will have to select a region and a name for your new stack:
+Pick **AWS** under **Pick a cloud**, then set **Region** and **Stack name** in **Configure**:
 
-<img src="../../../.gitbook/assets/deploy_stack_aws.png" alt="Configuring the new stack" data-size="original">
+<img src="../../../.gitbook/assets/deploy_stack_aws.png" alt="Configure step for AWS" data-size="original">
 
 Once the configuration is finished, you will see a deployment page:
 
-<img src="../../../.gitbook/assets/deploy_stack_aws_2.png" alt="Deploying the new stack" data-size="original">
+<img src="../../../.gitbook/assets/deploy_stack_aws_2.png" alt="Deploy in AWS" data-size="original">
 
-Clicking on the "Deploy in AWS" button will redirect you to a Cloud Formation page on AWS Console.
+Select **Open console**. A CloudFormation stack opens in a new tab.
 
 <img src="../../../.gitbook/assets/deploy_stack_aws_cloudformation_intro.png" alt="Cloudformation page" data-size="original">
 
@@ -61,17 +61,17 @@ You will have to log in to your AWS account, review and confirm the pre-filled c
 
 <summary>GCP</summary>
 
-If you choose `gcp` as your provider, you will see a page where you will have to select a region and a name for your new stack:
+Pick **GCP** under **Pick a cloud**, then set **Region** and **Stack name** in **Configure**:
 
-![Deploy GCP Stack - Step 1](../../../.gitbook/assets/deploy_stack_gcp.png) ![Deploy GCP Stack - Step 1 Continued](../../../.gitbook/assets/deploy_stack_gcp_2.png)
+![Configure step for GCP](../../../.gitbook/assets/deploy_stack_gcp.png)
 
 Once the configuration is finished, you will see a deployment page:
 
-<img src="../../../.gitbook/assets/deploy_stack_gcp_3.png" alt="Deploy GCP Stack - Step 2" data-size="original">
+<img src="../../../.gitbook/assets/deploy_stack_gcp_3.png" alt="Deploy in GCP" data-size="original">
 
-Make a note of the configuration values provided to you in the ZenML dashboard. You will need these in the next step.
+Copy the values under **Paste these values when asked**. You will need these in the next step.
 
-Clicking on the "Deploy in GCP" button will redirect you to a Cloud Shell session on GCP.
+Select **Open Cloud Shell**. Cloud Shell opens in a new tab.
 
 <img src="../../../.gitbook/assets/deploy_stack_gcp_cloudshell_start.png" alt="GCP Cloud Shell start page" data-size="original">
 
@@ -87,9 +87,9 @@ First, you will be asked to create or choose an existing GCP project with billin
 
 <img src="../../../.gitbook/assets/deploy_stack_gcp_cloudshell_step_1.png" alt="GCP Cloud Shell tutorial step 1" data-size="original">
 
-Next, you will be asked to configure your deployment by pasting the configuration values that were provided to you earlier in the ZenML dashboard. You may need to switch back to the ZenML dashboard to copy these values if you did not do so earlier:
+Next, you will be asked to configure your deployment by pasting the configuration values that were provided to you earlier in the ZenML UI. The UI shows **Deploying** while it waits for GCP:
 
-<img src="../../../.gitbook/assets/deploy_stack_gcp_cloudshell_step_2.png" alt="GCP Cloud Shell tutorial step 2" data-size="original"><img src="../../../.gitbook/assets/deploy_stack_pending.png" alt="Deploy GCP Stack pending" data-size="original">
+<img src="../../../.gitbook/assets/deploy_stack_gcp_cloudshell_step_2.png" alt="GCP Cloud Shell tutorial step 2" data-size="original"><img src="../../../.gitbook/assets/deploy_stack_pending.png" alt="Deploying, waiting for GCP" data-size="original">
 
 You can take this opportunity to review the script that will be executed at the next step. You will notice that this script starts by enabling some necessary GCP service APIs and configuring some basic permissions for the service accounts involved in the stack deployment, and then deploys the stack using a GCP Deployment Manager template. You can proceed with the deployment by running the script in your terminal:
 
@@ -99,9 +99,9 @@ The script will deploy a GCP Deployment Manager template that provisions the nec
 
 <img src="../../../.gitbook/assets/deploy_stack_gcp_dm_progress.png" alt="GCP Deployment Manager progress" data-size="original">
 
-Once the deployment is complete, you may close the Cloud Shell session and return to the ZenML dashboard to view the newly created stack:
+Once the deployment is complete, you may close the Cloud Shell session and return to the ZenML UI to view the newly created stack:
 
-<img src="../../../.gitbook/assets/deploy_stack_gcp_cloudshell_step_4.png" alt="GCP Cloud Shell tutorial step 4" data-size="original"><img src="../../../.gitbook/assets/deploy_stack_gcp_dashboard_output.png" alt="GCP Stack dashboard output" data-size="original">
+<img src="../../../.gitbook/assets/deploy_stack_gcp_cloudshell_step_4.png" alt="GCP Cloud Shell tutorial step 4" data-size="original"><img src="../../../.gitbook/assets/deploy_stack_gcp_dashboard_output.png" alt="GCP Stack UI output" data-size="original">
 
 </details>
 
@@ -109,19 +109,15 @@ Once the deployment is complete, you may close the Cloud Shell session and retur
 
 <summary>Azure</summary>
 
-If you choose `azure` as your provider, you will see a page where you will have to select a location and a name for your new stack:
+Pick **Azure** under **Pick a cloud**, then set **Region** and **Stack name** in **Configure**:
 
-<img src="../../../.gitbook/assets/deploy_stack_azure_location.png" alt="Deploy Azure Stack - Step 1" data-size="original">
+<img src="../../../.gitbook/assets/deploy_stack_azure_location.png" alt="Configure step for Azure" data-size="original">
 
-You will also find a list of resources that will be deployed as part of the stack:
+Once the configuration is finished, you will see a deployment page. Copy the content under **Create main.tf with this content**.
 
-<img src="../../../.gitbook/assets/deploy_stack_azure_resources.png" alt="Deploy Azure Stack - Step 1 Continued" data-size="original">
+<img src="../../../.gitbook/assets/deploy_stack_azure_deployment_page.png" alt="Deploy in Azure" data-size="original">
 
-Once the configuration is finished, you will see a deployment page. Make a note of the values in the `main.tf` file that is provided to you.
-
-<img src="../../../.gitbook/assets/deploy_stack_azure_deployment_page.png" alt="Deploy Azure Stack - Step 2" data-size="original">
-
-Clicking on the "Deploy in Azure" button will redirect you to a Cloud Shell session on Azure.
+Select **Open Cloud Shell**. Azure Cloud Shell opens in a new tab.
 
 <img src="../../../.gitbook/assets/deploy_stack_azure_cloud_shell.png" alt="Azure Cloud Shell start page" data-size="original">
 
@@ -131,9 +127,9 @@ The `main.tf` file uses the `zenml-io/zenml-stack/azure` module hosted on the Te
 
 <img src="../../../.gitbook/assets/deploy_stack_azure_cloud_shell_terraform_outputs.png" alt="Azure Cloud Shell Terraform Outputs" data-size="original">
 
-Once the Terraform deployment is complete, you may close the Cloud Shell session and return to the ZenML Dashboard to view the newly created stack:
+Once the Terraform deployment is complete, you may close the Cloud Shell session and return to the ZenML UI to view the newly created stack:
 
-<img src="../../../.gitbook/assets/deploy_stack_azure_dashboard_output.png" alt="Azure Stack Dashboard output" data-size="original">
+<img src="../../../.gitbook/assets/deploy_stack_azure_dashboard_output.png" alt="Azure Stack UI output" data-size="original">
 
 </details>
 {% endtab %}

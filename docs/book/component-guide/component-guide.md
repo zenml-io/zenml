@@ -15,7 +15,7 @@ A stack comprises different stack components, where each component is responsibl
 Each pipeline run that you execute with ZenML will require a **stack** and each **stack** will be required to include at least an **orchestrator** and an **artifact store**. Apart from these two, the other components are optional and to be added as your pipeline evolves in MLOps maturity.
 
 {% hint style="info" %}
-Stacks are a ZenML concept. [Kitaru](https://docs.zenml.io/kitaru), ZenML's sibling project for replaying and improving AI agents, deliberately does not use them — it runs a lightweight server of its own, with replays executing on workers in your environment.
+Stacks are a ZenML concept. [Kitaru](https://docs.zenml.io/kitaru), ZenML's sibling project for insights and evals from AI agent traces, deliberately does not use them — it runs a lightweight server of its own, with imports, evaluators, and replays executing on workers in your environment.
 {% endhint %}
 
 ## Stacks as a way to organize your execution environment

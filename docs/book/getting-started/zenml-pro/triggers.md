@@ -10,7 +10,7 @@ Triggers are part of ZenML's paid features. For details on availability and supp
 {% endhint %}
 
 In the [snapshots](./snapshots.md) section, you learned how to prepare snapshots and execute them on demand via 
-the dashboard, CLI, or SDK. In many cases, however, pipelines need to run automatically - either on a schedule or in 
+the UI, CLI, or SDK. In many cases, however, pipelines need to run automatically - either on a schedule or in 
 response to an event.
 
 Triggers enable this behavior. A trigger is a configuration that defines one or more conditions under 
@@ -180,23 +180,23 @@ zenml trigger schedule update "daily-schedule-6-am" --active=false \
 ### View Schedules
 
 Triggers are a first-level citizen of the ZenML platform. You can view detailed information in the
-dashboard as well as via the SDK and CLI.
+UI as well as via the SDK and CLI.
 
-Via the dashboard:
+Via the UI:
 
-To view schedules, you need to navigate to the `Triggers` tab:
+To view triggers, open **Pipelines** in the rail and select the `Triggers` tab:
 
 ![Image Showing Triggers tab](../../.gitbook/assets/schedule_list_dsb.png)
 
-You can inspect a schedule's information:
+You can update a trigger's configuration on its Update trigger page:
 
-![Image Showing Schedule View](../../.gitbook/assets/schedule_view_dsb.png)
+![Image Showing Trigger Update](../../.gitbook/assets/schedule_view_dsb.png)
 
-Or its attached snapshots and executed pipeline runs:
+The **Configuration** tab lists its attached snapshots, and the **Runs** tab its executed pipeline runs:
 
-![Image Showing Schedule Snapshots](../../.gitbook/assets/schedule_snaps_dsb.png)
+![Trigger Configuration tab with attached snapshots](../../.gitbook/assets/schedule_snaps_dsb.png)
 
-![Image Showing Schedule Runs](../../.gitbook/assets/schedule_runs_dash.png)
+![Trigger Runs tab](../../.gitbook/assets/schedule_runs_dash.png)
 
 For each trigger–snapshot attachment, ZenML can persist the **dispatch state**.
 This is the small status record that answers, "what happened the last time this
@@ -346,14 +346,14 @@ longer be used, but it remains in the system to preserve references for visibili
 Archiving (soft deletion) is the default deletion mode. Triggers can also be permanently deleted. Neither 
 operation can be reversed.
 
-Via the dashboard:
+Via the UI:
 
-![Image Showing Schedule Deletion](../../.gitbook/assets/delete_schedule_soft.png)
+![Image Showing Trigger Archive](../../.gitbook/assets/delete_schedule_soft.png)
 
-You can view archived schedules by setting the `Display archived` filter, where
+You can view archived triggers by setting the `View` to `Archived`, where
 you can also hard delete them.
 
-![Image Showing Schedule Hard Deletion](../../.gitbook/assets/delete_schedule_hard.png)
+![Image Showing Trigger Hard Deletion](../../.gitbook/assets/delete_schedule_hard.png)
 
 Via the SDK:
 
@@ -397,8 +397,8 @@ better suited for production workloads:
   * Triggers: Snapshots and schedules are managed independently. You can dynamically attach or detach snapshots to or from schedules.
   * OS Schedules: Schedules are bound to individual pipelines and cannot be shared across multiple pipelines.
 * Visibility
-  * Triggers: Extended dashboard visibility and management.
-  * OS Schedules: Limited dashboard exposure.
+  * Triggers: Extended UI visibility and management.
+  * OS Schedules: Limited UI exposure.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
 

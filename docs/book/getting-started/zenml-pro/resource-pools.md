@@ -21,13 +21,11 @@ ZenML decide when a dynamic pipeline step may run. A pool is a virtual ledger
 over real infrastructure: Kubernetes node pools, GPU machines, cloud machine
 types, service connector resources, or any other bounded platform resource.
 
-The current user-facing configuration flow is in the ZenML Pro UI:
+The current user-facing configuration flow is in the ZenML Pro UI: open
+**Settings**, select the workspace in the **Workspace** dropdown, and open
+**Resource pools**.
 
-* Organization-level pools: **Organization Settings > Resource Pools**.
-* Workspace-level pools: **Workspace Settings > Resource Pools**.
-
-Both pages use the same concepts. Admins define descriptors, create pools,
-group resources into pool classes, attach policies, and inspect requests from
+Admins define descriptors, create pools, group resources into pool classes, attach policies, and inspect requests from
 the UI. The JSON examples in this section use the Resource Manager REST API
 shape for teams that automate the same configuration.
 
@@ -124,8 +122,8 @@ flowchart LR
 
 ## Minimal UI walkthrough
 
-1. Open **Organization Settings > Resource Pools** or
-   **Workspace Settings > Resource Pools**.
+1. Open **Settings**, select the workspace in the **Workspace** dropdown, and
+   open **Resource pools**.
 2. Add or review resource descriptors. Use the stock `CPU`, `memory`, and
    `GPU` descriptors for common requests; add custom descriptors for specific
    hardware or licenses.

@@ -23,6 +23,7 @@ from zenml.models import (
     BaseUpdate,
     Page,
     ProjectScopedFilter,
+    StepRunResponse,
     UserScopedRequest,
 )
 from zenml.zen_server.feature_gate.endpoint_utils import (
@@ -45,6 +46,7 @@ from zenml.zen_server.utils import (
     get_auth_context,
     server_config,
     set_filter_project_scope,
+    zen_store,
 )
 
 AnyRequest = TypeVar("AnyRequest", bound=BaseRequest)
@@ -215,6 +217,26 @@ def verify_permissions_and_get_entity(
     model = get_method(id, **get_method_kwargs)
     verify_permission_for_model(model, action=Action.READ)
     return dehydrate_response_model(model)
+
+
+def verify_permissions_and_get_step_run(
+    step_run_id: UUID, action: Action, hydrate: bool = False
+) -> StepRunResponse:
+    """Fetch a step run and verify the caller may `action` its pipeline run.
+
+    Args:
+        step_run_id: The ID of the step run to fetch.
+        action: The action to verify on the step run's pipeline run.
+        hydrate: Whether to hydrate the returned step run.
+
+    Returns:
+        The fetched step run.
+    """
+    step_run = zen_store().get_run_step(step_run_id, hydrate=hydrate)
+    pipeline_run = step_run.get_resources().pipeline_run
+    assert pipeline_run is not None
+    verify_permission_for_model(pipeline_run, action=action)
+    return step_run
 
 
 def verify_permissions_and_list_entities(
