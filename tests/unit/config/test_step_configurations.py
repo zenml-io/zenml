@@ -11,9 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+"""Tests for step configurations."""
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
+from zenml.config.retry_config import StepRetryConfig
 from zenml.config.step_configurations import (
     InputSpec,
     Step,
@@ -197,3 +198,55 @@ def test_from_dict_excludes_hook_sources():
 
     for field in _HOOK_SOURCES:
         assert getattr(step.config, field) is None
+
+
+def test_step_retry_config_defaults():
+    """Tests StepRetryConfig default values."""
+    config = StepRetryConfig()
+    assert config.max_retries == 1
+    assert config.delay == 0
+    assert config.backoff == 1
+
+
+def test_step_retry_config_custom_values():
+    """Tests StepRetryConfig with custom parameters."""
+    config = StepRetryConfig(max_retries=3, delay=10)
+    assert config.max_retries == 3
+    assert config.delay == 10
+    assert config.backoff == 1
+
+    config_with_backoff = StepRetryConfig(max_retries=3, delay=10, backoff=2)
+    assert config_with_backoff.backoff == 2
+
+    config_zero_backoff = StepRetryConfig(max_retries=3, delay=10, backoff=0)
+    assert config_zero_backoff.backoff == 0
+
+
+def test_step_retry_config_execution_backoff(mocker):
+    """Tests that launch_step maintains constant delay across retries by default."""
+    from unittest.mock import MagicMock
+
+    import pytest
+
+    from zenml.execution.step.utils import launch_step
+
+    mock_launcher = mocker.patch("zenml.execution.step.utils.StepLauncher")
+    mock_launcher.return_value.launch.side_effect = RuntimeError(
+        "step failure"
+    )
+    mock_sleep = mocker.patch("time.sleep")
+
+    mock_step = MagicMock()
+    mock_step.config.name = "test_step"
+    mock_step.config.retry = StepRetryConfig(max_retries=3, delay=10)
+
+    with pytest.raises(RuntimeError, match="step failure"):
+        launch_step(
+            snapshot=MagicMock(),
+            step=mock_step,
+            orchestrator_run_id="run_id",
+            retry=True,
+        )
+
+    # With default backoff=1, sleeps should be constant [10, 10, 10]
+    assert [call.args[0] for call in mock_sleep.call_args_list] == [10, 10, 10]
