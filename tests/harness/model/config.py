@@ -20,9 +20,10 @@ from pydantic import (
     Field,
     ValidationError,
     ValidationInfo,
-    ValidatorFunctionWrapHandler,
     model_validator,
 )
+from pydantic.functional_validators import ModelWrapValidatorHandler
+from typing_extensions import Self
 
 from tests.harness.model.base import BaseTestConfigModel
 from tests.harness.model.deployment import DeploymentConfig
@@ -51,9 +52,9 @@ class Configuration(BaseTestConfigModel):
     def config_validator(
         cls,
         data: Any,
-        handler: ValidatorFunctionWrapHandler,
+        handler: ModelWrapValidatorHandler[Self],
         info: ValidationInfo,
-    ) -> "Configuration":
+    ) -> Self:
         """Wrap model validator to infer the config_file during initialization.
 
         Args:

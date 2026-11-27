@@ -4,8 +4,8 @@ set -x
 set -o pipefail
 
 # Default source directories
-SRC=${1:-"src/zenml tests examples"}
-SRC_NO_TESTS=${1:-"src/zenml tests/harness"}
+SRC=${1:-"src/zenml src/zenml_mcp tests examples"}
+SRC_NO_TESTS=${1:-"src/zenml src/zenml_mcp tests/harness"}
 TESTS_EXAMPLES=${1:-"tests examples"}
 
 export ZENML_DEBUG=1
