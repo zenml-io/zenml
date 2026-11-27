@@ -86,6 +86,14 @@ class B2ArtifactStore(S3ArtifactStore):
             )
         return kwargs
 
+    def _get_config_kwargs(self) -> Dict[str, Any]:
+        """Get the botocore `Config` keyword arguments with the B2 user agent.
+
+        Returns:
+            The botocore `Config` keyword arguments.
+        """
+        return self._with_b2_user_agent(super()._get_config_kwargs())
+
     def _build_filesystem_kwargs(self) -> Dict[str, Any]:
         """Build the s3fs constructor kwargs with the B2 runtime fallbacks.
 
@@ -104,9 +112,9 @@ class B2ArtifactStore(S3ArtifactStore):
     def _build_boto3_kwargs(self) -> Dict[str, Any]:
         """Build B2-aware kwargs for the boto3.resource path.
 
-        The parent only applies ``config_kwargs`` to the s3fs filesystem; this
-        override mirrors that on the ``boto3.resource('s3', ...)`` path so both
-        code paths see the same client configuration.
+        The parent applies ``config_kwargs`` (with the B2 user agent, via
+        ``_get_config_kwargs``) to the boto3 path; this override adds the B2
+        endpoint fallback, mirroring the s3fs filesystem.
 
         Returns:
             kwargs for ``boto3.resource('s3', ...)``.
@@ -114,10 +122,4 @@ class B2ArtifactStore(S3ArtifactStore):
         kwargs = super()._build_boto3_kwargs()
         if not kwargs.get("endpoint_url"):
             kwargs["endpoint_url"] = DEFAULT_B2_ENDPOINT_URL
-        if "config" not in kwargs:
-            from botocore.config import Config
-
-            kwargs["config"] = Config(
-                **self._with_b2_user_agent(self.config.config_kwargs)
-            )
         return kwargs

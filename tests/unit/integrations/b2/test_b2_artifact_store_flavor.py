@@ -201,14 +201,8 @@ def test_build_boto3_kwargs_forwards_config_kwargs_into_boto3_config(
     from botocore.config import Config
 
     store = _build_b2_artifact_store(monkeypatch)
-    parent_kwargs = {"endpoint_url": DEFAULT_B2_ENDPOINT_URL}
 
-    with patch.object(
-        type(store).__mro__[1],
-        "_build_boto3_kwargs",
-        return_value=dict(parent_kwargs),
-    ):
-        kwargs = store._build_boto3_kwargs()
+    kwargs = store._build_boto3_kwargs()
 
     assert "config" in kwargs
     assert isinstance(kwargs["config"], Config)
@@ -227,14 +221,8 @@ def test_build_boto3_kwargs_preserves_user_agent_extra(monkeypatch):
             config_kwargs={"user_agent_extra": "caller-supplied"},
         ),
     )
-    parent_kwargs = {"endpoint_url": DEFAULT_B2_ENDPOINT_URL}
 
-    with patch.object(
-        type(store).__mro__[1],
-        "_build_boto3_kwargs",
-        return_value=dict(parent_kwargs),
-    ):
-        kwargs = store._build_boto3_kwargs()
+    kwargs = store._build_boto3_kwargs()
 
     assert isinstance(kwargs["config"], Config)
     assert "caller-supplied" in kwargs["config"].user_agent_extra
@@ -260,3 +248,19 @@ def test_build_boto3_kwargs_preserves_existing_config(monkeypatch):
         kwargs = store._build_boto3_kwargs()
 
     assert kwargs["config"] is parent_config
+
+
+def test_build_boto3_kwargs_keeps_retries_and_b2_user_agent(monkeypatch):
+    """`config_kwargs` from the S3 parent are combined with the B2 agent."""
+    store = _build_b2_artifact_store(
+        monkeypatch,
+        config=B2ArtifactStoreConfig(
+            path="s3://my-b2-bucket",
+            config_kwargs={"retries": {"max_attempts": 1}},
+        ),
+    )
+
+    config = store._build_boto3_kwargs()["config"]
+
+    assert config.retries == {"max_attempts": 1}
+    assert B2_USER_AGENT in (config.user_agent_extra or "")

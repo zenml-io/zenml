@@ -75,17 +75,12 @@ class DigitalOceanSpacesArtifactStore(S3ArtifactStore):
     def _build_boto3_kwargs(self) -> Dict[str, Any]:
         """Build Spaces-aware kwargs for the boto3.resource path.
 
-        The parent applies ``client_kwargs`` and credentials; this override
-        mirrors the Spaces endpoint and the ``config_kwargs`` (as a botocore
-        ``Config``) onto the ``boto3.resource('s3', ...)`` path so both code
-        paths address the same endpoint with the same client configuration.
+        The parent applies ``client_kwargs``, credentials and
+        ``config_kwargs``; this override mirrors the Spaces endpoint onto the
+        ``boto3.resource('s3', ...)`` path so both code paths address the same
+        endpoint.
 
         Returns:
             kwargs for ``boto3.resource('s3', ...)``.
         """
-        kwargs = self._apply_spaces_endpoint(super()._build_boto3_kwargs())
-        if self.config.config_kwargs and "config" not in kwargs:
-            from botocore.config import Config
-
-            kwargs["config"] = Config(**self.config.config_kwargs)
-        return kwargs
+        return self._apply_spaces_endpoint(super()._build_boto3_kwargs())
