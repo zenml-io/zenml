@@ -20,6 +20,7 @@
   * [Secret management](getting-started/deploying-zenml/secret-management.md)
   * [Custom secret stores](getting-started/deploying-zenml/custom-secret-stores.md)
   * [Live event streaming](getting-started/deploying-zenml/live-event-streaming.md)
+  * [Execution payload storage](getting-started/deploying-zenml/execution-payload-storage.md)
 * [Connect](how-to/manage-zenml-server/connecting-to-zenml/README.md)
   * [with your User (interactive)](how-to/manage-zenml-server/connecting-to-zenml/connect-in-with-your-user-interactive.md)
   * [with your User (programmatic)](how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-pat.md)

@@ -18,7 +18,7 @@ from uuid import UUID
 
 from sqlalchemy import Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
-from sqlalchemy.orm import joinedload, object_session
+from sqlalchemy.orm import joinedload, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, col, desc, select
 
@@ -123,6 +123,7 @@ class RunTemplateSchema(NamedSchema, table=True):
         cls,
         include_metadata: bool = False,
         include_resources: bool = False,
+        many: bool = False,
         **kwargs: Any,
     ) -> Sequence[ExecutableOption]:
         """Get the query options for the schema.
@@ -132,6 +133,8 @@ class RunTemplateSchema(NamedSchema, table=True):
                 the schema to a model.
             include_resources: Whether resources will be included when
                 converting the schema to a model.
+            many: Whether the options are applied to a query that returns many
+                rows.
             **kwargs: Keyword arguments to allow schema specific logic
 
         Returns:
@@ -139,19 +142,21 @@ class RunTemplateSchema(NamedSchema, table=True):
         """
         from zenml.zen_stores.schemas import PipelineSnapshotSchema
 
+        # Joined loads in a paginated query make MySQL sort the whole table.
+        single_loader = selectinload if many else joinedload
         options = [
-            joinedload(jl_arg(RunTemplateSchema.source_snapshot)).joinedload(
-                jl_arg(PipelineSnapshotSchema.build)
-            ),
+            single_loader(
+                jl_arg(RunTemplateSchema.source_snapshot)
+            ).joinedload(jl_arg(PipelineSnapshotSchema.build)),
         ]
 
         if include_metadata or include_resources:
             options.extend(
                 [
-                    joinedload(
+                    single_loader(
                         jl_arg(RunTemplateSchema.source_snapshot)
                     ).joinedload(jl_arg(PipelineSnapshotSchema.pipeline)),
-                    joinedload(
+                    single_loader(
                         jl_arg(RunTemplateSchema.source_snapshot)
                     ).joinedload(
                         jl_arg(PipelineSnapshotSchema.code_reference)
@@ -161,19 +166,22 @@ class RunTemplateSchema(NamedSchema, table=True):
         if include_metadata:
             options.extend(
                 [
-                    joinedload(
+                    single_loader(
                         jl_arg(RunTemplateSchema.source_snapshot)
                     ).joinedload(jl_arg(PipelineSnapshotSchema.stack)),
-                    joinedload(
+                    single_loader(
                         jl_arg(RunTemplateSchema.source_snapshot)
                     ).joinedload(jl_arg(PipelineSnapshotSchema.schedule)),
+                    single_loader(
+                        jl_arg(RunTemplateSchema.source_snapshot)
+                    ).options(*PipelineSnapshotSchema.load_payloads()),
                 ]
             )
 
         if include_resources:
             options.extend(
                 [
-                    joinedload(jl_arg(RunTemplateSchema.user)),
+                    single_loader(jl_arg(RunTemplateSchema.user)),
                     # joinedload(jl_arg(RunTemplateSchema.tags)),
                 ]
             )

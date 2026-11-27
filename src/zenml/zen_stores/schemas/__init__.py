@@ -36,6 +36,9 @@ from zenml.zen_stores.schemas.curated_visualization_schemas import (
 )
 from zenml.zen_stores.schemas.deployment_schemas import DeploymentSchema
 from zenml.zen_stores.schemas.device_schemas import OAuthDeviceSchema
+from zenml.zen_stores.schemas.execution_payload_schemas import (
+    ExecutionPayloadSchema,
+)
 from zenml.zen_stores.schemas.flavor_schemas import FlavorSchema
 from zenml.zen_stores.schemas.hook_invocation_schemas import (
     HookInvocationOutputArtifactSchema,
@@ -112,6 +115,7 @@ __all__ = [
     "CodeRepositorySchema",
     "DeploymentSchema",
     "CuratedVisualizationSchema",
+    "ExecutionPayloadSchema",
     "FlavorSchema",
     "HookInvocationSchema",
     "HookInvocationOutputArtifactSchema",

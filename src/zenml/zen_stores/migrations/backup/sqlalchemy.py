@@ -707,14 +707,12 @@ class DBCloneDatabaseBackupEngine(BaseDatabaseBackupEngine):
                         order_by = [src_table.columns["created"]]
                     else:
                         order_by = []
-                    if "id" in src_table.columns:
-                        # If the table has an `id` column, we also use it to
-                        # sort the rows in the table, even if we already use
-                        # "created" to sort the rows. We need a unique field to
-                        # sort the rows, to break the tie between rows with the
-                        # same "created" date, otherwise the same entry might
-                        # end up multiple times in subsequent pages.
-                        order_by.append(src_table.columns["id"])
+                    # We also sort by the primary key, even if we already use
+                    # "created" to sort the rows. We need a unique sort key to
+                    # break the tie between rows with the same "created" date,
+                    # otherwise the same entry might end up multiple times in
+                    # subsequent pages.
+                    order_by.extend(src_table.primary_key.columns)
 
                     row_count = src_conn.scalar(
                         select(func.count()).select_from(src_table)
