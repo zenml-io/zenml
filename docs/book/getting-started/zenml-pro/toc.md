@@ -19,6 +19,8 @@
     * [Enable Snapshot Support](deploy-workspace-snapshots.md)
     * [Enable Event Triggers and Schedules](deploy-workspace-event-triggers-and-schedules.md)
     * [Enable Resource Pools](deploy-workspace-resource-pools.md)
+  * Bots Server
+    * [Kubernetes with Helm](deploy-bots-k8s.md)
 
 ## Manage
 

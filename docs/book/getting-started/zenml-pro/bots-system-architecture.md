@@ -34,7 +34,7 @@ flowchart LR
 
 ## How Bots Fit into ZenML Pro
 
-The Bots server is a service of the ZenML Pro control plane, next to your workspaces. It relies on ZenML Pro for identity and permissions.
+The Bots server is a service next to the ZenML Pro control plane and your workspaces. It relies on ZenML Pro for identity and permissions.
 
 **Sign-in:** You sign in to Bots with your ZenML Pro account, and scripts use a ZenML Pro API key or service account key. Every session works in one organization.
 
@@ -58,17 +58,24 @@ The Bots server is a service of the ZenML Pro control plane, next to your worksp
 | Data Type | Location |
 |-----------|----------|
 | **Users, organizations, teams, roles** | ZenML Pro control plane |
-| **Bots configuration and chats** | Bots database, in ZenML infrastructure |
+| **Bots configuration and chats** | Bots database |
 | **Secrets** such as service account keys, environment secrets, and connector credentials | Bots database, encrypted |
-| **Attachments and artifacts** | Bots storage, in ZenML infrastructure |
+| **Attachments and artifacts** | Bots storage |
 | **Working files** such as repository checkouts | Sandbox disk, kept while the sandbox exists |
 | **ML metadata** such as pipelines, runs, artifacts, and models | Your ZenML workspaces. Bots store only pointers to them. |
 
 ## Deployment
 
-{% hint style="info" %}
-Bots are currently available as a shared ZenML-managed service only. Your ZenML workspaces can still be SaaS, hybrid, or self-hosted. The agent reaches a workspace from its sandbox, so the workspace server must be reachable from the internet for a bot to work with it.
-{% endhint %}
+The Bots server runs in one of two ways:
+
+| Deployment | Bots server, database, and storage | Sandboxes |
+|------------|------------------------------------|-----------|
+| **ZenML-managed** | ZenML infrastructure | Sandbox provider account of ZenML |
+| **Self-hosted** | Your infrastructure | Your sandbox provider account or Kubernetes cluster |
+
+The ZenML-managed Bots server is available to organizations on the ZenML-managed control plane. A self-hosted Bots server serves one organization and works with both a ZenML-managed and a self-hosted control plane. See [Self-hosted Bots Deployment on Kubernetes with Helm](deploy-bots-k8s.md).
+
+Your ZenML workspaces can be SaaS, hybrid, or self-hosted with either deployment. The agent reaches a workspace from its sandbox through the sandbox egress proxy, so the workspace server must be reachable from the proxy for a bot to work with it. For the ZenML-managed Bots server, that means reachable from the internet.
 
 ## Security Considerations
 
