@@ -338,6 +338,21 @@ def _teardown_error(
     return cleanup_error
 
 
+def server_log_path(output_directory: Path) -> Path:
+    """Return the server log path, scoped per batch when `ZENML_FUZZ_BATCH` is set.
+
+    Args:
+        output_directory: Run-owned directory for server state and diagnostics.
+
+    Returns:
+        Path to the Uvicorn server log file.
+    """
+    batch = os.environ.get("ZENML_FUZZ_BATCH", "").strip()
+    if batch and all(ch.isalnum() or ch in {"-", "_"} for ch in batch):
+        return output_directory / f"api-server-batch-{batch}.log"
+    return output_directory / "api-server.log"
+
+
 @contextmanager
 def running_api_server(
     backend: str, output_directory: Path
@@ -363,8 +378,8 @@ def running_api_server(
     try:
         port = find_available_port()
         base_url = f"http://127.0.0.1:{port}"
-        log_path = output_directory / "api-server.log"
-        with log_path.open("wb") as log_file:
+        log_path = server_log_path(output_directory)
+        with log_path.open("ab") as log_file:
             process = subprocess.Popen(
                 build_server_command(port),
                 cwd=REPOSITORY_ROOT,

@@ -16,11 +16,13 @@
 import json
 import os
 import sys
+from contextlib import nullcontext
 from pathlib import Path
 from types import SimpleNamespace
-from typing import cast
+from typing import BinaryIO, cast
 
 import pytest
+import tests.fuzz.api_server as api_server
 import tests.fuzz.api_strategies as api_strategies
 from requests import Request
 from schemathesis import CheckFunction
@@ -36,6 +38,7 @@ from tests.fuzz.api_server import (
     build_server_command,
     build_server_environment,
     running_api_server,
+    server_log_path,
 )
 from tests.fuzz.api_strategies import (
     API_ALLOWLIST,
@@ -378,6 +381,53 @@ def test_cleanup_failure_quarantines_api_harness(
     assert str(error_info.value.cleanup_error) == "cleanup failed"
     with pytest.raises(RuntimeError, match="cannot be reused"):
         harness.request("GET", "/api/v1/tags")
+
+
+def test_server_log_path_is_scoped_per_batch(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Subsequent batches keep earlier API server logs intact."""
+    monkeypatch.delenv("ZENML_FUZZ_BATCH", raising=False)
+    assert server_log_path(tmp_path) == tmp_path / "api-server.log"
+
+    monkeypatch.setenv("ZENML_FUZZ_BATCH", "2")
+    assert server_log_path(tmp_path) == tmp_path / "api-server-batch-2.log"
+
+    monkeypatch.setenv("ZENML_FUZZ_BATCH", "../escape")
+    assert server_log_path(tmp_path) == tmp_path / "api-server.log"
+
+    target = DisposableDatabase.sqlite(tmp_path / "api.sqlite3", tmp_path)
+    monkeypatch.setattr(
+        api_server,
+        "api_database",
+        lambda _backend, _output_dir: nullcontext(target),
+    )
+    monkeypatch.setattr(api_server, "find_available_port", lambda: 8123)
+    monkeypatch.setattr(api_server, "_wait_until_ready", lambda *_: None)
+    monkeypatch.setattr(api_server, "_authenticate", lambda *_: "token")
+    monkeypatch.setattr(api_server, "_source_revision", lambda: "deadbeef")
+    monkeypatch.setattr(api_server, "_teardown_error", lambda *_: None)
+
+    def fake_popen(*_args: object, **kwargs: object) -> object:
+        stdout = cast(BinaryIO, kwargs["stdout"])
+        stdout.write(
+            f"batch-{os.environ['ZENML_FUZZ_BATCH']}-trace\n".encode()
+        )
+        return SimpleNamespace(pid=12345)
+
+    monkeypatch.setattr(api_server.subprocess, "Popen", fake_popen)
+
+    for batch in ("1", "2"):
+        monkeypatch.setenv("ZENML_FUZZ_BATCH", batch)
+        with running_api_server(backend="sqlite", output_directory=tmp_path):
+            pass
+
+    assert (tmp_path / "api-server-batch-1.log").read_text() == (
+        "batch-1-trace\n"
+    )
+    assert (tmp_path / "api-server-batch-2.log").read_text() == (
+        "batch-2-trace\n"
+    )
 
 
 def test_sqlite_cleanup_after_server_already_exited(tmp_path: Path) -> None:
