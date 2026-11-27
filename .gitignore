@@ -50,6 +50,9 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+/.fuzz-results/
+/fuzz-results/
+/.fuzz-corpus/
 
 # Translations
 *.mo

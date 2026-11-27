@@ -1,0 +1,7 @@
+# Direct dependencies for ZenML's opt-in fuzzing suites.
+# Installed alongside `-e ".[server]"` (or `.[local]` / `.`) so uv resolves
+# transitive dependencies jointly with pyproject.toml.
+cryptography>=44,<51
+hypothesis>=6.140,<7
+pytest>=9.0.3,<10
+schemathesis>=4.0,<5

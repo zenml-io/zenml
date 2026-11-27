@@ -53,6 +53,11 @@ from zenml.utils import source_utils
 
 DEFAULT_ENVIRONMENT_NAME = "default"
 
+# Generated suites use their own conftest and dependency set. The dedicated
+# runner uses --confcutdir to prevent this module's deployment fixtures from
+# loading when fuzzing is explicitly requested.
+collect_ignore = ["fuzz"]
+
 
 def pytest_configure() -> None:
     """Prevent the macOS OpenMP preload from reaching child processes."""
