@@ -82,9 +82,6 @@ class AnalyticsEvent(str, Enum):
     # Full stack infrastructure deployment
     DEPLOY_FULL_STACK = "Full stack deployed"
 
-    # Tag created
-    CREATED_TAG = "Tag created"
-
     # Server Settings
     SERVER_SETTINGS_UPDATED = "Server Settings Updated"
 
