@@ -29,6 +29,7 @@ The Hybrid deployment model is designed for organizations that need to keep sens
 | ZenML Pro Server(s) | Your Infrastructure | Handles pipeline orchestration and execution |
 | Metadata Store | Your Infrastructure | Stores all pipeline runs, model metadata, and tracking information |
 | Secrets Store | Your Infrastructure | Stores all credentials and sensitive configuration |
+| Bots Server (optional) | ZenML Infrastructure or Your Infrastructure | Runs [Bots](bots.md), see [Self-hosted Bots Deployment](deploy-bots-k8s.md) |
 | Compute Resources | Your infrastructure through [stacks](https://docs.zenml.io/concepts/stack_components) | Executes pipeline steps and training jobs |
 | Data & Artifacts | Your infrastructure through [stacks](https://docs.zenml.io/concepts/stack_components) | Stores datasets, models, and pipeline artifacts |
 
