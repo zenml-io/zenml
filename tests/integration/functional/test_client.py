@@ -34,6 +34,7 @@ from zenml import (
     get_step_context,
     log_metadata,
     pipeline,
+    register_artifact,
     save_artifact,
     step,
 )
@@ -1143,6 +1144,36 @@ class TestArtifact:
                 == artifact.artifact.id
             )
         assert not os.path.exists(artifact.uri)
+
+    @pytest.mark.parametrize(
+        "uri_holds",
+        ["the whole store", "another version's data", "it, spelled oddly"],
+    )
+    def test_delete_data_keeps_data_shared_with_others(
+        self, clean_client: "Client", uri_holds: str
+    ) -> None:
+        """Deleting a version's data never deletes data it shares."""
+        if uri_holds == "the whole store":
+            uri = clean_client.active_stack.artifact_store.path
+            other_data = os.path.join(uri, "not_an_artifact.txt")
+            with open(other_data, "w") as f:
+                f.write("keep me")
+        else:
+            other_data = save_artifact("keep me", name="other").uri
+            uri = os.path.dirname(other_data)
+            if uri_holds == "it, spelled oddly":
+                uri += "/."
+        artifact_version = register_artifact(
+            folder_or_file_uri=uri, name="shared"
+        )
+
+        with pytest.raises(IllegalOperationError, match="Keeping the data"):
+            clean_client.delete_artifact_version(
+                artifact_version.id, delete_from_artifact_store=True
+            )
+
+        assert os.path.exists(other_data)
+        assert clean_client.get_artifact_version(artifact_version.id)
 
     def test_prune_data_and_version(self, clean_client: "Client"):
         """Test that artifact pruning works with delete_from_artifact_store flag."""

@@ -71,6 +71,7 @@ class _sanitize_paths:
         """
         self.func = func
         self.fixed_root_path = fixed_root_path
+        self.is_rmtree = func.__name__ == "rmtree"
         if ENV_ZENML_SERVER in os.environ:
             self.allow_local_file_access = handle_bool_env_var(
                 ENV_ZENML_SERVER_ALLOW_LOCAL_FILE_ACCESS, False
@@ -98,7 +99,8 @@ class _sanitize_paths:
             FileNotFoundError: If the path is outside of the artifact store
                 bounds.
             IllegalOperationError: If the path is a local file and the server
-                is not configured to allow local file access.
+                is not configured to allow local file access, or if the
+                path is the artifact store root and would be deleted.
         """
         if path.startswith(IN_MEMORY_ARTIFACT_URI_PREFIX):
             # No need to validate in-memory URIs
@@ -114,6 +116,14 @@ class _sanitize_paths:
             raise FileNotFoundError(
                 f"File `{path}` is outside of "
                 f"artifact store bounds `{self.fixed_root_path}`"
+            )
+
+        if self.is_rmtree and io_utils.normalize_uri(
+            path
+        ) == io_utils.normalize_uri(self.fixed_root_path):
+            raise IllegalOperationError(
+                f"Keeping the data at `{path}` because it is the root of the "
+                "artifact store, which holds the data of other artifacts."
             )
 
     def _sanitize_potential_path(self, potential_path: Any) -> Any:
@@ -401,6 +411,8 @@ class BaseArtifactStore(StackComponent):
     @abstractmethod
     def rmtree(self, path: PathType) -> None:
         """Deletes dir recursively. Dangerous operation.
+
+        Deleting the artifact store root raises an `IllegalOperationError`.
 
         Args:
             path: The path to delete.
