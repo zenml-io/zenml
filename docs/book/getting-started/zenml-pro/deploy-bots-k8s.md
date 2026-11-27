@@ -125,22 +125,22 @@ The Bots server reads all its credentials from Kubernetes Secrets that you creat
 kubectl create namespace zenml-pro-bots
 ```
 
-**Runtime Secret.** Every key of this Secret is passed to the Bots server as an environment variable.
+**Runtime Secret.** The Bots server reads its credentials from the keys of this Secret.
 
 ```bash
 kubectl -n zenml-pro-bots create secret generic bots-runtime \
-  --from-literal=KAIZEN_DATABASE__PASSWORD=<server-role-password> \
-  --from-literal=KAIZEN_SECRET_ENCRYPTION_KEY="$(openssl rand -hex 32)" \
-  --from-literal=KAIZEN_JWT_SIGNING_KEY="$(openssl rand -hex 32)" \
-  --from-literal=KAIZEN_CONTROL_PLANE__CLIENT_SECRET=<enrollment-key> \
-  --from-literal=KAIZEN_SANDBOX__DAYTONA__API_KEY=<daytona-api-key> \
-  --from-literal=KAIZEN_RUNTIME__PI__PROVIDER_API_KEY=<model-provider-api-key> \
-  --from-literal=KAIZEN_SANDBOX_EGRESS__PROXY_SECRET="$(openssl rand -hex 32)" \
-  --from-file=KAIZEN_SANDBOX_EGRESS__SIGNING_KEY=signing-key.pem
+  --from-literal=databasePassword=<server-role-password> \
+  --from-literal=secretEncryptionKey="$(openssl rand -hex 32)" \
+  --from-literal=jwtSigningKey="$(openssl rand -hex 32)" \
+  --from-literal=controlPlaneClientSecret=<enrollment-key> \
+  --from-literal=daytonaApiKey=<daytona-api-key> \
+  --from-literal=piProviderApiKey=<model-provider-api-key> \
+  --from-literal=sandboxEgressProxySecret="$(openssl rand -hex 32)" \
+  --from-file=sandboxEgressSigningKey=signing-key.pem
 ```
 
 {% hint style="warning" %}
-`KAIZEN_SECRET_ENCRYPTION_KEY` encrypts the secrets stored in the Bots database. Keep a copy of it. Stored secrets cannot be read with a different key.
+`secretEncryptionKey` encrypts the secrets stored in the Bots database. Keep a copy of it. Stored secrets cannot be read with a different key.
 {% endhint %}
 
 `signing-key.pem` is the private key the server signs sandbox tokens with:
@@ -153,8 +153,8 @@ openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 -out signing-key.
 
 ```bash
 kubectl -n zenml-pro-bots create secret generic bots-migration \
-  --from-literal=KAIZEN_DATABASE__USER=<migration-role> \
-  --from-literal=KAIZEN_DATABASE__PASSWORD=<migration-role-password>
+  --from-literal=databaseUser=<migration-role> \
+  --from-literal=databasePassword=<migration-role-password>
 ```
 
 **Database CA Secret.** The certificate of the CA that signed the certificate of your database.
@@ -301,7 +301,7 @@ Chats can be started and steered from Slack. A self-hosted Bots server needs its
 
 1. Go to [api.slack.com/apps](https://api.slack.com/apps) and create an app from a manifest. Use the Slack app manifest provided by ZenML and replace `<host>` with the hostname of your Bots server. Slack verifies the URLs of the manifest when the app is saved, so the Bots server must already be reachable from the internet.
 2. Copy the client ID, the client secret, and the signing secret from the Basic Information page of the app.
-3. Add `KAIZEN_CHANNELS__SLACK__CLIENT_SECRET` and `KAIZEN_CHANNELS__SLACK__SIGNING_SECRET` to the runtime Secret.
+3. Add the keys `slackClientSecret` and `slackSigningSecret` to the runtime Secret.
 4. Enable Slack in the Helm values and upgrade the release:
 
     ```yaml
@@ -319,7 +319,7 @@ The GitHub app gives sandboxes access to your repositories and lets you start ch
 1. Create a GitHub app in the settings of your GitHub organization. Fill the form with the name, webhook URL, callback URLs, events, and permissions of the GitHub app manifest provided by ZenML, with `<host>` replaced by the hostname of your Bots server.
 2. Enable "Request user authorization (OAuth) during installation" and put `https://<host>/api/v1/github/install/callback` first in the list of callback URLs. Do not configure a setup URL.
 3. From the settings page of the app, take the app ID, the client ID, and the webhook secret. Generate a client secret and a private key there. The app slug is the name in the URL of the app.
-4. Add `KAIZEN_CHANNELS__GITHUB__CLIENT_SECRET`, `KAIZEN_CHANNELS__GITHUB__WEBHOOK_SECRET`, and `KAIZEN_CHANNELS__GITHUB__PRIVATE_KEY` to the runtime Secret.
+4. Add the keys `githubClientSecret`, `githubWebhookSecret`, and `githubPrivateKey` to the runtime Secret.
 5. Enable GitHub in the Helm values and upgrade the release:
 
     ```yaml
