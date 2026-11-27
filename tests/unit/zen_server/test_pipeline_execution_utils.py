@@ -7,12 +7,14 @@ from uuid import uuid4
 import pytest
 
 from zenml.enums import ExecutionStatus
+from zenml.model.model import Model
 from zenml.zen_server.pipeline_execution import utils
 from zenml.zen_server.pipeline_execution.snapshot_run_dispatcher import (
     SnapshotRunDispatchError,
     SnapshotRunExecutionRequest,
     SnapshotRunQueueFullError,
 )
+from zenml.zen_server.rbac.models import Action, ResourceType
 
 
 def test_invalid_snapshot_does_not_create_or_report_usage(monkeypatch) -> None:
@@ -390,3 +392,223 @@ def test_generate_dockerfile_pins_zenml_in_image():
     assert dockerfile.endswith(
         f"'sagemaker' {requirements_utils.INSTALLED_ZENML_SHELL_REQUIREMENT}"
     )
+
+
+def _snapshot_with_models(pipeline_model=None, step_model=None):
+    """Builds a minimal snapshot exposing only the model configuration."""
+    return SimpleNamespace(
+        project_id=uuid4(),
+        pipeline_configuration=SimpleNamespace(model=pipeline_model),
+        step_configurations={
+            "step": SimpleNamespace(
+                step_config_overrides=SimpleNamespace(model=step_model)
+            )
+        },
+    )
+
+
+@pytest.fixture
+def existing_model_versions(monkeypatch) -> set[tuple[str, str]]:
+    """Fakes the store to only know the `(model, version)` pairs added here."""
+    existing: set[tuple[str, str]] = set()
+
+    def list_model_versions(model_version_filter_model, **_):
+        requested = (
+            model_version_filter_model.model,
+            model_version_filter_model.name,
+        )
+        return SimpleNamespace(
+            items=[
+                SimpleNamespace(
+                    name=version_name, model=SimpleNamespace(name=model_name)
+                )
+                for model_name, version_name in existing
+                if (model_name, version_name) == requested
+            ]
+        )
+
+    store = MagicMock()
+    store.list_model_versions.side_effect = list_model_versions
+    monkeypatch.setattr(utils, "zen_store", lambda: store)
+    return existing
+
+
+@pytest.mark.parametrize(
+    "version",
+    [None, "", "my-new-version", "1.2.3"],
+)
+def test_model_version_create_permission_required_for_new_versions(
+    monkeypatch, existing_model_versions, version
+) -> None:
+    """Runs that create a model version require `ModelVersion::CREATE`."""
+    verify_permission = MagicMock()
+    monkeypatch.setattr(utils, "verify_permission", verify_permission)
+    snapshot = _snapshot_with_models(
+        pipeline_model=Model(name="model", version=version)
+    )
+
+    utils.verify_model_version_permissions_for_snapshot_run(snapshot)
+
+    verify_permission.assert_called_once_with(
+        resource_type=ResourceType.MODEL_VERSION,
+        action=Action.CREATE,
+        project_id=snapshot.project_id,
+    )
+
+
+@pytest.mark.parametrize("version", ["3", 3, "production", "latest"])
+def test_model_version_create_permission_not_required_for_existing_versions(
+    monkeypatch, version
+) -> None:
+    """Numeric versions and stages are only fetched, never created."""
+    verify_permission = MagicMock()
+    monkeypatch.setattr(utils, "verify_permission", verify_permission)
+    snapshot = _snapshot_with_models(
+        pipeline_model=Model(name="model", version=version)
+    )
+
+    utils.verify_model_version_permissions_for_snapshot_run(snapshot)
+
+    verify_permission.assert_not_called()
+
+
+def test_model_version_create_permission_not_required_for_named_version_that_exists(
+    monkeypatch, existing_model_versions
+) -> None:
+    """A named version that already exists is fetched, never created."""
+    verify_permission = MagicMock()
+    monkeypatch.setattr(utils, "verify_permission", verify_permission)
+    existing_model_versions.add(("model", "v1"))
+    snapshot = _snapshot_with_models(
+        pipeline_model=Model(name="model", version="v1"),
+        step_model=Model(name="model", version="v1"),
+    )
+
+    utils.verify_model_version_permissions_for_snapshot_run(snapshot)
+
+    verify_permission.assert_not_called()
+
+
+def test_model_version_create_permission_required_if_version_exists_for_other_model(
+    monkeypatch, existing_model_versions
+) -> None:
+    """An existing version name only counts for the configured model."""
+    verify_permission = MagicMock()
+    monkeypatch.setattr(utils, "verify_permission", verify_permission)
+    existing_model_versions.add(("other-model", "v1"))
+    snapshot = _snapshot_with_models(
+        pipeline_model=Model(name="model", version="v1")
+    )
+
+    utils.verify_model_version_permissions_for_snapshot_run(snapshot)
+
+    verify_permission.assert_called_once()
+
+
+def test_model_version_create_permission_required_for_inexact_name_matches(
+    monkeypatch,
+) -> None:
+    """Filter operators in a version name don't count as an existing version."""
+    verify_permission = MagicMock()
+    monkeypatch.setattr(utils, "verify_permission", verify_permission)
+    store = MagicMock()
+    store.list_model_versions.return_value = SimpleNamespace(
+        items=[SimpleNamespace(name="v1", model=SimpleNamespace(name="model"))]
+    )
+    monkeypatch.setattr(utils, "zen_store", lambda: store)
+    snapshot = _snapshot_with_models(
+        pipeline_model=Model(name="model", version="contains:v")
+    )
+
+    utils.verify_model_version_permissions_for_snapshot_run(snapshot)
+
+    verify_permission.assert_called_once()
+
+
+def test_model_version_create_permission_not_required_without_model(
+    monkeypatch,
+) -> None:
+    """Snapshots without any configured model need no extra permission."""
+    verify_permission = MagicMock()
+    monkeypatch.setattr(utils, "verify_permission", verify_permission)
+
+    utils.verify_model_version_permissions_for_snapshot_run(
+        _snapshot_with_models()
+    )
+
+    verify_permission.assert_not_called()
+
+
+def test_model_version_create_permission_checked_for_step_models(
+    monkeypatch,
+) -> None:
+    """A step-level model that creates a version is checked exactly once."""
+    verify_permission = MagicMock()
+    monkeypatch.setattr(utils, "verify_permission", verify_permission)
+    snapshot = _snapshot_with_models(
+        pipeline_model=Model(name="model", version="1"),
+        step_model=Model(name="step-model"),
+    )
+
+    utils.verify_model_version_permissions_for_snapshot_run(snapshot)
+
+    verify_permission.assert_called_once()
+
+
+def test_run_configuration_model_overrides_snapshot_model(
+    monkeypatch,
+) -> None:
+    """Fields set in the run configuration model override the snapshot's."""
+    verify_permission = MagicMock()
+    monkeypatch.setattr(utils, "verify_permission", verify_permission)
+    snapshot = _snapshot_with_models(
+        pipeline_model=Model(name="model", version=None)
+    )
+    run_configuration = SimpleNamespace(
+        model=Model(name="model", version="production"), steps=None
+    )
+
+    utils.verify_model_version_permissions_for_snapshot_run(
+        snapshot, run_configuration
+    )
+
+    verify_permission.assert_not_called()
+
+
+def test_run_configuration_model_keeps_unset_snapshot_model_fields(
+    monkeypatch,
+) -> None:
+    """The run configuration model is merged into the snapshot's model."""
+    verify_permission = MagicMock()
+    monkeypatch.setattr(utils, "verify_permission", verify_permission)
+    snapshot = _snapshot_with_models(
+        pipeline_model=Model(name="model", version="production")
+    )
+    run_configuration = SimpleNamespace(model=Model(name="model"), steps=None)
+
+    utils.verify_model_version_permissions_for_snapshot_run(
+        snapshot, run_configuration
+    )
+
+    verify_permission.assert_not_called()
+
+
+def test_run_configuration_step_model_keeps_unset_snapshot_model_fields(
+    monkeypatch,
+) -> None:
+    """Step models of the run configuration are merged the same way."""
+    verify_permission = MagicMock()
+    monkeypatch.setattr(utils, "verify_permission", verify_permission)
+    snapshot = _snapshot_with_models(
+        step_model=Model(name="step-model", version="production")
+    )
+    run_configuration = SimpleNamespace(
+        model=None,
+        steps={"step": SimpleNamespace(model=Model(name="step-model"))},
+    )
+
+    utils.verify_model_version_permissions_for_snapshot_run(
+        snapshot, run_configuration
+    )
+
+    verify_permission.assert_not_called()
