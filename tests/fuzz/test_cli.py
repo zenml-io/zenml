@@ -57,7 +57,7 @@ _IDENTIFIERS = st.text(
 @list_options(ProjectFilter)
 def _filter_command(
     columns: str, output_format: str, **filter_values: Any
-) -> ProjectFilter:
+) -> Any:
     """Construct a project filter through the real list-option decorator."""
     del columns, output_format
     return ProjectFilter(**filter_values)

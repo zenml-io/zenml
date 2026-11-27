@@ -1,15 +1,23 @@
 # Known fuzz-test contract mismatches
 
-## Naive timestamps in API responses
+Each tracked mismatch has a narrow exclusion plus a strict `@pytest.mark.xfail(strict=True)` canary test so CI alerts maintainers to remove the exclusion as soon as the underlying bug is fixed.
 
-ZenML's live OpenAPI document declares response timestamp fields such as `created` and `updated` with JSON Schema `format: date-time`. The API currently serializes those fields as naive timestamps without a UTC offset, for example `2026-09-12T11:52:44.045303`. RFC 3339 date-time validation therefore rejects otherwise structurally valid tag, user, project, pipeline, snapshot, stack, and run response bodies.
+## Naive timestamps in API responses (#5270)
 
-Tracked in [zenml-io/zenml#5270](https://github.com/zenml-io/zenml/issues/5270). The bounded API suite loads the unmodified live schema for request generation, so request-side date-time formats remain active. It loads a separate schema copy without `format: date-time` solely for response-schema validation. Every non-date-time format check remains active, including UUID and URI validation, and the fetched schema stays unchanged. The suite continues to validate response structure, content type, documented response headers, JSON decoding, and the absence of server errors. Remove the exclusion when API timestamps include an offset or the published response contract describes the serialized values accurately.
+ZenML's OpenAPI document declares response timestamp fields such as `created` and `updated` with `format: date-time`, while the server serializes timezone-less ISO-8601 strings (for example `2026-09-12T11:52:44.045303`).
 
-## Tag-name validation is narrower than OpenAPI
+Tracked in [zenml-io/zenml#5270](https://github.com/zenml-io/zenml/issues/5270). Request generation uses the unmodified live OpenAPI schema. Response schema validation strips `format: date-time` for Schemathesis, and `validate_naive_datetimes` still asserts that every stripped timestamp field parses via `datetime.fromisoformat(...)` so arbitrary strings cannot slip through. Canary: `test_known_issue_5270_timestamps_include_timezone`.
 
-The tag request schema permits empty and UUID-like names, while ZenML's domain validator rejects them with a `400` response. Generated schema-positive cases classify these responses as expected domain rejections. The suite still requires parseable JSON and fails on any `5xx`. Extra request fields are also classified according to the base model's intentional forward-compatible `extra="ignore"` behavior.
+## Request validation errors return a two-element JSON list (#5269)
 
-## Malformed JSON uses an undocumented 422 response shape
+ZenML's global `RequestValidationError` handler in `zen_server_api.py` returns `["ValueError", "<message>"]` with status `422` for any FastAPI/Pydantic validation failure (both malformed requests and schema-valid inputs rejected by field validators such as `TagRequest.validate_name_not_uuid`), whereas OpenAPI documents `422` as an `ErrorModel` object.
 
-An invalid request can produce a `422` JSON array containing exactly two strings: the exception class and validation text. OpenAPI documents that status as an `ErrorModel` object with a `detail` property. Tracked in [zenml-io/zenml#5269](https://github.com/zenml-io/zenml/issues/5269). Live qualification confirmed this response across all eight operations in the fixed API allowlist. The suite skips structural response-schema validation only for a schema-negative allowlisted case whose `422` payload is exactly `["ValueError", "<validation text>"]`. Operations outside the allowlist, other modes, statuses, and array shapes retain structural validation. The suite continues to require parseable JSON, a `4xx` status, and no server error. Remove the exclusion when validation errors use the documented model.
+Tracked in [zenml-io/zenml#5269](https://github.com/zenml-io/zenml/issues/5269). `is_known_request_validation_422` skips response-schema conformance only for allowlisted operations returning status `422` with `["ValueError", "<str>"]`. Canary: `test_known_issue_5269_validation_error_uses_error_model`.
+
+## Unescaped SQL LIKE wildcards in `StrFilter`
+
+`StrFilter` passes raw pattern values directly into `column.like(...)` without escaping `%` or `_`. Generated filter strings omit `%` and `_` from `PORTABLE_TEXT` so literal oracle checks stay accurate, while `test_like_wildcards_in_contains_are_treated_literally` pins the current behavior as a strict `xfail` canary.
+
+## Undocumented `400 Bad Request` domain errors
+
+ZenML's global exception handler maps `ValueError` and malformed-body parsing errors to HTTP `400` with `{"detail": ...}`, while most route decorators only document `200`, `401`, `403`, `404`/`409`, and `422`. `test_api.py` enforces `status_code_conformance` for every status other than a `400` JSON object containing `"detail"`.

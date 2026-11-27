@@ -15,6 +15,7 @@
 
 import os
 import signal
+from pathlib import Path
 from types import FrameType
 from typing import NoReturn, Optional
 
@@ -27,6 +28,7 @@ if os.environ.get("ZENML_FUZZ") != "1":
 
 try:
     from hypothesis import settings
+    from hypothesis.database import DirectoryBasedExampleDatabase
 except ModuleNotFoundError as error:
     raise pytest.UsageError(
         "Hypothesis is required for fuzz tests. Install "
@@ -45,6 +47,25 @@ if os.name == "posix":
     signal.signal(signal.SIGTERM, _terminate_with_cleanup)
 
 
+def _example_database() -> DirectoryBasedExampleDatabase:
+    """Return a directory-backed Hypothesis database that works on CI.
+
+    Hypothesis auto-activates its built-in ``ci`` profile on GitHub Actions,
+    which sets ``database=None`` and ``derandomize=True``. Passing an explicit
+    database and ``derandomize=False`` below ensures hosted fuzz runs explore
+    fresh inputs and save failing examples to the cached corpus directory.
+
+    Returns:
+        A directory-backed Hypothesis example database.
+    """
+    configured = os.environ.get("HYPOTHESIS_STORAGE_DIRECTORY")
+    if configured:
+        return DirectoryBasedExampleDatabase(Path(configured) / "examples")
+    return DirectoryBasedExampleDatabase(Path(".hypothesis") / "examples")
+
+
+_EXAMPLE_DATABASE = _example_database()
+
 for profile_name, max_examples in (
     ("local", 25),
     ("pr", 100),
@@ -54,5 +75,7 @@ for profile_name, max_examples in (
         profile_name,
         max_examples=max_examples,
         deadline=None,
+        derandomize=False,
+        database=_EXAMPLE_DATABASE,
         print_blob=True,
     )

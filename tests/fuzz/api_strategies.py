@@ -11,11 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-"""Bounded operation selection and evidence for API fuzz tests."""
+"""Bounded operation selection, filters, and failure evidence for API fuzzing."""
 
 import json
 from copy import deepcopy
 from dataclasses import asdict, dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import (
     Any,
@@ -25,13 +26,20 @@ from typing import (
     Mapping,
     MutableMapping,
     Optional,
+    Set,
 )
 
+import requests
 import schemathesis
 from schemathesis.schemas import APIOperation
 from tests.fuzz.api_fixtures import BaselineIds
 
 CoverageMode = Literal["semantic", "positive", "negative"]
+
+# Reverse proxies commonly reject request lines over 8 KB, and Uvicorn refuses
+# buffered request heads over 16 KB inconsistently depending on TCP framing,
+# which makes Hypothesis abort with Flaky on replay (lesson from Kitaru #1539).
+MAX_URL_BYTES = 8 * 1024
 
 
 @dataclass(frozen=True)
@@ -41,6 +49,11 @@ class OperationSpec:
     operation_id: str
     method: str
     path: str
+
+    @property
+    def mutates(self) -> bool:
+        """Return whether this HTTP method may mutate server state."""
+        return self.method.upper() not in {"GET", "HEAD", "OPTIONS"}
 
 
 API_ALLOWLIST = (
@@ -70,6 +83,26 @@ API_ALLOWLIST = (
     OperationSpec("list_runs_api_v1_runs_get", "GET", "/api/v1/runs"),
 )
 
+_ALLOWLIST_IDS = frozenset(spec.operation_id for spec in API_ALLOWLIST)
+
+
+def is_url_within_limit(case: Any) -> bool:
+    """Return whether a generated case's encoded URL fits ``MAX_URL_BYTES``.
+
+    Args:
+        case: Generated Schemathesis case.
+
+    Returns:
+        ``True`` if the prepared HTTP URL is at or under ``MAX_URL_BYTES``.
+    """
+    kwargs = case.as_transport_kwargs(base_url="http://127.0.0.1")
+    prepared = requests.Request(
+        method=kwargs["method"],
+        url=kwargs["url"],
+        params=kwargs.get("params"),
+    ).prepare()
+    return len(prepared.url or "") <= MAX_URL_BYTES
+
 
 def load_allowed_operations(
     raw_schema: Dict[str, Any],
@@ -81,9 +114,6 @@ def load_allowed_operations(
 
     Returns:
         Operations keyed by operation ID.
-
-    Raises:
-        RuntimeError: If an operation is absent or has a stale operation ID.
     """
     schema = schemathesis.openapi.from_dict(raw_schema)
     return _verified_allowed_operations(schema)
@@ -91,26 +121,18 @@ def load_allowed_operations(
 
 def load_response_validation_operations(
     raw_schema: Dict[str, Any],
-) -> Dict[str, APIOperation[Any, Any, Any, Any]]:
-    """Load operations from the response-validation schema.
-
-    This separate schema is used only to validate responses. Request generation
-    continues to use the unmodified live schema, including all date-time
-    formats.
+) -> tuple[Dict[str, APIOperation[Any, Any, Any, Any]], Set[str]]:
+    """Load response-validation operations and record removed date-time fields.
 
     Args:
-        raw_schema: OpenAPI document fetched from the running server.
+        raw_schema: Live OpenAPI document that remains unchanged.
 
     Returns:
-        Response-validation operations keyed by operation ID.
-
-    Raises:
-        RuntimeError: If an operation is absent or has a stale operation ID.
+        Tuple of ``(operations, datetime_field_names)``.
     """
-    schema = schemathesis.openapi.from_dict(
-        schema_without_datetime_formats(raw_schema)
-    )
-    return _verified_allowed_operations(schema)
+    copied, datetime_fields = schema_without_datetime_formats(raw_schema)
+    schema = schemathesis.openapi.from_dict(copied)
+    return _verified_allowed_operations(schema), datetime_fields
 
 
 def _verified_allowed_operations(
@@ -137,58 +159,93 @@ def _verified_allowed_operations(
 
 def schema_without_datetime_formats(
     raw_schema: Dict[str, Any],
-) -> Dict[str, Any]:
-    """Build the dedicated response-validation schema for issue #5270.
+) -> tuple[Dict[str, Any], Set[str]]:
+    """Build a response-validation copy without ``format: date-time`` (#5270).
 
-    ZenML emits timezone-less timestamps for fields documented as RFC 3339
-    date-times. This copy is loaded only for response validation. Request
-    generation uses the original schema and therefore retains every format.
-    The copied schema retains every non-date-time format, including UUIDs and
-    URIs.
+    Also returns the property names where ``format: date-time`` was stripped so
+    responses can still be checked with ``datetime.fromisoformat`` instead of
+    accepting arbitrary non-timestamp strings.
 
     Args:
         raw_schema: Live OpenAPI document that must remain unchanged.
 
     Returns:
-        A copied response-validation schema without ``format: date-time``.
+        Tuple of ``(copied_schema, datetime_property_names)``.
     """
     schema = deepcopy(raw_schema)
+    datetime_fields: Set[str] = set()
 
-    def remove_datetime_format(value: Any) -> None:
+    def _strip(value: Any, property_name: Optional[str] = None) -> None:
         if isinstance(value, dict):
             if value.get("format") == "date-time":
                 del value["format"]
-            for item in value.values():
-                remove_datetime_format(item)
+                if property_name is not None:
+                    datetime_fields.add(property_name)
+            for key, item in value.items():
+                if key == "properties" and isinstance(item, dict):
+                    for prop_name, prop_schema in item.items():
+                        _strip(prop_schema, prop_name)
+                else:
+                    _strip(item, property_name)
         elif isinstance(value, list):
             for item in value:
-                remove_datetime_format(item)
+                _strip(item, property_name)
 
-    remove_datetime_format(schema)
-    return schema
+    _strip(schema)
+    return schema, datetime_fields
 
 
-def is_known_malformed_json_422(
-    operation_id: str, mode: CoverageMode, status_code: int, payload: Any
+def validate_naive_datetimes(payload: Any, datetime_fields: Set[str]) -> None:
+    """Assert that response fields declared as ``date-time`` parse as ISO-8601.
+
+    Args:
+        payload: Decoded JSON response body.
+        datetime_fields: Property names whose ``format: date-time`` was
+            exempted for #5270.
+
+    Raises:
+        AssertionError: If a declared timestamp field contains non-ISO text.
+    """
+    if isinstance(payload, Mapping):
+        for key, item in payload.items():
+            if key in datetime_fields and isinstance(item, str):
+                try:
+                    datetime.fromisoformat(item.replace("Z", "+00:00"))
+                except ValueError as error:
+                    raise AssertionError(
+                        f"Response field {key!r} is not a valid ISO-8601 "
+                        f"timestamp: {item!r}"
+                    ) from error
+            else:
+                validate_naive_datetimes(item, datetime_fields)
+    elif isinstance(payload, list):
+        for item in payload:
+            validate_naive_datetimes(item, datetime_fields)
+
+
+def is_known_request_validation_422(
+    operation_id: str, status_code: int, payload: Any
 ) -> bool:
-    """Return whether a response matches the exact issue #5269 exclusion.
+    """Return whether a 422 response matches ZenML's #5269 validation array.
+
+    ZenML's global ``RequestValidationError`` handler returns
+    ``["ValueError", "<text>"]`` instead of the documented ``ErrorModel`` for
+    both negative and schema-positive requests (for example, UUID-like tag
+    names rejected by ``TagRequest.validate_name_not_uuid``).
 
     Args:
         operation_id: Stable OpenAPI operation ID.
-        mode: Generated-case classification.
         status_code: HTTP response status.
         payload: Decoded JSON response.
 
     Returns:
-        Whether the response is the known allowlisted validation array.
+        Whether the response matches the tracked #5269 validation shape.
     """
     return (
-        operation_id in {spec.operation_id for spec in API_ALLOWLIST}
-        and mode == "negative"
+        operation_id in _ALLOWLIST_IDS
         and status_code == 422
         and isinstance(payload, list)
         and len(payload) == 2
-        and isinstance(payload[0], str)
         and payload[0] == "ValueError"
         and isinstance(payload[1], str)
     )
@@ -199,16 +256,7 @@ def semantic_case(
     operation_id: str,
     baseline: BaselineIds,
 ) -> Any:
-    """Build a request with valid domain values and current fixture IDs.
-
-    Args:
-        operation: Schemathesis operation used to construct the case.
-        operation_id: Stable OpenAPI operation ID.
-        baseline: IDs restored for this generated invocation.
-
-    Returns:
-        A Schemathesis case for the operation.
-    """
+    """Build a request with valid domain values and current fixture IDs."""
     path_parameters: Optional[Dict[str, Any]] = None
     query: Optional[Dict[str, Any]] = None
     body: Any = None
@@ -225,18 +273,11 @@ def semantic_case(
         query = {"page": 1, "size": 100}
     elif operation_id == "list_projects_api_v1_projects_get":
         query = {"id": baseline.project_id, "page": 1, "size": 100}
-    elif operation_id == "list_pipelines_api_v1_pipelines_get":
-        query = {
-            "project": baseline.project_id,
-            "page": 1,
-            "size": 100,
-        }
-    elif operation_id == "list_runs_api_v1_runs_get":
-        query = {
-            "project": baseline.project_id,
-            "page": 1,
-            "size": 100,
-        }
+    elif operation_id in {
+        "list_pipelines_api_v1_pipelines_get",
+        "list_runs_api_v1_runs_get",
+    }:
+        query = {"project": baseline.project_id, "page": 1, "size": 100}
     kwargs: Dict[str, Any] = {
         "path_parameters": path_parameters,
         "query": query,
@@ -247,15 +288,7 @@ def semantic_case(
 
 
 def substitute_fixture_ids(case: Any, baseline: BaselineIds) -> Any:
-    """Replace generated resource IDs with IDs from the current baseline.
-
-    Args:
-        case: Generated Schemathesis case.
-        baseline: IDs restored immediately before the generated call.
-
-    Returns:
-        The mutated case.
-    """
+    """Replace generated resource IDs with IDs from the current baseline."""
     if case.path_parameters and "tag_id" in case.path_parameters:
         case.path_parameters["tag_id"] = baseline.tag_ids["primary"]
     if case.query:
@@ -270,7 +303,7 @@ def substitute_fixture_ids(case: Any, baseline: BaselineIds) -> Any:
 
 @dataclass
 class OperationCoverage:
-    """Execution counters for one operation."""
+    """Execution counters for one allowlisted operation."""
 
     semantic: int = 0
     positive: int = 0
@@ -280,7 +313,7 @@ class OperationCoverage:
 
 @dataclass
 class CoverageTracker:
-    """Accumulate and qualify API operation coverage."""
+    """Accumulate and qualify validated API operation coverage."""
 
     counts: MutableMapping[str, OperationCoverage] = field(
         default_factory=dict
@@ -289,14 +322,7 @@ class CoverageTracker:
     def record(
         self, operation_id: str, mode: CoverageMode, status_code: int
     ) -> None:
-        """Record one completed request.
-
-        Args:
-            operation_id: Stable OpenAPI operation ID.
-            mode: ``semantic``, ``positive``, or ``negative``.
-            status_code: HTTP response status.
-
-        """
+        """Record one validated request outcome."""
         coverage = self.counts.setdefault(operation_id, OperationCoverage())
         if mode == "semantic":
             coverage.semantic += 1
@@ -310,24 +336,20 @@ class CoverageTracker:
     def qualify(
         self, expected: Iterable[OperationSpec] = API_ALLOWLIST
     ) -> None:
-        """Require complete generated coverage and a success for every operation.
-
-        Args:
-            expected: Operations that must qualify.
-
-        Raises:
-            AssertionError: If any required counter is zero.
-        """
+        """Require semantic, positive, negative, and 2xx coverage per route."""
         failures = []
         for spec in expected:
             coverage = self.counts.get(spec.operation_id, OperationCoverage())
             missing = [
                 name
-                for name in ("semantic", "positive", "negative")
+                for name in (
+                    "semantic",
+                    "positive",
+                    "negative",
+                    "successful_2xx",
+                )
                 if getattr(coverage, name) == 0
             ]
-            if coverage.successful_2xx == 0:
-                missing.append("successful_2xx")
             if missing:
                 failures.append(f"{spec.operation_id}: {', '.join(missing)}")
         assert not failures, "API coverage did not qualify: " + "; ".join(
@@ -354,14 +376,7 @@ _SECRET_KEYS = {
 
 
 def redact(value: Any) -> Any:
-    """Recursively redact credentials while retaining request identifiers.
-
-    Args:
-        value: Arbitrary evidence value.
-
-    Returns:
-        A recursively sanitized value.
-    """
+    """Recursively redact credentials while keeping request identifiers."""
     if isinstance(value, Mapping):
         sanitized = {}
         for key, item in value.items():
@@ -379,25 +394,21 @@ def redact(value: Any) -> Any:
 
 
 class EvidenceRecorder:
-    """Write sanitized request and coverage evidence for one fuzz batch."""
+    """Write sanitized failing cases and final coverage counters."""
 
     def __init__(self, output_directory: Path) -> None:
-        """Create the recorder.
-
-        Args:
-            output_directory: Owned directory for retained fuzz artifacts.
-        """
+        """Create the recorder for one run directory."""
         output_directory.mkdir(parents=True, exist_ok=True)
-        self._cases_path = output_directory / "api-cases.jsonl"
+        self._failures_path = output_directory / "api-failures.jsonl"
         self._coverage_path = output_directory / "api-coverage.json"
 
-    def record_case(self, evidence: Mapping[str, Any]) -> None:
-        """Append one sanitized request and response record."""
-        with self._cases_path.open("a", encoding="utf-8") as output:
+    def record_failure(self, evidence: Mapping[str, Any]) -> None:
+        """Append one sanitized failing request/response record."""
+        with self._failures_path.open("a", encoding="utf-8") as output:
             output.write(json.dumps(redact(evidence), sort_keys=True) + "\n")
 
     def write_coverage(self, tracker: CoverageTracker) -> None:
-        """Atomically write current operation counters."""
+        """Atomically write final operation coverage counters."""
         temporary = self._coverage_path.with_suffix(".tmp")
         temporary.write_text(
             json.dumps(tracker.as_dict(), indent=2, sort_keys=True) + "\n",

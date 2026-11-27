@@ -15,78 +15,17 @@
 
 from contextlib import contextmanager
 from dataclasses import dataclass, replace
-from typing import Any, Callable, Generator, Mapping, Optional, TypeVar, cast
+from typing import Any, Generator, Mapping, Optional, cast
 from uuid import uuid4
 
 import requests
 from tests.fuzz.api_server import REQUEST_TIMEOUT_SECONDS, RunningApiServer
 
-_T = TypeVar("_T")
 _BASELINE_TAGS = {
     "primary": {"name": "fuzz-primary", "color": "grey"},
     "secondary": {"name": "fuzz-secondary", "color": "blue"},
 }
-
-
-class ApiCleanupError(RuntimeError):
-    """Error that retains both an example failure and restoration failure."""
-
-    def __init__(
-        self,
-        original_error: Optional[BaseException],
-        cleanup_error: BaseException,
-    ) -> None:
-        """Initialize the combined failure.
-
-        Args:
-            original_error: Error raised by the generated example, if any.
-            cleanup_error: Error raised while restoring the baseline.
-        """
-        self.original_error = original_error
-        self.cleanup_error = cleanup_error
-        super().__init__(
-            f"API fixture restoration failed: {cleanup_error}; original error: "
-            f"{original_error!r}"
-        )
-
-
-@contextmanager
-def restore_around_example(
-    reset: Callable[[], _T],
-) -> Generator[_T, None, None]:
-    """Restore a baseline before and after one generated example.
-
-    Args:
-        reset: Callable that safely restores and returns the baseline.
-
-    Yields:
-        The baseline created before the example.
-
-    Raises:
-        ApiCleanupError: If final restoration fails, retaining any example
-            failure on the exception.
-        BaseException: Re-raises the example failure after successful cleanup.
-    """
-    try:
-        baseline = reset()
-    except BaseException as cleanup_error:
-        raise ApiCleanupError(None, cleanup_error) from cleanup_error
-
-    try:
-        yield baseline
-    except BaseException as original_error:
-        try:
-            reset()
-        except BaseException as cleanup_error:
-            raise ApiCleanupError(
-                original_error, cleanup_error
-            ) from original_error
-        raise
-    else:
-        try:
-            reset()
-        except BaseException as cleanup_error:
-            raise ApiCleanupError(None, cleanup_error) from cleanup_error
+MAX_TAG_RESET_ROUNDS = 10
 
 
 @dataclass(frozen=True)
@@ -118,27 +57,8 @@ class ApiHarness:
             }
         )
         self._baseline: Optional[BaselineIds] = None
+        self._tags_dirty = False
         self._contaminated = False
-
-    def anonymous_request(
-        self, method: str, path: str, **kwargs: Any
-    ) -> requests.Response:
-        """Send an unauthenticated request to the disposable server.
-
-        Args:
-            method: HTTP method.
-            path: Absolute API path relative to the disposable server.
-            **kwargs: Additional arguments passed to ``requests.request``.
-
-        Returns:
-            The HTTP response.
-        """
-        return requests.request(
-            method,
-            self._url(path),
-            timeout=REQUEST_TIMEOUT_SECONDS,
-            **kwargs,
-        )
 
     def request(
         self,
@@ -154,14 +74,13 @@ class ApiHarness:
             method: HTTP method.
             path: Absolute API path relative to the disposable server.
             expected_status: Exact response status required by the caller.
-            **kwargs: Additional arguments passed to the session request.
+            **kwargs: Additional arguments passed to ``requests.Session.request``.
 
         Returns:
             The HTTP response.
 
         Raises:
-            RuntimeError: If the harness is contaminated or the response status
-                differs from ``expected_status``.
+            RuntimeError: If the harness is contaminated or status mismatches.
         """
         if self._contaminated:
             raise RuntimeError(
@@ -197,11 +116,10 @@ class ApiHarness:
             method: HTTP method.
             path: Absolute API path relative to the disposable server.
             expected_status: Exact response status required by the caller.
-            **kwargs: Additional arguments passed to the session request.
+            **kwargs: Additional arguments passed to ``request``.
 
         Returns:
-            The decoded JSON response.
-
+            Decoded JSON payload.
         """
         response = self.request(
             method, path, expected_status=expected_status, **kwargs
@@ -306,7 +224,7 @@ class ApiHarness:
         """Fetch the live OpenAPI schema from the disposable server.
 
         Returns:
-            The decoded OpenAPI schema.
+            Decoded OpenAPI document.
 
         Raises:
             RuntimeError: If the endpoint does not return a JSON object.
@@ -321,28 +239,40 @@ class ApiHarness:
         self._session.close()
 
     def reset_tags(self) -> BaselineIds:
-        """Delete all tags and recreate the named baseline.
+        """Delete all tags (bounded) and recreate the named baseline.
 
         Returns:
             Baseline resource IDs containing the new tag IDs.
 
         Raises:
-            RuntimeError: If ownership cannot be proven or no baseline exists.
+            RuntimeError: If ownership fails, baseline is missing, or tags
+                refuse to delete within ``MAX_TAG_RESET_ROUNDS``.
         """
         self.server.database.assert_owned()
         if self._baseline is None:
             raise RuntimeError("API baseline has not been seeded")
-        while True:
+        for _ in range(MAX_TAG_RESET_ROUNDS):
             page = self.request_json(
                 "GET", "/api/v1/tags", params={"page": 1, "size": 100}
             )
-            if not page["items"]:
+            items = page["items"]
+            if not items:
                 break
-            for tag in page["items"]:
+            for tag in items:
                 self.request(
                     "DELETE",
                     f"/api/v1/tags/{tag['id']}",
                     expected_status=200,
+                )
+        else:
+            remaining = self.request_json(
+                "GET", "/api/v1/tags", params={"page": 1, "size": 100}
+            )["items"]
+            if remaining:
+                stuck = [f"{t.get('name')} ({t.get('id')})" for t in remaining]
+                raise RuntimeError(
+                    "Tag reset did not converge after "
+                    f"{MAX_TAG_RESET_ROUNDS} rounds; remaining tags: {stuck}"
                 )
 
         tag_ids = {}
@@ -350,110 +280,45 @@ class ApiHarness:
             tag = self.request_json("POST", "/api/v1/tags", json=request_body)
             tag_ids[logical_name] = tag["id"]
         self._baseline = replace(self._baseline, tag_ids=tag_ids)
+        self._tags_dirty = False
         return self._baseline
 
     @contextmanager
-    def isolated_example(self) -> Generator[BaselineIds, None, None]:
-        """Restore tags around one generated example and quarantine failures.
+    def prepared_example(
+        self, *, mutates: bool
+    ) -> Generator[BaselineIds, None, None]:
+        """Ensure a clean tag baseline before an example without double resets.
+
+        Read-only requests skip resetting when the baseline is already clean,
+        cutting ~12 HTTP requests of overhead per read example. Any mutating
+        request marks tags dirty so the next example resets once beforehand.
+
+        Args:
+            mutates: Whether the upcoming request may modify server state.
 
         Yields:
-            Baseline IDs produced by the pre-example restoration.
+            Current clean baseline IDs.
 
         Raises:
-            ApiCleanupError: If either restoration fails.
-        """
-        try:
-            with restore_around_example(self.reset_tags) as baseline:
-                yield baseline
-        except ApiCleanupError:
-            self._contaminated = True
-            raise
-
-    def current_baseline(self) -> BaselineIds:
-        """Return the current baseline after verifying its logical tag names.
-
-        Returns:
-            Baseline IDs resolved from the current tag state.
-
-        Raises:
-            RuntimeError: If the baseline is absent or its tags do not match.
+            RuntimeError: If baseline restoration fails.
         """
         if self._baseline is None:
             raise RuntimeError("API baseline has not been seeded")
-        tags = self._all_tags()
-        ids_by_name = {tag["name"]: tag["id"] for tag in tags}
-        expected_names = {tag["name"] for tag in _BASELINE_TAGS.values()}
-        if set(ids_by_name) != expected_names:
-            raise RuntimeError("API tags do not match the expected baseline")
-        tag_ids = {
-            logical_name: ids_by_name[tag["name"]]
-            for logical_name, tag in _BASELINE_TAGS.items()
-        }
-        return replace(self._baseline, tag_ids=tag_ids)
+        try:
+            if self._tags_dirty or not self._baseline.tag_ids:
+                baseline = self.reset_tags()
+            else:
+                baseline = self._baseline
+        except BaseException:
+            self._contaminated = True
+            raise
 
-    def tag_names(self) -> set[str]:
-        """Return all tag names in the disposable database.
-
-        Returns:
-            Names of every stored tag.
-        """
-        return {tag["name"] for tag in self._all_tags()}
-
-    def list_count(self, path: str) -> int:
-        """Return the total reported by a list endpoint.
-
-        Args:
-            path: Absolute API path of the list endpoint.
-
-        Returns:
-            Total number of resources reported by the endpoint.
-
-        Raises:
-            RuntimeError: If project context is unavailable or the response is
-                not paginated.
-        """
-        params: dict[str, int | str] = {"size": 1}
-        if path in {"/api/v1/pipelines", "/api/v1/runs"}:
-            if self._baseline is None:
-                raise RuntimeError("API baseline has not been seeded")
-            params["project"] = self._baseline.project_id
-        page = self.request_json("GET", path, params=params)
-        total = page.get("total")
-        if not isinstance(total, int):
-            raise RuntimeError(f"{path} did not return a paginated response")
-        return total
-
-    def _all_tags(self) -> list[dict[str, Any]]:
-        """Fetch every tag page from the disposable server.
-
-        Returns:
-            Decoded tag objects from all pages.
-        """
-        tags: list[dict[str, Any]] = []
-        page_number = 1
-        while True:
-            page = self.request_json(
-                "GET",
-                "/api/v1/tags",
-                params={"page": page_number, "size": 100},
-            )
-            tags.extend(page["items"])
-            if page_number >= page["total_pages"]:
-                return tags
-            page_number += 1
+        if mutates:
+            self._tags_dirty = True
+        yield baseline
 
     def _url(self, path: str) -> str:
-        """Build a URL constrained to the disposable server.
-
-        Args:
-            path: Absolute API path relative to the disposable server.
-
-        Returns:
-            Full request URL.
-
-        Raises:
-            ValueError: If ``path`` is not absolute.
-        """
+        """Build a URL constrained to the disposable server."""
         if not path.startswith("/"):
             raise ValueError("API request paths must start with '/'")
         return f"{self.server.base_url}{path}"

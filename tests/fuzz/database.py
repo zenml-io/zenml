@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-"""Disposable SQLModel database lifecycle for generated tests."""
+"""Disposable SQLModel database lifecycle for generated fuzz tests."""
 
 import json
 import os
@@ -27,12 +27,11 @@ from sqlalchemy.engine import URL, make_url
 from sqlmodel import Field, SQLModel
 
 TEST_DATABASE_PREFIX = "zenml_fuzz_"
-MYSQL_FILTER_COLLATION = "utf8mb4_bin"
 
 
 @dataclass(frozen=True)
 class DisposableDatabase:
-    """Database identity that proves destructive cleanup is test-owned."""
+    """Identity of a run-owned SQLite file or disposable MySQL database."""
 
     url: str
     backend: str
@@ -40,63 +39,8 @@ class DisposableDatabase:
     database_name: Optional[str] = None
     sqlite_path: Optional[Path] = None
 
-    @classmethod
-    def sqlite(cls, path: Path, owner: Path) -> "DisposableDatabase":
-        """Create an owned SQLite identity.
-
-        Args:
-            path: Run-owned database file.
-            owner: Run-owned evidence directory.
-
-        Returns:
-            The disposable database identity.
-        """
-        resolved_path = path.resolve()
-        return cls(
-            url=f"sqlite:///{resolved_path}",
-            backend="sqlite",
-            owner=owner.resolve(),
-            sqlite_path=resolved_path,
-        )
-
-    @classmethod
-    def mysql(
-        cls, url: URL, database_name: str, owner: Path
-    ) -> "DisposableDatabase":
-        """Create an owned MySQL identity.
-
-        Args:
-            url: URL of the uniquely created database.
-            database_name: Unique database name assigned to the run.
-            owner: Run-owned evidence directory.
-
-        Returns:
-            The disposable database identity.
-        """
-        return cls(
-            url=url.render_as_string(hide_password=False),
-            backend="mysql",
-            owner=owner.resolve(),
-            database_name=database_name,
-        )
-
-    @classmethod
-    def unsafe_for_test(cls, url: str, owner: Path) -> "DisposableDatabase":
-        """Construct an untrusted identity for rejection tests.
-
-        Args:
-            url: Database URL that must not be treated as disposable.
-            owner: Directory presented as the database owner.
-
-        Returns:
-            An intentionally unverified database identity.
-        """
-        return cls(
-            url=url, backend=make_url(url).get_backend_name(), owner=owner
-        )
-
     def assert_owned(self) -> None:
-        """Reject any database that was not uniquely created for this run.
+        """Refuse destructive cleanup on any database not created by this run.
 
         Raises:
             RuntimeError: If the database identity is not test-owned.
@@ -105,7 +49,7 @@ class DisposableDatabase:
             path = self.sqlite_path.resolve()
             if (
                 path.parent == self.owner.resolve()
-                and path.name.startswith("api")
+                and path.name.startswith("api-")
                 and make_url(self.url).database == str(path)
             ):
                 return
@@ -121,7 +65,7 @@ class DisposableDatabase:
 
 
 class FilterRow(SQLModel, table=True):
-    """Small table used only by filter fuzz tests."""
+    """Small table used by SQL filter oracle fuzz tests."""
 
     __tablename__ = "zenml_fuzz_filter_rows"
 
@@ -132,11 +76,7 @@ class FilterRow(SQLModel, table=True):
 
 @contextmanager
 def _evidence_directory() -> Generator[Path, None, None]:
-    """Resolve the configured or temporary evidence directory.
-
-    Yields:
-        Directory in which fuzz evidence should be written.
-    """
+    """Yield the configured evidence directory or a temporary fallback."""
     configured = os.environ.get("ZENML_FUZZ_OUTPUT_DIR")
     if configured:
         path = Path(configured)
@@ -150,19 +90,13 @@ def _evidence_directory() -> Generator[Path, None, None]:
 
 
 def _record_configuration(engine: Engine, output_directory: Path) -> None:
-    """Record non-secret database details used by the fuzz run.
-
-    Args:
-        engine: Connected database engine.
-        output_directory: Directory in which to write the record.
-    """
-    engine_url = engine.url.render_as_string(hide_password=True)
+    """Record non-secret database metadata for reproduction."""
     configuration = {
         "backend": os.environ.get("ZENML_FUZZ_BACKEND", "sqlite"),
         "dialect": engine.dialect.name,
         "driver": engine.dialect.driver,
         "server_version": list(engine.dialect.server_version_info or ()),
-        "url": engine_url,
+        "url": engine.url.render_as_string(hide_password=True),
     }
     if engine.dialect.name == "mysql":
         with engine.connect() as connection:
@@ -177,13 +111,13 @@ def _record_configuration(engine: Engine, output_directory: Path) -> None:
 
 
 def _mysql_urls() -> tuple[Engine, URL, str]:
-    """Build admin and disposable database details for MySQL.
+    """Build admin engine, unique database URL, and database name for MySQL.
 
     Returns:
-        The admin engine, disposable database URL, and unique database name.
+        Tuple of ``(admin_engine, database_url, database_name)``.
 
     Raises:
-        RuntimeError: If the configured MySQL service URL is missing or invalid.
+        RuntimeError: If ``ZENML_FUZZ_MYSQL_URL`` is missing or non-MySQL.
     """
     configured = os.environ.get("ZENML_FUZZ_MYSQL_URL")
     if not configured:
@@ -193,107 +127,113 @@ def _mysql_urls() -> tuple[Engine, URL, str]:
     base_url = make_url(configured)
     if base_url.get_backend_name() != "mysql":
         raise RuntimeError("ZENML_FUZZ_MYSQL_URL must use a MySQL dialect")
-
     database_name = f"{TEST_DATABASE_PREFIX}{os.getpid()}_{token_hex(6)}"
-    admin_url = base_url.set(database=None)
-    admin_engine = create_engine(admin_url)
-    database_url = base_url.set(database=database_name)
-    return admin_engine, database_url, database_name
+    admin_engine = create_engine(base_url.set(database=None))
+    return admin_engine, base_url.set(database=database_name), database_name
 
 
 @contextmanager
-def _filter_database(
-    output_directory: Path,
-) -> Generator[Engine, None, None]:
-    """Create and tear down the selected filter fuzz database.
+def _disposable_mysql_database() -> Generator[tuple[URL, str], None, None]:
+    """Create and always drop one uniquely named MySQL database.
 
-    Args:
-        output_directory: Directory in which to place run evidence.
+    Uses the MySQL server's default charset and collation (``utf8mb4_0900_ai_ci``
+    on MySQL 8.0), matching real ZenML deployments instead of forcing a binary
+    collation.
 
     Yields:
-        Engine connected to the disposable database.
-
-    Raises:
-        RuntimeError: If the selected backend is unsupported.
+        Tuple of ``(database_url, database_name)``.
     """
-    backend = os.environ.get("ZENML_FUZZ_BACKEND", "sqlite")
-    admin_engine: Optional[Engine] = None
-    database_name: Optional[str] = None
-    sqlite_path: Optional[Path] = None
-
-    if backend == "sqlite":
-        sqlite_path = output_directory / f"filters-{os.getpid()}.sqlite3"
-        engine = create_engine(f"sqlite:///{sqlite_path}")
-    elif backend == "mysql":
-        admin_engine, database_url, database_name = _mysql_urls()
-        quoted_name = admin_engine.dialect.identifier_preparer.quote(
-            database_name
-        )
-        with admin_engine.begin() as connection:
-            connection.execute(
-                text(
-                    f"CREATE DATABASE {quoted_name} CHARACTER SET utf8mb4 "
-                    f"COLLATE {MYSQL_FILTER_COLLATION}"
-                )
-            )
-        engine = create_engine(database_url, pool_pre_ping=True)
-    else:
-        raise RuntimeError(
-            "ZENML_FUZZ_BACKEND must be either 'sqlite' or 'mysql'"
-        )
-
+    admin_engine, database_url, database_name = _mysql_urls()
+    assert database_name.startswith(TEST_DATABASE_PREFIX)
+    quoted_name = admin_engine.dialect.identifier_preparer.quote(database_name)
+    created = False
     try:
-        FilterRow.__table__.create(  # type: ignore[attr-defined]
-            engine, checkfirst=False
-        )
-        _record_configuration(engine, output_directory)
-        yield engine
+        with admin_engine.begin() as connection:
+            connection.execute(text(f"CREATE DATABASE {quoted_name}"))
+        created = True
+        yield database_url, database_name
     finally:
-        engine.dispose()
-        if admin_engine is not None and database_name is not None:
-            quoted_name = admin_engine.dialect.identifier_preparer.quote(
-                database_name
-            )
-            with admin_engine.begin() as connection:
-                connection.execute(text(f"DROP DATABASE {quoted_name}"))
+        try:
+            if created:
+                with admin_engine.begin() as connection:
+                    connection.execute(
+                        text(f"DROP DATABASE IF EXISTS {quoted_name}")
+                    )
+        finally:
             admin_engine.dispose()
-        elif sqlite_path is not None:
-            sqlite_path.unlink(missing_ok=True)
 
 
 @contextmanager
 def filter_database() -> Generator[Engine, None, None]:
-    """Create and tear down a database owned by this fuzz process.
+    """Create and tear down a disposable SQL engine for filter fuzzing.
 
     Yields:
-        Engine connected to the disposable filter database.
+        Connected SQLAlchemy engine with ``FilterRow`` created.
+
+    Raises:
+        RuntimeError: If ``ZENML_FUZZ_BACKEND`` is unsupported.
     """
+    backend = os.environ.get("ZENML_FUZZ_BACKEND", "sqlite")
     with _evidence_directory() as output_directory:
-        with _filter_database(output_directory) as engine:
-            yield engine
+        if backend == "sqlite":
+            sqlite_path = output_directory / f"filters-{os.getpid()}.sqlite3"
+            engine = create_engine(f"sqlite:///{sqlite_path}")
+            try:
+                FilterRow.__table__.create(  # type: ignore[attr-defined]
+                    engine, checkfirst=False
+                )
+                _record_configuration(engine, output_directory)
+                yield engine
+            finally:
+                engine.dispose()
+                sqlite_path.unlink(missing_ok=True)
+            return
+
+        if backend != "mysql":
+            raise RuntimeError(
+                "ZENML_FUZZ_BACKEND must be either 'sqlite' or 'mysql'"
+            )
+
+        with _disposable_mysql_database() as (database_url, _database_name):
+            engine = create_engine(database_url, pool_pre_ping=True)
+            try:
+                FilterRow.__table__.create(  # type: ignore[attr-defined]
+                    engine, checkfirst=False
+                )
+                _record_configuration(engine, output_directory)
+                yield engine
+            finally:
+                engine.dispose()
 
 
 @contextmanager
 def api_database(
     backend: str, output_directory: Path
 ) -> Generator[DisposableDatabase, None, None]:
-    """Create a disposable ZenML server database for API fuzzing.
+    """Create and tear down a disposable database for the API fuzz server.
 
     Args:
-        backend: The selected database backend.
-        output_directory: Directory owned by the current fuzz run.
+        backend: Selected backend (``sqlite`` or ``mysql``).
+        output_directory: Run-owned evidence directory.
 
     Yields:
-        A verified disposable database identity.
+        Verified disposable database identity.
 
     Raises:
-        RuntimeError: If the backend is unsupported or cleanup is unsafe.
+        RuntimeError: If ``backend`` is unsupported.
     """
     output_directory = output_directory.resolve()
     output_directory.mkdir(parents=True, exist_ok=True)
     if backend == "sqlite":
-        path = output_directory / f"api-{os.getpid()}-{token_hex(6)}.sqlite3"
-        target = DisposableDatabase.sqlite(path, output_directory)
+        path = (
+            output_directory / f"api-{os.getpid()}-{token_hex(6)}.sqlite3"
+        ).resolve()
+        target = DisposableDatabase(
+            url=f"sqlite:///{path}",
+            backend="sqlite",
+            owner=output_directory,
+            sqlite_path=path,
+        )
         target.assert_owned()
         try:
             yield target
@@ -301,31 +241,16 @@ def api_database(
             target.assert_owned()
             path.unlink(missing_ok=True)
         return
+
     if backend != "mysql":
         raise RuntimeError("API fuzzing backend must be 'sqlite' or 'mysql'")
 
-    admin_engine, database_url, database_name = _mysql_urls()
-    quoted_name = admin_engine.dialect.identifier_preparer.quote(database_name)
-    target = DisposableDatabase.mysql(
-        database_url, database_name, output_directory
-    )
-    target.assert_owned()
-    created = False
-    try:
-        with admin_engine.begin() as connection:
-            connection.execute(
-                text(
-                    f"CREATE DATABASE {quoted_name} CHARACTER SET utf8mb4 "
-                    "COLLATE utf8mb4_unicode_ci"
-                )
-            )
-        created = True
-        yield target
-    finally:
+    with _disposable_mysql_database() as (database_url, database_name):
+        target = DisposableDatabase(
+            url=database_url.render_as_string(hide_password=False),
+            backend="mysql",
+            owner=output_directory,
+            database_name=database_name,
+        )
         target.assert_owned()
-        try:
-            if created:
-                with admin_engine.begin() as connection:
-                    connection.execute(text(f"DROP DATABASE {quoted_name}"))
-        finally:
-            admin_engine.dispose()
+        yield target

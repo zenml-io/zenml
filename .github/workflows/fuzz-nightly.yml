@@ -10,18 +10,20 @@ on:
         required: false
         type: string
         default: develop
-permissions:
-  contents: read
+permissions: {}
 concurrency:
-  group: fuzz-nightly-${{ github.run_id }}
+  group: fuzz-nightly
   cancel-in-progress: false
 jobs:
   resolve:
     name: Resolve source revision
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     timeout-minutes: 5
     outputs:
       sha: ${{ steps.resolve.outputs.sha }}
+      cache_scope: ${{ steps.resolve.outputs.cache_scope }}
     steps:
       - name: Checkout requested source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -30,11 +32,22 @@ jobs:
           persist-credentials: false
       - name: Resolve immutable revision
         id: resolve
-        run: echo "sha=$(git rev-parse HEAD)" >> "${GITHUB_OUTPUT}"
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REQUESTED_REF: ${{ inputs.ref }}
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> "${GITHUB_OUTPUT}"
+          if [[ "${EVENT_NAME}" == "schedule" || "${REQUESTED_REF}" == "develop" || -z "${REQUESTED_REF}" ]]; then
+            echo "cache_scope=develop" >> "${GITHUB_OUTPUT}"
+          else
+            echo "cache_scope=dispatch-${GITHUB_RUN_ID}" >> "${GITHUB_OUTPUT}"
+          fi
   fuzz:
-    name: Fuzz ${{ matrix.suite }} / ${{ matrix.backend }}
+    name: fuzz (${{ matrix.suite }}-${{ matrix.backend }})
     needs: resolve
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     timeout-minutes: 70
     strategy:
       fail-fast: false
@@ -43,25 +56,10 @@ jobs:
         include:
           - suite: filters
             backend: sqlite
-          - suite: filters
-            backend: mysql
           - suite: api
             backend: sqlite
-          - suite: api
-            backend: mysql
           - suite: cli
             backend: none
-    services:
-      mysql:
-        image: ${{ matrix.backend == 'mysql' && 'mysql:8.0' || '' }}
-        env:
-          MYSQL_ROOT_PASSWORD: fuzz-root-password
-        ports: [3306:3306]
-        options: >-
-          --health-cmd="mysqladmin ping --host=127.0.0.1 --password=fuzz-root-password"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=10
     env:
       AUTO_OPEN_DASHBOARD: 'false'
       FUZZ_BACKEND: ${{ matrix.backend }}
@@ -69,11 +67,11 @@ jobs:
       FUZZ_PROFILE: nightly
       FUZZ_SUITE: ${{ matrix.suite }}
       PYTHONIOENCODING: utf-8
+      PYTHONUNBUFFERED: '1'
       UV_HTTP_TIMEOUT: 600
       ZENML_ANALYTICS_OPT_IN: 'false'
       ZENML_DEBUG: 'true'
       ZENML_FUZZ_CORPUS_DIR: .fuzz-corpus/${{ matrix.suite }}-${{ matrix.backend }}
-      ZENML_FUZZ_MYSQL_URL: mysql+pymysql://root:fuzz-root-password@127.0.0.1:3306/mysql
     defaults:
       run:
         shell: bash
@@ -88,25 +86,25 @@ jobs:
         with:
           python-version: '3.11'
       - name: Set up uv
-        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d  # v10.0.1
-        with:
-          version: 0.8.14
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
       - name: Restore dependency cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: ~/.cache/uv
-          key: fuzz-nightly-uv-${{ runner.os }}-py3.11-${{ matrix.suite }}-${{ hashFiles('pyproject.toml',
-            'uv.lock', 'tests/fuzz/requirements.txt') }}
+          key: fuzz-nightly-uv-${{ needs.resolve.outputs.cache_scope }}-${{ runner.os
+            }}-py3.11-${{ matrix.suite }}-${{ hashFiles('pyproject.toml', 'tests/fuzz/requirements.txt')
+            }}
           restore-keys: |
-            fuzz-nightly-uv-${{ runner.os }}-py3.11-${{ matrix.suite }}-
+            fuzz-nightly-uv-${{ needs.resolve.outputs.cache_scope }}-${{ runner.os }}-py3.11-${{ matrix.suite }}-
       - name: Restore Hypothesis corpus
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: ${{ env.ZENML_FUZZ_CORPUS_DIR }}
-          key: fuzz-nightly-corpus-${{ matrix.suite }}-${{ matrix.backend }}-${{ needs.resolve.outputs.sha
-            }}-${{ github.run_id }}
+          key: fuzz-nightly-corpus-${{ needs.resolve.outputs.cache_scope }}-${{ matrix.suite
+            }}-${{ matrix.backend }}-${{ needs.resolve.outputs.sha }}-${{ github.run_id
+            }}-${{ github.run_attempt }}
           restore-keys: |
-            fuzz-nightly-corpus-${{ matrix.suite }}-${{ matrix.backend }}-
+            fuzz-nightly-corpus-${{ needs.resolve.outputs.cache_scope }}-${{ matrix.suite }}-${{ matrix.backend }}-
       - name: Install dedicated fuzz environment
         run: |
           case "${FUZZ_SUITE}" in
@@ -127,6 +125,14 @@ jobs:
             --backend "${FUZZ_BACKEND}" \
             --profile "${FUZZ_PROFILE}" \
             --output-dir "${FUZZ_OUTPUT_DIR}"
+      - name: Save Hypothesis corpus
+        if: always() && needs.resolve.outputs.cache_scope == 'develop'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ${{ env.ZENML_FUZZ_CORPUS_DIR }}
+          key: fuzz-nightly-corpus-${{ needs.resolve.outputs.cache_scope }}-${{ matrix.suite
+            }}-${{ matrix.backend }}-${{ needs.resolve.outputs.sha }}-${{ github.run_id
+            }}-${{ github.run_attempt }}
       - name: Publish fuzz summary
         if: always()
         run: |
@@ -139,6 +145,12 @@ jobs:
             else
               echo "No run metadata was produced; setup was incomplete."
             fi
+            if [[ -f "${FUZZ_OUTPUT_DIR}/fuzz.log" ]]; then
+              echo "### Log tail"
+              echo '```text'
+              tail -n 80 "${FUZZ_OUTPUT_DIR}/fuzz.log"
+              echo '```'
+            fi
           } >> "${GITHUB_STEP_SUMMARY}"
       - name: Upload fuzz evidence
         if: always()
@@ -150,4 +162,185 @@ jobs:
             ${{ env.ZENML_FUZZ_CORPUS_DIR }}
           retention-days: 14
           include-hidden-files: true
-          if-no-files-found: error
+          if-no-files-found: warn
+  fuzz-mysql:
+    name: fuzz (${{ matrix.suite }}-mysql)
+    needs: resolve
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 70
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - suite: filters
+          - suite: api
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: fuzz-root-password
+        ports: [3306:3306]
+        options: >-
+          --health-cmd="mysqladmin ping --host=127.0.0.1 --password=fuzz-root-password"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      AUTO_OPEN_DASHBOARD: 'false'
+      FUZZ_BACKEND: mysql
+      FUZZ_OUTPUT_DIR: fuzz-results/${{ matrix.suite }}-mysql
+      FUZZ_PROFILE: nightly
+      FUZZ_SUITE: ${{ matrix.suite }}
+      PYTHONIOENCODING: utf-8
+      PYTHONUNBUFFERED: '1'
+      UV_HTTP_TIMEOUT: 600
+      ZENML_ANALYTICS_OPT_IN: 'false'
+      ZENML_DEBUG: 'true'
+      ZENML_FUZZ_CORPUS_DIR: .fuzz-corpus/${{ matrix.suite }}-mysql
+      ZENML_FUZZ_MYSQL_URL: mysql+pymysql://root:fuzz-root-password@127.0.0.1:3306/mysql
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout resolved revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          ref: ${{ needs.resolve.outputs.sha }}
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: '3.11'
+      - name: Set up uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+      - name: Restore dependency cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ~/.cache/uv
+          key: fuzz-nightly-uv-${{ needs.resolve.outputs.cache_scope }}-${{ runner.os
+            }}-py3.11-${{ matrix.suite }}-${{ hashFiles('pyproject.toml', 'tests/fuzz/requirements.txt')
+            }}
+          restore-keys: |
+            fuzz-nightly-uv-${{ needs.resolve.outputs.cache_scope }}-${{ runner.os }}-py3.11-${{ matrix.suite }}-
+      - name: Restore Hypothesis corpus
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ${{ env.ZENML_FUZZ_CORPUS_DIR }}
+          key: fuzz-nightly-corpus-${{ needs.resolve.outputs.cache_scope }}-${{ matrix.suite
+            }}-mysql-${{ needs.resolve.outputs.sha }}-${{ github.run_id }}-${{ github.run_attempt
+            }}
+          restore-keys: |
+            fuzz-nightly-corpus-${{ needs.resolve.outputs.cache_scope }}-${{ matrix.suite }}-mysql-
+      - name: Install dedicated fuzz environment
+        run: |
+          case "${FUZZ_SUITE}" in
+            api) zenml_target='.[server]' ;;
+            filters) zenml_target='.[local]' ;;
+            *) exit 2 ;;
+          esac
+          uv venv --python 3.11 .venv-fuzz
+          uv pip install --python .venv-fuzz/bin/python \
+            --requirement tests/fuzz/requirements.txt \
+            -e "${zenml_target}"
+          uv pip check --python .venv-fuzz/bin/python
+      - name: Run bounded fuzz suite
+        run: |
+          .venv-fuzz/bin/python scripts/fuzz.py \
+            --suite "${FUZZ_SUITE}" \
+            --backend "${FUZZ_BACKEND}" \
+            --profile "${FUZZ_PROFILE}" \
+            --output-dir "${FUZZ_OUTPUT_DIR}"
+      - name: Save Hypothesis corpus
+        if: always() && needs.resolve.outputs.cache_scope == 'develop'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ${{ env.ZENML_FUZZ_CORPUS_DIR }}
+          key: fuzz-nightly-corpus-${{ needs.resolve.outputs.cache_scope }}-${{ matrix.suite
+            }}-mysql-${{ needs.resolve.outputs.sha }}-${{ github.run_id }}-${{ github.run_attempt
+            }}
+      - name: Publish fuzz summary
+        if: always()
+        run: |
+          {
+            echo "## Fuzz ${FUZZ_SUITE} / ${FUZZ_BACKEND}"
+            if [[ -f "${FUZZ_OUTPUT_DIR}/run.json" ]]; then
+              echo '```json'
+              cat "${FUZZ_OUTPUT_DIR}/run.json"
+              echo '```'
+            else
+              echo "No run metadata was produced; setup was incomplete."
+            fi
+            if [[ -f "${FUZZ_OUTPUT_DIR}/fuzz.log" ]]; then
+              echo "### Log tail"
+              echo '```text'
+              tail -n 80 "${FUZZ_OUTPUT_DIR}/fuzz.log"
+              echo '```'
+            fi
+          } >> "${GITHUB_STEP_SUMMARY}"
+      - name: Upload fuzz evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: fuzz-nightly-${{ matrix.suite }}-mysql
+          path: |
+            ${{ env.FUZZ_OUTPUT_DIR }}
+            ${{ env.ZENML_FUZZ_CORPUS_DIR }}
+          retention-days: 14
+          include-hidden-files: true
+          if-no-files-found: warn
+  report:
+    name: Report scheduled fuzz failures
+    needs: [resolve, fuzz, fuzz-mysql]
+    if: >-
+      always() &&
+      github.event_name == 'schedule' &&
+      (needs.fuzz.result == 'failure' || needs.fuzz.result == 'cancelled' ||
+      needs.fuzz-mysql.result == 'failure' || needs.fuzz-mysql.result == 'cancelled')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      issues: write
+    steps:
+      - name: Open deduplicated issues for failed or incomplete jobs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          TESTED_SHA: ${{ needs.resolve.outputs.sha }}
+        shell: bash
+        run: |-
+          run_url="${REPO_URL}/actions/runs/${RUN_ID}"
+          jobs=$(gh api "repos/${GH_REPO}/actions/runs/${RUN_ID}/attempts/${RUN_ATTEMPT}/jobs" --paginate \
+            --jq '.jobs[] | select(.name | startswith("fuzz (")) | select(.conclusion == "failure" or .conclusion == "timed_out" or .conclusion == "cancelled") | [.name, .conclusion] | @tsv')
+          while IFS=$'\t' read -r job_name conclusion; do
+            if [[ -z "${job_name}" ]]; then continue; fi
+            surface="${job_name#fuzz (}"
+            surface="${surface%)}"
+            expected_title="Nightly fuzz run failed (${surface})"
+            issue_titles=$(gh issue list --repo "${GH_REPO}" --label fuzz-nightly --state open \
+              --search "in:title ${surface}" --limit 100 --json title --jq '.[].title' || true)
+            existing=0
+            while IFS= read -r issue_title; do
+              if [[ "${issue_title}" == "${expected_title}" ]]; then
+                existing=1
+                break
+              fi
+            done <<< "${issue_titles}"
+            if [[ "${existing}" == "1" ]]; then continue; fi
+            printf '%s\n' \
+              "Run: ${run_url}" \
+              "Tested revision: \`${TESTED_SHA}\`" \
+              "Job result: **${conclusion}**." \
+              "" \
+              "Inspect the job summary and the \`fuzz-nightly-${surface}\` artifact for \`fuzz.log\`, \`run.json\`, and saved Hypothesis examples." > issue-body.md
+            gh label create fuzz-nightly --repo "${GH_REPO}" --color d93f0b \
+              --description "Failure surfaced by nightly fuzzing" 2>/dev/null || true
+            gh issue create --repo "${GH_REPO}" --label fuzz-nightly \
+              --title "${expected_title}" --body-file issue-body.md
+          done <<< "${jobs}"

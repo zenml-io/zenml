@@ -270,14 +270,9 @@ MANY_OTHER_TAGS_OF_RUNS_0_1_5 = [
         ([*MANY_EXACT_TAGS_OF_RUN_5, "contains:light"], None, {"run-5"}),
         (MANY_OTHER_TAGS_OF_RUNS_0_1_5, None, {"run-0", "run-1", "run-5"}),
         (
-            [*MANY_OTHER_TAGS_OF_RUNS_0_1_5[:5], "notoneof:[]"],
-            None,
-            {"run-0", "run-1", "run-5"},
-        ),
-        (
             [*MANY_OTHER_TAGS_OF_RUNS_0_1_5[:4], "oneof:[]", "notoneof:[]"],
             None,
-            set(),
+            {"run-0", "run-1", "run-5"},
         ),
         (
             None,

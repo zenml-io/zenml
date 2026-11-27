@@ -16,8 +16,9 @@
 import os
 from contextlib import contextmanager
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Generator, Mapping, cast
+from typing import Any, Generator, Mapping, Set, cast
 
 import pytest
 from hypothesis import HealthCheck, given, settings
@@ -30,6 +31,7 @@ from schemathesis.specs.openapi.checks import (
     content_type_conformance,
     response_headers_conformance,
     response_schema_conformance,
+    status_code_conformance,
 )
 from tests.fuzz.api_fixtures import ApiHarness, BaselineIds
 from tests.fuzz.api_server import running_api_server
@@ -38,33 +40,37 @@ from tests.fuzz.api_strategies import (
     CoverageMode,
     CoverageTracker,
     EvidenceRecorder,
-    is_known_malformed_json_422,
+    OperationSpec,
+    is_known_request_validation_422,
+    is_url_within_limit,
     load_allowed_operations,
     load_response_validation_operations,
     semantic_case,
     substitute_fixture_ids,
+    validate_naive_datetimes,
 )
 
-_RESPONSE_CHECKS = cast(
+_NON_SCHEMA_CHECKS = cast(
     list[CheckFunction],
     [
         not_a_server_error,
+        status_code_conformance,
         content_type_conformance,
         response_headers_conformance,
-        response_schema_conformance,
     ],
 )
 
 
 @dataclass
 class ApiRuntime:
-    """Live resources shared by one isolated API test process."""
+    """Live resources shared by one isolated API fuzz process."""
 
     harness: ApiHarness
     operations: Mapping[str, APIOperation[Any, Any, Any, Any]]
     response_validation_operations: Mapping[
         str, APIOperation[Any, Any, Any, Any]
     ]
+    datetime_fields: Set[str]
     coverage: CoverageTracker
     evidence: EvidenceRecorder
 
@@ -83,35 +89,40 @@ def api_runtime(
         backend=backend, output_directory=output_directory
     ) as server:
         harness = ApiHarness(server)
+        coverage = CoverageTracker()
+        evidence = EvidenceRecorder(output_directory)
         try:
             harness.seed_baseline()
             raw_schema = harness.openapi_schema()
             operations = load_allowed_operations(raw_schema)
-            response_validation_operations = (
+            response_validation_operations, datetime_fields = (
                 load_response_validation_operations(raw_schema)
             )
             yield ApiRuntime(
                 harness=harness,
                 operations=operations,
                 response_validation_operations=response_validation_operations,
-                coverage=CoverageTracker(),
-                evidence=EvidenceRecorder(output_directory),
+                datetime_fields=datetime_fields,
+                coverage=coverage,
+                evidence=evidence,
             )
         finally:
+            evidence.write_coverage(coverage)
             harness.close()
 
 
-def _evidence(
+def _failure_evidence(
     operation_id: str,
     mode: CoverageMode,
     case: Any,
-    response: Response | None = None,
-    error: BaseException | None = None,
+    response: Response | None,
+    error: BaseException,
 ) -> dict[str, Any]:
-    """Build a bounded request/response record safe for JSON serialization."""
+    """Build a bounded JSON-safe failure record for ``api-failures.jsonl``."""
     record: dict[str, Any] = {
         "operation_id": operation_id,
         "mode": mode,
+        "error": repr(error),
         "request": {
             "method": case.method,
             "path": case.path,
@@ -134,8 +145,6 @@ def _evidence(
             "headers": dict(response.headers),
             "body": response.text[:2000],
         }
-    if error is not None:
-        record["error"] = repr(error)
     return record
 
 
@@ -143,40 +152,39 @@ def _evidence(
 def _executed_case(
     runtime: ApiRuntime, operation_id: str, mode: CoverageMode, case: Any
 ) -> Generator[Response, None, None]:
-    """Execute, validate, count, and retain evidence for one isolated case."""
-    response = None
+    """Execute and validate one case, recording coverage only after checks."""
+    response: Response | None = None
     try:
         response = runtime.harness.call_case(case)
-        runtime.coverage.record(operation_id, mode, response.status_code)
-        runtime.evidence.write_coverage(runtime.coverage)
-        runtime.evidence.record_case(
-            _evidence(operation_id, mode, case, response=response)
-        )
-        assert response.status_code < 500, (
-            f"{operation_id} returned unexpected {response.status_code}: "
-            f"{response.text[:1000]}"
-        )
+        if response.status_code >= 500:
+            server_tail = runtime.harness.server.tail_log()
+            raise AssertionError(
+                f"{operation_id} returned {response.status_code}: "
+                f"{response.text[:1000]}\n--- api-server.log tail ---\n"
+                f"{server_tail}"
+            )
         content_type = response.headers.get("content-type", "")
         if isinstance(content_type, list):
             content_type = content_type[0] if content_type else ""
         payload = None
-        if content_type.startswith("application/json"):
+        if content_type.lower().startswith("application/json"):
             payload = response.json()
-        # Positive schema generation intentionally includes values that ZenML
-        # rejects with domain validators absent from OpenAPI (for example an
-        # empty or UUID-like tag name). Validate every documented response but
-        # do not turn those expected 4xx results into generator failures.
-        checks = [
-            check
-            for check in _RESPONSE_CHECKS
-            if check is not response_schema_conformance
-        ]
-        case.validate_response(response, checks=checks)
-        # zenml-io/zenml#5269 tracks this exact malformed-JSON response.
-        known_malformed_json = is_known_malformed_json_422(
-            operation_id, mode, response.status_code, payload
+        checks = (
+            [
+                check
+                for check in _NON_SCHEMA_CHECKS
+                if check is not status_code_conformance
+            ]
+            if response.status_code == 400
+            and isinstance(payload, dict)
+            and "detail" in payload
+            else _NON_SCHEMA_CHECKS
         )
-        if not known_malformed_json:
+        case.validate_response(response, checks=checks)
+        # zenml-io/zenml#5269 tracks the raw ["ValueError", "<text>"] 422 shape.
+        if not is_known_request_validation_422(
+            operation_id, response.status_code, payload
+        ):
             validation_operation = runtime.response_validation_operations[
                 operation_id
             ]
@@ -190,23 +198,47 @@ def _executed_case(
             )
             validation_case.validate_response(
                 response,
-                checks=[cast(CheckFunction, response_schema_conformance)],
+                checks=[response_schema_conformance],
             )
+            # zenml-io/zenml#5270 strips format: date-time for naive timestamps,
+            # so still verify every declared date-time field parses as ISO-8601.
+            if payload is not None:
+                validate_naive_datetimes(payload, runtime.datetime_fields)
+        runtime.coverage.record(operation_id, mode, response.status_code)
         yield response
     except BaseException as error:
-        if response is None:
-            runtime.evidence.record_case(
-                _evidence(operation_id, mode, case, error=error)
-            )
+        runtime.evidence.record_failure(
+            _failure_evidence(operation_id, mode, case, response, error)
+        )
         raise
 
 
 def _assert_semantic_result(
-    operation_id: str, response: Response, baseline: BaselineIds
+    runtime: ApiRuntime,
+    operation_id: str,
+    response: Response,
+    baseline: BaselineIds,
 ) -> None:
-    """Check that semantic requests reached their seeded target."""
+    """Verify semantic requests reached or persisted their expected state."""
     payload = response.json()
-    if operation_id == "list_tags_api_v1_tags_get":
+    if operation_id == "create_tag_api_v1_tags_post":
+        created = runtime.harness.request_json(
+            "GET", f"/api/v1/tags/{payload['id']}"
+        )
+        assert created["name"] == "generated-smoke"
+        assert created["body"]["color"] == "green"
+    elif operation_id == "update_tag_api_v1_tags__tag_id__put":
+        updated = runtime.harness.request_json(
+            "GET", f"/api/v1/tags/{baseline.tag_ids['primary']}"
+        )
+        assert updated["name"] == "updated-smoke"
+        assert updated["body"]["color"] == "blue"
+    elif operation_id == "delete_tag_api_v1_tags__tag_id__delete":
+        deleted = runtime.harness.request(
+            "GET", f"/api/v1/tags/{baseline.tag_ids['primary']}"
+        )
+        assert deleted.status_code == 404
+    elif operation_id == "list_tags_api_v1_tags_get":
         assert set(baseline.tag_ids.values()).issubset(
             {item["id"] for item in payload["items"]}
         )
@@ -226,67 +258,19 @@ def _assert_semantic_result(
     "spec", API_ALLOWLIST, ids=lambda spec: spec.operation_id
 )
 def test_semantically_valid_operation_succeeds(
-    api_runtime: ApiRuntime, spec: Any
+    api_runtime: ApiRuntime, spec: OperationSpec
 ) -> None:
-    """Every allowlisted operation has an authenticated successful request."""
-    with api_runtime.harness.isolated_example() as baseline:
+    """Every allowlisted operation succeeds and persists expected state."""
+    with api_runtime.harness.prepared_example(mutates=spec.mutates) as base:
         operation = api_runtime.operations[spec.operation_id]
-        case = semantic_case(operation, spec.operation_id, baseline)
+        case = semantic_case(operation, spec.operation_id, base)
         with _executed_case(
             api_runtime, spec.operation_id, "semantic", case
         ) as response:
             assert 200 <= response.status_code < 300
-            _assert_semantic_result(spec.operation_id, response, baseline)
-
-
-@pytest.mark.parametrize(
-    "spec", API_ALLOWLIST, ids=lambda spec: spec.operation_id
-)
-@settings(
-    max_examples=1,
-    suppress_health_check=[HealthCheck.function_scoped_fixture],
-)
-@given(data=st.data())
-def test_schema_generated_positive_requests(
-    api_runtime: ApiRuntime, spec: Any, data: st.DataObject
-) -> None:
-    """Every operation gets a schema-positive generated request."""
-    case = data.draw(
-        api_runtime.operations[spec.operation_id].as_strategy(
-            generation_mode=GenerationMode.POSITIVE
-        ),
-        label=f"positive {spec.operation_id}",
-    )
-    with api_runtime.harness.isolated_example() as baseline:
-        substitute_fixture_ids(case, baseline)
-        with _executed_case(api_runtime, spec.operation_id, "positive", case):
-            pass
-
-
-@pytest.mark.parametrize(
-    "spec", API_ALLOWLIST, ids=lambda spec: spec.operation_id
-)
-@settings(
-    max_examples=1,
-    suppress_health_check=[
-        HealthCheck.function_scoped_fixture,
-        HealthCheck.filter_too_much,
-    ],
-)
-@given(data=st.data())
-def test_schema_generated_negative_requests(
-    api_runtime: ApiRuntime, spec: Any, data: st.DataObject
-) -> None:
-    """Every operation gets a schema-negative generated request."""
-    case = data.draw(
-        api_runtime.operations[spec.operation_id].as_strategy(
-            generation_mode=GenerationMode.NEGATIVE
-        ),
-        label=f"negative {spec.operation_id}",
-    )
-    with api_runtime.harness.isolated_example():
-        with _executed_case(api_runtime, spec.operation_id, "negative", case):
-            pass
+            _assert_semantic_result(
+                api_runtime, spec.operation_id, response, base
+            )
 
 
 @pytest.mark.parametrize(
@@ -328,7 +312,7 @@ def test_established_invalid_inputs_are_rejected(
 ) -> None:
     """Inputs rejected by ZenML's schema or validators return a 4xx."""
     operation = api_runtime.operations[operation_id]
-    with api_runtime.harness.isolated_example():
+    with api_runtime.harness.prepared_example(mutates=True):
         case = operation.Case(**case_kwargs)
         with _executed_case(
             api_runtime, operation_id, "negative", case
@@ -336,25 +320,11 @@ def test_established_invalid_inputs_are_rejected(
             assert 400 <= response.status_code < 500
 
 
-def test_unsupported_filter_is_ignored_without_server_error(
-    api_runtime: ApiRuntime,
-) -> None:
-    """An extra query filter follows FastAPI's intentional ignore behavior."""
-    operation_id = "list_tags_api_v1_tags_get"
-    operation = api_runtime.operations[operation_id]
-    with api_runtime.harness.isolated_example():
-        case = operation.Case(query={"unsupported_filter": "value"})
-        with _executed_case(
-            api_runtime, operation_id, "negative", case
-        ) as response:
-            assert response.status_code == 200
-
-
 def test_explicit_null_tag_update_is_a_noop(api_runtime: ApiRuntime) -> None:
     """Nullable update fields do not crash or clear stored tag values."""
     operation_id = "update_tag_api_v1_tags__tag_id__put"
     operation = api_runtime.operations[operation_id]
-    with api_runtime.harness.isolated_example() as baseline:
+    with api_runtime.harness.prepared_example(mutates=True) as baseline:
         case = operation.Case(
             path_parameters={"tag_id": baseline.tag_ids["primary"]},
             body={"name": None, "exclusive": None, "color": None},
@@ -370,46 +340,85 @@ def test_explicit_null_tag_update_is_a_noop(api_runtime: ApiRuntime) -> None:
             assert payload["body"]["exclusive"] is False
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="zenml-io/zenml#5269: RequestValidationError returns a raw list instead of ErrorModel",
+)
+def test_known_issue_5269_validation_error_uses_error_model(
+    api_runtime: ApiRuntime,
+) -> None:
+    """Canary for #5269: fails XPASS once 422 returns the documented object."""
+    with api_runtime.harness.prepared_example(mutates=False):
+        response = api_runtime.harness.request(
+            "GET", "/api/v1/tags", params={"page": 0}
+        )
+        assert response.status_code == 422
+        assert isinstance(response.json(), dict)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="zenml-io/zenml#5270: API timestamps omit UTC offset",
+)
+def test_known_issue_5270_timestamps_include_timezone(
+    api_runtime: ApiRuntime,
+) -> None:
+    """Canary for #5270: fails XPASS once timestamps carry a timezone offset."""
+    with api_runtime.harness.prepared_example(mutates=False) as baseline:
+        tag = api_runtime.harness.request_json(
+            "GET", f"/api/v1/tags/{baseline.tag_ids['primary']}"
+        )
+        parsed = datetime.fromisoformat(
+            tag["body"]["created"].replace("Z", "+00:00")
+        )
+        assert parsed.tzinfo is not None
+
+
+@pytest.mark.parametrize(
+    "spec", API_ALLOWLIST, ids=lambda spec: spec.operation_id
+)
+@pytest.mark.parametrize(
+    "generation_mode",
+    [GenerationMode.POSITIVE, GenerationMode.NEGATIVE],
+    ids=["positive", "negative"],
+)
 @settings(
     suppress_health_check=[
         HealthCheck.function_scoped_fixture,
         HealthCheck.filter_too_much,
     ]
 )
-@given(
-    operation_index=st.integers(min_value=0, max_value=len(API_ALLOWLIST) - 1),
-    generation_mode=st.sampled_from(
-        [GenerationMode.POSITIVE, GenerationMode.NEGATIVE]
-    ),
-    data=st.data(),
-)
-def test_generated_requests_explore_the_allowlist(
+@given(data=st.data())
+def test_generated_requests_conform_to_api_contract(
     api_runtime: ApiRuntime,
-    operation_index: int,
+    spec: OperationSpec,
     generation_mode: GenerationMode,
     data: st.DataObject,
 ) -> None:
-    """The selected profile explores additional bounded generated requests."""
-    spec = API_ALLOWLIST[operation_index]
+    """Each allowlisted operation is independently fuzzed in both modes."""
+    strategy = (
+        api_runtime.operations[spec.operation_id]
+        .as_strategy(generation_mode=generation_mode)
+        .filter(is_url_within_limit)
+    )
     case = data.draw(
-        api_runtime.operations[spec.operation_id].as_strategy(
-            generation_mode=generation_mode
-        ),
-        label=f"explore {spec.operation_id}",
+        strategy, label=f"{generation_mode.value} {spec.operation_id}"
     )
     mode: CoverageMode = (
         "positive"
         if generation_mode is GenerationMode.POSITIVE
         else "negative"
     )
-    with api_runtime.harness.isolated_example() as baseline:
+    with api_runtime.harness.prepared_example(mutates=spec.mutates) as base:
         if generation_mode is GenerationMode.POSITIVE:
-            substitute_fixture_ids(case, baseline)
+            substitute_fixture_ids(case, base)
         with _executed_case(api_runtime, spec.operation_id, mode, case):
             pass
 
 
 def test_api_coverage_qualifies(api_runtime: ApiRuntime) -> None:
-    """No missing operation or zero-case generation can pass the API job."""
+    """Require validated semantic, positive, negative, and 2xx hits per route."""
     api_runtime.coverage.qualify()
     api_runtime.evidence.write_coverage(api_runtime.coverage)

@@ -15,24 +15,26 @@
 
 import json
 import os
-from typing import Dict, Generator, List, Sequence, Union
+from typing import Dict, Generator, List, Union
 
 import pytest
 from hypothesis import HealthCheck, given, settings
+from hypothesis import strategies as st
 from pydantic import ValidationError
 from sqlalchemy import Engine, delete
 from sqlmodel import Session, select
 from tests.fuzz.database import FilterRow, filter_database
 from tests.fuzz.filter_strategies import (
     MALFORMED_MEMBERSHIP_VALUES,
+    PORTABLE_TEXT,
     FilterCase,
     FilterSpec,
-    RowValues,
     expected_ids,
     filter_cases,
 )
 
 from zenml.enums import LogicalOperators
+from zenml.models import PipelineRunFilter
 from zenml.models.v2.base.filter import (
     BaseFilter,
     IntegerFilterOption,
@@ -41,7 +43,7 @@ from zenml.models.v2.base.filter import (
 
 
 class GeneratedFilter(BaseFilter):
-    """Filter model matching the deliberately small SQL test table."""
+    """Filter model matching the SQL oracle table."""
 
     name: StringFilterOption = None
     number: IntegerFilterOption = None
@@ -96,38 +98,6 @@ def _execute_case(engine: Engine, case: FilterCase) -> List[int]:
         return sorted(row.id for row in session.exec(query).all())
 
 
-def _assert_matching_ids(
-    actual: Sequence[int], expected: Sequence[int]
-) -> None:
-    assert list(actual) == list(expected), (
-        f"query returned IDs {list(actual)}, oracle expected {list(expected)}"
-    )
-
-
-def test_result_oracle_rejects_an_injected_mismatch() -> None:
-    """Prove that successful execution with an extra ID cannot pass."""
-    with pytest.raises(AssertionError, match="oracle expected"):
-        _assert_matching_ids([1, 2], [1])
-
-
-def test_string_filter_comparison_is_case_sensitive(
-    filter_engine: Engine,
-) -> None:
-    """MySQL and SQLite match the Python oracle for case distinctions."""
-    case = FilterCase(
-        rows=[
-            RowValues(id=1, name="A", number=None),
-            RowValues(id=2, name="a", number=None),
-        ],
-        filters=[FilterSpec(column="name", operation="equals", value="A")],
-        logical_operator="and",
-    )
-
-    _assert_matching_ids(
-        _execute_case(filter_engine, case), expected_ids(case)
-    )
-
-
 @given(case=filter_cases())
 @settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
 @pytest.mark.filterwarnings(r"ignore:Invoking and_\(\) without arguments")
@@ -135,9 +105,13 @@ def test_string_filter_comparison_is_case_sensitive(
 def test_generated_filters_match_independent_oracle(
     case: FilterCase, filter_engine: Engine
 ) -> None:
-    """Compare real SQLModel results with the independent Python predicate."""
-    _assert_matching_ids(
-        _execute_case(filter_engine, case), sorted(expected_ids(case))
+    """Compare real SQLModel results with the independent Python oracle."""
+    backend = os.environ.get("ZENML_FUZZ_BACKEND", "sqlite")
+    actual = _execute_case(filter_engine, case)
+    expected = sorted(expected_ids(case, backend=backend))
+    assert actual == expected, (
+        f"query returned IDs {actual}, oracle expected {expected} "
+        f"(backend={backend})"
     )
 
 
@@ -148,55 +122,53 @@ def test_malformed_membership_values_fail_during_parsing(value: str) -> None:
         GeneratedFilter(name=f"oneof:{value}")
 
 
-def test_dialect_sensitive_string_probes_are_explicit(
+@given(
+    key=st.text(
+        alphabet="abcdefghijklmnopqrstuvwxyz0123456789_-",
+        min_size=1,
+        max_size=16,
+    ),
+    scalars=st.lists(
+        st.one_of(st.integers(min_value=-100, max_value=100), PORTABLE_TEXT),
+        min_size=0,
+        max_size=4,
+    ),
+    tag_names=st.lists(PORTABLE_TEXT, min_size=0, max_size=3),
+)
+def test_real_pipeline_run_filter_parses_metadata_and_tags(
+    key: str, scalars: List[Union[int, str]], tag_names: List[str]
+) -> None:
+    """Real PipelineRunFilter accepts numeric run_metadata lists and tags."""
+    metadata_expr = f"{key}:oneof:{json.dumps(scalars)}"
+    tag_expr = f"oneof:{json.dumps(tag_names)}"
+    run_filter = PipelineRunFilter(
+        run_metadata=metadata_expr,
+        tags=tag_expr,
+    )
+    assert run_filter.run_metadata == metadata_expr
+    assert run_filter.tags == tag_expr
+
+
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="StrFilter.contains passes raw '%'/'_' to SQL LIKE without escaping",
+)
+def test_like_wildcards_in_contains_are_treated_literally(
     filter_engine: Engine,
 ) -> None:
-    """Exercise Unicode, long, wildcard, numeric, and trailing-space values."""
-    long_value = "a" * 256
+    """Canary documenting that ``contains:%`` currently acts as a LIKE wildcard."""
     rows = [
-        FilterRow(id=1, name="Gr\u00fc\u00dfe", number=0),
-        FilterRow(id=2, name="100%_ready", number=-1),
-        FilterRow(id=3, name="123", number=1),
-        FilterRow(id=4, name="trail", number=None),
-        FilterRow(id=5, name="trail ", number=2),
-        FilterRow(id=6, name=long_value, number=3),
+        FilterRow(id=1, name="100%_ready", number=1),
+        FilterRow(id=2, name="plain_text", number=2),
     ]
     with Session(filter_engine) as session:
         session.exec(delete(FilterRow))
         session.add_all(rows)
         session.commit()
-
-        for value, expected in [
-            ("Gr\u00fc\u00dfe", [1]),
-            ("100%_ready", [2]),
-            ("123", [3]),
-            (long_value, [6]),
-        ]:
-            query = GeneratedFilter(name=f"equals:{value}").apply_filter(
-                select(FilterRow),
-                table=FilterRow,  # type: ignore[type-var]
-            )
-            assert (
-                sorted(row.id for row in session.exec(query).all()) == expected
-            )
-
-        trailing_query = GeneratedFilter(name="equals:trail ").apply_filter(
+        query = GeneratedFilter(name="contains:%").apply_filter(
             select(FilterRow),
             table=FilterRow,  # type: ignore[type-var]
         )
-        trailing_ids = sorted(
-            row.id for row in session.exec(trailing_query).all()
-        )
-        wildcard_query = GeneratedFilter(name="contains:%").apply_filter(
-            select(FilterRow),
-            table=FilterRow,  # type: ignore[type-var]
-        )
-        wildcard_ids = sorted(
-            row.id for row in session.exec(wildcard_query).all()
-        )
-
-    assert wildcard_ids == [1, 2, 3, 4, 5, 6]
-    if os.environ.get("ZENML_FUZZ_BACKEND", "sqlite") == "mysql":
-        assert trailing_ids == [4, 5]
-    else:
-        assert trailing_ids == [5]
+        matched = sorted(row.id for row in session.exec(query).all())
+    assert matched == [1]

@@ -11,17 +11,17 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-"""Run the current ZenML source as an authenticated disposable API server."""
+"""Run the current ZenML checkout as an authenticated disposable API server."""
 
 import json
 import os
 import subprocess
 import sys
 import time
-from contextlib import AbstractContextManager, contextmanager
+from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Generator, Optional
+from typing import Dict, Generator
 
 import requests
 from sqlalchemy.engine import make_url
@@ -36,28 +36,6 @@ REQUEST_TIMEOUT_SECONDS = 10
 START_TIMEOUT_SECONDS = 60
 
 
-class ApiServerCleanupError(RuntimeError):
-    """Error that retains both a server failure and teardown failure."""
-
-    def __init__(
-        self,
-        original_error: Optional[BaseException],
-        cleanup_error: BaseException,
-    ) -> None:
-        """Initialize the combined failure.
-
-        Args:
-            original_error: Error raised while running the server, if any.
-            cleanup_error: Error raised while tearing down the server.
-        """
-        self.original_error = original_error
-        self.cleanup_error = cleanup_error
-        super().__init__(
-            f"API server cleanup failed: {cleanup_error}; original error: "
-            f"{original_error!r}"
-        )
-
-
 @dataclass(frozen=True)
 class RunningApiServer:
     """Authenticated handle to a running disposable ZenML server."""
@@ -67,18 +45,33 @@ class RunningApiServer:
     database: DisposableDatabase
     process: subprocess.Popen[bytes]
     output_directory: Path
-    source_path: Path
-    source_revision: str
+    log_path: Path
+
+    def tail_log(self, max_lines: int = 40) -> str:
+        """Return the last lines of the server log for inline failure reports.
+
+        Args:
+            max_lines: Maximum number of trailing lines to return.
+
+        Returns:
+            Trailing server log text, or an empty string if unreadable.
+        """
+        if not self.log_path.exists():
+            return ""
+        lines = self.log_path.read_text(
+            encoding="utf-8", errors="replace"
+        ).splitlines()
+        return "\n".join(lines[-max_lines:])
 
 
 def build_server_command(port: int) -> list[str]:
-    """Build the direct Uvicorn command for the current source checkout.
+    """Build the Uvicorn command for the current checkout.
 
     Args:
-        port: Loopback port on which the server should listen.
+        port: Loopback port to bind.
 
     Returns:
-        Command arguments for launching the server.
+        Command argument list.
     """
     return [
         sys.executable,
@@ -96,15 +89,14 @@ def build_server_command(port: int) -> list[str]:
 def build_server_environment(
     database: DisposableDatabase, output_directory: Path
 ) -> Dict[str, str]:
-    """Create a child-only server environment with authentication enabled.
+    """Create a child-only server environment with password auth enabled.
 
     Args:
         database: Disposable database assigned to the server.
-        output_directory: Run-owned directory for server state.
+        output_directory: Run-owned directory for server config and stores.
 
     Returns:
-        Environment variables for the server child process.
-
+        Environment variable mapping for the child server process.
     """
     database.assert_owned()
     database_url = make_url(database.url)
@@ -112,19 +104,22 @@ def build_server_environment(
         drivername=database_url.get_backend_name()
     ).render_as_string(hide_password=False)
     output_directory = output_directory.resolve()
+    stripped_prefixes = (
+        "ZENML_STORE_",
+        "ZENML_SERVER_",
+        "ZENML_ACTIVE_",
+        "ZENML_SECRETS_STORE_",
+        "ZENML_BACKUP_SECRETS_STORE_",
+    )
+    stripped_exact = {
+        "ZENML_CONFIG_PATH",
+        "ZENML_LOCAL_STORES_PATH",
+        "DISABLE_DATABASE_MIGRATION",
+    }
     environment = {
         key: value
         for key, value in os.environ.items()
-        if not (
-            key == "ZENML_CONFIG_PATH"
-            or key == "ZENML_LOCAL_STORES_PATH"
-            or key == "DISABLE_DATABASE_MIGRATION"
-            or key.startswith("ZENML_STORE_")
-            or key.startswith("ZENML_SERVER_")
-            or key.startswith("ZENML_ACTIVE_")
-            or key.startswith("ZENML_SECRETS_STORE_")
-            or key.startswith("ZENML_BACKUP_SECRETS_STORE_")
-        )
+        if key not in stripped_exact and not key.startswith(stripped_prefixes)
     }
     existing_python_path = environment.get("PYTHONPATH")
     python_path = str(REPOSITORY_ROOT)
@@ -132,44 +127,24 @@ def build_server_environment(
         python_path = f"{python_path}{os.pathsep}{existing_python_path}"
     environment.update(
         {
+            "AUTO_OPEN_DASHBOARD": "false",
             "PYTHONPATH": python_path,
+            "ZENML_ANALYTICS_OPT_IN": "false",
             "ZENML_CONFIG_PATH": str(output_directory / "server-config"),
+            "ZENML_DEBUG": "true",
             "ZENML_LOCAL_STORES_PATH": str(output_directory / "local-stores"),
-            "ZENML_STORE_URL": store_url,
-            "ZENML_STORE_TYPE": "sql",
             "ZENML_SERVER": "true",
             "ZENML_SERVER_AUTH_SCHEME": "OAUTH2_PASSWORD_BEARER",
             "ZENML_SERVER_AUTO_ACTIVATE": "false",
-            "ZENML_ANALYTICS_OPT_IN": "false",
-            "ZENML_DEBUG": "true",
-            "AUTO_OPEN_DASHBOARD": "false",
+            "ZENML_STORE_TYPE": "sql",
+            "ZENML_STORE_URL": store_url,
         }
     )
     return environment
 
 
-def _source_revision() -> str:
-    """Return the source revision loaded by the server process.
-
-    Returns:
-        The Git revision, or ``unknown`` when it cannot be resolved.
-    """
-    result = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
-        cwd=REPOSITORY_ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return result.stdout.strip() if result.returncode == 0 else "unknown"
-
-
 def _stop_process(process: subprocess.Popen[bytes]) -> None:
-    """Stop the server process and wait for it to exit.
-
-    Args:
-        process: Server process to stop.
-    """
+    """Stop the Uvicorn child process cleanly, escalating to SIGKILL if stuck."""
     if process.poll() is not None:
         return
     try:
@@ -181,20 +156,16 @@ def _stop_process(process: subprocess.Popen[bytes]) -> None:
     except subprocess.TimeoutExpired:
         process.kill()
         process.wait(timeout=5)
+    if process.poll() is None:
+        raise RuntimeError(
+            f"ZenML server process {process.pid} is still running after stop"
+        )
 
 
 def _wait_until_ready(process: subprocess.Popen[bytes], base_url: str) -> None:
-    """Wait for the server health endpoint or report early process exit.
-
-    Args:
-        process: Server process being monitored.
-        base_url: Loopback URL of the server.
-
-    Raises:
-        RuntimeError: If the process exits early or readiness times out.
-    """
+    """Poll ``/health`` until ready or fail fast on early exit."""
     deadline = time.monotonic() + START_TIMEOUT_SECONDS
-    last_error: Optional[BaseException] = None
+    last_error: BaseException | None = None
     while time.monotonic() < deadline:
         return_code = process.poll()
         if return_code is not None:
@@ -216,17 +187,7 @@ def _wait_until_ready(process: subprocess.Popen[bytes], base_url: str) -> None:
 
 
 def _authenticate(base_url: str) -> str:
-    """Activate the server and obtain a password-bearer token.
-
-    Args:
-        base_url: Loopback URL of the disposable server.
-
-    Returns:
-        Access token for the control user.
-
-    Raises:
-        RuntimeError: If activation, login, or token verification fails.
-    """
+    """Activate the server and return a verified password-bearer token."""
     activation = requests.put(
         f"{base_url}/api/v1/activate",
         json={
@@ -257,9 +218,7 @@ def _authenticate(base_url: str) -> str:
             )
         token = login.json().get("access_token")
         if not isinstance(token, str) or not token:
-            raise RuntimeError(
-                "Server login response did not contain an access token"
-            )
+            raise RuntimeError("Server login returned no access token")
         verification = requests.get(
             f"{base_url}/api/v1/tags",
             headers={"Authorization": f"Bearer {token}"},
@@ -268,7 +227,7 @@ def _authenticate(base_url: str) -> str:
         if verification.status_code == 200:
             return token
         # A freshly activated server can reject a same-second token at the
-        # password-change boundary. Retry only that explicit transient error.
+        # password-change boundary. Retry only that transient condition.
         if (
             attempt == 0
             and verification.status_code == 401
@@ -284,101 +243,30 @@ def _authenticate(base_url: str) -> str:
     raise RuntimeError("Server token verification did not succeed")
 
 
-def _write_diagnostics(server: RunningApiServer) -> None:
-    """Write sanitized server identity needed to reproduce a failure.
-
-    Args:
-        server: Running server whose non-secret identity should be recorded.
-    """
-    details = {
-        "backend": server.database.backend,
-        "base_url": server.base_url,
-        "database_name": server.database.database_name,
-        "pid": server.process.pid,
-        "source_path": str(server.source_path),
-        "source_revision": server.source_revision,
-    }
-    (server.output_directory / "api-server.json").write_text(
-        json.dumps(details, indent=2, sort_keys=True) + "\n"
-    )
-
-
-def _teardown_error(
-    process: Optional[subprocess.Popen[bytes]],
-    database_context: AbstractContextManager[DisposableDatabase],
-) -> Optional[BaseException]:
-    """Tear down the server and database while retaining both failures.
-
-    Args:
-        process: Server process, if startup reached process creation.
-        database_context: Entered disposable database context.
-
-    Returns:
-        The teardown failure, or ``None`` when cleanup succeeded.
-    """
-    cleanup_error: Optional[BaseException] = None
-    if process is not None:
-        try:
-            _stop_process(process)
-        except BaseException as error:
-            cleanup_error = error
-        else:
-            if process.poll() is None:
-                cleanup_error = RuntimeError(
-                    f"ZenML server process {process.pid} is still running "
-                    "after teardown"
-                )
-    try:
-        database_context.__exit__(None, None, None)
-    except BaseException as error:
-        if cleanup_error is None:
-            cleanup_error = error
-        else:
-            cleanup_error = ApiServerCleanupError(cleanup_error, error)
-    return cleanup_error
-
-
-def server_log_path(output_directory: Path) -> Path:
-    """Return the server log path, scoped per batch when `ZENML_FUZZ_BATCH` is set.
-
-    Args:
-        output_directory: Run-owned directory for server state and diagnostics.
-
-    Returns:
-        Path to the Uvicorn server log file.
-    """
-    batch = os.environ.get("ZENML_FUZZ_BATCH", "").strip()
-    if batch and all(ch.isalnum() or ch in {"-", "_"} for ch in batch):
-        return output_directory / f"api-server-batch-{batch}.log"
-    return output_directory / "api-server.log"
-
-
 @contextmanager
 def running_api_server(
     backend: str, output_directory: Path
 ) -> Generator[RunningApiServer, None, None]:
     """Start and tear down an authenticated source-backed ZenML server.
 
+    Uses ``ExitStack`` so process shutdown always runs before database removal
+    and both failures are preserved if teardown encounters an error.
+
     Args:
-        backend: Database backend selected for the server.
-        output_directory: Run-owned directory for state and diagnostics.
+        backend: Selected database backend (``sqlite`` or ``mysql``).
+        output_directory: Run-owned directory for server state and logs.
 
     Yields:
-        An authenticated handle to the running server.
-
-    Raises:
-        ApiServerCleanupError: If server or database teardown fails.
-        BaseException: Re-raises setup or body failures after successful cleanup.
+        Authenticated handle to the running server.
     """
     output_directory = output_directory.resolve()
     output_directory.mkdir(parents=True, exist_ok=True)
-    database_context = api_database(backend, output_directory)
-    database = database_context.__enter__()
-    process: Optional[subprocess.Popen[bytes]] = None
-    try:
+    log_path = output_directory / "api-server.log"
+
+    with ExitStack() as stack:
+        database = stack.enter_context(api_database(backend, output_directory))
         port = find_available_port()
         base_url = f"http://127.0.0.1:{port}"
-        log_path = server_log_path(output_directory)
         with log_path.open("ab") as log_file:
             process = subprocess.Popen(
                 build_server_command(port),
@@ -387,27 +275,24 @@ def running_api_server(
                 stdout=log_file,
                 stderr=subprocess.STDOUT,
             )
+        stack.callback(_stop_process, process)
         _wait_until_ready(process, base_url)
         token = _authenticate(base_url)
-        server = RunningApiServer(
+        details = {
+            "backend": database.backend,
+            "base_url": base_url,
+            "database_name": database.database_name,
+            "pid": process.pid,
+            "source_path": str(REPOSITORY_ROOT),
+        }
+        (output_directory / "api-server.json").write_text(
+            json.dumps(details, indent=2, sort_keys=True) + "\n"
+        )
+        yield RunningApiServer(
             base_url=base_url,
             token=token,
             database=database,
             process=process,
             output_directory=output_directory,
-            source_path=REPOSITORY_ROOT,
-            source_revision=_source_revision(),
+            log_path=log_path,
         )
-        _write_diagnostics(server)
-        yield server
-    except BaseException as original_error:
-        cleanup_error = _teardown_error(process, database_context)
-        if cleanup_error is not None:
-            raise ApiServerCleanupError(
-                original_error, cleanup_error
-            ) from original_error
-        raise
-    else:
-        cleanup_error = _teardown_error(process, database_context)
-        if cleanup_error is not None:
-            raise ApiServerCleanupError(None, cleanup_error) from cleanup_error

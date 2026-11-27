@@ -72,10 +72,6 @@ ONEOF_ERROR = (
     "When you are using the 'oneof:'/'notoneof:' filtering make sure that "
     "the provided value is a json formatted list."
 )
-STRING_ONEOF_ERROR = (
-    "When filtering a string field with 'oneof:'/'notoneof:', provide a "
-    "JSON-formatted list of strings."
-)
 NO_VALUE_ERROR = (
     "When using 'isnull:'/'isnotnull:', use the explicit 'operator:' form "
     "without a value (e.g. 'isnull:')."
@@ -257,10 +253,10 @@ class StrFilter(Filter):
 
     @model_validator(mode="after")
     def check_value_if_operation_oneof(self) -> "StrFilter":
-        """Validate membership values for string fields.
+        """Validator to check if value is a list if oneof operation is used.
 
         Raises:
-            ValueError: If the value is not a list of strings.
+            ValueError: If the value is not a list
 
         Returns:
             self
@@ -269,10 +265,8 @@ class StrFilter(Filter):
             GenericFilterOps.ONEOF,
             GenericFilterOps.NOT_ONEOF,
         }:
-            if not isinstance(self.value, list) or not all(
-                isinstance(value, str) for value in self.value
-            ):
-                raise ValueError(STRING_ONEOF_ERROR)
+            if not isinstance(self.value, list):
+                raise ValueError(ONEOF_ERROR)
         return self
 
     def _check_if_column_is_json_encoded(self, column: Any) -> bool:
@@ -396,17 +390,23 @@ class StrFilter(Filter):
         Returns:
             The query condition.
         """
+        from sqlalchemy import or_, true
+
+        conditions = []
+
         assert isinstance(self.value, list)
 
-        values: List[str] = []
         for value in self.value:
             if is_json_encoded:
-                # JSON columns can return raw or JSON-quoted scalar values.
-                values.extend((value, f'"{value}"'))
+                # For JSON encoded columns, add conditions for both raw and JSON-quoted values
+                conditions.append(column == value)
+                conditions.append(column == f'"{value}"')
             else:
-                values.append(value)
+                conditions.append(column == value)
 
-        return column.in_(values)
+        # An empty `or_()` is deprecated and used to be dropped from the
+        # WHERE clause, so an empty list keeps matching everything.
+        return or_(*conditions) if conditions else true()
 
     def _handle_not_oneof(self, column: Any, is_json_encoded: bool) -> Any:
         """Handle the NOT_ONEOF operation.

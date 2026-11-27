@@ -12,19 +12,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-"""Run ZenML's opt-in generated test suites with bounded resources."""
+"""Run ZenML's opt-in generated fuzz suites with bounded timeouts."""
 
 import argparse
 import importlib.metadata
 import importlib.util
 import json
-import math
 import os
 import signal
 import subprocess
 import sys
+import threading
 import time
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Mapping, Optional, Sequence
@@ -33,6 +33,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 FUZZ_ROOT = REPOSITORY_ROOT / "tests" / "fuzz"
 DEFAULT_OUTPUT_ROOT = REPOSITORY_ROOT / ".fuzz-results"
 METADATA_FILENAME = "run.json"
+LOG_FILENAME = "fuzz.log"
 
 SUITE_PATHS = {
     "filters": FUZZ_ROOT / "test_filters.py",
@@ -50,23 +51,10 @@ SUITE_DEPENDENCIES = {
     "api": ("pytest", "hypothesis", "schemathesis"),
 }
 PROFILES = ("local", "pr", "nightly")
-HARD_TIMEOUT_SECONDS = {"local": 15 * 60, "pr": 15 * 60, "nightly": 60 * 60}
-GENERATION_BUDGET_SECONDS = {
-    ("filters", "sqlite", "local"): 60,
-    ("filters", "sqlite", "pr"): 180,
-    ("filters", "sqlite", "nightly"): 600,
-    ("filters", "mysql", "local"): 60,
-    ("filters", "mysql", "pr"): 180,
-    ("filters", "mysql", "nightly"): 600,
-    ("cli", "none", "local"): 60,
-    ("cli", "none", "pr"): 120,
-    ("cli", "none", "nightly"): 300,
-    ("api", "sqlite", "local"): 180,
-    ("api", "sqlite", "pr"): 300,
-    ("api", "sqlite", "nightly"): 600,
-    ("api", "mysql", "local"): 180,
-    ("api", "mysql", "pr"): 300,
-    ("api", "mysql", "nightly"): 2400,
+HARD_TIMEOUT_SECONDS = {
+    "local": 15 * 60,
+    "pr": 15 * 60,
+    "nightly": 55 * 60,
 }
 PYTEST_PLUGIN_BLOCKLIST = (
     "no:rerunfailures",
@@ -77,12 +65,9 @@ PYTEST_PLUGIN_BLOCKLIST = (
     "no:xdist",
 )
 TOOL_DISTRIBUTIONS = ("zenml", "pytest", "hypothesis", "schemathesis")
-SUPPORT_TEST_PATHS = (
-    FUZZ_ROOT / "test_runner.py",
-    FUZZ_ROOT / "test_workflow_contract.py",
-)
-API_SUPPORT_TEST_PATHS = (FUZZ_ROOT / "test_api_harness.py",)
-PROCESS_TERMINATION_TIMEOUT_SECONDS = 5
+# Allow enough time after SIGTERM for pytest to unwind fixtures, stop Uvicorn
+# (10s limit), and drop disposable MySQL databases before escalating to SIGKILL.
+PROCESS_TERMINATION_TIMEOUT_SECONDS = 60
 
 
 @dataclass(frozen=True)
@@ -93,33 +78,33 @@ class RunConfig:
     backend: str
     profile: str
     output_dir: Path
-    batches: Optional[int]
     seed: Optional[int]
     reproduce: Optional[str]
+    timeout_seconds: int
 
 
 @dataclass(frozen=True)
-class BatchResult:
-    """Result of one bounded pytest process."""
+class RunResult:
+    """Result of the bounded pytest execution."""
 
     command: List[str]
     duration_seconds: float
     return_code: int
     status: str
-    log_path: Optional[str] = None
+    log_path: str
 
 
 def _positive_integer(value: str) -> int:
     """Parse a positive integer for argparse.
 
     Args:
-        value: Raw argument value.
+        value: Raw CLI value.
 
     Returns:
-        The parsed positive integer.
+        Parsed positive integer.
 
     Raises:
-        argparse.ArgumentTypeError: If the value is not positive.
+        argparse.ArgumentTypeError: If the value is not a positive integer.
     """
     try:
         parsed = int(value)
@@ -143,16 +128,14 @@ def _default_output_dir(suite: str, backend: str, profile: str) -> Path:
 def _normalize_reproduction(
     parser: argparse.ArgumentParser, suite: str, value: Optional[str]
 ) -> Optional[str]:
-    """Validate and normalize a pytest node ID for one selected suite."""
+    """Validate and normalize a pytest node ID for the selected suite."""
     if value is None:
         return None
     expected = SUITE_PATHS[suite]
     relative_path = expected.relative_to(REPOSITORY_ROOT).as_posix()
-    accepted_prefixes = (relative_path, expected.name, str(expected))
-    for prefix in accepted_prefixes:
+    for prefix in (relative_path, expected.name, str(expected)):
         if value == prefix or value.startswith(f"{prefix}::"):
-            suffix = value[len(prefix) :]
-            return f"{expected}{suffix}"
+            return f"{expected}{value[len(prefix) :]}"
     parser.error(
         f"--reproduce must select a node from {relative_path} for suite "
         f"'{suite}'"
@@ -161,14 +144,20 @@ def _normalize_reproduction(
 
 
 def parse_args(arguments: Optional[Sequence[str]] = None) -> RunConfig:
-    """Parse and validate command-line arguments without creating resources."""
+    """Parse and validate CLI arguments without creating directories.
+
+    Args:
+        arguments: Optional explicit argument sequence.
+
+    Returns:
+        Validated runner configuration.
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--suite", required=True, choices=tuple(SUITE_PATHS))
     parser.add_argument(
         "--backend", choices=("sqlite", "mysql", "none"), default=None
     )
     parser.add_argument("--profile", choices=PROFILES, default="local")
-    parser.add_argument("--batches", type=_positive_integer)
     parser.add_argument("--seed", type=int)
     parser.add_argument(
         "--reproduce",
@@ -179,8 +168,14 @@ def parse_args(arguments: Optional[Sequence[str]] = None) -> RunConfig:
         type=Path,
         help="New directory in which to preserve run evidence.",
     )
+    parser.add_argument(
+        "--timeout-seconds",
+        type=_positive_integer,
+        default=None,
+        help="Override the profile's hard wall-clock timeout in seconds.",
+    )
     parsed = parser.parse_args(arguments)
-    if parsed.suite == "api" and not _supports_process_group_cleanup():
+    if parsed.suite == "api" and os.name != "posix":
         parser.error(
             "suite 'api' requires a POSIX host for process-group cleanup"
         )
@@ -189,30 +184,26 @@ def parse_args(arguments: Optional[Sequence[str]] = None) -> RunConfig:
     if backend not in allowed_backends:
         allowed = " or ".join(f"'{item}'" for item in allowed_backends)
         parser.error(f"suite '{parsed.suite}' requires backend {allowed}")
-    if parsed.seed is not None and parsed.batches not in (None, 1):
-        parser.error("--seed requires --batches 1 for an exact reproduction")
-    if parsed.reproduce is not None and parsed.batches not in (None, 1):
-        parser.error("--reproduce requires --batches 1")
     reproduction = _normalize_reproduction(
         parser, parsed.suite, parsed.reproduce
     )
     output_dir = parsed.output_dir or _default_output_dir(
         parsed.suite, backend, parsed.profile
     )
+    timeout_seconds = (
+        parsed.timeout_seconds
+        if parsed.timeout_seconds is not None
+        else HARD_TIMEOUT_SECONDS[parsed.profile]
+    )
     return RunConfig(
         suite=parsed.suite,
         backend=backend,
         profile=parsed.profile,
         output_dir=output_dir.resolve(),
-        batches=parsed.batches,
         seed=parsed.seed,
         reproduce=reproduction,
+        timeout_seconds=timeout_seconds,
     )
-
-
-def _supports_process_group_cleanup() -> bool:
-    """Return whether this host supports process-group cleanup."""
-    return os.name == "posix"
 
 
 def missing_dependencies(suite: str) -> List[str]:
@@ -236,7 +227,7 @@ def _tool_versions() -> Dict[str, Optional[str]]:
 
 
 def _source_revision() -> str:
-    """Return the tested Git revision, or an explicit unknown value."""
+    """Return the tested Git revision, or ``unknown`` if unavailable."""
     result = subprocess.run(
         ["git", "rev-parse", "HEAD"],
         cwd=REPOSITORY_ROOT,
@@ -259,85 +250,80 @@ def _source_is_dirty() -> Optional[bool]:
     return bool(result.stdout) if result.returncode == 0 else None
 
 
-def _write_metadata(output_dir: Path, metadata: Mapping[str, object]) -> None:
-    """Write current run metadata atomically."""
-    destination = output_dir / METADATA_FILENAME
-    temporary = destination.with_suffix(".tmp")
-    temporary.write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n")
-    temporary.replace(destination)
-
-
-def build_pytest_command(config: RunConfig, batch_number: int) -> List[str]:
-    """Build the isolated pytest command for one batch."""
-    targets = [config.reproduce or str(SUITE_PATHS[config.suite])]
-    exact_run = config.seed is not None or config.reproduce is not None
-    if batch_number == 1 and not exact_run:
-        targets.extend(str(path) for path in SUPPORT_TEST_PATHS)
-        if config.suite == "api":
-            targets.extend(str(path) for path in API_SUPPORT_TEST_PATHS)
-    command = [
-        sys.executable,
-        "-m",
-        "pytest",
-        *targets,
-        "--confcutdir",
-        str(FUZZ_ROOT),
-        "-q",
-        f"--hypothesis-profile={config.profile}",
-    ]
-    for plugin in PYTEST_PLUGIN_BLOCKLIST:
-        command.extend(("-p", plugin))
-    if config.seed is not None:
-        command.append(f"--hypothesis-seed={config.seed}")
-    if config.batches is None or config.batches > 1:
-        command.append(
-            f"--junitxml={config.output_dir / f'batch-{batch_number}.xml'}"
-        )
-    return command
-
-
-def _runner_environment(
-    config: RunConfig, batch_number: int
-) -> Dict[str, str]:
-    """Build an isolated, analytics-free environment for pytest."""
-    environment = os.environ.copy()
-    environment.update(
-        {
-            "ZENML_FUZZ": "1",
-            "ZENML_FUZZ_BACKEND": config.backend,
-            "ZENML_FUZZ_BATCH": str(batch_number),
-            "ZENML_FUZZ_OUTPUT_DIR": str(config.output_dir),
-            "HYPOTHESIS_STORAGE_DIRECTORY": str(
-                _hypothesis_storage_directory(config)
-            ),
-            "ZENML_ANALYTICS_OPT_IN": "false",
-            "ZENML_DEBUG": "true",
-            "AUTO_OPEN_DASHBOARD": "false",
-        }
-    )
-    return environment
-
-
 def _hypothesis_storage_directory(config: RunConfig) -> Path:
-    """Resolve the reusable Hypothesis corpus directory for a run.
-
-    Args:
-        config: Selected fuzz run configuration.
-
-    Returns:
-        The external corpus path when configured, otherwise the run-owned path.
-    """
+    """Resolve the reusable Hypothesis corpus directory for a run."""
     configured = os.environ.get("ZENML_FUZZ_CORPUS_DIR")
     if configured:
         return Path(configured).expanduser().resolve()
     return config.output_dir / "hypothesis"
 
 
-def terminate_process(process: subprocess.Popen[bytes]) -> bool:
-    """Terminate an owned pytest process group, escalating if necessary.
+def build_pytest_command(config: RunConfig) -> List[str]:
+    """Build the isolated pytest command for the selected suite.
+
+    Args:
+        config: Validated runner configuration.
 
     Returns:
-        Whether the process exited within the bounded teardown period.
+        Full pytest argument list.
+    """
+    target = config.reproduce or str(SUITE_PATHS[config.suite])
+    command = [
+        sys.executable,
+        "-m",
+        "pytest",
+        target,
+        "--confcutdir",
+        str(FUZZ_ROOT),
+        "-v",
+        "--durations=20",
+        "--hypothesis-show-statistics",
+        f"--hypothesis-profile={config.profile}",
+        f"--junitxml={config.output_dir / 'junit.xml'}",
+    ]
+    for plugin in PYTEST_PLUGIN_BLOCKLIST:
+        command.extend(("-p", plugin))
+    if config.seed is not None:
+        command.append(f"--hypothesis-seed={config.seed}")
+    return command
+
+
+def _runner_environment(config: RunConfig) -> Dict[str, str]:
+    """Build an isolated, unbuffered environment for the fuzz process."""
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "AUTO_OPEN_DASHBOARD": "false",
+            "HYPOTHESIS_STORAGE_DIRECTORY": str(
+                _hypothesis_storage_directory(config)
+            ),
+            "PYTHONUNBUFFERED": "1",
+            "ZENML_ANALYTICS_OPT_IN": "false",
+            "ZENML_DEBUG": "true",
+            "ZENML_FUZZ": "1",
+            "ZENML_FUZZ_BACKEND": config.backend,
+            "ZENML_FUZZ_OUTPUT_DIR": str(config.output_dir),
+        }
+    )
+    return environment
+
+
+def _write_metadata(output_dir: Path, metadata: Mapping[str, object]) -> None:
+    """Write run metadata atomically."""
+    destination = output_dir / METADATA_FILENAME
+    temporary = destination.with_suffix(".tmp")
+    temporary.write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n")
+    temporary.replace(destination)
+
+
+def terminate_process(process: subprocess.Popen[bytes]) -> bool:
+    """Terminate an owned pytest process group, escalating to SIGKILL if stuck.
+
+    Args:
+        process: Owned subprocess to terminate.
+
+    Returns:
+        Whether the process exited within the bounded grace period.
     """
     if process.poll() is not None:
         return True
@@ -359,10 +345,24 @@ def terminate_process(process: subprocess.Popen[bytes]) -> bool:
         except ProcessLookupError:
             return True
         try:
-            process.wait(timeout=PROCESS_TERMINATION_TIMEOUT_SECONDS)
+            process.wait(timeout=10)
         except subprocess.TimeoutExpired:
             return False
     return True
+
+
+def _stream_output(
+    pipe: object, log_file: object, stdout_stream: object
+) -> None:
+    """Copy child output bytes to both the log file and console live."""
+    while True:
+        chunk = pipe.read(4096)  # type: ignore[attr-defined]
+        if not chunk:
+            break
+        log_file.write(chunk)  # type: ignore[attr-defined]
+        log_file.flush()  # type: ignore[attr-defined]
+        stdout_stream.write(chunk)  # type: ignore[attr-defined]
+        stdout_stream.flush()  # type: ignore[attr-defined]
 
 
 def run_pytest(
@@ -370,34 +370,54 @@ def run_pytest(
     environment: Mapping[str, str],
     timeout_seconds: int,
     output_dir: Path,
-) -> BatchResult:
-    """Run one pytest batch with a hard timeout and owned teardown."""
-    batch_number = environment.get("ZENML_FUZZ_BATCH", "1")
-    log_path = output_dir / f"batch-{batch_number}.log"
+) -> RunResult:
+    """Run pytest with live output streaming, hard timeout, and clean teardown.
+
+    Args:
+        command: Pytest command arguments.
+        environment: Environment variables for the child process.
+        timeout_seconds: Maximum wall-clock runtime before SIGTERM.
+        output_dir: Run-owned evidence directory.
+
+    Returns:
+        Recorded outcome of the pytest execution.
+    """
+    log_path = output_dir / LOG_FILENAME
     started = time.monotonic()
     with log_path.open("wb") as log_file:
         process = subprocess.Popen(
             command,
             cwd=REPOSITORY_ROOT,
             env=dict(environment),
-            stdout=log_file,
+            stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             start_new_session=os.name == "posix",
         )
+        assert process.stdout is not None
+        reader = threading.Thread(
+            target=_stream_output,
+            args=(process.stdout, log_file, sys.stdout.buffer),
+            daemon=True,
+        )
+        reader.start()
         try:
             return_code = process.wait(timeout=timeout_seconds)
         except subprocess.TimeoutExpired:
             terminated = terminate_process(process)
-            return BatchResult(
+            reader.join(timeout=5)
+            return RunResult(
                 command=command,
-                duration_seconds=time.monotonic() - started,
+                duration_seconds=round(time.monotonic() - started, 3),
                 return_code=124 if terminated else 125,
                 status="timed_out" if terminated else "teardown_failed",
                 log_path=str(log_path),
             )
         except KeyboardInterrupt:
             terminate_process(process)
+            reader.join(timeout=5)
             raise
+        reader.join(timeout=5)
+
     status = (
         "passed"
         if return_code == 0
@@ -405,68 +425,29 @@ def run_pytest(
         if return_code == 5
         else "failed"
     )
-    return BatchResult(
+    return RunResult(
         command=command,
-        duration_seconds=time.monotonic() - started,
+        duration_seconds=round(time.monotonic() - started, 3),
         return_code=return_code,
         status=status,
         log_path=str(log_path),
     )
 
 
-def _initial_metadata(config: RunConfig) -> Dict[str, object]:
-    """Create metadata shared by setup and test outcomes."""
-    return {
-        "backend": config.backend,
-        "batches": [],
-        "generation_budget_seconds": GENERATION_BUDGET_SECONDS[
-            (config.suite, config.backend, config.profile)
-        ],
-        "hard_timeout_seconds": HARD_TIMEOUT_SECONDS[config.profile],
-        "hypothesis_storage_directory": str(
-            _hypothesis_storage_directory(config)
-        ),
-        "invocation": build_pytest_command(config, 1),
-        "output_dir": str(config.output_dir),
-        "profile": config.profile,
-        "python_version": sys.version,
-        "reproduce": config.reproduce,
-        "seed": config.seed,
-        "source_path": str(REPOSITORY_ROOT),
-        "source_dirty": _source_is_dirty(),
-        "source_revision": _source_revision(),
-        "started_at": datetime.now(timezone.utc).isoformat(),
-        "status": "starting",
-        "suite": config.suite,
-        "tool_versions": _tool_versions(),
-    }
-
-
-def _aggregate_status(batch_results: Sequence[BatchResult]) -> str:
-    """Return an overall status without allowing later success to mask failure."""
-    statuses = {result.status for result in batch_results}
-    for status in (
-        "teardown_failed",
-        "timed_out",
-        "empty_collection",
-        "failed",
-    ):
-        if status in statuses:
-            return status
-    return "passed"
-
-
-def _aggregate_return_code(batch_results: Sequence[BatchResult]) -> int:
-    """Return the first nonzero batch code, or zero when all passed."""
-    return next(
-        (result.return_code for result in batch_results if result.return_code),
-        0,
-    )
-
-
 def main(arguments: Optional[Sequence[str]] = None) -> int:
-    """Run a selected fuzz suite and preserve its reproduction evidence."""
+    """Run one selected fuzz suite and preserve its reproduction evidence.
+
+    Args:
+        arguments: Optional CLI arguments; defaults to ``sys.argv[1:]``.
+
+    Returns:
+        Exit code suitable for ``sys.exit``.
+    """
     config = parse_args(arguments)
+    # Check Git cleanliness before creating output_dir so an unignored output
+    # path cannot make clean CI checkouts report ``source_dirty: true``.
+    source_dirty = _source_is_dirty()
+    source_revision = _source_revision()
     try:
         config.output_dir.mkdir(parents=True, exist_ok=False)
     except FileExistsError:
@@ -476,8 +457,29 @@ def main(arguments: Optional[Sequence[str]] = None) -> int:
         )
         return 2
 
-    metadata = _initial_metadata(config)
+    command = build_pytest_command(config)
+    metadata: Dict[str, object] = {
+        "backend": config.backend,
+        "hard_timeout_seconds": config.timeout_seconds,
+        "hypothesis_storage_directory": str(
+            _hypothesis_storage_directory(config)
+        ),
+        "invocation": command,
+        "output_dir": str(config.output_dir),
+        "profile": config.profile,
+        "python_version": sys.version,
+        "reproduce": config.reproduce,
+        "seed": config.seed,
+        "source_dirty": source_dirty,
+        "source_path": str(REPOSITORY_ROOT),
+        "source_revision": source_revision,
+        "started_at": datetime.now(timezone.utc).isoformat(),
+        "status": "starting",
+        "suite": config.suite,
+        "tool_versions": _tool_versions(),
+    }
     _write_metadata(config.output_dir, metadata)
+
     missing = missing_dependencies(config.suite)
     if missing:
         metadata.update(
@@ -490,65 +492,19 @@ def main(arguments: Optional[Sequence[str]] = None) -> int:
         _write_metadata(config.output_dir, metadata)
         print(
             "Missing fuzz dependencies: "
-            f"{', '.join(missing)}. Install tests/fuzz/requirements.txt ",
+            f"{', '.join(missing)}. Install tests/fuzz/requirements.txt "
             "beside the editable checkout and retry.",
-            sep="",
             file=sys.stderr,
         )
         return 2
 
-    batch_results: List[BatchResult] = []
-    started = time.monotonic()
-    hard_deadline = started + HARD_TIMEOUT_SECONDS[config.profile]
-    generation_deadline = (
-        started
-        + GENERATION_BUDGET_SECONDS[
-            (config.suite, config.backend, config.profile)
-        ]
-    )
-    exact_run = config.seed is not None or config.reproduce is not None
-    fixed_batches = 1 if exact_run else config.batches
-    batch_number = 1
     try:
-        while fixed_batches is None or batch_number <= fixed_batches:
-            if (
-                fixed_batches is None
-                and batch_number > 1
-                and time.monotonic() >= generation_deadline
-            ):
-                break
-            command = build_pytest_command(config, batch_number)
-            remaining_seconds = math.ceil(hard_deadline - time.monotonic())
-            if remaining_seconds <= 0:
-                batch_results.append(
-                    BatchResult(
-                        command=command,
-                        duration_seconds=0.0,
-                        return_code=124,
-                        status="timed_out",
-                    )
-                )
-                metadata["batches"] = [asdict(item) for item in batch_results]
-                metadata["status"] = "timed_out"
-                _write_metadata(config.output_dir, metadata)
-                break
-            result = run_pytest(
-                command,
-                _runner_environment(config, batch_number),
-                remaining_seconds,
-                config.output_dir,
-            )
-            batch_results.append(result)
-            metadata["batches"] = [asdict(item) for item in batch_results]
-            metadata["status"] = _aggregate_status(batch_results)
-            _write_metadata(config.output_dir, metadata)
-            if result.status in {
-                "teardown_failed",
-                "timed_out",
-                "empty_collection",
-            }:
-                break
-            batch_number += 1
+        result = run_pytest(
+            command,
+            _runner_environment(config),
+            config.timeout_seconds,
+            config.output_dir,
+        )
     except KeyboardInterrupt:
         metadata.update(
             {
@@ -572,12 +528,15 @@ def main(arguments: Optional[Sequence[str]] = None) -> int:
 
     metadata.update(
         {
+            "duration_seconds": result.duration_seconds,
             "finished_at": datetime.now(timezone.utc).isoformat(),
-            "status": _aggregate_status(batch_results),
+            "log_path": result.log_path,
+            "return_code": result.return_code,
+            "status": result.status,
         }
     )
     _write_metadata(config.output_dir, metadata)
-    return _aggregate_return_code(batch_results)
+    return result.return_code
 
 
 if __name__ == "__main__":
