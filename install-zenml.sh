@@ -99,6 +99,9 @@ ZENML_INSTALL_EXTRAS, ZENML_INSTALL_SERVER, ZENML_INSTALL_SCOPE=project|global,
 ZENML_INSTALL_PYTHON, ZENML_INSTALL_SKIP_SKILLS=1,
 ZENML_INSTALL_NO_MODIFY_PATH=1, ZENML_INSTALL_QUIET=1,
 ZENML_INSTALL_VERBOSE=1, NO_COLOR.
+
+The installer reports one anonymous usage event when it finishes. Set
+ZENML_ANALYTICS_OPT_IN=false or DO_NOT_TRACK=1 to turn that off.
 USAGE
 }
 
@@ -163,6 +166,41 @@ quiet() {
   rm -f "$out"; return "$status"
 }
 have() { command -v "$1" >/dev/null 2>&1; }
+
+# Usage analytics: after the install, the ZenML CLI reports one anonymous
+# "installed with the script" event, the same way it reports other usage.
+# ZenML's own opt-out switch and DO_NOT_TRACK both turn it off.
+analytics_opted_out() {
+  case "$(printf '%s' "${ZENML_ANALYTICS_OPT_IN:-}" | tr '[:upper:]' '[:lower:]')" in
+    0|false|no|off|n|f) return 0 ;;
+  esac
+  case "$(printf '%s' "${DO_NOT_TRACK:-}" | tr '[:upper:]' '[:lower:]')" in
+    1|true|yes) return 0 ;;
+  esac
+  return 1
+}
+# The report runs in the background so a slow network never holds up the
+# install. Its first run also sets up ZenML's local database, so the script
+# gives it a few seconds to finish before handing the terminal back: that
+# keeps it from overlapping with the user's first zenml command. A ZenML
+# version without the command (an older pin) fails silently.
+REPORT_PID=""
+report_install() {
+  if analytics_opted_out; then return 0; fi
+  # Say so before anything is sent, on stderr so --quiet does not hide it.
+  printf '  %sZenML reports this install as anonymous usage data. To skip that, set%s\n' "$C_DIM" "$C_RESET" >&2
+  printf '  %sZENML_ANALYTICS_OPT_IN=false before installing; later: zenml analytics opt-out%s\n' "$C_DIM" "$C_RESET" >&2
+  "$ZENML_BIN" analytics report-install --scope "$ZENML_INSTALL_SCOPE" >/dev/null 2>&1 </dev/null &
+  REPORT_PID=$!
+}
+wait_for_report() {
+  local tries=0
+  [ -n "$REPORT_PID" ] || return 0
+  while [ "$tries" -lt 50 ] && kill -0 "$REPORT_PID" 2>/dev/null; do
+    sleep 0.2; tries=$((tries + 1))
+  done
+  return 0
+}
 # A next-step command padded to $1 columns, then what it is for.
 say_cmd() { [ "$ZENML_INSTALL_QUIET" = "1" ] || printf '    %s%-*s%s    %s\n' "$C_BOLD" "$1" "$2" "$C_RESET" "$3"; }
 
@@ -650,6 +688,7 @@ fi
 # ---------------------------------------------------------------------------
 # Done
 # ---------------------------------------------------------------------------
+report_install
 say ""
 say "${C_GREEN}◆${C_RESET} ${C_BOLD}ZenML is installed.${C_RESET}"
 say ""
@@ -722,6 +761,7 @@ fi
 say "  Check setup:      $Z status"
 say "  Docs:             https://docs.zenml.io"
 say ""
+wait_for_report
 }
 
 main "$@"
