@@ -222,6 +222,7 @@ class ServiceAccountResponse(
             ),
             metadata=UserResponseMetadata(
                 description=self.description,
+                external_user_id=self.external_user_id,
             ),
         )
 
