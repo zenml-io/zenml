@@ -15049,6 +15049,17 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The newly created model.
+        """
+        return self._create_model(model)
+
+    def _create_model(self, model: ModelRequest) -> ModelResponse:
+        """Creates a new model without tracking an analytics event.
+
+        Args:
+            model: the Model to be created.
+
+        Returns:
+            The newly created model.
 
         Raises:
             EntityExistsError: If a model with the given name already exists.
@@ -15259,7 +15270,12 @@ class SqlZenStore(BaseZenStore):
             A boolean whether the model was created or not, and the model.
         """
         try:
-            return True, self.create_model(model_request)
+            model = self._create_model(model_request)
+            track(
+                event=AnalyticsEvent.CREATED_MODEL,
+                metadata=model.get_analytics_metadata(),
+            )
+            return True, model
         except EntityExistsError:
             return False, self.get_model_by_name_or_id(
                 model_name_or_id=model_request.name,
