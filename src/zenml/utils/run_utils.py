@@ -157,8 +157,14 @@ def refresh_run_status(
                             f"Failed to update status for step '{step_name}': {e}"
                         )
 
-    # Update pipeline status
-    if pipeline_status is not None and pipeline_status != run.status:
+    # The runner exits after pausing (also when waiting for input), so the
+    # orchestrator reports that exited process as completed or failed. Only
+    # resuming the run should move it out of the paused state.
+    if (
+        pipeline_status is not None
+        and pipeline_status != run.status
+        and run.status != ExecutionStatus.PAUSED
+    ):
         return zen_store.update_run(
             run_id=run.id,
             run_update=PipelineRunUpdate(status=pipeline_status),
