@@ -689,20 +689,6 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
             KeyError: if the artifact version doesn't exist.
         """
 
-    @abstractmethod
-    def prune_artifact_versions(
-        self,
-        project_name_or_id: Union[str, UUID],
-        only_versions: bool = True,
-    ) -> None:
-        """Prunes unused artifact versions and their artifacts.
-
-        Args:
-            project_name_or_id: The project name or ID to prune artifact
-                versions for.
-            only_versions: Only delete artifact versions, keeping artifacts
-        """
-
     # -------------------- Artifact Visualization --------------------
 
     @abstractmethod
