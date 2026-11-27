@@ -34,6 +34,7 @@ import json
 import os
 import socket
 from contextlib import contextmanager
+from datetime import datetime, timezone
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -1352,9 +1353,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             If include_steps is False, step_statuses will be None.
             If include_steps is True, step_statuses will be a dict (possibly empty).
         """
-        pipeline_status = None
-        include_run_status = not run.status.is_finished
-
         label_selector = (
             f"run_id={kube_utils.sanitize_label_value(str(run.id))}"
         )
@@ -1370,44 +1368,79 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             logger.warning(f"Failed to list jobs for run {run.id}: {e}")
             return None, None
 
-        step_statuses = {}
         # Only fetch steps if we really need them
-        steps_dict = run.steps if include_steps else {}
+        steps = run.steps if include_steps else {}
+        orchestrator_job, step_jobs = self._get_current_attempt_jobs(
+            job_list.items, steps
+        )
 
-        for job in job_list.items:
-            if not job.metadata or not job.metadata.annotations:
-                continue
-
-            is_orchestrator_job = (
-                ORCHESTRATOR_ANNOTATION_KEY in job.metadata.annotations
+        pipeline_status = None
+        if orchestrator_job and not run.status.is_finished:
+            pipeline_status = self._map_job_status_to_execution_status(
+                orchestrator_job
             )
-            if is_orchestrator_job:
-                if include_run_status:
-                    pipeline_status = self._map_job_status_to_execution_status(
-                        job
-                    )
+
+        step_statuses = {}
+        for step_name, job in step_jobs.items():
+            if steps[step_name].status.is_finished:
                 continue
-
-            step_name = job.metadata.annotations.get(
-                STEP_NAME_ANNOTATION_KEY, None
-            )
-            if not include_steps or not step_name:
-                continue
-
-            step_response = steps_dict.get(step_name, None)
-
-            if step_response is None:
-                continue
-
-            # If the step is already in a finished state, skip
-            if step_response and step_response.status.is_finished:
-                continue
-
             execution_status = self._map_job_status_to_execution_status(job)
             if execution_status is not None:
                 step_statuses[step_name] = execution_status
 
         return pipeline_status, step_statuses
+
+    @staticmethod
+    def _get_current_attempt_jobs(
+        jobs: List[k8s_client.V1Job],
+        steps: Dict[str, "StepRunResponse"],
+    ) -> Tuple[Optional[k8s_client.V1Job], Dict[str, k8s_client.V1Job]]:
+        """Get the orchestrator job and step jobs of the current attempt.
+
+        Resuming a run or retrying a step creates a new job with the same run
+        ID label and annotations as the job of the previous attempt, so an
+        older job must not decide the status of the run or step. Step jobs
+        labeled with a step run ID belong to the current attempt only if that
+        is the ID of the current step run: a retried step run exists before
+        its job does, and meanwhile the newest job of the step is the one of
+        the previous attempt. For all other jobs, the newest one belongs to
+        the current attempt.
+
+        Args:
+            jobs: The jobs of a pipeline run.
+            steps: The current step runs of the pipeline run by step name.
+
+        Returns:
+            The orchestrator job, and the step jobs by name for the steps in
+            `steps`.
+        """
+        orchestrator_job = None
+        step_jobs: Dict[str, k8s_client.V1Job] = {}
+        oldest = datetime.min.replace(tzinfo=timezone.utc)
+        # Oldest first, so the job of a later attempt replaces earlier ones.
+        for job in sorted(
+            jobs,
+            key=lambda job: (
+                (job.metadata and job.metadata.creation_timestamp) or oldest
+            ),
+        ):
+            if not job.metadata:
+                continue
+            annotations = job.metadata.annotations or {}
+            if ORCHESTRATOR_ANNOTATION_KEY in annotations:
+                orchestrator_job = job
+                continue
+
+            step_name = annotations.get(STEP_NAME_ANNOTATION_KEY)
+            if not step_name or step_name not in steps:
+                continue
+            step_run_id = (job.metadata.labels or {}).get("step_run_id")
+            if step_run_id in (
+                None,
+                kube_utils.sanitize_label_value(str(steps[step_name].id)),
+            ):
+                step_jobs[step_name] = job
+        return orchestrator_job, step_jobs
 
     def _map_job_status_to_execution_status(
         self, job: k8s_client.V1Job
