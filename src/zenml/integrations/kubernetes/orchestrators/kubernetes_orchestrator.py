@@ -1354,6 +1354,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         """
         pipeline_status = None
         include_run_status = not run.status.is_finished
+        orchestrator_job_exists = False
 
         label_selector = (
             f"run_id={kube_utils.sanitize_label_value(str(run.id))}"
@@ -1382,6 +1383,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 ORCHESTRATOR_ANNOTATION_KEY in job.metadata.annotations
             )
             if is_orchestrator_job:
+                orchestrator_job_exists = True
                 if include_run_status:
                     pipeline_status = self._map_job_status_to_execution_status(
                         job
@@ -1407,7 +1409,58 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             if execution_status is not None:
                 step_statuses[step_name] = execution_status
 
+        if include_run_status and not orchestrator_job_exists:
+            pipeline_status = self._get_status_for_missing_orchestrator_job(
+                run
+            )
+
         return pipeline_status, step_statuses
+
+    @staticmethod
+    def _get_status_for_missing_orchestrator_job(
+        run: "PipelineRunResponse",
+    ) -> Optional[ExecutionStatus]:
+        """Gets the status of an unfinished run without an orchestrator Job.
+
+        The orchestrator Job can be gone because it was deleted, cleaned up
+        after `ttl_seconds_after_finished`, or deleted by a synchronous client
+        on one of the `fail_on_container_waiting_reasons`. Its pod then can't
+        report a final status anymore, so the run would never finish.
+
+        Args:
+            run: The run without an orchestrator Job.
+
+        Returns:
+            The status of the run, or None if the run should keep its status.
+        """
+        # A run only reaches these statuses once its orchestrator Job exists.
+        # Initializing runs can still wait in a server queue before their Job
+        # is created, and resuming runs are getting a new Job.
+        if run.status not in {
+            ExecutionStatus.PROVISIONING,
+            ExecutionStatus.RUNNING,
+            ExecutionStatus.STOPPING,
+        }:
+            return None
+
+        # These runs have no Job labeled with their ID: CronJobs create the Jobs
+        # of scheduled runs without it, child runs of dynamic pipelines run in
+        # the Job of their root run, and deployments run in their own process.
+        if run.schedule or run.root_run_id or run.triggered_by_deployment:
+            return None
+
+        status = (
+            ExecutionStatus.STOPPED
+            if run.status == ExecutionStatus.STOPPING
+            else ExecutionStatus.FAILED
+        )
+        logger.warning(
+            "No orchestrator job found for pipeline run `%s`. The run can't "
+            "continue without it, so its status is set to `%s`.",
+            run.id,
+            status.value,
+        )
+        return status
 
     def _map_job_status_to_execution_status(
         self, job: k8s_client.V1Job
