@@ -339,10 +339,26 @@ class SlackAlerter(BaseAlerter):
             # Wait for a response
             start_time = time.time()
 
-            while time.time() - start_time < self._get_timeout_duration():
-                history = client.conversations_history(
-                    channel=slack_channel_id, oldest=timestamp
-                )
+            timeout = self._get_timeout_duration()
+            while time.time() - start_time < timeout:
+                try:
+                    history = client.conversations_history(
+                        channel=slack_channel_id, oldest=timestamp
+                    )
+                except SlackApiError as error:
+                    if error.response.status_code != 429:
+                        raise
+                    # Rate limited: back off for `Retry-After` and keep
+                    # waiting instead of treating it as a disapproval.
+                    retry_after = int(
+                        error.response.headers.get("Retry-After", 1)
+                    )
+                    logger.warning(
+                        "Slack rate limit hit while waiting for a response; "
+                        f"retrying in {retry_after} seconds."
+                    )
+                    time.sleep(retry_after)
+                    continue
                 for msg in history["messages"]:
                     if "ts" in msg and "user" in msg:
                         user_message = msg["text"].strip().lower()
