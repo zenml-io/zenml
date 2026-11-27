@@ -20,6 +20,7 @@ from fastapi import APIRouter, Depends, Security
 from pydantic import BaseModel
 
 from zenml.constants import API, STACKS, VERSION_1
+from zenml.logger import get_logger
 from zenml.models import (
     Page,
     StackFilter,
@@ -44,9 +45,12 @@ from zenml.zen_server.rbac.utils import (
 from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
+    get_user_log_fields,
     make_dependable,
     zen_store,
 )
+
+logger = get_logger(__name__)
 
 router = APIRouter(
     prefix=API + VERSION_1 + STACKS,
@@ -136,7 +140,9 @@ def create_stack(
     # Check the stack creation
     verify_permission_for_model(model=stack, action=Action.CREATE)
 
-    return zen_store().create_stack(stack)
+    result = zen_store().create_stack(stack)
+    logger.info("stack.created", extra=_stack_log_fields(result))
+    return result
 
 
 @router.get(
@@ -243,12 +249,14 @@ def update_stack(
     batch_verify_permissions_for_models(rbac_read_checks, action=Action.READ)
     batch_verify_permissions_for_models(components, action=Action.ATTACH)
 
-    return verify_permissions_and_update_entity(
+    result = verify_permissions_and_update_entity(
         id=stack_id,
         update_model=stack_update,
         get_method=zen_store().get_stack,
         update_method=zen_store().update_stack,
     )
+    logger.info("stack.updated", extra=_stack_log_fields(result))
+    return result
 
 
 @router.delete(
@@ -270,3 +278,32 @@ def delete_stack(
         get_method=zen_store().get_stack,
         delete_method=zen_store().delete_stack,
     )
+    logger.info(
+        "stack.deleted",
+        extra={**get_user_log_fields(), "resource_id": str(stack_id)},
+    )
+
+
+def _stack_log_fields(
+    stack: StackResponse,
+) -> dict[str, str | bool | list[str]]:
+    """Return the resource and resulting links for a stack event.
+
+    Args:
+        stack: The resulting stack.
+
+    Returns:
+        Stack identity and link fields for the log record.
+    """
+    fields: dict[str, str | bool | list[str]] = {
+        **get_user_log_fields(),
+        "resource_id": str(stack.id),
+    }
+    if stack.metadata is not None:
+        fields["component_ids"] = sorted(
+            str(component.id)
+            for group in stack.metadata.components.values()
+            for component in group
+        )
+        fields["secret_ids"] = sorted(map(str, stack.metadata.secrets))
+    return fields

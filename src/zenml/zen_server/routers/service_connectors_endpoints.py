@@ -28,6 +28,7 @@ from zenml.constants import (
     SERVICE_CONNECTORS,
     VERSION_1,
 )
+from zenml.logger import get_logger
 from zenml.models import (
     Page,
     ServiceConnectorFilter,
@@ -62,9 +63,12 @@ from zenml.zen_server.rbac.utils import (
 from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
+    get_user_log_fields,
     make_dependable,
     zen_store,
 )
+
+logger = get_logger(__name__)
 
 router = APIRouter(
     prefix=API + VERSION_1 + SERVICE_CONNECTORS,
@@ -106,10 +110,15 @@ def create_service_connector(
     Returns:
         The created service connector.
     """
-    return verify_permissions_and_create_entity(
+    result = verify_permissions_and_create_entity(
         request_model=connector,
         create_method=zen_store().create_service_connector,
     )
+    logger.info(
+        "service_connector.created",
+        extra={**get_user_log_fields(), "resource_id": str(result.id)},
+    )
+    return result
 
 
 @router.get(
@@ -254,7 +263,10 @@ def get_service_connector(
     ):
         connector.remove_secrets()
 
-    return dehydrate_response_model(connector)
+    result = dehydrate_response_model(connector)
+    if expand_secrets:
+        _log_connector_secret_release(result)
+    return result
 
 
 @router.put(
@@ -276,12 +288,17 @@ def update_service_connector(
     Returns:
         Updated service connector.
     """
-    return verify_permissions_and_update_entity(
+    result = verify_permissions_and_update_entity(
         id=connector_id,
         update_model=connector_update,
         get_method=zen_store().get_service_connector,
         update_method=zen_store().update_service_connector,
     )
+    logger.info(
+        "service_connector.updated",
+        extra={**get_user_log_fields(), "resource_id": str(result.id)},
+    )
+    return result
 
 
 @router.delete(
@@ -302,6 +319,10 @@ def delete_service_connector(
         id=connector_id,
         get_method=zen_store().get_service_connector,
         delete_method=zen_store().delete_service_connector,
+    )
+    logger.info(
+        "service_connector.deleted",
+        extra={**get_user_log_fields(), "resource_id": str(connector_id)},
     )
 
 
@@ -409,11 +430,16 @@ def get_service_connector_client(
     verify_permission_for_model(model=connector, action=Action.READ)
     verify_permission_for_model(model=connector, action=Action.CLIENT)
 
-    return zen_store().get_service_connector_client(
+    result = zen_store().get_service_connector_client(
         service_connector_id=connector_id,
         resource_type=resource_type,
         resource_id=resource_id,
     )
+    logger.info(
+        "service_connector.client_issued",
+        extra={**get_user_log_fields(), "resource_id": str(connector_id)},
+    )
+    return result
 
 
 @types_router.get(
@@ -513,3 +539,21 @@ def get_resources_based_on_service_connector_info(
     return get_resources_options_from_resource_model_for_full_stack(
         connector_details=connector_info or connector_uuid  # type: ignore[arg-type]
     )
+
+
+def _log_connector_secret_release(connector: ServiceConnectorResponse) -> None:
+    """Log a connector read once the response has been filtered.
+
+    Args:
+        connector: The connector response to be returned to the caller.
+    """
+    metadata = connector.metadata
+    if (
+        not connector.permission_denied
+        and metadata is not None
+        and metadata.configuration.secrets
+    ):
+        logger.info(
+            "service_connector.secret_value_released",
+            extra={**get_user_log_fields(), "resource_id": str(connector.id)},
+        )

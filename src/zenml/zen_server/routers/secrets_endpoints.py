@@ -26,6 +26,7 @@ from zenml.constants import (
     SECRETS_RESTORE,
     VERSION_1,
 )
+from zenml.logger import get_logger
 from zenml.models import (
     Page,
     SecretFilter,
@@ -52,10 +53,13 @@ from zenml.zen_server.rbac.utils import (
 from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
+    get_user_log_fields,
     make_dependable,
     verify_admin_status_if_no_rbac,
     zen_store,
 )
+
+logger = get_logger(__name__)
 
 router = APIRouter(
     prefix=API + VERSION_1 + SECRETS,
@@ -97,10 +101,15 @@ def create_secret(
     Returns:
         The created secret.
     """
-    return verify_permissions_and_create_entity(
+    result = verify_permissions_and_create_entity(
         request_model=secret,
         create_method=zen_store().create_secret,
     )
+    logger.info(
+        "secret.created",
+        extra={**get_user_log_fields(), "resource_id": str(result.id)},
+    )
+    return result
 
 
 @router.get(
@@ -179,6 +188,12 @@ def get_secret(
     if not has_permissions_for_model(secret, action=Action.READ_SECRET_VALUE):
         secret.remove_secrets()
 
+    if any(value is not None for value in secret.values.values()):
+        logger.info(
+            "secret.value_released",
+            extra={**get_user_log_fields(), "resource_id": str(secret.id)},
+        )
+
     return secret
 
 
@@ -214,12 +229,17 @@ def update_secret(
                 if key not in secret_update.values:
                     secret_update.values[key] = None
 
-    return verify_permissions_and_update_entity(
+    result = verify_permissions_and_update_entity(
         id=secret_id,
         update_model=secret_update,
         get_method=zen_store().get_secret,
         update_method=zen_store().update_secret,
     )
+    logger.info(
+        "secret.updated",
+        extra={**get_user_log_fields(), "resource_id": str(result.id)},
+    )
+    return result
 
 
 @router.delete(
@@ -240,6 +260,10 @@ def delete_secret(
         id=secret_id,
         get_method=zen_store().get_secret,
         delete_method=zen_store().delete_secret,
+    )
+    logger.info(
+        "secret.deleted",
+        extra={**get_user_log_fields(), "resource_id": str(secret_id)},
     )
 
 
