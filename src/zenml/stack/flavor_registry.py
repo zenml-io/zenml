@@ -73,6 +73,9 @@ class FlavorRegistry:
             DatadogLogStoreFlavor,
             OtelLogStoreFlavor,
         )
+        from zenml.model_deployers.managed_model_deployer import (
+            ManagedModelDeployerFlavor,
+        )
         from zenml.orchestrators import (
             LocalDockerOrchestratorFlavor,
             LocalOrchestratorFlavor,
@@ -80,6 +83,7 @@ class FlavorRegistry:
         from zenml.sandboxes import DockerSandboxFlavor, LocalSandboxFlavor
 
         flavors = [
+            ManagedModelDeployerFlavor,
             LocalArtifactStoreFlavor,
             LocalOrchestratorFlavor,
             LocalDockerOrchestratorFlavor,
