@@ -124,7 +124,13 @@ spec:
           image: "{{ $server.image.repository }}:{{ $server.image.tag | default .Chart.Version }}"
           imagePullPolicy: {{ $server.image.pullPolicy }}
           args:
-            - {{ if $server.pro.identityFromControlPlane }}zenml-server-warm-start{{ else }}uvicorn{{ end }}
+            {{- if $server.pro.identityFromControlPlane }}
+            - python
+            - -m
+            - zenml.zen_server.warm_start
+            {{- else }}
+            - uvicorn
+            {{- end }}
             - zenml.zen_server.zen_server_api:app
             - --no-server-header
             {{ if $server.proxyHeaders.enabled }}

@@ -21,30 +21,24 @@ restart, which then doesn't wait.
 """
 
 import importlib
-import logging
 import os
 import signal
 import sys
 import threading
 import time
-from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from types import FrameType
-from typing import Any, Callable, Dict, Iterator, Optional, Tuple
+from typing import Any, Callable, Dict, Optional
 from uuid import UUID
 
 import requests
-from pydantic import (
-    BaseModel,
-    ValidationError,
-    model_validator,
-)
+from pydantic import BaseModel, model_validator
 
-API_MODULE = "zenml.zen_server.zen_server_api"
+from zenml.logger import get_logger
+
 ORGANIZATION_ID_ENV = "ZENML_SERVER_PRO_ORGANIZATION_ID"
 ORGANIZATION_NAME_ENV = "ZENML_SERVER_PRO_ORGANIZATION_NAME"
 WORKSPACE_NAME_ENV = "ZENML_SERVER_PRO_WORKSPACE_NAME"
-RESOURCE_POOL_SOURCE_ENV = "ZENML_SERVER_RESOURCE_POOL_IMPLEMENTATION_SOURCE"
 ASK_INTERVAL_SECONDS = 2.0
 # Only the server decides when a workspace opens, so workers can ask less often.
 WORKER_ASK_INTERVAL_SECONDS = 10.0
@@ -52,8 +46,9 @@ HTTP_TIMEOUT_SECONDS = 10
 SERVING_CHECK_INTERVAL_SECONDS = 0.25
 RETRY_MAX_INTERVAL_SECONDS = 60.0
 MAX_WAITING_THREADS = 32
-# What `API_MODULE` imports, except its routers: they import
-# `zenml.zen_server.auth`, which reads the server settings when imported.
+# What `zenml.zen_server.zen_server_api` imports, except its routers: they
+# import `zenml.zen_server.auth`, which reads the server settings when
+# imported.
 SERVER_MODULES = (
     "zenml.zen_server.cloud_utils",
     "zenml.zen_server.exceptions",
@@ -63,7 +58,7 @@ SERVER_MODULES = (
     "zenml.zen_server.utils",
 )
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class WorkspaceIdentity(BaseModel):
@@ -73,7 +68,6 @@ class WorkspaceIdentity(BaseModel):
     organization_id: Optional[UUID] = None
     organization_name: Optional[str] = None
     workspace_name: Optional[str] = None
-    resource_pool_implementation_source: Optional[str] = None
 
     @model_validator(mode="after")
     def _claimed_has_organization(self) -> "WorkspaceIdentity":
@@ -184,6 +178,8 @@ class _WaitingServer(ThreadingHTTPServer):
             request: The connection.
             client_address: The address of the client.
         """
+        # A coarse bound: it counts every thread in the process, and only
+        # the handler threads grow while the server waits.
         if threading.active_count() > MAX_WAITING_THREADS:
             self.shutdown_request(request)
             return
@@ -243,8 +239,8 @@ def _ask_until_answered(
     Args:
         api: The API connection.
         ask_interval_seconds: How long to wait after the first failed ask. The
-            wait doubles after each further failure, because every failed ask
-            logs in again and the API limits logins per IP.
+            wait doubles after each further failure, because a failed ask may
+            log in again, and the API limits logins per IP.
         server: The server answering health checks meanwhile.
 
     Returns:
@@ -257,7 +253,6 @@ def _ask_until_answered(
         # A login reply without a usable token raises KeyError or TypeError.
         except (
             requests.RequestException,
-            ValidationError,
             ValueError,
             KeyError,
             TypeError,
@@ -274,7 +269,7 @@ def wait_for_identity(
     port: int,
     on_unclaimed: Optional[Callable[[], None]] = None,
     ask_interval_seconds: float = WORKER_ASK_INTERVAL_SECONDS,
-) -> None:
+) -> Optional[_ProApi]:
     """Put the identity of a claimed workspace into the environment.
 
     Does nothing if the environment already has an organization, which is how
@@ -284,9 +279,12 @@ def wait_for_identity(
         port: The port that health checks arrive on.
         on_unclaimed: Work to do once, if the workspace is still unclaimed.
         ask_interval_seconds: How long to wait between asks while unclaimed.
+
+    Returns:
+        The API connection it asked with, or None if it didn't ask.
     """
     if os.environ.get(ORGANIZATION_ID_ENV):
-        return
+        return None
 
     previous_handler = signal.signal(signal.SIGTERM, _exit_on_signal)
     server = _WaitingServer(("0.0.0.0", port), _WaitingHandler)  # nosec
@@ -311,68 +309,27 @@ def wait_for_identity(
         os.environ[ORGANIZATION_NAME_ENV] = identity.organization_name
     if identity.workspace_name:
         os.environ[WORKSPACE_NAME_ENV] = identity.workspace_name
-    # An admin's own value wins, as it does on a normal workspace.
-    if identity.resource_pool_implementation_source:
-        os.environ.setdefault(
-            RESOURCE_POOL_SOURCE_ENV,
-            identity.resource_pool_implementation_source,
-        )
 
     server.shutdown()
     server.server_close()
     signal.signal(signal.SIGTERM, previous_handler)
-
-
-@contextmanager
-def _reading_settings_fails() -> Iterator[None]:
-    """Make any read of the server settings an error.
-
-    This guards against future import-order regressions. Settings read here
-    would be cached for the life of the process, before they hold the
-    customer's values, so a slot whose preload reads them fails its build
-    instead of serving wrong values.
-
-    Yields:
-        Nothing.
-    """
-    from zenml.config.server_config import (
-        ServerConfiguration,
-        ServerProConfiguration,
-    )
-
-    def refuse(cls: Any) -> Any:
-        raise RuntimeError(
-            f"{cls.__name__} was read before the workspace identity is known."
-        )
-
-    classes: Tuple[Any, ...] = (ServerConfiguration, ServerProConfiguration)
-    originals = [
-        config_class.__dict__["get_server_config"] for config_class in classes
-    ]
-    for config_class in classes:
-        setattr(config_class, "get_server_config", classmethod(refuse))
-    try:
-        yield
-    finally:
-        for config_class, original in zip(classes, originals):
-            setattr(config_class, "get_server_config", original)
+    return api
 
 
 def load_server_code() -> None:
     """Do the slow part of starting a server that needs no settings.
 
-    If any of this reads the server settings, the error stops the warm
-    workspace from being built, so no customer ever gets it.
+    It must not read the server settings: the process would keep them before
+    they hold the customer's values.
     """
-    with _reading_settings_fails():
-        for module_name in SERVER_MODULES:
-            importlib.import_module(module_name)
+    for module_name in SERVER_MODULES:
+        importlib.import_module(module_name)
 
-        from zenml.service_connectors.service_connector_registry import (
-            service_connector_registry,
-        )
+    from zenml.service_connectors.service_connector_registry import (
+        service_connector_registry,
+    )
 
-        service_connector_registry.register_builtin_service_connectors()
+    service_connector_registry.register_builtin_service_connectors()
 
 
 def _is_serving(port: int) -> bool:
@@ -392,7 +349,7 @@ def _is_serving(port: int) -> bool:
         return False
 
 
-def _report_when_serving(port: int) -> None:
+def _report_when_serving(port: int, api: _ProApi) -> None:
     """Tell the ZenML Pro API once this server is taking requests.
 
     The browser opens the workspace on this report, so it waits for the port.
@@ -401,8 +358,8 @@ def _report_when_serving(port: int) -> None:
 
     Args:
         port: The port of the server.
+        api: The API connection to report on.
     """
-    api = _ProApi()
     while not _is_serving(port):
         time.sleep(SERVING_CHECK_INTERVAL_SECONDS)
 
@@ -422,17 +379,23 @@ def main() -> None:
     arguments = sys.argv[1:]
     port = int(arguments[arguments.index("--port") + 1])
 
-    wait_for_identity(
+    api = wait_for_identity(
         port,
         on_unclaimed=load_server_code,
         ask_interval_seconds=ASK_INTERVAL_SECONDS,
     )
 
     threading.Thread(
-        target=_report_when_serving, args=(port,), daemon=True
+        target=_report_when_serving,
+        args=(port, api or _ProApi()),
+        daemon=True,
     ).start()
 
     from uvicorn.main import main as uvicorn_main
 
     sys.argv = ["uvicorn", *arguments]
     uvicorn_main()
+
+
+if __name__ == "__main__":
+    main()

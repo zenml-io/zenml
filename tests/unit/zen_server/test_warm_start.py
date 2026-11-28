@@ -32,11 +32,16 @@ def test_loading_server_code_reads_no_settings() -> None:
     """A new read of the settings while loading would keep the wrong values."""
     code = (
         "import sys\n"
-        "from zenml.zen_server.warm_start import API_MODULE, load_server_code\n"
-        "from zenml.zen_server import utils\n"
+        "from zenml.config.server_config import (\n"
+        "    ServerConfiguration, ServerProConfiguration\n"
+        ")\n"
+        "from zenml.zen_server.warm_start import load_server_code\n"
+        "def refuse(cls):\n"
+        "    raise RuntimeError(f'{cls.__name__} was read')\n"
+        "for config_class in (ServerConfiguration, ServerProConfiguration):\n"
+        "    config_class.get_server_config = classmethod(refuse)\n"
         "load_server_code()\n"
-        "assert utils._server_config is None\n"
-        "assert API_MODULE not in sys.modules\n"
+        "assert 'zenml.zen_server.zen_server_api' not in sys.modules\n"
     )
     result = subprocess.run(
         [sys.executable, "-c", code], capture_output=True, text=True
@@ -63,7 +68,6 @@ def test_waiting_ends_with_the_customers_identity_in_the_environment(
                 organization_id=organization_id,
                 organization_name="customer",
                 workspace_name="workspace",
-                resource_pool_implementation_source="from.the.api",
             ),
         ]
     )
@@ -78,7 +82,6 @@ def test_waiting_ends_with_the_customers_identity_in_the_environment(
         warm_start.WORKSPACE_NAME_ENV,
     ):
         monkeypatch.setenv(variable, "")
-    monkeypatch.setenv(warm_start.RESOURCE_POOL_SOURCE_ENV, "set.by.an.admin")
     loaded = MagicMock()
 
     warm_start.wait_for_identity(
@@ -89,7 +92,6 @@ def test_waiting_ends_with_the_customers_identity_in_the_environment(
     assert os.environ[warm_start.ORGANIZATION_ID_ENV] == str(organization_id)
     assert os.environ[warm_start.ORGANIZATION_NAME_ENV] == "customer"
     assert os.environ[warm_start.WORKSPACE_NAME_ENV] == "workspace"
-    assert os.environ[warm_start.RESOURCE_POOL_SOURCE_ENV] == "set.by.an.admin"
 
 
 def test_ready_report_survives_a_long_api_outage(
@@ -118,13 +120,10 @@ def test_ready_report_survives_a_long_api_outage(
         SimpleNamespace(time=lambda: now[0], sleep=sleep),
     )
     monkeypatch.setattr(warm_start, "_is_serving", lambda port: True)
-    monkeypatch.setattr(
-        warm_start,
-        "_ProApi",
-        lambda: SimpleNamespace(report_ready=report_ready),
-    )
 
-    warm_start._report_when_serving(port=1)
+    warm_start._report_when_serving(
+        port=1, api=SimpleNamespace(report_ready=report_ready)
+    )
 
     assert len(reported_at) == 1
     assert sleeps[0] == warm_start.ASK_INTERVAL_SECONDS
@@ -173,7 +172,7 @@ def test_a_slot_that_loses_the_api_stops_answering_ready(
 def test_failed_identity_asks_back_off(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Each failed ask logs in again, and the API limits logins per IP."""
+    """A failed ask may log in again, and the API limits logins per IP."""
     sleeps: list[float] = []
     failures = iter([requests.ConnectionError("API is down")] * 7)
 
