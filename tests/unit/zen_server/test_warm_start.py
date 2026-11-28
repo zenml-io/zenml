@@ -128,7 +128,7 @@ def test_ready_report_survives_a_long_api_outage(
 
     assert len(reported_at) == 1
     assert sleeps[0] == warm_start.ASK_INTERVAL_SECONDS
-    assert max(sleeps) == warm_start.READY_REPORT_MAX_INTERVAL_SECONDS
+    assert max(sleeps) == warm_start.RETRY_MAX_INTERVAL_SECONDS
 
 
 def test_a_slot_that_loses_the_api_stops_answering_ready(
@@ -168,3 +168,28 @@ def test_a_slot_that_loses_the_api_stops_answering_ready(
     warm_start.wait_for_identity(0, ask_interval_seconds=0)
 
     assert ready_at_each_ask == [False, True, False, True]
+
+
+def test_failed_identity_asks_back_off(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Each failed ask logs in again, and the API limits logins per IP."""
+    sleeps: list[float] = []
+    failures = iter([requests.ConnectionError("API is down")] * 7)
+
+    def identity() -> WorkspaceIdentity:
+        for failure in failures:
+            raise failure
+        return WorkspaceIdentity(claimed=False)
+
+    monkeypatch.setattr(
+        warm_start, "time", SimpleNamespace(sleep=sleeps.append)
+    )
+
+    warm_start._ask_until_answered(
+        SimpleNamespace(identity=identity),
+        warm_start.ASK_INTERVAL_SECONDS,
+        SimpleNamespace(answer_ready=True),
+    )
+
+    assert sleeps == [2, 4, 8, 16, 32, 60, 60]

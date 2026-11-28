@@ -21,6 +21,7 @@ restart, which then doesn't wait.
 """
 
 import importlib
+import logging
 import os
 import signal
 import sys
@@ -49,7 +50,7 @@ ASK_INTERVAL_SECONDS = 2.0
 WORKER_ASK_INTERVAL_SECONDS = 10.0
 HTTP_TIMEOUT_SECONDS = 10
 SERVING_CHECK_INTERVAL_SECONDS = 0.25
-READY_REPORT_MAX_INTERVAL_SECONDS = 60.0
+RETRY_MAX_INTERVAL_SECONDS = 60.0
 MAX_WAITING_THREADS = 32
 # What `API_MODULE` imports, except its routers: they import
 # `zenml.zen_server.auth`, which reads the server settings when imported.
@@ -61,6 +62,8 @@ SERVER_MODULES = (
     "zenml.zen_server.secure_headers",
     "zenml.zen_server.utils",
 )
+
+logger = logging.getLogger(__name__)
 
 
 class WorkspaceIdentity(BaseModel):
@@ -106,7 +109,7 @@ class _ProApi:
         Returns:
             The authorization header.
         """
-        if self._token is None or time.time() >= self._token_expires_at:
+        if self._token is None or time.monotonic() >= self._token_expires_at:
             response = self._session.post(
                 f"{self._url}/auth/login",
                 data={
@@ -120,7 +123,9 @@ class _ProApi:
             response.raise_for_status()
             token = response.json()
             self._token = token["access_token"]
-            self._token_expires_at = time.time() + token["expires_in"] - 60
+            self._token_expires_at = (
+                time.monotonic() + token["expires_in"] - 60
+            )
         return {"Authorization": f"Bearer {self._token}"}
 
     def _request(self, method: str, path: str) -> requests.Response:
@@ -237,12 +242,15 @@ def _ask_until_answered(
 
     Args:
         api: The API connection.
-        ask_interval_seconds: How long to wait after a failed ask.
+        ask_interval_seconds: How long to wait after the first failed ask. The
+            wait doubles after each further failure, because every failed ask
+            logs in again and the API limits logins per IP.
         server: The server answering health checks meanwhile.
 
     Returns:
         The identity of this workspace.
     """
+    retry_interval = ask_interval_seconds
     while True:
         try:
             return api.identity()
@@ -254,9 +262,12 @@ def _ask_until_answered(
             KeyError,
             TypeError,
         ) as e:
-            print(f"Could not get the workspace identity: {e!r}", flush=True)
+            logger.warning("Could not get the workspace identity: %r", e)
             server.answer_ready = False
-            time.sleep(ask_interval_seconds)
+            time.sleep(retry_interval)
+            retry_interval = min(
+                retry_interval * 2, RETRY_MAX_INTERVAL_SECONDS
+            )
 
 
 def wait_for_identity(
@@ -316,8 +327,10 @@ def wait_for_identity(
 def _reading_settings_fails() -> Iterator[None]:
     """Make any read of the server settings an error.
 
-    Settings read here would be cached for the life of the process, before they
-    hold the customer's values.
+    This guards against future import-order regressions. Settings read here
+    would be cached for the life of the process, before they hold the
+    customer's values, so a slot whose preload reads them fails its build
+    instead of serving wrong values.
 
     Yields:
         Nothing.
@@ -399,11 +412,9 @@ def _report_when_serving(port: int) -> None:
             api.report_ready()
             return
         except Exception as e:
-            print(f"Could not report the server as ready: {e}", flush=True)
+            logger.warning("Could not report the server as ready: %s", e)
         time.sleep(retry_interval)
-        retry_interval = min(
-            retry_interval * 2, READY_REPORT_MAX_INTERVAL_SECONDS
-        )
+        retry_interval = min(retry_interval * 2, RETRY_MAX_INTERVAL_SECONDS)
 
 
 def main() -> None:
