@@ -15,7 +15,6 @@
 import contextlib
 import uuid
 from contextlib import ExitStack as does_not_raise
-from datetime import datetime
 from time import sleep
 from typing import Any, Dict, Generator
 
@@ -27,6 +26,7 @@ from zenml.enums import DownloadType
 from zenml.exceptions import (
     AuthorizationException,
 )
+from zenml.utils.time_utils import utc_now
 from zenml.zen_server.auth import (
     generate_download_token,
     verify_download_token,
@@ -41,7 +41,7 @@ def test_encode_decode_works():
     device_id = uuid.uuid4()
     api_key_id = uuid.uuid4()
     api_key_generation = 3
-    issued_at = datetime.utcnow()
+    issued_at = utc_now()
     schedule_id = uuid.uuid4()
     pipeline_run_id = uuid.uuid4()
     claims = {
@@ -85,13 +85,26 @@ def test_encode_decode_works():
     assert decoded_token.claims["baz"] == "qux"
 
 
+def test_encode_without_issued_at_uses_current_utc_time():
+    """Test that a token without issued_at is issued at the current UTC time."""
+    before = utc_now()
+    encoded_token = JWTToken(user_id=uuid.uuid4()).encode()
+    after = utc_now()
+
+    decoded_token = JWTToken.decode_token(encoded_token)
+
+    assert decoded_token.issued_at is not None
+    assert decoded_token.issued_at.tzinfo is None
+    assert before <= decoded_token.issued_at <= after
+
+
 def test_token_expiration():
     """Test that tokens expire after the specified time."""
     token = JWTToken(
         user_id=uuid.uuid4(),
     )
 
-    expires = datetime.utcnow()
+    expires = utc_now()
     encoded_token = token.encode(expires=expires)
     with does_not_raise():
         JWTToken.decode_token(encoded_token)

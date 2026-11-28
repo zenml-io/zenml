@@ -26,6 +26,7 @@ from pydantic import BaseModel
 
 from zenml.exceptions import CredentialsNotValid
 from zenml.logger import get_logger
+from zenml.utils.time_utils import utc_now
 from zenml.zen_server.utils import server_config
 
 logger = get_logger(__name__)
@@ -188,7 +189,9 @@ class JWTToken(BaseModel):
             if isinstance(iat, datetime):
                 issued_at = iat
             elif isinstance(iat, (int, float)):
-                issued_at = datetime.utcfromtimestamp(iat)
+                issued_at = datetime.fromtimestamp(
+                    iat, tz=timezone.utc
+                ).replace(tzinfo=None)
             else:
                 raise CredentialsNotValid(
                     "Invalid JWT token: the iat claim is not a valid timestamp"
@@ -236,7 +239,7 @@ class JWTToken(BaseModel):
         claims["sub"] = str(self.user_id)
         claims["iss"] = config.get_jwt_token_issuer()
         claims["aud"] = config.get_jwt_token_audience()
-        issued_at = self.issued_at or datetime.utcnow()
+        issued_at = self.issued_at or utc_now()
         if issued_at.tzinfo is None:
             issued_at = issued_at.replace(tzinfo=timezone.utc)
         claims["iat"] = issued_at.timestamp()
