@@ -48,6 +48,7 @@ ASK_INTERVAL_SECONDS = 2.0
 # Only the server decides when a workspace opens, so workers can ask less often.
 WORKER_ASK_INTERVAL_SECONDS = 10.0
 HTTP_TIMEOUT_SECONDS = 10
+SERVING_CHECK_INTERVAL_SECONDS = 0.25
 READY_REPORT_MAX_INTERVAL_SECONDS = 60.0
 MAX_WAITING_THREADS = 32
 # What `API_MODULE` imports, except its routers: they import
@@ -227,13 +228,17 @@ def _exit_on_signal(signum: int, frame: Optional[FrameType]) -> None:
 
 
 def _ask_until_answered(
-    api: _ProApi, ask_interval_seconds: float
+    api: _ProApi, ask_interval_seconds: float, server: "_WaitingServer"
 ) -> WorkspaceIdentity:
     """Ask for the identity until the ZenML Pro API gives a usable answer.
+
+    While the API can't be reached, the server doesn't answer readiness
+    checks, so a slot that couldn't hear its claim is never claimed.
 
     Args:
         api: The API connection.
         ask_interval_seconds: How long to wait after a failed ask.
+        server: The server answering health checks meanwhile.
 
     Returns:
         The identity of this workspace.
@@ -250,6 +255,7 @@ def _ask_until_answered(
             TypeError,
         ) as e:
             print(f"Could not get the workspace identity: {e!r}", flush=True)
+            server.answer_ready = False
             time.sleep(ask_interval_seconds)
 
 
@@ -276,7 +282,7 @@ def wait_for_identity(
     threading.Thread(target=server.serve_forever, daemon=True).start()
     api = _ProApi()
 
-    identity = _ask_until_answered(api, ask_interval_seconds)
+    identity = _ask_until_answered(api, ask_interval_seconds, server)
     if not identity.claimed:
         if on_unclaimed:
             on_unclaimed()
@@ -286,7 +292,8 @@ def wait_for_identity(
         server.answer_ready = True
         while not identity.claimed:
             time.sleep(ask_interval_seconds)
-            identity = _ask_until_answered(api, ask_interval_seconds)
+            identity = _ask_until_answered(api, ask_interval_seconds, server)
+            server.answer_ready = True
 
     os.environ[ORGANIZATION_ID_ENV] = str(identity.organization_id)
     if identity.organization_name:
@@ -384,7 +391,7 @@ def _report_when_serving(port: int) -> None:
     """
     api = _ProApi()
     while not _is_serving(port):
-        time.sleep(ASK_INTERVAL_SECONDS)
+        time.sleep(SERVING_CHECK_INTERVAL_SECONDS)
 
     retry_interval = ASK_INTERVAL_SECONDS
     while True:

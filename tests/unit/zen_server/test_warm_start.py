@@ -129,3 +129,42 @@ def test_ready_report_survives_a_long_api_outage(
     assert len(reported_at) == 1
     assert sleeps[0] == warm_start.ASK_INTERVAL_SECONDS
     assert max(sleeps) == warm_start.READY_REPORT_MAX_INTERVAL_SECONDS
+
+
+def test_a_slot_that_loses_the_api_stops_answering_ready(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A slot that can't hear its claim must not be handed to a signup."""
+    servers = []
+
+    class RecordedServer(warm_start._WaitingServer):
+        def __init__(self, *args: object, **kwargs: object) -> None:
+            super().__init__(*args, **kwargs)
+            servers.append(self)
+
+    ready_at_each_ask = []
+    answers = iter(
+        [
+            WorkspaceIdentity(claimed=False),
+            requests.ConnectionError("API is down"),
+            WorkspaceIdentity(claimed=False),
+            WorkspaceIdentity(claimed=True, organization_id=uuid4()),
+        ]
+    )
+
+    def identity() -> WorkspaceIdentity:
+        ready_at_each_ask.append(servers[0].answer_ready)
+        answer = next(answers)
+        if isinstance(answer, Exception):
+            raise answer
+        return answer
+
+    monkeypatch.setattr(warm_start, "_WaitingServer", RecordedServer)
+    monkeypatch.setattr(
+        warm_start, "_ProApi", lambda: SimpleNamespace(identity=identity)
+    )
+    monkeypatch.setenv(warm_start.ORGANIZATION_ID_ENV, "")
+
+    warm_start.wait_for_identity(0, ask_interval_seconds=0)
+
+    assert ready_at_each_ask == [False, True, False, True]
